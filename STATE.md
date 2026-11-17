@@ -1,6 +1,6 @@
 # STATE — OpenChoreo Lab (reprise après interruption)
 
-Dernière mise à jour : 2026-11-17 ~19:00Z. Lire ensuite `missions/MISSION.md`. Aucune mémoire de conversation n'est requise.
+Dernière mise à jour : 2026-11-17 ~19:45Z (mandat « finaliser OpenChoreo + stockage commun OKE/Talos »). Lire ensuite `missions/MISSION.md`. Aucune mémoire de conversation n'est requise.
 Objectif : un IDP OpenChoreo 1.3.3 RÉELLEMENT utilisable sur le cluster OKE `oracle-a1` : un agent utilise le portail et les API pour déployer un service par PR GitOps, puis prouve qu'il fonctionne.
 Règle de preuve : PASS = preuve runtime datée. `k3d` ≠ OKE. Statique ≠ runtime. NOT_TESTED / BLOCKED ne sont jamais des PASS.
 
@@ -18,7 +18,7 @@ Règle de preuve : PASS = preuve runtime datée. `k3d` ≠ OKE. Statique ≠ run
 | 3 cert-manager | PASS | verify B3 |
 | 4 ESO + ClusterSecretStore lab-store | PASS | verify B4 |
 | 5 kgateway v2.3.11 | PASS | verify B5 |
-| 6 control plane OpenChoreo | **EN ATTENTE** (remédiation des 3 bloquants de la revue) | — |
+| 6 control plane OpenChoreo | **EN ATTENTE** : installer avec un RBAC du control plane à portée réduite (flux A1) | — |
 | 7-9 VAP, data plane, ClusterDataPlane, types | EN ATTENTE | — |
 | 10 CNPG + lab-pg | **NON AUTORISÉ** (volume OCI 50 Go) | `--confirm-storage` jamais sans accord de Paul |
 | 11 Argo CD | EN ATTENTE | — |
@@ -28,20 +28,28 @@ Mesures réelles après étapes 1-5 (18:31Z, méthode corrigée : MAX de 3 écha
 - IMDS : PASS (timeout :80, DNS :53 répond). Intra-namespace : PASS. Nettoyage `lab-netcontrol` : PASS (PR #5).
 - **Egress isolé : BLOCKED (C1)** : l'allow-all `allow-egress-unisolated` neutralise le default-deny de nos namespaces. Aucune garantie réseau n'est acquise. Correctif : kube-ops PR brouillon **#1629** (exclut les namespaces `platform.smadja.dev/egress-isolated=true` ; ne fusionne pas #1620). Plan exécuté (lecture seule) : 7 namespaces concernés. Test `all` + rollback à exécuter sur OKE (script `tests/oke-baseline/c1-egress-isolation.sh` de la PR #1629).
 
-## PR openchoreo-lab
-Mergées : #1 socle, #2 apps, #3 pack Phase B, #4 budget/capacité/tests réseau, #5 nettoyage, #6 identité/authz/MCP/revue. `main` protégé (ruleset `main-protection` : PR + check `ci-ok`).
+## PR
+openchoreo-lab mergées : #1 socle, #2 apps, #3 pack Phase B, #4 budget/capacité/tests réseau, #5 nettoyage, #6 identité/authz/MCP/revue, #7 état. `main` protégé (ruleset : PR + `ci-ok`).
+**#8 (remédiation revue + values Authentik/portail) : OUVERTE, CI verte (8/8 jobs dont `platform`), NON MERGÉE** : Paul exige des preuves sur un vrai API server/Argo (flux A2, A3) avant fusion. Bloquants P1 (Argo), P2, P3 corrigés statiquement ; preuves runtime en cours.
+kube-ops (brouillons, non mergés) : **#1629** correctif C1 (CCNP `allow-egress-unisolated` exclut les namespaces `platform.smadja.dev/egress-isolated=true`), **#1630** blueprints Authentik (clients distincts, clé de signature existante réutilisée). L'état vivant d'OKE diverge de Git tant que #1629 n'est pas fusionnée (source de vérité à clarifier : une seule propriétaire de la CCNP).
 
-## Flux parallèles (agents sans accès OKE ; périmètres de fichiers distincts)
-| Flux | Statut |
-|---|---|
-| Intégration (remédiation revue + values portail/Authentik) : tools/oke, platform/install, platform/policies, platform/portal, docs/PHASE-B.md, PORTAL.md | EN COURS |
-| Boucle GitOps whoami sur k3d (tests/gitops-k3d) | EN COURS |
-| RBAC cluster-agent moindre privilège (platform/cluster-agent, tests/rbac) | EN COURS (phase 1 sur SA clone ; phase 2 sur ordre du coordinateur) |
-| Authz+MCP (platform/authz, tests/mcp) : 50 PASS k3d | LIVRÉ (PR #6) |
-| Identité Authentik (platform/identity) | LIVRÉ en brouillon (PR #6) ; PR kube-ops à préparer |
-| Portail (platform/portal, docs/PORTAL.md) | LIVRÉ en brouillon ; à intégrer |
-| Revue indépendante (docs/REVIEW-PHASE-B.md) | LIVRÉE : 27 constats (3 bloquants) |
-| Correctif C1 (kube-ops #1629) | PR brouillon ouverte |
+## Flux (agents sans accès OKE ; un seul exécutant OKE = coordinateur)
+| Flux | Cluster k3d | Statut |
+|---|---|---|
+| GitOps whoami k3d (tests/gitops-k3d) | `openchoreo` (partagé) | EN COURS (long) |
+| A1 Isolation des Secrets (cluster-agent ET control plane) : analyse, correctif, tests | `lab-sec-a1` | EN COURS |
+| A2 preuve négative Argo (projets lab-apps/lab-platform/lab-authz/lab-root/default verrouillé) | `lab-sec-argo` | EN COURS |
+| A3 VAP CEL sur vrai API server + helm uninstall CRD + rollback | `lab-sec-vap` | EN COURS |
+| Stockage OKE/Talos (docs/storage, tests/storage : recherche seule, aucun accès cluster) | — | EN COURS |
+| RBAC cluster-agent phase 1 (SA clone) | — | LIVRÉ, NON COMMITÉ ; phase 2 à lancer après GitOps k3d |
+| Portail, identité, authz/MCP | — | LIVRÉS (PR #6) ; portail/Authentik NON connectés (secrets clients = credentials de production) |
+
+## Constats de sécurité ouverts (ne pas déclarer le modèle d'isolation sûr)
+- **Isolation des Secrets (CRITIQUE, en coordination privée avec l'amont)** : un point de sécurité amont est en cours de traitement ; les détails ne sont volontairement PAS publiés dans ce dépôt public. Règle : AUCUN credential de production (secret client Authentik, tokens) dans un environnement accessible à ces comptes tant que ce n'est pas prouvé corrigé.
+- C1 : prouvé sur OKE pour les 7 namespaces d'essai ; `dp-*` pas encore labellisés `egress-isolated` (à corriger dans le CPT `cell-restricted` + tests de trafic).
+
+## Stockage OKE (audit lecture seule 2026-11-17 19:35Z : docs/storage/OKE-AUDIT-2026-11-17.md)
+Aucun PV/PVC. StorageClass `oci-bv` (défaut, WaitForFirstConsumer, expansion OUI), `oci`. 2 Block Volumes `csi-…` de 50 Go AVAILABLE non attachés (restes de drills : ne jamais les supposer libres) + boot 50 Go = 150/200 Go ⇒ un seul PVC de 50 Go possible, NON autorisé. Disque éphémère du nœud ≈ 28 GB.
 
 ## Bloquants de sécurité avant étape 6/7 (docs/REVIEW-PHASE-B.md)
 1. cluster-agent : moindre privilège du RBAC et durcissement de VAP-1 → remédiation en cours (flux RBAC + intégration).
@@ -58,7 +66,9 @@ Authentik externe = unique issuer OIDC (pas ThunderID). Clients distincts : port
 ## Ordre de livraison (ne pas sauter)
 1 CP+DP OpenChoreo fonctionnels → 2 Authentik connecté + authz vérifiées → 3 portail Backstage accessible (chemin privé de test) → 4 catalogue réellement alimenté → 5 MCP avec identités distinctes → 6 golden path whoami de bout en bout par GitOps → 7 rollback démontré. Miniflux/PostgreSQL seulement après le cycle stateless prouvé.
 
-## Prochaines actions exactes
+## Prochaines actions exactes (mandat du 2026-11-17 soir)
+0. Séquence: preuves A1/A2/A3 → merge #8 → étapes OKE 6→9 (CP avec RBAC scoped, DP avec cluster-agent corrigé) → Argo (étape 11, sans lab-pg) → whoami E2E sur OKE (intention → app.yaml → appgen → PR → CI → merge → Argo → OpenChoreo → Ready → HTTP 200 → rollback Git) → portail/Authentik/MCP (après correction LIST) → Miniflux (PostgreSQL non autorisé : 50 Go OCI). Stockage : recommandation en parallèle, sans bloquer.
+(Anciennes actions ci-dessous : à lire avec ce qui précède.)
 1. Intégrer le rapport de l'agent d'intégration (vérifier AppProject, VAP, désinstallation, values CP) ; CI ; PR ; merge.
 2. Exécuter sur OKE le test C1 (`plan` fait ; `backup`, `apply`, `test`, `rollback` mesuré, ré-`apply`).
 3. Quand le flux GitOps k3d a fini : lancer la phase 2 du flux RBAC (bascule RBAC réel k3d + whoami).
@@ -66,4 +76,5 @@ Authentik externe = unique issuer OIDC (pas ThunderID). Clients distincts : port
 5. PR kube-ops pour les blueprints Authentik (texte dans docs/IDENTITY.md) ; réutiliser une clé de signature Authentik existante si possible.
 
 ## Journal
+- 2026-11-17 19:45Z : nouveau mandat ; audit stockage OKE ; constat de sécurité (coordination privée) ; 4 flux de sécurité/stockage lancés ; PR #8 gardée ouverte.
 - 2026-11-17 : PR #1-#6 ; accès bastion ouvert (accord Paul) ; étapes 1-5 OKE PASS ; C1 confirmé runtime ; revue indépendante ; 8 flux d'agents lancés.
