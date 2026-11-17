@@ -1,0 +1,67 @@
+diff --git a/apps/whoami/app.yaml b/apps/whoami/app.yaml
+index 29c0a35..1cfbbea 100644
+--- a/apps/whoami/app.yaml
++++ b/apps/whoami/app.yaml
+@@ -17,6 +17,7 @@ spec:
+     args: ["--port", "8080"]
+     healthPath: /health
+     size: small
++    env: {WHOAMI_NAME: "whoami-gitops-oke-v2"}
+   exposure: {mode: private, auth: none}
+   network: {egress: none}
+   backup: {class: none}
+diff --git a/generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml b/generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml
+index 15d61c5..1652577 100644
+--- a/generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml
++++ b/generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml
+@@ -9,7 +9,7 @@ spec:
+     projectName: whoami
+     componentName: whoami
+   environment: production
+-  releaseName: whoami-31985273d8
++  releaseName: whoami-e4720c4c8b
+   componentTypeEnvironmentConfigs:
+     size: small
+     replicas: 1
+diff --git a/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-31985273d8.yaml b/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-e4720c4c8b.yaml
+similarity index 99%
+rename from generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-31985273d8.yaml
+rename to generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-e4720c4c8b.yaml
+index 4abfe68..d59dd39 100644
+--- a/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-31985273d8.yaml
++++ b/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-e4720c4c8b.yaml
+@@ -2,7 +2,7 @@
+ apiVersion: openchoreo.dev/v1alpha1
+ kind: ComponentRelease
+ metadata:
+-  name: whoami-31985273d8
++  name: whoami-e4720c4c8b
+   namespace: default
+ spec:
+   owner:
+@@ -433,7 +433,9 @@ spec:
+   workload:
+     container:
+       image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+-      env: []
++      env:
++      - key: WHOAMI_NAME
++        value: whoami-gitops-oke-v2
+       args:
+       - --port
+       - '8080'
+diff --git a/generated/namespaces/default/projects/whoami/components/whoami/workload.yaml b/generated/namespaces/default/projects/whoami/components/whoami/workload.yaml
+index 560770e..4240f15 100644
+--- a/generated/namespaces/default/projects/whoami/components/whoami/workload.yaml
++++ b/generated/namespaces/default/projects/whoami/components/whoami/workload.yaml
+@@ -10,7 +10,9 @@ spec:
+     componentName: whoami
+   container:
+     image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+-    env: []
++    env:
++    - key: WHOAMI_NAME
++      value: whoami-gitops-oke-v2
+     args:
+     - --port
+     - '8080'

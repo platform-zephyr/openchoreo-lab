@@ -1,0 +1,13 @@
+diff --git a/apps/whoami/app.yaml b/apps/whoami/app.yaml
+index 29c0a35..caffade 100644
+--- a/apps/whoami/app.yaml
++++ b/apps/whoami/app.yaml
+@@ -9,7 +9,7 @@ metadata:
+ spec:
+   source:
+     image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+-  cluster: k3d
++  cluster: oke
+   environments: [production]
+   profile: stateless
+   runtime:
