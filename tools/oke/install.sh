@@ -9,7 +9,10 @@
 #     contexte, gardes de préconditions) ; téléchargements locaux (charts, CRD) dans STATE_DIR.
 #   - --apply : exécute. Chaque étape est idempotente (helm upgrade --install, kubectl apply --server-side).
 #   - Étapes 1 à 11 par défaut ; 6b (portail, docs/PORTAL.md) seulement si nommée (--step 6b, --from/--to 6b)
-#     ou avec --with-portal ; 12 (RBAC réduit du cluster-agent) seulement si nommée.
+#     ou avec --with-portal ; 12 conservée pour compatibilité, sans effet (intégrée à l'étape 7).
+#   - SECURITY BUNDLE OBLIGATOIRE (docs/SECURITY-BUNDLE.md) dès que la plage contient 6, 6b, 7 ou 10 : vérifié
+#     AVANT toute écriture, aussi en dry-run et avec --step/--from/--to ; sans bundle valide, arrêt (code 2).
+#     Les charts OpenChoreo ne passent QUE par helm_secure (tools/oke/security-bundle.sh) ; rollback : idem.
 #   - --confirm-storage : requis pour l'étape 10 (lab-pg = 1 block volume OCI de 50 Go), après accord
 #     de Paul sur le budget de stockage (docs/PHASE-B.md §4).
 # Après chaque étape (3 à 12) : mesure au repos de la pile et ARRÊT (code 3) si > 1,5 Gi ou > 300m.
@@ -17,6 +20,8 @@
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=security-bundle.sh
+. "$(dirname "${BASH_SOURCE[0]}")/security-bundle.sh"
 
 FROM=1 TO=11 CONFIRM_STORAGE=0 WITH_PORTAL=0
 ORDER=(1 2 3 4 5 6 6b 7 8 9 10 11 12)
@@ -28,15 +33,22 @@ while (($#)); do
     --with-portal) WITH_PORTAL=1; shift;;
     --apply) APPLY=1; shift;;
     --confirm-storage) CONFIRM_STORAGE=1; shift;;
-    -h|--help) sed -n '2,17p' "$0"; exit 0;;
+    -h|--help) sed -n '2,20p' "$0"; exit 0;;
     *) die "argument inconnu : $1";;
   esac
 done
 export APPLY
 
 need kubectl helm jq yq curl shasum base64
+idx() { local i; for i in "${!ORDER[@]}"; do [[ "${ORDER[$i]}" == "$1" ]] && { echo "$i"; return; }; done; die "étape inconnue : $1"; }
+IFROM="$(idx "$FROM")"; ITO="$(idx "$TO")"
+(( IFROM <= ITO )) || die "--from $FROM après --to $TO"
 guard_context
 mkdir -p "$STATE_DIR"
+# Security bundle exigé AVANT la première étape (donc avant toute écriture) si la plage touche OpenChoreo.
+for ((i = IFROM; i <= ITO; i++)); do
+  case "${ORDER[$i]}" in 6|6b|7|10) sb_require; break;; esac
+done
 V="$INSTALL_DIR/values"
 M="$INSTALL_DIR/manifests"
 KA=(kubectl apply --server-side --field-manager=openchoreo-lab)
@@ -107,6 +119,9 @@ copy_gateway_ca() {
 cp_upgrade() {
   local portal="$1" tgz
   tgz="$(fetch_chart openchoreo-control-plane "$OPENCHOREO_CP_CHART" "$OPENCHOREO_VERSION" "$OPENCHOREO_CP_TGZ_SHA256")"
+  # Rendu durci vérifié AVANT la première écriture de l'étape (CRD, egress).
+  local cpargs=(-f "$V/openchoreo-control-plane.yaml" --set "backstage.enabled=$portal" --wait --timeout 10m)
+  sb_prerender cp openchoreo-control-plane "$tgz" openchoreo-control-plane "${cpargs[@]}"
   # Mise à jour des CRD (Helm ne les met jamais à jour) : server-side, avant l'upgrade (upgrades/overview.mdx).
   if [[ "$APPLY" == 1 ]] && kubectl get crd components.openchoreo.dev >/dev/null 2>&1; then
     local tmp; tmp="$(mktemp -d)"; tar -xzf "$tgz" -C "$tmp"
@@ -115,8 +130,9 @@ cp_upgrade() {
   fi
   # Egress vers Authentik (JWKS de l'API, OIDC du portail) posé AVANT les pods.
   run "${KA[@]}" -f "$M/03-idp-egress.yaml"
-  run helm upgrade --install openchoreo-control-plane "$tgz" -n openchoreo-control-plane \
-    -f "$V/openchoreo-control-plane.yaml" --set "backstage.enabled=$portal" --wait --timeout 10m
+  # Security bundle : durcissement des droits de lecture rendus par le chart et image du contrôleur imposée par
+  # digest (détails hors dépôt, docs/SECURITY-BUNDLE.md). Refus avant écriture si le bundle n'est pas valide.
+  helm_secure cp openchoreo-control-plane "$tgz" openchoreo-control-plane "${cpargs[@]}"
   wait_deploys openchoreo-control-plane
   copy_gateway_ca
   # Redémarrage EN SÉRIE avec `rollout status` (revue m5) : un seul surge à la fois sous le quota de 640 Mi,
@@ -152,17 +168,20 @@ step_6b() {
   cp_upgrade true
 }
 
-step_7() { # VAP du labo + RBAC quota du cluster-agent + TLS/Envoy + OpenChoreo data plane
+step_7() { # VAP du labo + TLS/Envoy + OpenChoreo data plane (RBAC du cluster-agent fourni par le security bundle)
+  # Rendu durci vérifié AVANT la première écriture de l'étape.
+  local tgz; tgz="$(fetch_chart openchoreo-data-plane "$OPENCHOREO_DP_CHART" "$OPENCHOREO_VERSION" "$OPENCHOREO_DP_TGZ_SHA256")"
+  local dpargs=(-f "$V/openchoreo-data-plane.yaml" --wait --timeout 10m)
+  sb_prerender dp openchoreo-data-plane "$tgz" openchoreo-data-plane "${dpargs[@]}"
   # Les VAP passent AVANT que le cluster-agent existe : aucune écriture de l'agent n'échappe à VAP-1.
   run "${KA[@]}" -f "$ROOT/platform/policies/"
-  run "${KA[@]}" -f "$ROOT/platform/cluster-agent/extra-rbac-quota.yaml"
   run "${KA[@]}" -f "$M/11-gateway-tls.yaml"
   run kubectl -n openchoreo-data-plane wait --for=condition=Ready --timeout=120s certificate/dp-gateway-tls
   run "${KA[@]}" -f "$M/12-gateway-parameters.yaml"
   copy_gateway_ca
-  local tgz; tgz="$(fetch_chart openchoreo-data-plane "$OPENCHOREO_DP_CHART" "$OPENCHOREO_VERSION" "$OPENCHOREO_DP_TGZ_SHA256")"
-  run helm upgrade --install openchoreo-data-plane "$tgz" -n openchoreo-data-plane \
-    -f "$V/openchoreo-data-plane.yaml" --wait --timeout 10m
+  # Security bundle : les droits du cluster-agent sont rendus AVEC le chart (aucun ClusterRole d'origine, même
+  # transitoire) ; refus avant écriture si le bundle n'est pas valide.
+  helm_secure dp openchoreo-data-plane "$tgz" openchoreo-data-plane "${dpargs[@]}"
   run kubectl -n openchoreo-data-plane wait --for=condition=Ready --timeout=180s certificate/cluster-agent-dataplane-tls
   run kubectl -n openchoreo-data-plane wait --for=condition=Programmed --timeout=180s gateway/gateway-default
 }
@@ -192,6 +211,7 @@ step_10() { # Opérateur CNPG + lab-pg (1 PVC = 1 block volume OCI de 50 Go)
   # lab-pg-namespace.yaml porte déjà part-of et egress-isolated : aucun label posé hors fichier (garde I3).
   guard_ns_ownership "$ROOT/platform/data/lab-pg-namespace.yaml"
   run "${KA[@]}" -f "$ROOT/platform/data/lab-pg-namespace.yaml"
+  sb_apply_extra lab-pg   # droits du cluster-agent dans lab-pg (security bundle)
   run "${KA[@]}" -f "$M/51-lab-pg-oke-overlay.yaml"
   run "${KA[@]}" -f "$ROOT/platform/data/lab-pg-cluster.yaml"
   run kubectl -n lab-pg wait --for=condition=Ready --timeout=600s cluster.postgresql.cnpg.io/lab-pg
@@ -210,17 +230,10 @@ step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProject lab, lab
   run "${KA[@]}" -f "$INSTALL_DIR/argocd/root-application.yaml"
 }
 
-step_12() { # OPTIONNEL : RBAC réduit du cluster-agent (platform/cluster-agent/reduced-clusterrole.yaml)
-  # Le ClusterRole réduit est posé AVANT de retirer celui du chart : aucune fenêtre sans droits.
-  run "${KA[@]}" -f "$ROOT/platform/cluster-agent/reduced-clusterrole.yaml"
-  local tgz; tgz="$(fetch_chart openchoreo-data-plane "$OPENCHOREO_DP_CHART" "$OPENCHOREO_VERSION" "$OPENCHOREO_DP_TGZ_SHA256")"
-  run helm upgrade --install openchoreo-data-plane "$tgz" -n openchoreo-data-plane \
-    -f "$V/openchoreo-data-plane.yaml" --set clusterAgent.rbac.create=false --wait --timeout 10m
+step_12() { # SANS EFFET : le RBAC du cluster-agent est rendu avec le chart à l'étape 7 (security bundle)
+  log "étape 12 : intégrée à l'étape 7 (security bundle), rien à appliquer ; contrôle : verify.sh --step 7"
 }
 
-idx() { local i; for i in "${!ORDER[@]}"; do [[ "${ORDER[$i]}" == "$1" ]] && { echo "$i"; return; }; done; die "étape inconnue : $1"; }
-IFROM="$(idx "$FROM")"; ITO="$(idx "$TO")"
-(( IFROM <= ITO )) || die "--from $FROM après --to $TO"
 for ((i = IFROM; i <= ITO; i++)); do
   n="${ORDER[$i]}"
   if [[ "$n" == 6b && "$FROM" != 6b && "$TO" != 6b && "$WITH_PORTAL" != 1 ]]; then

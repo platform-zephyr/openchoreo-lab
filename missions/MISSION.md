@@ -24,6 +24,7 @@ Le principe est acquitté ci-dessus ; ce qui suit est ce que le pack `tools/oke/
 - Plus aucune autre exception : l'opérateur CNPG passe de `cnpg-system` à `lab-cnpg`. Le namespace `cnpg-system` créé vide par l'étape 1 du 2026-11-17 se supprime par `tools/oke/uninstall.sh --migrate-cnpg-system --apply` (refus s'il n'est pas vide ou ne porte pas `part-of=openchoreo-lab`).
 
 ## Coordination
+- Charts OpenChoreo : installation uniquement avec le security bundle privé et temporaire (`docs/SECURITY-BUNDLE.md`) ; jamais de `helm upgrade`/`helm rollback` direct sur ces releases.
 - Un SEUL exécutant sur OKE (le coordinateur). Les agents parallèles travaillent sur des périmètres de fichiers distincts, sans accès OKE, et produisent du code, des tests et des PR intégrables.
 - Le coordinateur intègre, résout les conflits, fait passer la CI, vérifie les résultats runtime. `STATE.md` est mis à jour à chaque jalon.
 - BLOCKED sur un contrôle de sécurité = jalon non validable. MEASUREMENT_UNAVAILABLE = jamais PASS.

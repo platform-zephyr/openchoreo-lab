@@ -11,6 +11,8 @@
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=security-bundle.sh
+. "$(dirname "${BASH_SOURCE[0]}")/security-bundle.sh"
 
 MODE="${1:-}" ; N="${2:-}"
 guard_context
@@ -136,7 +138,52 @@ v5() {
   expect_ok B5-class "GatewayClass kgateway Accepted" kubectl wait --for=condition=Accepted --timeout=30s gatewayclass/kgateway
 }
 
+# Permissions EFFECTIVES (SubjectAccessReview via `kubectl auth can-i --as`) de TOUS les ServiceAccounts du namespace
+# du control plane sur les Secrets, après installation ET après un upgrade (étapes 6 et 6b). Seul openchoreo-api peut
+# lire UN Secret nommé (git-webhook-secrets) dans son namespace ; aucun SA ne peut lister/surveiller/lire ailleurs ni
+# avoir un droit joker global.
+cp_secrets_effective() {
+  local ns=openchoreo-control-plane sa as rc=0 sas
+  sas="$(kubectl -n "$ns" get serviceaccount -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')" || return 1
+  [[ -n "$sas" ]] || { echo "aucun ServiceAccount lu"; return 1; }
+  for sa in $sas; do
+    as="system:serviceaccount:$ns:$sa"
+    local v t
+    for v in list watch; do
+      [[ "$(kubectl auth can-i "$v" secrets -A --as="$as")" == no ]] || { echo "FAIL $sa peut $v secrets -A"; rc=1; }
+    done
+    for t in kube-system default; do
+      for v in get list watch; do
+        [[ "$(kubectl auth can-i "$v" secrets -n "$t" --as="$as")" == no ]] || { echo "FAIL $sa peut $v secrets -n $t"; rc=1; }
+      done
+    done
+    [[ "$(kubectl auth can-i list secrets -n "$ns" --as="$as")" == no ]] || { echo "FAIL $sa peut list secrets -n $ns"; rc=1; }
+    if [[ "$sa" == openchoreo-api ]]; then
+      [[ "$(kubectl auth can-i get secrets/git-webhook-secrets -n "$ns" --as="$as")" == yes ]] || { echo "FAIL GET nommé absent pour $sa"; rc=1; }
+      [[ "$(kubectl auth can-i get secrets/autre-secret -n "$ns" --as="$as")" == no ]] || { echo "FAIL $sa peut lire un autre Secret nommé"; rc=1; }
+    else
+      [[ "$(kubectl auth can-i get secrets -n "$ns" --as="$as")" == no ]] || { echo "FAIL $sa peut get secrets -n $ns"; rc=1; }
+    fi
+    [[ "$(kubectl auth can-i '*' '*' --as="$as")" == no ]] || { echo "FAIL $sa a un droit joker global"; rc=1; }
+  done
+  return "$rc"
+}
+
+# Release durcie par le security bundle (docs/SECURITY-BUNDLE.md) : la révision COURANTE passe les invariants du
+# bundle (après install, upgrade ou rollback). Lecture seule ; bundle requis (sinon FAIL, jamais PASS).
+release_hardened() { # RELEASE NS PLAN
+  local man; man="$(helm get manifest "$1" -n "$2")" || return 1
+  (sb_require >/dev/null 2>&1 && sb_check "$3" <<<"$man") >/dev/null 2>&1
+}
+# Image du contrôleur en cours d'exécution = digest du security bundle (aucun tag mutable, aucune image d'origine).
+cp_controller_pinned() {
+  local img; img="$(kubectl -n openchoreo-control-plane get deployment controller-manager -o jsonpath='{.spec.template.spec.containers[?(@.name=="manager")].image}')" || return 1
+  (sb_require >/dev/null 2>&1; [[ -n "$SB_IMAGE" && "$img" == "$SB_IMAGE" ]])
+}
+
 v6() {
+  expect_ok B6-bundle "release openchoreo-control-plane durcie (security bundle)" release_hardened openchoreo-control-plane openchoreo-control-plane cp
+  expect_ok B6-image "contrôleur : image épinglée par le digest du security bundle" cp_controller_pinned
   expect_ok B6-deploy "CP : controller-manager, openchoreo-api, cluster-gateway, kgateway Available" deploys_ok openchoreo-control-plane
   expect_ok B6-ca "ConfigMap cluster-gateway-ca peuplé (CA publique)" bash -c \
     "kubectl -n openchoreo-control-plane get cm cluster-gateway-ca -o jsonpath='{.data.ca\.crt}' | grep -q 'BEGIN CERTIFICATE'"
@@ -146,6 +193,10 @@ v6() {
     none_match openchoreo-control-plane event-forwarder deploy
   expect_ok B6-netpol "CNP d'egress vers Authentik présentes (03-idp-egress.yaml)" \
     kubectl -n openchoreo-control-plane get ciliumnetworkpolicy lab-allow-openchoreo-api-authentik lab-allow-backstage-authentik
+  # Permissions effectives du CP : conformes au bundle (voir docs/SECURITY-BUNDLE.md).
+  expect_ok B6-no-secrets-rbac "aucun (Cluster)Role de la release CP ne donne le droit secrets (hors GET nommé git-webhook-secrets)" bash -c \
+    "kubectl get clusterrole,role -A -o json | jq -e '[.items[] | select(.metadata.annotations[\"meta.helm.sh/release-name\"] == \"openchoreo-control-plane\") | .rules[]? | select(((.resources // []) | index(\"secrets\")) != null) | select((.resourceNames // []) != [\"git-webhook-secrets\"] or ((.verbs // []) != [\"get\"]))] | length == 0' >/dev/null"
+  expect_ok B6-sa-effective "permissions effectives de tous les ServiceAccounts du CP : aucun accès aux Secrets hors GET nommé" cp_secrets_effective
   expect_ok B6-no-tryout "ni mcp-tryout-client-binding ni liaisons ThunderID (bootstrap.mappings remplacé)" bash -c \
     "out=\$(kubectl get clusterauthzrolebindings.openchoreo.dev -o name) && ! grep -qE 'mcp-tryout|platform-engineer-binding|sre-binding' <<<\"\$out\""
   # API et MCP : santé 200, MCP sans jeton 401 (pas d'IdP en Phase B : échec fermé attendu).
@@ -178,6 +229,8 @@ no_exposure() { # P6 : aucun HTTPRoute ni Ingress backstage, Service ClusterIP, 
   ! grep -q backstage <<<"$r$i" && [[ "$t" == ClusterIP && -z "$p" ]]
 }
 v6b() {
+  expect_ok B6b-bundle "après upgrade (portail) : release openchoreo-control-plane toujours durcie" release_hardened openchoreo-control-plane openchoreo-control-plane cp
+  expect_ok B6b-sa-effective "après upgrade (portail) : permissions effectives des ServiceAccounts du CP inchangées" cp_secrets_effective
   local ns=openchoreo-control-plane loc
   expect_ok B6b-deploy "Deployment backstage Available" kubectl -n "$ns" wait --for=condition=Available --timeout=60s deployment/backstage
   expect_ok B6b-restarts "backstage : 1 pod, 0 redémarrage, aucun OOMKilled" backstage_pods_ok
@@ -203,8 +256,10 @@ v7() {
   expect_ok B7-vap "VAP lab-cluster-agent-scope et lab-cell-pod-hardening présentes" \
     kubectl get validatingadmissionpolicy lab-cluster-agent-scope lab-cell-pod-hardening
   local sa=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane
-  expect_ok B7-quota-rbac "cluster-agent peut patcher resourcequotas (ClusterRole additionnel)" \
-    bash -c "[[ \$(kubectl auth can-i patch resourcequotas -n dp-probe --as=$sa) == yes ]]"
+  expect_ok B7-bundle "release openchoreo-data-plane durcie (security bundle)" release_hardened openchoreo-data-plane openchoreo-data-plane dp
+  expect_ok B7-agent-effective "permissions effectives du cluster-agent : ni Secrets, ni exec, ni RBAC hors dp-*, ni joker" dp_agent_effective
+  expect_deny B7-agent-rb "cluster-agent : RoleBinding hors dp-* refusé (dry-run, impersonation)" 'lab-cluster-agent-scope|forbidden' \
+    bash -c "printf 'apiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata: {name: lab-rb-probe, namespace: kube-system}\nroleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: lab-cluster-agent-cell}\nsubjects: [{kind: ServiceAccount, name: cluster-agent-dataplane, namespace: openchoreo-data-plane}]\n' | kubectl apply --dry-run=server --as=$sa -f -"
   expect_deny B7-vap1 "cluster-agent : ClusterRoleBinding refusée par VAP-1 (dry-run, impersonation)" 'lab-cluster-agent-scope' \
     bash -c "printf 'apiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRoleBinding\nmetadata: {name: lab-vap1-probe}\nroleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: view}\nsubjects: [{kind: User, name: nobody}]\n' | kubectl apply --dry-run=server --as=$sa -f -"
   # Revue B1 : CONNECT pods/exec hors dp-* refusé par VAP-1 (le RBAC du chart l'autorise). La VAP refuse
@@ -221,6 +276,24 @@ v7() {
   expect_ok B7-psa-ok "cluster-agent : Namespace dp-* restricted admis (témoin, dry-run)" cell_ns_as_agent restricted
   expect_deny B7-psa-lock "cluster-agent : Namespace dp-* en PSA privileged refusé par VAP-1 (dry-run)" \
     'lab-cluster-agent-scope' cell_ns_as_agent privileged
+}
+# Permissions EFFECTIVES (SubjectAccessReview, `kubectl auth can-i --as`) de l'identité du cluster-agent après
+# installation, upgrade ou rollback (étapes 7, 8, 12). Aucune lecture de Secrets nulle part, aucun exec/attach,
+# aucune création de (Cluster)Role/ClusterRoleBinding, aucun bind/escalate/impersonate général, aucun joker.
+# Les RoleBinding sont bornés aux dp-* par VAP-1 (contrôlé par B7-agent-rb : can-i n'évalue pas les VAP).
+dp_agent_effective() {
+  local as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane rc=0 v t
+  no() { [[ "$(kubectl auth can-i "$@" --as="$as")" == no ]] || { echo "FAIL agent peut : $*"; rc=1; }; }
+  for v in get list watch; do
+    no "$v" secrets -A
+    for t in kube-system default openchoreo-data-plane openchoreo-control-plane lab-pg lab-secrets dp-probe; do no "$v" secrets -n "$t"; done
+  done
+  for t in dp-probe kube-system openchoreo-control-plane; do no create pods/exec -n "$t"; no create pods/attach -n "$t"; no create pods/portforward -n "$t"; done
+  no create clusterrolebindings; no create clusterroles; no create roles -A; no escalate clusterroles
+  no bind clusterroles/cluster-admin; no bind clusterroles/admin; no impersonate serviceaccounts -A
+  no create serviceaccounts/token -A
+  no '*' '*'; no '*' '*' -n dp-probe
+  return "$rc"
 }
 cell_ns_as_agent() { # NIVEAU_PSA : dry-run serveur d'un Namespace dp-vap1-probe créé en tant que cluster-agent
   kubectl apply --dry-run=server --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane -f - <<EOF
@@ -245,6 +318,7 @@ agent_connected() {
 }
 v8() {
   expect_ok B8-cdp "ClusterDataPlane default présent" kubectl get clusterdataplane default
+  expect_ok B8-agent-effective "permissions effectives du cluster-agent inchangées (après enregistrement)" dp_agent_effective
   expect_ok B8-agent "agent connecté : agentConnection.connected=true, connectedAgents>=1, heartbeat < 5 min" agent_connected
   local logs
   if logs="$(kubectl -n openchoreo-data-plane logs deploy/cluster-agent-dataplane --tail=200)"; then
@@ -300,12 +374,9 @@ v11() {
   done
 }
 
-v12() {
-  local sa=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane
-  expect_ok B12-norbac "RBAC réduit : l'agent ne peut plus créer de ClusterRoleBinding (RBAC, avant VAP)" \
-    bash -c "[[ \$(kubectl auth can-i create clusterrolebindings --as=$sa) == no ]]"
-  expect_ok B12-noexec "RBAC réduit : plus de pods/exec" bash -c "[[ \$(kubectl auth can-i create pods/exec -n dp-probe --as=$sa) == no ]]"
-  expect_ok B12-quota "RBAC réduit : resourcequotas toujours permis" bash -c "[[ \$(kubectl auth can-i patch resourcequotas -n dp-probe --as=$sa) == yes ]]"
+v12() { # Étape 12 intégrée à l'étape 7 : mêmes contrôles (utile après un upgrade ou un rollback_secure du DP).
+  expect_ok B12-bundle "release openchoreo-data-plane durcie (security bundle)" release_hardened openchoreo-data-plane openchoreo-data-plane dp
+  expect_ok B12-agent-effective "permissions effectives du cluster-agent" dp_agent_effective
   res BLOCKED B12-render "rendu complet d'une app avec le RBAC réduit : à prouver avec whoami en Phase C"
 }
 

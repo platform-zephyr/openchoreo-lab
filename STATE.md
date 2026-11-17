@@ -24,6 +24,9 @@ Règle de preuve : PASS = preuve runtime datée. `k3d` ≠ OKE. Statique ≠ run
 | 11 Argo CD | EN ATTENTE | — |
 Mesures réelles après étapes 1-5 (18:31Z, méthode corrigée : MAX de 3 échantillons) : usage pile 3-5m CPU / 135 Mi ; requests de tous les pods 385m/1830m (21 %) et 1038Mi/8650Mi (12 %) ; seuil 70 %. Les lignes « 0m/0Mi » de budget.log pour 3-5 sont INVALIDES (bug corrigé par PR #4).
 
+## Security bundle (temporaire, privé)
+Étapes 6, 6b, 7, 10 : `install.sh` exige le security bundle épinglé par `security/bundle.lock` (sinon arrêt avant toute écriture). Obtention, vérification, rollback, plan de retrait : `docs/SECURITY-BUNDLE.md`. Étape 12 intégrée à l'étape 7. Tests : `tests/security-bundle/run.sh`.
+
 ## Sécurité réseau (preuves runtime OKE, tests `verify.sh --security`)
 - IMDS : PASS (timeout :80, DNS :53 répond). Intra-namespace : PASS. Nettoyage `lab-netcontrol` : PASS (PR #5).
 - **Egress isolé : BLOCKED (C1)** : l'allow-all `allow-egress-unisolated` neutralise le default-deny de nos namespaces. Aucune garantie réseau n'est acquise. Correctif : kube-ops PR brouillon **#1629** (exclut les namespaces `platform.smadja.dev/egress-isolated=true` ; ne fusionne pas #1620). Plan exécuté (lecture seule) : 7 namespaces concernés. Test `all` + rollback à exécuter sur OKE (script `tests/oke-baseline/c1-egress-isolation.sh` de la PR #1629).
