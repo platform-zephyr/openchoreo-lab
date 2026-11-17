@@ -41,6 +41,7 @@ Mesures OKE (18:31Z, méthode MAX de 3 échantillons) : requests de tous les pod
 | Phase 2 k3d partagé `openchoreo` : RBAC strict + contrôleur corrigé + post-renderer + whoami sous moindre privilège + permissions effectives après install/upgrade | EN COURS (fichiers locaux uniquement, ne rien publier) |
 | Security bundle minimal et temporaire (dépôt privé, `security/bundle.lock`, `helm_secure`, refus de rollback non durci, tests de refus) | EN COURS |
 | A2 Argo (20 PASS), A3 VAP+uninstall (91+59 PASS), GitOps whoami k3d, corrections générateur (137 tests), Kyverno statique (97 tests CLI), architecture, étude stockage, étude migration Authentik | LIVRÉS et intégrés |
+| IDP utilisable (préparation) : `docs/IDP-USABLE.md` (chemin, 3 trous, rôles agents, checklist 6b), `tests/idp-demo/run.sh` (DRY_RUN, lecture seule cluster), corrections statiques authz/IDENTITY/PORTAL | PR DRAFT `feat/idp-usable` : statique seulement, **rien d'exécuté sur OKE** |
 Ne pas relancer de flux déjà livrés ; vérifier `ListAgents` d'abord.
 
 ## 6. Prochaines actions EXACTES (dans l'ordre)

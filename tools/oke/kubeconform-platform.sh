@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# kubeconform-platform.sh : validation HORS CLUSTER (kubeconform -strict) de platform/install/manifests/*.yaml
-# et platform/install/argocd/**/*.yaml. Aucun accès à OKE ni à k3d.
+# kubeconform-platform.sh : validation HORS CLUSTER (kubeconform -strict) de platform/install/manifests/*.yaml,
+# platform/install/argocd/**/*.yaml et platform/authz/*.yaml (CRD OpenChoreo du chart CP, docs/AGENT-ACCESS.md).
+# Aucun accès à OKE ni à k3d.
 # Schémas des CRD tierces : extraits des CRD RENDUES des charts épinglés (versions.env, sha256 vérifié par
 # fetch_chart ; Gateway API par fetch_gw_crds), plus CiliumNetworkPolicy (tools/appgen/fetch-ext-schemas.sh,
 # sha256 épinglé). Schémas Kubernetes : emplacement par défaut de kubeconform. Aucun schéma manquant toléré.
@@ -41,4 +42,5 @@ mkdir -p "$W/schemas/cilium.io" && cp "$W/ext/cilium.io/"*.json "$W/schemas/cili
 
 kubeconform -strict -summary -schema-location default \
   -schema-location "$W/schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" \
-  "$INSTALL_DIR"/manifests/*.yaml "$INSTALL_DIR"/argocd/*.yaml "$INSTALL_DIR"/argocd/apps/*.yaml
+  "$INSTALL_DIR"/manifests/*.yaml "$INSTALL_DIR"/argocd/*.yaml "$INSTALL_DIR"/argocd/apps/*.yaml \
+  "$ROOT"/platform/authz/*.yaml
