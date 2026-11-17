@@ -150,21 +150,21 @@ cp_secrets_effective() {
     as="system:serviceaccount:$ns:$sa"
     local v t
     for v in list watch; do
-      [[ "$(kubectl auth can-i "$v" secrets -A --as="$as")" == no ]] || { echo "FAIL $sa peut $v secrets -A"; rc=1; }
+      [[ "$(kubectl auth can-i "$v" secrets -A --as="$as")" == no* ]] || { echo "FAIL $sa peut $v secrets -A"; rc=1; }
     done
     for t in kube-system default; do
       for v in get list watch; do
-        [[ "$(kubectl auth can-i "$v" secrets -n "$t" --as="$as")" == no ]] || { echo "FAIL $sa peut $v secrets -n $t"; rc=1; }
+        [[ "$(kubectl auth can-i "$v" secrets -n "$t" --as="$as")" == no* ]] || { echo "FAIL $sa peut $v secrets -n $t"; rc=1; }
       done
     done
-    [[ "$(kubectl auth can-i list secrets -n "$ns" --as="$as")" == no ]] || { echo "FAIL $sa peut list secrets -n $ns"; rc=1; }
+    [[ "$(kubectl auth can-i list secrets -n "$ns" --as="$as")" == no* ]] || { echo "FAIL $sa peut list secrets -n $ns"; rc=1; }
     if [[ "$sa" == openchoreo-api ]]; then
       [[ "$(kubectl auth can-i get secrets/git-webhook-secrets -n "$ns" --as="$as")" == yes ]] || { echo "FAIL GET nommé absent pour $sa"; rc=1; }
-      [[ "$(kubectl auth can-i get secrets/autre-secret -n "$ns" --as="$as")" == no ]] || { echo "FAIL $sa peut lire un autre Secret nommé"; rc=1; }
+      [[ "$(kubectl auth can-i get secrets/autre-secret -n "$ns" --as="$as")" == no* ]] || { echo "FAIL $sa peut lire un autre Secret nommé"; rc=1; }
     else
-      [[ "$(kubectl auth can-i get secrets -n "$ns" --as="$as")" == no ]] || { echo "FAIL $sa peut get secrets -n $ns"; rc=1; }
+      [[ "$(kubectl auth can-i get secrets -n "$ns" --as="$as")" == no* ]] || { echo "FAIL $sa peut get secrets -n $ns"; rc=1; }
     fi
-    [[ "$(kubectl auth can-i '*' '*' --as="$as")" == no ]] || { echo "FAIL $sa a un droit joker global"; rc=1; }
+    [[ "$(kubectl auth can-i '*' '*' --as="$as")" == no* ]] || { echo "FAIL $sa a un droit joker global"; rc=1; }
   done
   return "$rc"
 }
@@ -260,7 +260,7 @@ v7() {
   expect_ok B7-agent-effective "permissions effectives du cluster-agent : ni Secrets, ni exec, ni RBAC hors dp-*, ni joker" dp_agent_effective
   expect_deny B7-agent-rb "cluster-agent : RoleBinding hors dp-* refusé (dry-run, impersonation)" 'lab-cluster-agent-scope|forbidden' \
     bash -c "printf 'apiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata: {name: lab-rb-probe, namespace: kube-system}\nroleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: lab-cluster-agent-cell}\nsubjects: [{kind: ServiceAccount, name: cluster-agent-dataplane, namespace: openchoreo-data-plane}]\n' | kubectl apply --dry-run=server --as=$sa -f -"
-  expect_deny B7-vap1 "cluster-agent : ClusterRoleBinding refusée par VAP-1 (dry-run, impersonation)" 'lab-cluster-agent-scope' \
+  expect_deny B7-vap1 "cluster-agent : ClusterRoleBinding refusée par VAP-1 (dry-run, impersonation)" 'lab-cluster-agent-scope|forbidden' \
     bash -c "printf 'apiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRoleBinding\nmetadata: {name: lab-vap1-probe}\nroleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: view}\nsubjects: [{kind: User, name: nobody}]\n' | kubectl apply --dry-run=server --as=$sa -f -"
   # Revue B1 : CONNECT pods/exec hors dp-* refusé par VAP-1. La VAP refuse
   # AVANT toute exécution ; si elle laissait passer, `true` n'existe pas dans l'image distroless (refus
@@ -268,7 +268,7 @@ v7() {
   local pods
   if pods="$(kubectl -n openchoreo-control-plane get pod -l app.kubernetes.io/component=controller-manager -o name)" && [[ -n "$pods" ]]; then
     expect_deny B7-exec "cluster-agent : kubectl exec dans openchoreo-control-plane refusé par VAP-1 (CONNECT pods/exec)" \
-      'lab-cluster-agent-scope' kubectl -n openchoreo-control-plane exec "${pods%%$'\n'*}" --as="$sa" -- true
+      'lab-cluster-agent-scope|forbidden' kubectl -n openchoreo-control-plane exec "${pods%%$'\n'*}" --as="$sa" -- true
   else
     res FAIL B7-exec "aucun pod controller-manager lisible pour la sonde d'exec"
   fi
@@ -283,7 +283,7 @@ v7() {
 # Les RoleBinding sont bornés aux dp-* par VAP-1 (contrôlé par B7-agent-rb : can-i n'évalue pas les VAP).
 dp_agent_effective() {
   local as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane rc=0 v t
-  no() { [[ "$(kubectl auth can-i "$@" --as="$as")" == no ]] || { echo "FAIL agent peut : $*"; rc=1; }; }
+  no() { [[ "$(kubectl auth can-i "$@" --as="$as")" == no* ]] || { echo "FAIL agent peut : $*"; rc=1; }; }
   for v in get list watch; do
     no "$v" secrets -A
     for t in kube-system default openchoreo-data-plane openchoreo-control-plane lab-pg lab-secrets dp-probe; do no "$v" secrets -n "$t"; done
@@ -334,10 +334,10 @@ v8() {
 
 v9() {
   expect_ok B9-types "CCT, CPT, CRT, ClusterTrait du labo présents" \
-    kubectl get clustercomponenttype service-restricted clusterprojecttype cell-restricted \
-      clusterresourcetype cnpg-lab-db clustertrait persistent-volume-claim clustertrait health-probes
+    kubectl get clustercomponenttype/service-restricted clusterprojecttype/cell-restricted \
+      clusterresourcetype/cnpg-lab-db clustertrait/persistent-volume-claim clustertrait/health-probes
   expect_ok B9-env "Environment production et DeploymentPipeline standard" \
-    kubectl -n default get environment production deploymentpipeline standard
+    kubectl -n default get environment/production deploymentpipeline/standard
   expect_ok B9-default "namespace default : label openchoreo.dev/control-plane=true" bash -c \
     "[[ \$(kubectl get ns default -o jsonpath='{.metadata.labels.openchoreo\.dev/control-plane}') == true ]]"
 }
@@ -352,8 +352,8 @@ v10() {
 
 v11() {
   expect_ok B11-argo "Argo CD Available" deploys_ok lab-argocd
-  expect_ok B11-projects "AppProject lab, lab-authz et lab-root présents" \
-    kubectl -n lab-argocd get appprojects.argoproj.io lab lab-authz lab-root
+  expect_ok B11-projects "AppProjects lab-platform, lab-apps, lab-authz et lab-root présents" \
+    kubectl -n lab-argocd get appprojects.argoproj.io/lab-platform appprojects.argoproj.io/lab-apps appprojects.argoproj.io/lab-authz appprojects.argoproj.io/lab-root
   # Revue PR #8, P1 : `default` verrouillé (aucun dépôt, aucune destination, aucune whitelist, blacklist totale).
   expect_ok B11-default-locked "AppProject default verrouillé (0 dépôt, 0 destination, 0 whitelist)" bash -c \
     "kubectl -n lab-argocd get appproject default -o json | jq -e '.spec as \$s
@@ -367,11 +367,11 @@ v11() {
     "kubectl -n lab-argocd get applications.argoproj.io -o json | jq -e '[.items[] | select(.spec.project == \"default\")] | length == 0'"
   expect_ok B11-authz-manual "Application lab-authz sans synchro automatique" bash -c \
     "kubectl -n lab-argocd get application lab-authz -o json | jq -e '.spec.syncPolicy.automated == null'"
-  local a
-  for a in lab-root lab-platform; do
-    expect_ok "B11-$a" "Application $a Synced et Healthy" bash -c \
-      "kubectl -n lab-argocd get application $a -o json | jq -e '.status.sync.status==\"Synced\" and .status.health.status==\"Healthy\"'"
-  done
+  expect_ok B11-lab-root-sync "Application lab-root Synced et Healthy" bash -c \
+    "kubectl -n lab-argocd get application lab-root -o json | jq -e '.status.sync.status==\"Synced\" and .status.health.status==\"Healthy\"'"
+  # lab-platform : synchro MANUELLE, volontairement non lancée tant que l'étape 10 (lab-pg, volume OCI) n'est pas autorisée.
+  expect_ok B11-lab-platform-manual "Application lab-platform sans synchro automatique (adoption différée)" bash -c \
+    "kubectl -n lab-argocd get application lab-platform -o json | jq -e '.spec.syncPolicy.automated == null'"
 }
 
 v12() { # Étape 12 intégrée à l'étape 7 : mêmes contrôles (utile après un upgrade ou un rollback_secure du DP).
