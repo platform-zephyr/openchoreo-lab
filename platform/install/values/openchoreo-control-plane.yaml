@@ -99,14 +99,6 @@ openchoreoApi:
                 - roleRef: {name: admin, kind: ClusterAuthzRole}
               entitlement: {claim: groups, value: authentik-admins}
               effect: allow
-            - name: developer-binding
-              kind: ClusterAuthzRoleBinding
-              roleMappings:
-                - roleRef: {name: developer, kind: ClusterAuthzRole}
-                  scope: {namespace: default}
-                - roleRef: {name: cluster-reader, kind: ClusterAuthzRole}
-              entitlement: {claim: groups, value: openchoreo-developers}
-              effect: allow
             - name: backstage-catalog-reader-binding
               kind: ClusterAuthzRoleBinding
               system: true
