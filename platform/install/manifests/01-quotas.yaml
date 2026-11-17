@@ -1,0 +1,202 @@
+# ResourceQuota + LimitRange par namespace d'essai (Phase B). Valeurs = somme des requests des values
+# épinglées (platform/install/values/*.yaml) + marge ; LoadBalancer et NodePort interdits partout
+# (APP-CONTRACT §9 : aucun LB OCI, exposition future par Cloudflare Tunnel vers un Service ClusterIP).
+# LimitRange : défauts pour les conteneurs sans resources (Jobs des charts), sinon refus par le quota.
+# Les cellules dp-* reçoivent leurs quotas du CPT cell-restricted, pas d'ici.
+---
+# openchoreo-control-plane : controller-manager 15m/64Mi, openchoreo-api 10m/48Mi, cluster-gateway 5m/24Mi, kgateway 10m/96Mi = 40m/232Mi ; Job authz-bootstrap (défauts LimitRange) ; marge pour un Envoy CP si la Gateway CP est réactivée.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-quota
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  hard:
+    requests.cpu: "100m"
+    requests.memory: "384Mi"
+    limits.memory: "1536Mi"
+    pods: "8"
+    persistentvolumeclaims: "0"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: lab-defaults
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  limits:
+    - type: Container
+      defaultRequest: {cpu: 10m, memory: 32Mi}
+      default: {cpu: 200m, memory: 128Mi}
+      max: {cpu: "1", memory: 1Gi}
+---
+# openchoreo-data-plane : cluster-agent 5m/24Mi + Envoy gateway-default 10m/48Mi = 15m/72Mi.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-quota
+  namespace: openchoreo-data-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  hard:
+    requests.cpu: "50m"
+    requests.memory: "192Mi"
+    limits.memory: "512Mi"
+    pods: "4"
+    persistentvolumeclaims: "0"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: lab-defaults
+  namespace: openchoreo-data-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  limits:
+    - type: Container
+      defaultRequest: {cpu: 10m, memory: 32Mi}
+      default: {cpu: 200m, memory: 128Mi}
+      max: {cpu: "1", memory: 1Gi}
+---
+# openchoreo-cert-manager : controller 5m/80Mi, cainjector 5m/64Mi, webhook 5m/48Mi = 15m/192Mi (= usage k3d mesuré).
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-quota
+  namespace: openchoreo-cert-manager
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  hard:
+    requests.cpu: "50m"
+    requests.memory: "256Mi"
+    limits.memory: "768Mi"
+    pods: "4"
+    persistentvolumeclaims: "0"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: lab-defaults
+  namespace: openchoreo-cert-manager
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  limits:
+    - type: Container
+      defaultRequest: {cpu: 10m, memory: 32Mi}
+      default: {cpu: 200m, memory: 128Mi}
+      max: {cpu: "1", memory: 1Gi}
+---
+# openchoreo-external-secrets : contrôleur seul 5m/64Mi (webhook et cert-controller désactivés).
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-quota
+  namespace: openchoreo-external-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  hard:
+    requests.cpu: "25m"
+    requests.memory: "128Mi"
+    limits.memory: "384Mi"
+    pods: "2"
+    persistentvolumeclaims: "0"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: lab-defaults
+  namespace: openchoreo-external-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  limits:
+    - type: Container
+      defaultRequest: {cpu: 10m, memory: 32Mi}
+      default: {cpu: 200m, memory: 128Mi}
+      max: {cpu: "1", memory: 1Gi}
+---
+# lab-secrets : aucun pod : coffre de Secrets du store lab-store.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-quota
+  namespace: lab-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  hard:
+    requests.cpu: "0"
+    requests.memory: "0"
+    limits.memory: "0"
+    pods: "0"
+    persistentvolumeclaims: "0"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+---
+# lab-argocd : controller 25m/256Mi, repo-server 25m/128Mi, server 10m/64Mi, redis 10m/32Mi = 70m/480Mi ; Job redis-secret-init.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-quota
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  hard:
+    requests.cpu: "100m"
+    requests.memory: "640Mi"
+    limits.memory: "2304Mi"
+    pods: "6"
+    persistentvolumeclaims: "0"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: lab-defaults
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  limits:
+    - type: Container
+      defaultRequest: {cpu: 10m, memory: 32Mi}
+      default: {cpu: 200m, memory: 128Mi}
+      max: {cpu: "1", memory: 1Gi}
+---
+# cnpg-system : opérateur CNPG 20m/64Mi (platform/data/cnpg-operator-values.yaml).
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-quota
+  namespace: cnpg-system
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  hard:
+    requests.cpu: "50m"
+    requests.memory: "128Mi"
+    limits.memory: "512Mi"
+    pods: "2"
+    persistentvolumeclaims: "0"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: lab-defaults
+  namespace: cnpg-system
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  limits:
+    - type: Container
+      defaultRequest: {cpu: 10m, memory: 32Mi}
+      default: {cpu: 200m, memory: 128Mi}
+      max: {cpu: "1", memory: 1Gi}

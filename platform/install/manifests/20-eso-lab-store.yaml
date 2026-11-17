@@ -1,0 +1,69 @@
+# Store ESO du labo (étape 3) : ClusterSecretStore `lab-store`, provider kubernetes, coffre = namespace
+# lab-secrets. Référencé par ClusterDataPlane.spec.secretStoreRef (30-clusterdataplane.yaml.tmpl), donc
+# par ${dataplane.secretStore} dans le CCT service-restricted et le CRT cnpg-lab-db.
+#
+# Pourquoi pas Doppler (clusters/oke/capabilities.yaml : secretStore doppler-cluster) : il faut un jeton
+# Doppler créé par Paul (création d'accès interdite aux agents) et le PushSecret Doppler reste [S]. Ici :
+#   - secrets générés DANS le cluster (générateur ESO Password + PushSecret), aucun jeton externe ;
+#   - pas de token admin partagé : ESO s'authentifie avec le SA dédié `eso-lab-store` (TokenRequest
+#     éphémère), qui n'a de droits que sur les Secrets de lab-secrets ;
+#   - usage limité aux namespaces dp-* et lab-pg (conditions.namespaceRegexes, E-revue T6).
+# Écart à corriger hors périmètre : capabilities.yaml (secretStore) doit valoir `lab-store` (ou Doppler
+# quand Paul aura fourni le jeton). Limite connue : toute cellule peut demander n'importe quelle clé du
+# coffre ; la seule barrière est la règle CI « clé préfixée <NAME>_ » (APP-CONTRACT §1). Test à faire.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eso-lab-store
+  namespace: lab-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eso-lab-store
+  namespace: lab-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, list, watch, create, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eso-lab-store
+  namespace: lab-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: eso-lab-store
+subjects:
+  - kind: ServiceAccount
+    name: eso-lab-store
+    namespace: lab-secrets
+---
+apiVersion: external-secrets.io/v1
+kind: ClusterSecretStore
+metadata:
+  name: lab-store
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  conditions:
+    - namespaceRegexes: ["^dp-", "^lab-pg$"]
+  provider:
+    kubernetes:
+      remoteNamespace: lab-secrets
+      server:
+        url: https://kubernetes.default.svc
+        caProvider:
+          type: ConfigMap
+          name: kube-root-ca.crt
+          key: ca.crt
+          namespace: lab-secrets
+      auth:
+        serviceAccount:
+          name: eso-lab-store
+          namespace: lab-secrets

@@ -1,0 +1,49 @@
+# Overlay OKE pour lab-pg (étape 12, APRÈS platform/data/lab-pg-namespace.yaml) :
+#  1. CiliumNetworkPolicy vers kube-apiserver : remplace, sur OKE, la NetworkPolicy `allow-apiserver` de
+#     platform/data (ipBlock 172.18.0.0/16 = réseau docker de k3d). Sous Cilium, un ipBlock ne
+#     sélectionne pas l'identité réservée kube-apiserver (endpoint privé 10.0.2.65:6443, hors nœuds) :
+#     toEntities est la forme correcte (même forme que kube-ops #1620, cilium-egress.yaml).
+#     La NP k3d reste en place, inoffensive (elle n'ouvre qu'un CIDR docker absent sur OKE).
+#  2. ResourceQuota + LimitRange du namespace lab-pg.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-apiserver
+  namespace: lab-pg
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "6443", protocol: TCP}, {port: "443", protocol: TCP}]
+---
+# lab-pg : instance lab-pg 50m/128Mi + Jobs psql du CRT ; 1 PVC = 1 block volume OCI de 50 Go minimum (budget stockage, docs/PHASE-B.md §4).
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: lab-quota
+  namespace: lab-pg
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  hard:
+    requests.cpu: "200m"
+    requests.memory: "512Mi"
+    limits.memory: "1536Mi"
+    pods: "4"
+    persistentvolumeclaims: "1"
+    services.loadbalancers: "0"
+    services.nodeports: "0"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: lab-defaults
+  namespace: lab-pg
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  limits:
+    - type: Container
+      defaultRequest: {cpu: 10m, memory: 32Mi}
+      default: {cpu: 200m, memory: 128Mi}
+      max: {cpu: "1", memory: 1Gi}

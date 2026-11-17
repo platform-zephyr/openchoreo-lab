@@ -1,0 +1,34 @@
+# Objets plateforme du labo, Git -> Argo (APP-CONTRACT §5). Ils ont été appliqués une première fois par
+# tools/oke/install.sh (étapes 11-12, dans l'ordre exigé) ; Argo les ADOPTE (ServerSideApply, tracking
+# par annotation) puis en devient l'unique écrivain.
+# Prune=false pour TOUTE l'Application (automated.prune: false) : couvre les kinds OpenChoreo (CCT, CPT,
+# CRT, ClusterTrait) dont la suppression casserait les releases, les VAP (une PR de suppression ne doit
+# pas lever une barrière d'admission) et le Cluster CNPG lab-pg. Un objet retiré de Git devient orphelin
+# signalé (orphanedResources.warn) et se supprime à la main, par PR + geste opérateur.
+# Exclus volontairement : platform/data/cnpg-operator-values.yaml (values Helm, pas un manifest),
+# platform/cluster-agent/*.yaml (RBAC cluster : bootstrap), platform/install/** (bootstrap) SAUF
+# install/manifests/40-openchoreo-env.yaml (Environment, DeploymentPipeline, ClusterTrait health-probes).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lab-platform
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  project: lab
+  source:
+    repoURL: https://github.com/platform-zephyr/openchoreo-lab
+    targetRevision: main
+    path: platform
+    directory:
+      recurse: true
+      include: "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}"
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - FailOnSharedResource=true

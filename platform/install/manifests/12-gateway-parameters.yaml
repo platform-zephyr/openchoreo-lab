@@ -1,0 +1,40 @@
+# Paramètres de l'Envoy rendu par kgateway pour Gateway `gateway-default` (openchoreo-data-plane),
+# référencé par values/openchoreo-data-plane.yaml (gateway.infrastructure.parametersRef). Forme
+# documentée : docs v1.3.x platform-engineer-guide/api-gateway/topology.md (« Internal Gateway »).
+#   - Service ClusterIP : AUCUN LoadBalancer OCI (quota services.loadbalancers=0 de toute façon) ;
+#     l'exposition future passera par Cloudflare Tunnel vers ce ClusterIP (APP-CONTRACT §1, accord Paul).
+#   - Image Envoy épinglée par digest (index multi-arch, arm64 vérifié le 2026-11-17).
+#   - securityContext restricted explicite (seccomp absent des défauts kgateway [S]) ; ports ≥ 1024,
+#     donc aucune capability. readOnlyRootFilesystem laissé au défaut de kgateway (non vérifié).
+#   - Requests : usage DP k3d 33 Mi pour agent + Envoy ; Envoy posé à 48 Mi.
+# Pas de GatewayParameters pour le control plane : sa Gateway est désactivée en Phase B.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: lab-envoy-clusterip
+  namespace: openchoreo-data-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  kube:
+    service:
+      type: ClusterIP
+    podTemplate:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10101
+        runAsGroup: 10101
+        seccompProfile: {type: RuntimeDefault}
+    envoyContainer:
+      image:
+        registry: cr.kgateway.dev/kgateway-dev
+        repository: envoy-wrapper
+        tag: v2.3.11
+        digest: sha256:8850b51548d755eae5ffc14ab9827af44d029cd561f3eeb2d8c7b58da27d0ceb
+      resources:
+        requests: {cpu: 10m, memory: 48Mi}
+        limits: {cpu: 500m, memory: 256Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 10101
+        capabilities: {drop: [ALL]}

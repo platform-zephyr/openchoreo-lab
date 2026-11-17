@@ -1,0 +1,39 @@
+# AppProject `lab` (étape 10) : seul projet du labo. Restreint au dépôt public du labo, au cluster local,
+# aux namespaces `default` (objets OpenChoreo) et `lab-pg`, et à une liste FERMÉE de kinds.
+# Ce que l'AppProject n'autorise PAS (reste « bootstrap » piloté par tools/oke/install.sh) : CRD, RBAC
+# (dont platform/cluster-agent/*.yaml : une PR ne doit pas pouvoir créer de ClusterRoleBinding),
+# webhooks, Namespaces autres que ceux créés par Git (lab-pg), charts Helm, objets dp-* (OpenChoreo).
+# Aucun identifiant : dépôt public lu en HTTPS anonyme.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lab
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  description: Essai OpenChoreo (jetable) - platform/ et, en Phase C, generated/namespaces/default
+  sourceRepos:
+    - https://github.com/platform-zephyr/openchoreo-lab
+    - https://github.com/platform-zephyr/openchoreo-lab.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: lab-argocd
+    - server: https://kubernetes.default.svc
+      namespace: default
+    - server: https://kubernetes.default.svc
+      namespace: lab-pg
+  clusterResourceWhitelist:
+    - {group: openchoreo.dev, kind: ClusterComponentType}
+    - {group: openchoreo.dev, kind: ClusterProjectType}
+    - {group: openchoreo.dev, kind: ClusterResourceType}
+    - {group: openchoreo.dev, kind: ClusterTrait}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding}
+    - {group: "", kind: Namespace}
+  namespaceResourceWhitelist:
+    - {group: openchoreo.dev, kind: "*"}
+    - {group: argoproj.io, kind: Application}
+    - {group: networking.k8s.io, kind: NetworkPolicy}
+    - {group: postgresql.cnpg.io, kind: Cluster}
+  orphanedResources:
+    warn: true

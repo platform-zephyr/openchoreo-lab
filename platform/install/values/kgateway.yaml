@@ -1,0 +1,30 @@
+# kgateway v2.3.11 (Gateway API, contrôleur unique pour tous les Gateway du cluster).
+# Charts : oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds et .../kgateway, --version v2.3.11
+#          (version de docs v1.3.x on-your-environment.mdx l.107-115 ; k3d-install.sh disait v2.3.1 :
+#          la doc publiée fait foi). Namespace : openchoreo-control-plane (comme la doc OpenChoreo).
+# Obligatoire : les deux charts OpenChoreo rendent gatewayClassName kgateway et des HTTPListenerPolicy
+# gateway.kgateway.dev (D-gitops-empreinte §5.3). OKE nu n'a aucune implémentation Gateway API, et la
+# Gateway de Cilium est désactivée par la baseline (#1620 cilium-values : gatewayAPI.enabled=false).
+#
+# Mesure k3d : contrôleur ≈ 85 Mi (tests/k3d/RESULTS.md). Request mémoire posée à cet usage.
+# Le chart ne pose ni securityContext ni resources par défaut : tous deux ajoutés (PSA restricted).
+# GOMAXPROCS/GOMEMLIMIT sont dérivés des limites (env du chart) : limites obligatoires.
+controller:
+  image:
+    # Digest du contrôleur seul. Ne PAS mettre le digest dans image.tag : le chart le réutilise comme
+    # tag par défaut de l'Envoy (KGW_DEFAULT_IMAGE_TAG). L'Envoy est épinglé dans GatewayParameters.
+    tag: "v2.3.11@sha256:bf7a605d1eaafd7f7ccb759a67a096c5f9c313660fa100abb9935949b8cef8c0"
+image:
+  tag: v2.3.11
+resources:
+  requests: {cpu: 10m, memory: 96Mi}
+  limits: {cpu: 500m, memory: 256Mi}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10101
+  runAsGroup: 10101
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: [ALL]}
