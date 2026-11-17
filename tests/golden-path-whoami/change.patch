@@ -1,5 +1,5 @@
 diff --git a/apps/whoami/app.yaml b/apps/whoami/app.yaml
-index caffade..27dd087 100644
+index 26303ee..dc5aa6a 100644
 --- a/apps/whoami/app.yaml
 +++ b/apps/whoami/app.yaml
 @@ -17,6 +17,7 @@ spec:
@@ -11,29 +11,29 @@ index caffade..27dd087 100644
    network: {egress: none}
    backup: {class: none}
 diff --git a/generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml b/generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml
-index 15d61c5..1652577 100644
+index a915a98..89b3f0d 100644
 --- a/generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml
 +++ b/generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml
 @@ -9,7 +9,7 @@ spec:
      projectName: whoami
      componentName: whoami
    environment: production
--  releaseName: whoami-31985273d8
-+  releaseName: whoami-e4720c4c8b
+-  releaseName: whoami-647fc6bfc1
++  releaseName: whoami-69a1749676
    componentTypeEnvironmentConfigs:
      size: small
      replicas: 1
-diff --git a/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-e4720c4c8b.yaml b/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-e4720c4c8b.yaml
+diff --git a/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-69a1749676.yaml b/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-69a1749676.yaml
 new file mode 100644
-index 0000000..79240ba
+index 0000000..bfbcb06
 --- /dev/null
-+++ b/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-e4720c4c8b.yaml
++++ b/generated/namespaces/default/projects/whoami/components/whoami/releases/whoami-69a1749676.yaml
 @@ -0,0 +1,455 @@
 +# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
 +apiVersion: openchoreo.dev/v1alpha1
 +kind: ComponentRelease
 +metadata:
-+  name: whoami-e4720c4c8b
++  name: whoami-69a1749676
 +  namespace: default
 +  annotations:
 +    argocd.argoproj.io/sync-options: Prune=false,Delete=false
@@ -465,7 +465,7 @@ index 0000000..79240ba
 +        message: 'kind interdit : DaemonSet'
 +  workload:
 +    container:
-+      image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
++      image: docker.io/traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
 +      env:
 +      - key: WHOAMI_NAME
 +        value: whoami-gitops-oke-v2
@@ -485,13 +485,13 @@ index 0000000..79240ba
 +      publicAuth: none
 +    traits: []
 diff --git a/generated/namespaces/default/projects/whoami/components/whoami/workload.yaml b/generated/namespaces/default/projects/whoami/components/whoami/workload.yaml
-index 560770e..4240f15 100644
+index d4f2767..bd77bcb 100644
 --- a/generated/namespaces/default/projects/whoami/components/whoami/workload.yaml
 +++ b/generated/namespaces/default/projects/whoami/components/whoami/workload.yaml
 @@ -10,7 +10,9 @@ spec:
      componentName: whoami
    container:
-     image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+     image: docker.io/traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
 -    env: []
 +    env:
 +    - key: WHOAMI_NAME

@@ -15,7 +15,7 @@ Base : `origin/main` après #19 (schéma capabilities), #20 (verify), #21 (whoam
 | `make-change-pr.sh` | Worktree depuis `origin/main`, applique `change.patch`, `appgen validate/check`, commit, push, PR | aucun (Git et GitHub seulement) |
 | `make-revert-pr.sh` | Worktree depuis `origin/main`, `git revert <CHANGE_SHA>`, validation, push, PR | aucun |
 | `selftest.sh` | 14 garde-fous testés sans cluster (refus avant tout appel réseau) | aucun |
-| `change.patch` | Patch sur `origin/main` : `env: {WHOAMI_NAME: whoami-gitops-oke-v2}` dans `apps/whoami/app.yaml`, release `whoami-e4720c4c8b` ajoutée | non |
+| `change.patch` | Patch sur `origin/main` : `env: {WHOAMI_NAME: whoami-gitops-oke-v2}` dans `apps/whoami/app.yaml`, release `whoami-69a1749676` ajoutée | non |
 
 ## 1. Vérifications statiques
 
@@ -32,7 +32,7 @@ Base : `origin/main` après #19 (schéma capabilities), #20 (verify), #21 (whoam
 | S9 | `DRY_RUN=1 CHANGE_SHA=<sha> tests/golden-path-whoami/make-revert-pr.sh` | PASS sur un revert propre ; refuse, sans push, si le revert ne passe pas la validation (ex. #19 réintroduit F1) |
 | S10 | `gitleaks dir` sur les fichiers ajoutés | PASS |
 
-Le changement ne touche que `apps/whoami/` et `generated/namespaces/default/projects/whoami/`. L'ancienne release `whoami-31985273d8` reste dans `generated/` : `appgen` conserve désormais les releases existantes et pose `Prune=false,Delete=false` sur les ComponentRelease.
+Le changement ne touche que `apps/whoami/` et `generated/namespaces/default/projects/whoami/`. L'ancienne release `whoami-647fc6bfc1` reste dans `generated/` : `appgen` conserve désormais les releases existantes et pose `Prune=false,Delete=false` sur les ComponentRelease.
 
 ## 2. Séquence pour le coordinateur
 
@@ -76,7 +76,7 @@ CHANGE_SHA=$CHANGE_SHA BASE_SHA=$BASE_SHA TIMEOUT=900 bash tests/golden-path-who
 
 Lab-apps synchronise automatiquement (sans prune) : aucun `argocd app sync` à la main. `verify-change.sh` attend la convergence.
 
-Critères : C1 PASS (app.yaml du commit porte `WHOAMI_NAME`, release distincte), C2 PASS (baseline vue, UID de release enregistré hors dépôt), C3 PASS (révision Argo = `CHANGE_SHA`, RB sur `whoami-e4720c4c8b`, `WHOAMI_NAME` dans le pod, `Name: whoami-gitops-oke-v2` dans la réponse HTTP).
+Critères : C1 PASS (app.yaml du commit porte `WHOAMI_NAME`, release distincte), C2 PASS (baseline vue, UID de release enregistré hors dépôt), C3 PASS (révision Argo = `CHANGE_SHA`, RB sur `whoami-69a1749676`, `WHOAMI_NAME` dans le pod, `Name: whoami-gitops-oke-v2` dans la réponse HTTP).
 
 **Étape 3. Rollback** :
 
@@ -89,7 +89,7 @@ REVERT_SHA=$REVERT_SHA CHANGE_SHA=$CHANGE_SHA BASE_SHA=$BASE_SHA TIMEOUT=900 \
   bash tests/golden-path-whoami/verify-rollback.sh | tee "$EVID/03-rollback.txt"; echo "rc=$?"
 ```
 
-Critères : R1, R2, R3 PASS (Git : revert identique à la base, blobs identiques), R5 PASS (convergence vers `whoami-31985273d8`), R4 PASS (même UID de ComponentRelease qu'en étape 2), W6 PASS (pas de `WHOAMI_NAME` dans le pod), H4 PASS. R4 est NOT_TESTED si `verify-change.sh` n'a pas tourné depuis ce poste.
+Critères : R1, R2, R3 PASS (Git : revert identique à la base, blobs identiques), R5 PASS (convergence vers `whoami-647fc6bfc1`), R4 PASS (même UID de ComponentRelease qu'en étape 2), W6 PASS (pas de `WHOAMI_NAME` dans le pod), H4 PASS. R4 est NOT_TESTED si `verify-change.sh` n'a pas tourné depuis ce poste.
 
 **Étape 4. Synthèse** : copier `$EVID` dans `evidence/runtime/oke/whoami/` via PR, avec les SHA et les codes retour.
 
@@ -103,6 +103,9 @@ Critères : R1, R2, R3 PASS (Git : revert identique à la base, blobs identiques
 | 3 | PARTIAL | aucun FAIL, mais NOT_TESTED ou BLOCKED |
 
 ## 4. Findings restants
+
+Image : `docker.io/traefik/whoami:v1.10.3@sha256:43a68d...` (nom qualifié, #22 : CRI-O refuse le nom court en mode enforcing). Cellule réelle attendue : `dp-default-whoami-production-f68ecf5a`, Service `whoami:8080` ClusterIP.
+
 
 - **F4. Comportement `WHOAMI_NAME` non exécuté `[S]`.** L'hypothèse : `traefik/whoami:v1.10.3` lit `WHOAMI_NAME` et affiche `Name: <valeur>`. Non vérifié (aucun conteneur lancé ici). Si la baseline ne prouve pas le format, repli `args: [..., "--name", "<valeur>"]` à confirmer par `--help` de l'image, puis regénérer `change.patch`.
 - **F5. Nommage de cellule `[S]`.** `cell_ns` lit le label `openchoreo.dev/project` / `environment`, avec repli sur `dp-default-whoami-production-*`. `verify-http.sh` échoue en `W0` si ni l'un ni l'autre ne matche.

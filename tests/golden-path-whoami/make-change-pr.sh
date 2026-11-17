@@ -43,7 +43,7 @@ cat > "$BODY" <<BODY_EOF
 ## Objet
 
 Changement GitOps de preuve : \`WHOAMI_NAME=whoami-gitops-oke-v2\` dans \`apps/whoami/app.yaml\`, rendu par \`appgen\`.
-Release de changement : \`whoami-e4720c4c8b\` (la release de base \`whoami-31985273d8\` reste dans \`generated/\`).
+Release de changement : \`whoami-69a1749676\` (la release de base \`whoami-647fc6bfc1\` reste dans \`generated/\`).
 
 ## Validé
 

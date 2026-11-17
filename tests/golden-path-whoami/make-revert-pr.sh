@@ -51,7 +51,7 @@ cat > "$BODY" <<BODY_EOF
 ## Objet
 
 Rollback GitOps de \`WHOAMI_NAME\` : revert du commit \`$CHANGE_SHA\`.
-Le binding repasse sur la release d'origine \`whoami-31985273d8\` (fichier restauré par le revert).
+Le binding repasse sur la release d'origine \`whoami-647fc6bfc1\` (fichier restauré par le revert).
 
 ## Preuves runtime (après merge, hors de cette PR)
 
