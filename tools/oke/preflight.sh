@@ -28,7 +28,7 @@ if (( running_pods + 20 > alloc_pods )); then block "IP de pods insuffisantes : 
 echo "== Requests déclarées par namespace (cpu m, mem Mi)"
 requests_by_ns
 echo "== Usage instantané par namespace (API summary du kubelet ; cpu m, mem Mi)"
-usage_by_ns
+usage_by_ns || echo "MEASUREMENT_UNAVAILABLE (usage kubelet)"
 if kubectl top nodes >/dev/null 2>&1; then
   echo "== kubectl top (metrics-server présent)"; kubectl top nodes; kubectl top pods -A --no-headers | sort
 else

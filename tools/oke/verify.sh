@@ -12,11 +12,12 @@ set -euo pipefail
 MODE="${1:-}" ; N="${2:-}"
 guard_context
 mkdir -p "$STATE_DIR"
-FAILS=0
-res() { # STATUT ID MESSAGE
+FAILS=0 BLOCKS=0
+res() { # STATUT ID MESSAGE   (PASS | FAIL | BLOCKED)
   local line; line="$(date -u +%FT%TZ) $1 $2 $3"
   printf '%s\n' "$line" | tee -a "$STATE_DIR/verify.log"
   [[ "$1" != FAIL ]] || FAILS=$((FAILS + 1))
+  [[ "$1" != BLOCKED ]] || BLOCKS=$((BLOCKS + 1))
 }
 expect_ok()   { local id="$1" msg="$2"; shift 2; if "$@" >/dev/null 2>&1; then res PASS "$id" "$msg"; else res FAIL "$id" "$msg"; fi; }
 expect_deny() { # ID MSG MOTIF CMD... : la commande doit échouer avec le motif attendu
@@ -154,9 +155,22 @@ v12() {
   res BLOCKED B12-render "rendu complet d'une app avec le RBAC réduit : à prouver avec whoami en Phase C"
 }
 
-# Sonde réseau : pod éphémère conforme (restricted, digest) dans openchoreo-control-plane.
-security() {
-  local ns=openchoreo-control-plane p=lab-netprobe
+# --- Tests réseau (security) ---------------------------------------------------------------------------
+# Un refus d'egress ne se prouve PAS par « curl https://1.1.1.1 échoue » : une erreur TLS, un DNS en panne ou un
+# timeout ordinaire donneraient le même échec. On classe donc chaque sonde (code de sortie de curl) :
+#   0 / http_code != 000 : egress OUVERT (réponse HTTP)           7 : TCP refusé (RST)
+#   35,51,58,59,60,77,83 : erreur TLS = la connexion TCP A ÉTÉ ÉTABLIE (egress OUVERT, pas un refus)
+#   6 : erreur DNS (ne dit rien de l'egress ; on sonde une IP)    28 : timeout TCP (compatible drop Cilium)
+# « Refus Cilium » n'est déclaré que si : sonde en namespace ISOLÉ = timeout TCP, ET témoin positif dans un
+# namespace NON isolé (lab-netcontrol) = connexion établie, DNS OK dans les deux. Sans témoin : BLOCKED.
+classify() { # RC -> libellé
+  case "$1" in
+    0) echo "OPEN-HTTP";; 7) echo "TCP-REFUSED";; 28) echo "TCP-TIMEOUT";; 6) echo "DNS-ERROR";;
+    35|51|58|59|60|77|83) echo "TLS-ERROR(TCP établi)";; *) echo "OTHER(rc=$1)";;
+  esac
+}
+probe_pod() { # NS NOM LABELS_EXTRA
+  local ns="$1" p="$2"
   kubectl -n "$ns" delete pod "$p" --ignore-not-found --wait=true >/dev/null
   kubectl -n "$ns" apply -f - >/dev/null <<EOF
 apiVersion: v1
@@ -173,20 +187,55 @@ spec:
       resources: {requests: {cpu: 5m, memory: 16Mi}, limits: {cpu: 100m, memory: 32Mi}}
       securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
 EOF
-  kubectl -n "$ns" wait --for=condition=Ready --timeout=120s "pod/$p" >/dev/null
-  pc() { kubectl -n "$ns" exec "$p" -- curl -s -o /dev/null -m 5 -w '%{http_code}' "$@" 2>/dev/null || true; }
-  expect_ok S-dns "DNS résolu depuis un namespace d'essai" kubectl -n "$ns" exec "$p" -- nslookup kubernetes.default.svc.cluster.local
-  local imds; imds="$(pc http://169.254.169.254/opc/v2/instance/)"
-  if [[ "$imds" == 000 ]]; then res PASS S-imds "IMDS 169.254.169.254:80 injoignable (CCNP deny-imds)"; else res FAIL S-imds "IMDS joignable (HTTP $imds)"; fi
-  local out; out="$(pc https://1.1.1.1/)"
-  if [[ "$out" == 000 ]]; then
-    res PASS S-egress "egress Internet refusé (default-deny egress effectif : C1 résolu)"
+  kubectl -n "$ns" wait --for=condition=Ready --timeout=180s "pod/$p" >/dev/null
+}
+probe_rc() { # NS POD URL [curl args] -> echo "RC"
+  local ns="$1" p="$2"; shift 2
+  local rc=0
+  kubectl -n "$ns" exec "$p" -- curl -sS -o /dev/null --connect-timeout 5 -m 8 "$@" >/dev/null 2>&1 || rc=$?
+  echo "$rc"
+}
+security() {
+  local ns=openchoreo-control-plane p=lab-netprobe cns=lab-netcontrol
+  probe_pod "$ns" "$p"
+  # Namespace témoin NON isolé (sans platform.smadja.dev/egress-isolated) : supprimé à la fin.
+  kubectl create namespace "$cns" --dry-run=client -o yaml | kubectl label --local -f - -o yaml \
+    pod-security.kubernetes.io/enforce=restricted app.kubernetes.io/part-of=openchoreo-lab | kubectl apply -f - >/dev/null
+  probe_pod "$cns" "$p"
+  expect_ok S-dns "DNS résolu depuis le namespace d'essai isolé" kubectl -n "$ns" exec "$p" -- nslookup kubernetes.default.svc.cluster.local
+  expect_ok S-dns-control "DNS résolu depuis le namespace témoin" kubectl -n "$cns" exec "$p" -- nslookup kubernetes.default.svc.cluster.local
+  # IMDS : TCP 80 doit être en timeout alors que le DNS (53) du même hôte répond (refus par port, pas panne d'hôte).
+  local imds dns53
+  imds="$(classify "$(probe_rc "$ns" "$p" http://169.254.169.254/opc/v2/instance/)")"
+  if kubectl -n "$ns" exec "$p" -- nslookup example.com 169.254.169.254 >/dev/null 2>&1; then dns53=ok; else dns53=ko; fi
+  if [[ "$imds" == TCP-TIMEOUT && "$dns53" == ok ]]; then res PASS S-imds "IMDS :80 TCP-TIMEOUT alors que 169.254.169.254:53 répond (CCNP deny-imds)"
+  elif [[ "$imds" == TCP-TIMEOUT ]]; then res BLOCKED S-imds "IMDS :80 TCP-TIMEOUT mais pas de témoin sur :53 : refus non distinguable d'une panne"
+  else res FAIL S-imds "IMDS :80 classé $imds (attendu TCP-TIMEOUT)"; fi
+  # Egress Internet : sonde sur une IP, TLS ignoré (-k) pour ne classer que le TCP.
+  local test_c ctrl_c
+  test_c="$(classify "$(probe_rc "$ns" "$p" -k https://1.1.1.1/)")"
+  ctrl_c="$(classify "$(probe_rc "$cns" "$p" -k https://1.1.1.1/)")"
+  if [[ "$test_c" == TCP-TIMEOUT && ( "$ctrl_c" == OPEN-HTTP || "$ctrl_c" == TLS-ERROR* ) ]]; then
+    res PASS S-egress "namespace isolé : $test_c ; témoin non isolé : $ctrl_c => refus par la politique réseau (default-deny effectif)"
+  elif [[ "$test_c" == OPEN-HTTP || "$test_c" == TLS-ERROR* ]]; then
+    res BLOCKED S-egress "egress OUVERT depuis le namespace isolé ($test_c) : C1, CCNP allow-egress-unisolated de kube-ops (docs/PHASE-B.md §6). Default-deny NON fonctionnel."
   else
-    res BLOCKED S-egress "egress Internet OUVERT (HTTP $out) : C1, CCNP allow-egress-unisolated de kube-ops (docs/PHASE-B.md §6)"
+    res BLOCKED S-egress "sonde isolée $test_c, témoin $ctrl_c : refus Cilium non prouvé (pas de témoin positif)"
   fi
-  local cross; cross="$(pc -k https://cluster-gateway.openchoreo-control-plane.svc:8443/)"
-  if [[ "$cross" != 000 ]]; then res PASS S-intra "trafic intra-namespace ouvert (cluster-gateway :8443)"; else res FAIL S-intra "intra-namespace bloqué"; fi
+  # Intra-namespace : un service ClusterIP existant du namespace (kgateway avant l'étape 6, cluster-gateway après).
+  local svc svcport cross_rc
+  read -r svc svcport < <(kubectl -n "$ns" get svc -o jsonpath='{range .items[?(@.spec.clusterIP!="None")]}{.metadata.name}{" "}{.spec.ports[0].port}{"\n"}{end}' | head -1)
+  if [[ -z "${svc:-}" ]]; then
+    res BLOCKED S-intra "aucun Service dans $ns : trafic intra-namespace non testable à ce stade"
+  else
+    cross_rc="$(probe_rc "$ns" "$p" -k "https://$svc.$ns.svc:$svcport/")"
+    case "$cross_rc" in
+      0|35|51|52|56|58|59|60|77|83) res PASS S-intra "trafic intra-namespace : connexion TCP établie vers $svc:$svcport (curl rc=$cross_rc)";;
+      *) res FAIL S-intra "intra-namespace vers $svc:$svcport : $(classify "$cross_rc")";;
+    esac
+  fi
   kubectl -n "$ns" delete pod "$p" --wait=false >/dev/null
+  kubectl delete namespace "$cns" --wait=false >/dev/null
 }
 
 case "$MODE" in
@@ -195,5 +244,7 @@ case "$MODE" in
   --all) for n in 1 2 3 4 5 6 7 8 9 10 11; do "v$n"; done; security;;
   *) die "usage : $0 --step N | --security | --all";;
 esac
-log "FAIL=$FAILS (journal : $STATE_DIR/verify.log)"
-(( FAILS == 0 ))
+log "FAIL=$FAILS BLOCKED=$BLOCKS (journal : $STATE_DIR/verify.log)"
+(( BLOCKS == 0 )) || log "JALON NON VALIDABLE : au moins un contrôle de sécurité est BLOCKED (voir le journal)."
+(( FAILS == 0 )) || exit 1
+(( BLOCKS == 0 )) || exit 2

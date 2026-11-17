@@ -20,7 +20,7 @@ OKE_TLS_SERVER_RE='^10\.0\.2\.[0-9]+$'
 # Budget au repos (missions/MISSION.md) appliqué à la pile de l'essai (STACK_NS).
 BUDGET_MEM_MI="${BUDGET_MEM_MI:-1536}"
 BUDGET_CPU_M="${BUDGET_CPU_M:-300}"
-STACK_NS_RE='^(openchoreo-control-plane|openchoreo-data-plane|openchoreo-cert-manager|openchoreo-external-secrets|lab-argocd|lab-secrets)$'
+STACK_NS_RE='^(openchoreo-control-plane|openchoreo-data-plane|openchoreo-cert-manager|openchoreo-external-secrets|lab-argocd|lab-secrets|cnpg-system|lab-pg|dp-.+)$'
 # Namespaces d'essai : seuls lieux d'écriture (plus `default` : label et objets OpenChoreo uniquement,
 # dp-* : créés par OpenChoreo, jamais écrits par ces scripts).
 # shellcheck disable=SC2034  # utilisé par les scripts qui sourcent lib.sh
@@ -74,51 +74,111 @@ guard_context() {
   log "contexte OK : $ctx ($server, tls-server-name $tlsname)"
 }
 
-# usage_by_ns : "namespace cpu_m mem_Mi" par namespace, depuis l'API summary du kubelet (sans
-# metrics-server). Nécessite nodes/proxy (accès opérateur). Valeurs instantanées.
+# --- Mesures ---------------------------------------------------------------------------------------
+# Règle : une mesure absente, vide ou illisible n'est JAMAIS un zéro. Elle sort `MEASUREMENT_UNAVAILABLE`
+# (code 4) et interdit toute conclusion PASS.
+unavailable() { printf 'MEASUREMENT_UNAVAILABLE: %s\n' "$1" >&2; }
+
+# usage_by_ns : "namespace cpu_m mem_Mi" par namespace (API summary du kubelet, sans metrics-server ;
+# nécessite nodes/proxy). Valeurs instantanées. Un pod sans valeur CPU/mémoire rend "NA NA" pour son
+# namespace (jamais 0). Code 4 si l'API échoue, répond vide ou n'a aucun pod.
 usage_by_ns() {
-  local node
-  node="$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')"
-  kubectl get --raw "/api/v1/nodes/$node/proxy/stats/summary" \
-    | jq -r '.pods[] | [.podRef.namespace, ((.cpu.usageNanoCores // 0) / 1e6), ((.memory.workingSetBytes // 0) / 1048576)] | @tsv' \
-    | awk -F'\t' '{c[$1]+=$2; m[$1]+=$3} END {for (n in c) printf "%s %d %d\n", n, c[n], m[n]}' | sort
+  local node raw
+  node="$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)" && [[ -n "$node" ]] \
+    || { unavailable "nom du nœud illisible"; return 4; }
+  raw="$(kubectl get --raw "/api/v1/nodes/$node/proxy/stats/summary" 2>/dev/null)" \
+    || { unavailable "API kubelet /stats/summary en erreur"; return 4; }
+  [[ -n "$raw" ]] || { unavailable "API kubelet /stats/summary : réponse vide"; return 4; }
+  jq -e '(.pods | type == "array") and (.pods | length > 0)' <<<"$raw" >/dev/null 2>&1 \
+    || { unavailable "API kubelet /stats/summary : aucun pod dans la réponse"; return 4; }
+  jq -r '.pods[] | [.podRef.namespace, (.cpu.usageNanoCores // "NA"), (.memory.workingSetBytes // "NA")] | @tsv' <<<"$raw" \
+    | awk -F'\t' '{ns=$1; seen[ns]=1; if ($2=="NA"||$3=="NA") {na[ns]=1; next} c[ns]+=$2/1e6; m[ns]+=$3/1048576}
+        END {for (n in seen) { if (n in na) printf "%s NA NA\n", n; else printf "%s %d %d\n", n, int(c[n]+0.999), int(m[n]+0.999) }}' | sort
 }
 
-# requests_by_ns : "namespace cpu_m mem_Mi" des requests des pods non terminés.
+# requests_by_ns : "namespace cpu_m mem_Mi" des requests effectives (max(somme des conteneurs, plus
+# grand initContainer)) des pods non terminés.
 requests_by_ns() {
   kubectl get pods -A -o json | jq -r '
     def cpu: if . == null then 0 elif endswith("m") then (.[:-1]|tonumber) else (tonumber*1000) end;
     def mem: if . == null then 0 elif endswith("Mi") then (.[:-2]|tonumber) elif endswith("Gi") then (.[:-2]|tonumber*1024)
              elif endswith("Ki") then (.[:-2]|tonumber/1024) elif endswith("M") then (.[:-1]|tonumber) else (tonumber/1048576) end;
+    def eff(p; f): ([.spec.containers[] | (.resources.requests // {}) | p | f] | add // 0) as $s
+                | ([(.spec.initContainers // [])[] | (.resources.requests // {}) | p | f] | max // 0) as $i
+                | if $i > $s then $i else $s end;
     .items[] | select(.status.phase != "Succeeded" and .status.phase != "Failed")
-    | .metadata.namespace as $n | .spec.containers[]
-    | [$n, (.resources.requests.cpu | cpu), (.resources.requests.memory | mem)] | @tsv' \
+    | [.metadata.namespace, eff(.cpu; cpu), eff(.memory; mem)] | @tsv' \
   | awk -F'\t' '{c[$1]+=$2; m[$1]+=$3} END {for (n in c) printf "%s %d %d\n", n, c[n], m[n]}' | sort
 }
 
-# stack_usage : "cpu_m mem_Mi" sommés sur STACK_NS_RE.
+# stack_usage : "cpu_m mem_Mi" sommés sur STACK_NS_RE (pile de l'essai, y compris cnpg-system, lab-pg, dp-*).
+# Code 4 (MEASUREMENT_UNAVAILABLE) si une mesure manque : namespace de la pile avec des pods mais absent de
+# la réponse, ou valeur NA.
 stack_usage() {
-  usage_by_ns | awk -v re="$STACK_NS_RE" '$1 ~ re {c+=$2; m+=$3} END {printf "%d %d\n", c, m}'
+  local u wanted ns
+  u="$(usage_by_ns)" || return 4
+  wanted="$(kubectl get pods -A --field-selector=status.phase=Running -o json 2>/dev/null \
+    | jq -r '.items[].metadata.namespace' | sort -u | grep -E "$STACK_NS_RE" || true)"
+  for ns in $wanted; do
+    awk -v n="$ns" '$1==n {f=1} END {exit !f}' <<<"$u" || { unavailable "namespace $ns : pods Running mais absent de /stats/summary"; return 4; }
+  done
+  if awk -v re="$STACK_NS_RE" '$1 ~ re && $2=="NA" {f=1} END {exit !f}' <<<"$u"; then
+    unavailable "valeur CPU/mémoire absente pour au moins un pod de la pile"; return 4
+  fi
+  awk -v re="$STACK_NS_RE" '$1 ~ re {c+=$2; m+=$3} END {printf "%d %d\n", c, m}' <<<"$u"
 }
 
-# budget_gate LABEL : mesure 3 fois à 20 s d'intervalle (pic de démarrage écarté : on garde le
-# minimum), compare au budget, écrit la mesure dans STATE_DIR, sort en 3 si dépassement.
+# capacity_gate : requests effectives de TOUS les pods face à l'allocatable du nœud et au seuil de 70 %
+# (D-2026-11-15-05), CPU et mémoire. Ne conclut jamais sur une valeur vide. Code 5 si dépassement,
+# 4 si indisponible. Les requests ne sont JAMAIS réduites pour passer ce test (voir docs/PHASE-B.md §4).
+CAP_THRESHOLD_PCT="${CAP_THRESHOLD_PCT:-70}"
+capacity_gate() {
+  local alloc acpu amem rq rcpu rmem pcpu pmem
+  alloc="$(kubectl get nodes -o json 2>/dev/null | jq -r '.items[0].status.allocatable | [.cpu, .memory] | @tsv')" \
+    && [[ -n "$alloc" ]] || { unavailable "allocatable du nœud illisible"; return 4; }
+  acpu="$(awk '{v=$1; if (v ~ /m$/) {sub(/m$/,"",v); print v} else print v*1000}' <<<"$alloc")"
+  amem="$(awk '{v=$2; if (v ~ /Ki$/) {sub(/Ki$/,"",v); print v/1024} else if (v ~ /Mi$/) {sub(/Mi$/,"",v); print v} else if (v ~ /Gi$/) {sub(/Gi$/,"",v); print v*1024} else print v/1048576}' <<<"$alloc")"
+  rq="$(requests_by_ns)" && [[ -n "$rq" ]] || { unavailable "requests des pods illisibles"; return 4; }
+  read -r rcpu rmem < <(awk '{c+=$2; m+=$3} END {printf "%d %d\n", c, m}' <<<"$rq")
+  pcpu=$(( rcpu * 100 / ${acpu%.*} )); pmem=$(( rmem * 100 / ${amem%.*} ))
+  printf '%s capacité (tous pods) requests cpu=%sm/%sm (%s%%) mem=%sMi/%sMi (%s%%) seuil=%s%%\n' "$(date -u +%FT%TZ)" \
+    "$rcpu" "${acpu%.*}" "$pcpu" "$rmem" "${amem%.*}" "$pmem" "$CAP_THRESHOLD_PCT" | tee -a "$STATE_DIR/budget.log" >&2
+  if (( pcpu > CAP_THRESHOLD_PCT || pmem > CAP_THRESHOLD_PCT )); then
+    log "SEUIL DE CAPACITÉ DÉPASSÉ (${CAP_THRESHOLD_PCT} %) : arrêt, ne pas réduire les requests pour passer (risque d'éviction)."
+    return 5
+  fi
+}
+
+# budget_gate LABEL : 3 mesures à 20 s d'intervalle (chacune réessayée 3 fois si indisponible). Journalise les
+# valeurs individuelles, la moyenne et le MAXIMUM ; le budget est comparé au MAXIMUM (jamais au minimum).
+# Code 3 : budget dépassé ; 4 : MEASUREMENT_UNAVAILABLE (aucun PASS possible) ; 5 : seuil de capacité dépassé.
 budget_gate() {
-  local label="$1" i cpu mem best_cpu=999999 best_mem=999999
+  local label="$1" i t out cpus=() mems=() cpu mem sc=0 sm=0 maxc=0 maxm=0 n=3
   [[ "$APPLY" == 1 ]] || { printf '[dry-run] mesure budget après %s\n' "$label"; return 0; }
   mkdir -p "$STATE_DIR"
   for i in 1 2 3; do
-    read -r cpu mem < <(stack_usage)
-    (( cpu < best_cpu )) && best_cpu=$cpu
-    (( mem < best_mem )) && best_mem=$mem
+    out=""
+    for t in 1 2 3; do
+      if out="$(stack_usage 2>/dev/null)" && [[ -n "$out" ]]; then break; fi
+      out=""; sleep 10
+    done
+    if [[ -z "$out" ]]; then
+      stack_usage >/dev/null || true
+      printf '%s %s MEASUREMENT_UNAVAILABLE (échantillon %s) : aucune conclusion PASS\n' "$(date -u +%FT%TZ)" "$label" "$i" | tee -a "$STATE_DIR/budget.log" >&2
+      exit 4
+    fi
+    read -r cpu mem <<<"$out"; cpus+=("$cpu"); mems+=("$mem")
+    sc=$((sc + cpu)); sm=$((sm + mem)); (( cpu > maxc )) && maxc=$cpu; (( mem > maxm )) && maxm=$mem
     [[ $i == 3 ]] || sleep 20
   done
-  printf '%s %s cpu=%sm mem=%sMi budget=%sm/%sMi\n' "$(date -u +%FT%TZ)" "$label" "$best_cpu" "$best_mem" \
+  printf '%s %s usage pile (essais+cnpg-system+lab-pg+dp-*) cpu=[%s]m moy=%sm max=%sm ; mem=[%s]Mi moy=%sMi max=%sMi ; budget=%sm/%sMi (comparé au MAX)\n' \
+    "$(date -u +%FT%TZ)" "$label" "$(IFS=,; echo "${cpus[*]}")" $((sc / n)) "$maxc" "$(IFS=,; echo "${mems[*]}")" $((sm / n)) "$maxm" \
     "$BUDGET_CPU_M" "$BUDGET_MEM_MI" | tee -a "$STATE_DIR/budget.log" >&2
-  if (( best_mem > BUDGET_MEM_MI || best_cpu > BUDGET_CPU_M )); then
+  if (( maxm > BUDGET_MEM_MI || maxc > BUDGET_CPU_M )); then
     log "BUDGET DÉPASSÉ après $label : arrêt (docs/PHASE-B.md §4, rollback de l'étape)."
     exit 3
   fi
+  capacity_gate || exit $?
 }
 
 # fetch_chart NOM SOURCE VERSION SHA256 [REPO] : télécharge le .tgz dans STATE_DIR/charts, vérifie le
