@@ -1,10 +1,12 @@
-# Applications du labo, Git -> Argo : generated/namespaces/default (sortie de tools/appgen ; PR APPLICATIVES).
-# Projet lab-apps : kinds OpenChoreo NAMESPACÉS applicatifs dans `default`, aucun kind cluster-scoped
-# (flux A2, docs/ARGO-ESCALATION.md). Un manifest glissé dans generated/ (ClusterRoleBinding, Namespace,
-# VAP, Secret, Application...) est refusé par Argo à la synchronisation.
-# Phase C ouverte pour whoami seulement : sync AUTOMATIQUE sans prune, limitée au dossier de l'app (les autres apps
-# de generated/ ciblent k3d et ne doivent pas atteindre OKE). Ajouter une app OKE = ajouter son dossier par PR.
-# Prune désactivé : finalizers Component/Resource (APP-CONTRACT §5).
+# Applications du labo OKE, Git -> Argo : generated/namespaces/default/projects/<app> (sortie de tools/appgen ;
+# PR APPLICATIVES). Projet lab-apps : kinds OpenChoreo NAMESPACÉS applicatifs dans `default`, aucun kind
+# cluster-scoped (flux A2, docs/ARGO-ESCALATION.md). Un manifest glissé dans generated/ (ClusterRoleBinding,
+# Namespace, VAP, Secret, Application...) est refusé par Argo à la synchronisation.
+# SOURCES MULTIPLES (spec.sources[]) : UNE source par dossier d'app OKE, même dépôt, même targetRevision,
+# directory.recurse et include "*.yaml". Ni generated/ en entier, ni les dossiers des apps k3d (volumes interdits
+# sur OKE). tools/oke/argo_guard.py (A2/A3) refuse tout autre chemin, tout autre dépôt, toute autre révision,
+# et toute app non `cluster: oke` / stateless. Ajouter une app OKE = ajouter UNE source par PR (et son dossier).
+# Synchro AUTOMATIQUE sans prune (finalizers Component/Resource : APP-CONTRACT §5).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -13,13 +15,19 @@ metadata:
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   project: lab-apps
-  source:
-    repoURL: https://github.com/platform-zephyr/openchoreo-lab
-    targetRevision: main
-    path: generated/namespaces/default/projects/whoami
-    directory:
-      recurse: true
-      include: "*.yaml"
+  sources:
+    - repoURL: https://github.com/platform-zephyr/openchoreo-lab
+      targetRevision: main
+      path: generated/namespaces/default/projects/whoami
+      directory:
+        recurse: true
+        include: "*.yaml"
+    - repoURL: https://github.com/platform-zephyr/openchoreo-lab
+      targetRevision: main
+      path: generated/namespaces/default/projects/ntfy
+      directory:
+        recurse: true
+        include: "*.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: default

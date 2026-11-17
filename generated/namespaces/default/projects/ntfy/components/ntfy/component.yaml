@@ -15,11 +15,5 @@ spec:
   autoDeploy: false
   parameters:
     runAsUser: 65532
-    strategy: Recreate
-    publicAuth: app-password
-  traits:
-  - kind: ClusterTrait
-    name: persistent-volume-claim
-    instanceName: data
-    parameters:
-      mountPath: /var/lib/ntfy
+    strategy: RollingUpdate
+    publicAuth: none

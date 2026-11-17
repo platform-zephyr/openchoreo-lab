@@ -5,7 +5,7 @@ metadata:
   name: ntfy
   namespace: default
   annotations:
-    openchoreo.dev/description: Serveur de notifications push
+    openchoreo.dev/description: Serveur de notifications push (test interne, stateless)
   labels:
     openchoreo.dev/name: ntfy
 spec:
@@ -18,7 +18,3 @@ spec:
     egress: none
     database: false
     allowIdp: false
-    quota:
-      cpu: 300m
-      memory: 512Mi
-      pvcs: '1'

@@ -9,11 +9,7 @@ spec:
     projectName: ntfy
     componentName: ntfy
   environment: production
-  releaseName: ntfy-92aefc1d7f
+  releaseName: ntfy-e9df078cae
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1
-  traitEnvironmentConfigs:
-    data:
-      size: 1Gi
-      storageClass: local-path
