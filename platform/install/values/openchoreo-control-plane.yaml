@@ -91,7 +91,7 @@ openchoreoApi:
           # Le hook fait un upsert : il ne SUPPRIME pas une liaison créée par une installation antérieure
           # avec les défauts (aucune sur OKE : étape 6 jamais appliquée au 2026-11-17). Contrôle : T-Z5
           # (docs/IDENTITY.md §9). Rôles et liaisons propres au labo (viewer, agents) :
-          # platform/identity/authz/openchoreo-authz.yaml (hors de ce fichier).
+          # platform/authz/ (Application lab-authz, sync manuelle ; hors de ce fichier).
           mappings:
             - name: admin-binding
               kind: ClusterAuthzRoleBinding

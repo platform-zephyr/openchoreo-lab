@@ -69,7 +69,8 @@ guard_context() {
     || die "KUBECONFIG=$KUBECONFIG ne pointe pas sur le kubeconfig temporaire $EXPECTED_KUBECONFIG"
   [[ -f "$KUBECONFIG" ]] || die "kubeconfig absent : l'accès n'est pas ouvert (open-oke-access.sh, geste de Paul)"
   local perm ctx server tlsname
-  perm="$(stat -f '%Lp' "$KUBECONFIG" 2>/dev/null || stat -c '%a' "$KUBECONFIG")"
+  # GNU d'abord : sous Linux, `stat -f` (système de fichiers) réussit partiellement et polluerait la valeur.
+  perm="$(stat -c '%a' "$KUBECONFIG" 2>/dev/null || stat -f '%Lp' "$KUBECONFIG")"
   [[ "$perm" == 600 ]] || die "kubeconfig en mode $perm (attendu 600)"
   ctx="$(kubectl config current-context)"
   case "$ctx" in *homeops*|*homelab*|admin@*) die "contexte interdit : $ctx";; esac
@@ -221,6 +222,18 @@ fetch_chart() {
   got="$(shasum -a 256 "$tgz" | awk '{print $1}')"
   [[ "$got" == "$sha" ]] || die "sha256 du chart $name $ver : $got != $sha (épinglé)"
   printf '%s\n' "$tgz"
+}
+
+# fetch_gw_crds : télécharge le manifest des CRD Gateway API (versions.env) dans STATE_DIR, vérifie son
+# sha256 épinglé, affiche son chemin. Utilisé par install.sh (étape 2) et uninstall.sh (rendu des CRD).
+fetch_gw_crds() {
+  local f="$STATE_DIR/gateway-api-$GW_CRDS_VERSION.yaml" got
+  need curl shasum
+  mkdir -p "$STATE_DIR"
+  [[ -f "$f" ]] || curl -fsSL -o "$f" "$GW_CRDS_URL" >&2
+  got="$(shasum -a 256 "$f" | awk '{print $1}')"
+  [[ "$got" == "$GW_CRDS_SHA256" ]] || die "sha256 Gateway API : $got != $GW_CRDS_SHA256"
+  printf '%s\n' "$f"
 }
 
 # wait_deploys NS : attend que tous les Deployments du namespace soient Available.

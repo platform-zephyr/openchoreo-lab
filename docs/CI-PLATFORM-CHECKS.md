@@ -1,92 +1,62 @@
-# Job CI `platform` : vérification de `platform/**` et `tools/oke/**` (revue I10, B2)
+# Job CI `platform` : vérification de `platform/**` et `tools/oke/**` (revues I10, B2, PR #8 P1)
 
-**Statut : texte prêt, NON intégré.** `.github/` est hors du périmètre de l'agent qui a écrit ce fichier : le coordinateur colle le job ci-dessous dans `.github/workflows/ci.yaml`, ajoute `platform` à `needs` du job `ci-ok`, puis vérifie la CI sur une PR. Rien ici ne lit de secret ni n'accède à un cluster.
+**Statut : intégré** dans `.github/workflows/ci.yaml` (job `platform`, inclus dans l'agrégat `ci-ok`, seul check requis par `main-protection`). Permissions `contents: read`, aucun secret, aucun cluster. Actions épinglées par SHA ; binaires linux-arm64 vérifiés par sha256.
 
 ## Pourquoi
 
-Argo applique `platform/**` depuis `main` (`selfHeal`, étape 11). Aujourd'hui aucun job ne lint `platform/`, ne lance `shellcheck` sur `tools/oke`, ni ne contrôle les règles que l'AppProject ne peut pas exprimer (un AppProject ne restreint pas un **chemin** source). Une PR qui casse une VAP, ajoute un `ClusterAuthzRoleBinding` hors de `platform/authz/` ou une Application qui emprunte le projet `lab-authz` passerait `ci-ok`.
+Argo applique `platform/**` depuis `main` (`selfHeal`, étape 11) avec un contrôleur qui a les droits `*/*/*`. Un AppProject ne peut pas restreindre un **chemin** source, et une `Application` choisit librement son `spec.project`. Sans contrôle CI, une PR verte pourrait :
+- glisser une `Application` (projet `default`, ou tout autre) dans un fichier que `lab-platform` synchronise ;
+- passer `lab-authz` en synchro automatique ;
+- poser un `ClusterAuthzRoleBinding`, un `ClusterRoleBinding` ou une NetworkPolicy « tout ouvrir ».
 
-## Contrôles
+## Séparation bootstrap / GitOps (platform/install/argocd/)
+
+| Fichier | Rôle | Appliqué par |
+|---|---|---|
+| `project-default-locked.yaml` | projet `default` verrouillé : aucun dépôt, aucune destination, aucune whitelist, blacklist `*/*` | `install.sh --step 11` (SSA `--force-conflicts`), vérifié par `verify.sh --step 11` (B11-default-locked) |
+| `project-lab.yaml` | AppProject `lab` (kinds nommés, sans `Application`), `lab-authz` (authz `lab-*`), `lab-root` (kind `Application` dans `lab-argocd` seulement) | `install.sh --step 11` |
+| `root-application.yaml` | Application `lab-root` (projet `lab-root`, chemin `apps/`) | `install.sh --step 11` |
+| `apps/*.yaml` | Application enfants (`lab-platform` projet `lab`, `lab-authz` projet `lab-authz`, sync manuelle) | Argo (`lab-root`) |
+
+Tout ce qui n'est pas sous `apps/` est du bootstrap privilégié : jamais synchronisé par Argo, modifié par PR puis rejoué par l'opérateur.
+
+## Contrôles du job
 
 | Contrôle | Commande | Échec si |
 |---|---|---|
-| YAML | `yamllint -c tools/appgen/yamllint.yaml platform tools/oke` | une erreur (les avertissements de longueur restent tolérés) |
-| Scripts | `shellcheck -x -P SCRIPTDIR tools/oke/*.sh` puis `bash -n` | un constat |
-| Règles Argo | `python3 -I tools/oke/argo_guard.py .` | Authz* synchronisé hors `platform/authz/` ; Application hors projet attendu ; objet cluster-scoped non nommé dans l'AppProject `lab` ; kind namespacé hors whitelist |
-| Rendus Helm | `tools/oke/render-check.sh` (charts épinglés, sha256, cache Helm isolé) | `psa_check.py` en écart ; PVC, Service LB/NodePort ou image sans digest dans un rendu |
-| Schémas | `kubeconform -strict` sur `platform/install/{manifests,argocd}`, `platform/policies` | objet invalide ou schéma manquant |
+| YAML | `yamllint` sur `platform/*` (sauf `component-types`, voir plus bas), `tools/oke`, `tests/argo-guard` | une erreur |
+| Scripts | `shellcheck -x -P SCRIPTDIR tools/oke/*.sh tests/argo-guard/*.sh`, `bash -n` | un constat |
+| Règles Argo | `python3 -I tools/oke/argo_guard.py .` | voir ci-dessous |
+| Cas négatifs | `tests/argo-guard/run.sh` | un piège non refusé, ou l'arbre actuel refusé |
+| Rendus Helm | `tools/oke/render-check.sh` (charts épinglés, sha256) | `psa_check.py` en écart ; PVC, Service LB/NodePort ou image sans digest |
+| Gardes de désinstallation | `tests/argo-guard/uninstall-guards.sh` (kubectl/helm factices) | P2/P3 de la revue PR #8 régressent |
+| Schémas | `tools/oke/kubeconform-platform.sh` (`-strict`, CRD rendues des charts épinglés + Cilium) | objet invalide ou schéma manquant |
 
-Le job `crd-schema` existant fournit déjà kubeconform vérifié par sha256 ; le job `platform` le réinstalle de la même manière. Les schémas des CRD tierces viennent des CRD des charts épinglés (`helm template --include-crds`) et de `tools/appgen/fetch-ext-schemas.sh` (Cilium, sha256 épinglé).
+### Règles de `argo_guard.py`
 
-## Texte du job (à coller sous `jobs:` dans `.github/workflows/ci.yaml`)
+Arbre contrôlé : `platform/`, `generated/`, `apps/`. Un YAML illisible fait échouer le contrôle (rc=2).
+- **A1** : une `Application` hors `platform/install/argocd/apps/`. Seule exception : `root-application.yaml`, qui doit rester `lab-root`, dans le projet `lab-root`, sur le chemin `apps/`. Tout `ApplicationSet` est refusé.
+- **A2** : un `spec.project` hors de `{lab, lab-authz, lab-root}`, donc jamais `default`. Dans `apps/`, seuls `lab` et `lab-authz` sont admis. `lab-authz` est réservé à l'Application `lab-authz`, sur le chemin `platform/authz`.
+- **A3** : une Application `lab` qui synchronise un chemin hors de `platform/` et `generated/`, ou `platform/install/argocd/` ou `platform/authz/`. Sont aussi refusés les sources multiples, Helm, plugin et kustomize.
+- **A4** : `syncPolicy.automated` sur le projet `lab-authz`.
+- **P1** : un AppProject hors des deux fichiers de bootstrap, ou un projet `default` non verrouillé.
+- **P2** : un joker `*` en whitelist (group, kind ou name), en dépôt source ou en destination. Sont aussi refusés une entrée cluster-scoped sans `name`, `Application` ou `AppProject` en whitelist ailleurs que dans `lab-root`, et un projet `lab-root` qui admet autre chose qu'`Application` dans `lab-argocd`.
+- **Z1** : un kind authz OpenChoreo hors de `platform/authz/`. Dans `platform/authz/`, tout autre kind ou un nom hors `lab-*` est refusé.
+- **S1** : dans les fichiers synchronisés par une Application `lab`, un objet cluster-scoped absent, par kind et nom, de la whitelist `lab`, ou un kind namespacé non listé. `ClusterRoleBinding`, CRD, webhooks et `Namespace` autres que `lab-pg` sont donc refusés.
+- **S2** (revue A1) : une NetworkPolicy synchronisée hors de la liste nommée de `lab-pg`, ou qui ouvre tout : règle sans `from`/`to`, `namespaceSelector: {}` ou `/0`.
+- **S3** (revue A2) : le Namespace `lab-pg` sans `pod-security…/enforce=restricted`, `part-of` ou `egress-isolated`.
+- **K1** : un `kustomization.yaml`.
 
-```yaml
-  platform:
-    runs-on: ubuntu-24.04-arm
-    env:
-      HELM_VERSION: "v4.1.3"
-      # Empreinte à relever par le coordinateur sur https://get.helm.sh/helm-v4.1.3-linux-arm64.tar.gz.sha256sum
-      HELM_SHA256: "A_RELEVER"
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.12"
-      - name: Outils (versions figées)
-        run: |
-          python3 -m pip install --disable-pip-version-check "yamllint==1.38.0" "PyYAML==6.0.2"
-          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          curl -fsSLo /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-arm64.tar.gz"
-          echo "${HELM_SHA256}  /tmp/helm.tgz" | sha256sum -c -
-          tar -xzf /tmp/helm.tgz -C /tmp && sudo install /tmp/linux-arm64/helm /usr/local/bin/helm
-          curl -fsSLo /tmp/kubeconform.tgz "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-arm64.tar.gz"
-          echo "${KUBECONFORM_SHA256}  /tmp/kubeconform.tgz" | sha256sum -c -
-          tar -xzf /tmp/kubeconform.tgz -C /tmp && sudo install /tmp/kubeconform /usr/local/bin/kubeconform
-          sudo snap install yq
-      - name: yamllint platform et tools/oke
-        run: yamllint -c tools/appgen/yamllint.yaml platform tools/oke
-      - name: shellcheck et bash -n
-        run: |
-          shellcheck -x -P SCRIPTDIR tools/oke/*.sh
-          for f in tools/oke/*.sh; do bash -n "$f"; done
-      - name: Règles Argo (chemins, projets, whitelists nommées)
-        run: python3 -I tools/oke/argo_guard.py .
-      - name: Rendus Helm épinglés + PSA + 0 PVC/LB/image sans digest
-        env:
-          OKE_PHASEB_STATE: ${{ runner.temp }}/phaseb
-        run: tools/oke/render-check.sh
-      - name: kubeconform -strict (manifests plateforme)
-        env:
-          STATE: ${{ runner.temp }}/phaseb
-        run: |
-          mkdir -p "$STATE/crds" "$STATE/schemas"
-          # Charts OpenChoreo exclus de la boucle (validate.yaml refuse les values par défaut) : leurs CRD
-          # sont lues dans crds/ ci-dessous. Aucune erreur masquée.
-          for t in "$STATE"/charts/*.tgz; do
-            case "$t" in *openchoreo-*) continue;; esac
-            helm template x "$t" --include-crds --set crds.enabled=true; echo '---'
-          done > "$STATE/all.yaml"
-          tar -xzf "$STATE"/charts/openchoreo-control-plane-*.tgz -C "$STATE"
-          python3 -I - "$STATE/all.yaml" "$STATE/crds" <<'PY'
-          import pathlib, sys, yaml
-          out = pathlib.Path(sys.argv[2])
-          for d in yaml.safe_load_all(open(sys.argv[1])):
-              if isinstance(d, dict) and d.get("kind") == "CustomResourceDefinition":
-                  (out / f"{d['metadata']['name']}.yaml").write_text(yaml.safe_dump(d))
-          PY
-          python3 tools/appgen/crd2schema.py "$STATE/crds" "$STATE/schemas"
-          python3 tools/appgen/crd2schema.py "$STATE/openchoreo-control-plane/crds" "$STATE/schemas"
-          tools/appgen/fetch-ext-schemas.sh "$STATE/ext" && cp -R "$STATE/ext/." "$STATE/schemas/"
-          kubeconform -strict -summary -schema-location default \
-            -schema-location "$STATE/schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" \
-            platform/install/manifests/*.yaml platform/install/argocd/*.yaml \
-            platform/install/argocd/apps/*.yaml platform/policies/*.yaml
-```
+## CODEOWNERS et ruleset
 
-Remarques pour l'intégration :
-- `yq` (mikefarah) est requis par `render-check.sh` ; si `snap` n'est pas disponible sur le runner, l'installer depuis sa release GitHub avec une empreinte figée, comme kubeconform.
-- `HELM_SHA256` doit être relevée avant le merge (aucune valeur inventée ici).
-- Les CRD Gateway API (`standard-install.yaml` v1.5.1) ne sont pas dans les charts : `platform/install/manifests/*.yaml` n'en contient pas d'objets en dehors de `GatewayParameters` (kgateway) ; si un `Gateway` y est ajouté, télécharger le manifest au sha256 de `versions.env` et l'ajouter à `$STATE/all.yaml`.
-- Ajouter `platform` à `needs` de `ci-ok`, et vérifier que la règle `main-protection` exige la revue des code owners (`tools/apply-branch-protection.sh`) : `platform/authz/` et `platform/install/argocd/` doivent rester sous `CODEOWNERS`.
+`.github/CODEOWNERS` désigne `@SmadjaPaul` sur `platform/install/argocd/**`, `platform/policies/**`, `platform/authz/**` et `tools/oke/**`.
+
+**Décision** (2026-11-17) : la revue des code owners n'est **pas** exigée par `main-protection` (`require_code_owner_review: false`, 0 approbation), pour ne pas bloquer l'autonomie des agents. La barrière effective est le job `platform` dans `ci-ok`.
+
+**Option** : activer `require_code_owner_review: true` avec 1 approbation dans `tools/apply-branch-protection.sh`. Toute PR qui touche ces chemins exigerait alors l'accord de Paul. Cela coûte un geste humain par PR, y compris pour les PR d'agents sur `tools/oke/`.
+
+## Limites connues
+
+- `platform/component-types/service-restricted.yaml` a 6 erreurs d'indentation yamllint, préexistantes et hors périmètre de cette correction. Ce dossier est donc exclu du lint du job `platform` en attendant sa correction.
+- `argo_guard` est un contrôle statique. Il ne voit pas une Application créée à la main dans le cluster. `verify.sh --step 11` contrôle l'état réel : projet `default` verrouillé, aucune Application `default`, `lab-authz` sans `automated`.
+- Les objets cluster-scoped NOMMÉS restent modifiables par une PR mergée, mais en contenu seulement. Cela vaut pour les 5 types OpenChoreo, les 2 VAP et VAPB du labo et le Namespace `lab-pg` (dont les labels PSA sont gardés par S3).

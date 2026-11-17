@@ -278,7 +278,21 @@ v10() {
 
 v11() {
   expect_ok B11-argo "Argo CD Available" deploys_ok lab-argocd
-  expect_ok B11-projects "AppProject lab et lab-authz présents" kubectl -n lab-argocd get appprojects.argoproj.io lab lab-authz
+  expect_ok B11-projects "AppProject lab, lab-authz et lab-root présents" \
+    kubectl -n lab-argocd get appprojects.argoproj.io lab lab-authz lab-root
+  # Revue PR #8, P1 : `default` verrouillé (aucun dépôt, aucune destination, aucune whitelist, blacklist totale).
+  expect_ok B11-default-locked "AppProject default verrouillé (0 dépôt, 0 destination, 0 whitelist)" bash -c \
+    "kubectl -n lab-argocd get appproject default -o json | jq -e '.spec as \$s
+      | ((\$s.sourceRepos // []) | length == 0) and ((\$s.destinations // []) | length == 0)
+      and ((\$s.sourceNamespaces // []) | length == 0)
+      and ((\$s.clusterResourceWhitelist // []) | length == 0) and ((\$s.namespaceResourceWhitelist // []) | length == 0)
+      and ((\$s.namespaceResourceBlacklist // []) | any(.group == \"*\" and .kind == \"*\"))'"
+  expect_ok B11-root-project "Application lab-root dans le projet lab-root" bash -c \
+    "[[ \$(kubectl -n lab-argocd get application lab-root -o jsonpath='{.spec.project}') == lab-root ]]"
+  expect_ok B11-no-default-app "aucune Application du projet default" bash -c \
+    "kubectl -n lab-argocd get applications.argoproj.io -o json | jq -e '[.items[] | select(.spec.project == \"default\")] | length == 0'"
+  expect_ok B11-authz-manual "Application lab-authz sans synchro automatique" bash -c \
+    "kubectl -n lab-argocd get application lab-authz -o json | jq -e '.spec.syncPolicy.automated == null'"
   local a
   for a in lab-root lab-platform; do
     expect_ok "B11-$a" "Application $a Synced et Healthy" bash -c \

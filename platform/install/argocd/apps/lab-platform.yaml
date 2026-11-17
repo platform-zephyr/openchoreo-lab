@@ -29,6 +29,8 @@ spec:
       include: "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}"
   destination:
     server: https://kubernetes.default.svc
+    # Destination explicite (le projet lab n'a plus lab-argocd) ; chaque objet porte son namespace.
+    namespace: default
   syncPolicy:
     automated:
       prune: false

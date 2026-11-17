@@ -9,13 +9,17 @@
 #   - --delete-crds : supprime aussi les CRD de l'essai, SEULEMENT si (a) elles n'existaient pas avant
 #     l'essai ($STATE_DIR/crds-before.txt, écrit par preflight.sh ; fichier absent => refus) et (b) aucun
 #     objet hors essai ne les utilise (namespacé hors périmètre, ou cluster-scoped sans marque de l'essai).
-#     Toute lecture en erreur => CRD CONSERVÉES (échec fermé, revue I2).
+#     Les CRD visées et leurs groupes sont lus dans le RENDU des sources épinglées (helm template
+#     --include-crds avec les values du labo ; manifest Gateway API vérifié par sha256), jamais dans une
+#     liste écrite à la main ni par suffixe (revue PR #8, P2). Groupe voisin inconnu du rendu (ex.
+#     x.cert-manager.io) => CRD CONSERVÉES. Toute lecture ou rendu en erreur => CRD CONSERVÉES (échec fermé).
 # Périmètre : namespaces de TRIAL_NS (lib.sh) portant part-of=openchoreo-lab, dp-* portant le label du CPT
 # cell-restricted, label openchoreo.dev/control-plane de `default` (exceptions OpenChoreo acquittées,
 # missions/MISSION.md). Jamais d'autre namespace, jamais de volume OCI hors lab-pg.
 # Argo (revue I4) : tant que l'Application lab-platform (ou lab-root) existe, les rollbacks des étapes
 # qu'Argo adopte (7, 9, 10) sont REFUSÉS : selfHeal recréerait l'objet (ex. un nouveau volume de 50 Go).
-# Annuler d'abord l'étape 11 (uninstall.sh --step 11).
+# Annuler d'abord l'étape 11 (uninstall.sh --step 11). L'étape 1 (namespaces, dont lab-pg et son volume) est
+# aussi refusée tant qu'une Application existe, et tant qu'un Component OpenChoreo existe (revue PR #8, P3).
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -59,32 +63,87 @@ release_keeps_crds() { # NS RELEASE
     || die "release $1/$2 : CRD sans helm.sh/resource-policy=keep ; relancer install.sh --step correspondante --apply avant tout uninstall"
 }
 
-# argo_adopts : vrai si une Application lab-root/lab-platform existe. CRD absente => faux. Erreur => abandon.
+# argo_adopts : vrai si une Application existe dans lab-argocd (n'importe laquelle : toute Application
+# peut gérer un objet de l'essai avec selfHeal). CRD absente => faux. Erreur => abandon.
 argo_adopts() {
   local crd apps
   crd="$(kubectl get crd applications.argoproj.io --ignore-not-found -o name)" || die "lecture des CRD argoproj en erreur"
   [[ -n "$crd" ]] || return 1
-  apps="$(kubectl -n lab-argocd get applications.argoproj.io lab-root lab-platform --ignore-not-found -o name)" \
-    || die "lecture des Application Argo en erreur"
+  apps="$(kubectl -n lab-argocd get applications.argoproj.io -o name)" || die "lecture des Application Argo en erreur"
   [[ -n "$apps" ]]
 }
 refuse_if_argo() { # ÉTAPE
   # Dry-run de --all : l'étape 11 (suppression des Application) n'a pas été jouée ; en --apply elle l'a été,
   # et la garde relit l'état réel.
   if [[ "$APPLY" != 1 && "$MODE" == all ]]; then log "[dry-run] étape $1 : garde Argo évaluée après l'annulation réelle de l'étape 11"; return; fi
-  if argo_adopts; then die "étape $1 : Application lab-root/lab-platform présente (selfHeal recréerait les objets) : uninstall.sh --step 11 d'abord"; fi
+  if argo_adopts; then die "étape $1 : Application Argo présente dans lab-argocd (selfHeal recréerait les objets) : uninstall.sh --step 11 d'abord"; fi
+}
+# refuse_if_components ÉTAPE : des Components OpenChoreo existent => abandon (CLEANUP.md 2 : leurs
+# finalizers nettoient dp-* ; supprimer dp-* avant laisserait le contrôleur les recréer). Lecture en erreur
+# => abandon. CRD absente => rien à vérifier.
+refuse_if_components() {
+  local crd comps
+  crd="$(kubectl get crd components.openchoreo.dev --ignore-not-found -o name)" || die "lecture des CRD openchoreo en erreur"
+  [[ -n "$crd" ]] || return 0
+  comps="$(kubectl get components.openchoreo.dev -A -o name)" || die "lecture des Components en erreur"
+  [[ -z "$comps" ]] || die "étape $1 : des Components existent encore : CLEANUP.md étape 2 d'abord"
 }
 
-# crd_in_use_outside GROUPE : 0 (= « utilisée hors essai », donc CONSERVER) au moindre doute.
-# Objets namespacés : hors openchoreo-*, lab-*, dp-* (et `default` pour openchoreo.dev seulement).
-# Objets cluster-scoped : sans label part-of=openchoreo-lab ni annotation de release Helm d'un namespace d'essai.
+CRD_PREFIX=customresourcedefinition.apiextensions.k8s.io
+
+# chart_crds CLÉ : « nom<TAB>groupe » de chaque CRD que l'essai installe pour CLÉ, lus dans le RENDU des
+# sources épinglées (mêmes values et options que install.sh). Clé inconnue, rendu en erreur ou vide =>
+# code 1 (l'appelant CONSERVE les CRD). Téléchargements locaux seulement (STATE_DIR), aussi en dry-run.
+chart_crds() {
+  local out tgz V="$INSTALL_DIR/values"
+  case "$1" in
+    gateway-api)
+      tgz="$(fetch_gw_crds)" || return 1
+      out="$(cat "$tgz")" || return 1;;
+    cert-manager)
+      tgz="$(fetch_chart cert-manager "$CERT_MANAGER_CHART" "$CERT_MANAGER_VERSION" "$CERT_MANAGER_TGZ_SHA256")" || return 1
+      out="$(helm template cert-manager "$tgz" -n openchoreo-cert-manager --include-crds -f "$V/cert-manager.yaml")" || return 1;;
+    external-secrets)
+      tgz="$(fetch_chart external-secrets "$ESO_CHART" "$ESO_VERSION" "$ESO_TGZ_SHA256")" || return 1
+      out="$(helm template external-secrets "$tgz" -n openchoreo-external-secrets --include-crds -f "$V/external-secrets.yaml")" || return 1;;
+    kgateway-crds)
+      tgz="$(fetch_chart kgateway-crds "$KGATEWAY_CRDS_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_CRDS_TGZ_SHA256")" || return 1
+      out="$(helm template kgateway-crds "$tgz" -n openchoreo-control-plane --include-crds)" || return 1;;
+    openchoreo-control-plane)
+      tgz="$(fetch_chart openchoreo-control-plane "$OPENCHOREO_CP_CHART" "$OPENCHOREO_VERSION" "$OPENCHOREO_CP_TGZ_SHA256")" || return 1
+      out="$(helm template openchoreo-control-plane "$tgz" -n openchoreo-control-plane --include-crds \
+        -f "$V/openchoreo-control-plane.yaml" --set backstage.enabled=false)" || return 1;;
+    argo-cd)
+      tgz="$(fetch_chart argo-cd "$ARGOCD_CHART" "$ARGOCD_VERSION" "$ARGOCD_TGZ_SHA256" "$ARGOCD_REPO")" || return 1
+      out="$(helm template argocd "$tgz" -n lab-argocd --include-crds -f "$V/argocd.yaml")" || return 1;;
+    *) log "chart_crds : clé inconnue '$1'"; return 1;;
+  esac
+  out="$(yq -N 'select(.kind == "CustomResourceDefinition") | .metadata.name + "\t" + .spec.group' <<<"$out")" || return 1
+  [[ -n "$out" ]] || { log "chart_crds : aucune CRD dans le rendu de $1"; return 1; }
+  printf '%s\n' "$out"
+}
+
+# crd_in_use_outside GROUPES (un par ligne, issus du rendu) : 0 (= « utilisée hors essai » ou doute, donc
+# CONSERVER), 1 (= inutilisée). Objets namespacés : hors openchoreo-*, lab-*, dp-* (et `default` pour
+# openchoreo.dev seulement). Objets cluster-scoped : sans label part-of=openchoreo-lab ni annotation de
+# release Helm d'un namespace d'essai. Un groupe du cluster VOISIN d'un groupe rendu (l'un suffixe de
+# l'autre, ex. x.cert-manager.io) mais absent du rendu est inconnu : CONSERVER (échec fermé, revue PR #8, P2).
 crd_in_use_outside() {
-  local g="$1" crds crd res scope objs nsre='^(openchoreo-|lab-|dp-)'
-  [[ "$g" == openchoreo.dev ]] && nsre='^(openchoreo-|lab-|dp-|default$)'
-  crds="$(kubectl get crd -o json)" || { log "liste des CRD illisible : CRD *.$g conservées"; return 0; }
+  local groups crds crd res scope objs unknown nsre='^(openchoreo-|lab-|dp-)'
+  groups="$(jq -Rn '[inputs | select(length > 0)]' <<<"$1")" || { log "groupes illisibles : CRD conservées"; return 0; }
+  [[ "$(jq 'length' <<<"$groups")" != 0 ]] || { log "aucun groupe rendu : CRD conservées"; return 0; }
+  jq -e 'map(. == "openchoreo.dev") | any' <<<"$groups" >/dev/null && nsre='^(openchoreo-|lab-|dp-|default$)'
+  crds="$(kubectl get crd -o json)" || { log "liste des CRD illisible : CRD conservées"; return 0; }
+  unknown="$(jq -r --argjson gs "$groups" '[.items[].spec.group] | unique | .[] as $c
+      | select(($gs | map(. == $c) | any) | not)
+      | select(any($gs[] as $g | ($c | endswith("." + $g)) or ($g | endswith("." + $c)); .))' <<<"$crds")" \
+    || { log "groupes du cluster illisibles : CRD conservées"; return 0; }
+  if [[ -n "$unknown" ]]; then
+    log "groupe(s) de CRD inconnu(s) du rendu épinglé : $(tr '\n' ' ' <<<"$unknown") : CRD conservées"; return 0
+  fi
   while IFS=$'\t' read -r crd res scope; do
     [[ -n "$crd" ]] || continue
-    objs="$(kubectl get "$res" -A -o json)" || { log "objets $res illisibles : CRD *.$g conservées"; return 0; }
+    objs="$(kubectl get "$res" -A -o json)" || { log "objets $res illisibles : CRD conservées"; return 0; }
     if [[ "$scope" == Namespaced ]]; then
       if ! jq -e --arg re "$nsre" '[.items[] | select(.metadata.namespace | test($re) | not)] | length == 0' <<<"$objs" >/dev/null; then
         log "CRD $crd utilisée hors essai (objets namespacés) : conservée"; return 0
@@ -95,18 +154,23 @@ crd_in_use_outside() {
         log "CRD $crd : objet cluster-scoped sans marque de l'essai : conservée"; return 0
       fi
     fi
-  done < <(jq -r --arg g "$g" '.items[] | select(.spec.group == $g) | [.metadata.name, "\(.spec.names.plural).\(.spec.group)", .spec.scope] | @tsv' <<<"$crds")
+  done < <(jq -r --argjson gs "$groups" '.items[] | select(.spec.group as $g | $gs | map(. == $g) | any)
+             | [.metadata.name, "\(.spec.names.plural).\(.spec.group)", .spec.scope] | @tsv' <<<"$crds")
   return 1
 }
-rm_crds() { # GROUPE
-  [[ "$DELETE_CRDS" == 1 ]] || { log "CRD *.$1 conservées (--delete-crds absent)"; return; }
-  local before="$STATE_DIR/crds-before.txt" crds c keep=()
-  [[ -f "$before" ]] || { log "CRD *.$1 conservées : $before absent (CRD d'avant l'essai inconnues)"; return; }
-  if crd_in_use_outside "$1"; then return; fi
+
+# rm_crds CLÉ : supprime les CRD NOMMÉES par le rendu de CLÉ (jamais par suffixe), si toutes les gardes passent.
+rm_crds() {
+  [[ "$DELETE_CRDS" == 1 ]] || { log "CRD de $1 conservées (--delete-crds absent)"; return; }
+  local before="$STATE_DIR/crds-before.txt" rendered crds name keep=()
+  [[ -f "$before" ]] || { log "CRD de $1 conservées : $before absent (CRD d'avant l'essai inconnues)"; return; }
+  rendered="$(chart_crds "$1")" || { log "CRD de $1 conservées : rendu épinglé indisponible"; return; }
+  if crd_in_use_outside "$(cut -f2 <<<"$rendered" | sort -u)"; then return; fi
   crds="$(kubectl get crd -o name)" || { log "liste des CRD illisible : conservées"; return; }
-  for c in $(grep -E "\\.$1\$" <<<"$crds" || true); do
-    if grep -qx "$c" "$before"; then log "$c existait avant l'essai : conservée"; else keep+=("$c"); fi
-  done
+  while IFS=$'\t' read -r name _; do
+    grep -qx "$CRD_PREFIX/$name" <<<"$crds" || continue
+    if grep -qx "$CRD_PREFIX/$name" "$before"; then log "$name existait avant l'essai : conservée"; else keep+=("$CRD_PREFIX/$name"); fi
+  done <<<"$rendered"
   (( ${#keep[@]} == 0 )) || run kubectl delete "${keep[@]}"
 }
 
@@ -126,7 +190,7 @@ undo_11() {
   helm_rm lab-argocd argocd
   local ns
   ns="$(kubectl get ns argocd --ignore-not-found -o name)" || die "lecture du namespace argocd en erreur"
-  if [[ -n "$ns" ]]; then log "namespace argocd présent (kube-ops) : CRD argoproj.io conservées"; else rm_crds argoproj.io; fi
+  if [[ -n "$ns" ]]; then log "namespace argocd présent (kube-ops) : CRD argoproj.io conservées"; else rm_crds argo-cd; fi
 }
 undo_10() {
   refuse_if_argo 10
@@ -139,12 +203,7 @@ undo_10() {
 undo_9() {
   refuse_if_argo 9
   # Les Components (Phase C) doivent être supprimés AVANT (CLEANUP.md 2 : leurs finalizers nettoient dp-*).
-  local crd comps
-  crd="$(kubectl get crd components.openchoreo.dev --ignore-not-found -o name)" || die "lecture des CRD openchoreo en erreur"
-  if [[ -n "$crd" ]]; then
-    comps="$(kubectl get components.openchoreo.dev -A -o name)" || die "lecture des Components en erreur"
-    [[ -z "$comps" ]] || die "des Components existent encore : CLEANUP.md étape 2 d'abord"
-  fi
+  refuse_if_components 9
   run "${KD[@]}" -f "$ROOT/platform/resource-types/" -f "$ROOT/platform/project-types/" \
     -f "$ROOT/platform/traits/" -f "$ROOT/platform/component-types/"
   run "${KD[@]}" -f "$M/40-openchoreo-env.yaml"
@@ -173,32 +232,35 @@ undo_6() {
   helm_rm openchoreo-control-plane openchoreo-control-plane
   run "${KD[@]}" -f "$M/03-idp-egress.yaml"
   run "${KD[@]}" -n openchoreo-control-plane secret backstage-secrets
-  rm_crds openchoreo.dev
+  rm_crds openchoreo-control-plane
 }
 undo_5() {
   helm_rm openchoreo-control-plane kgateway
   # Le chart kgateway-crds met ses CRD dans templates/ sans option `keep` : `helm uninstall` les
   # supprimerait. Il n'est désinstallé qu'avec --delete-crds ET si les gardes de rm_crds passent.
-  local before="$STATE_DIR/crds-before.txt"
-  if [[ "$DELETE_CRDS" != 1 ]]; then log "release kgateway-crds (CRD kgateway.dev) conservée (--delete-crds absent)"; return; fi
-  if [[ ! -f "$before" ]] || grep -q 'kgateway\.dev$' "$before"; then
-    log "CRD kgateway.dev préexistantes ou état d'avant inconnu : release kgateway-crds conservée"; return
-  fi
-  if crd_in_use_outside kgateway.dev; then log "release kgateway-crds conservée"; return; fi
+  local before="$STATE_DIR/crds-before.txt" rendered name
+  if [[ "$DELETE_CRDS" != 1 ]]; then log "release kgateway-crds conservée (--delete-crds absent)"; return; fi
+  [[ -f "$before" ]] || { log "état d'avant inconnu ($before absent) : release kgateway-crds conservée"; return; }
+  # Groupes et noms lus dans le rendu épinglé (gateway.kgateway.dev, revue PR #8, P2), jamais à la main.
+  rendered="$(chart_crds kgateway-crds)" || { log "rendu kgateway-crds indisponible : release conservée"; return; }
+  while IFS=$'\t' read -r name _; do
+    if grep -qx "$CRD_PREFIX/$name" "$before"; then log "CRD $name préexistante : release kgateway-crds conservée"; return; fi
+  done <<<"$rendered"
+  if crd_in_use_outside "$(cut -f2 <<<"$rendered" | sort -u)"; then log "release kgateway-crds conservée"; return; fi
   helm_rm openchoreo-control-plane kgateway-crds
 }
 undo_4() {
   run "${KD[@]}" -f "$M/20-eso-lab-store.yaml"
   release_keeps_crds openchoreo-external-secrets external-secrets
   helm_rm openchoreo-external-secrets external-secrets
-  rm_crds external-secrets.io
+  rm_crds external-secrets
 }
 undo_3() {
   release_keeps_crds openchoreo-cert-manager cert-manager
   helm_rm openchoreo-cert-manager cert-manager
-  rm_crds cert-manager.io
+  rm_crds cert-manager
 }
-undo_2() { rm_crds gateway.networking.k8s.io; }
+undo_2() { rm_crds gateway-api; }
 
 # migrate_cnpg_system : suppression de l'ancien namespace vide (revue B3). Conditions, toutes vérifiées
 # en lecture, échec fermé : label part-of=openchoreo-lab ; aucune release Helm ; aucun objet namespacé
@@ -228,6 +290,11 @@ migrate_cnpg_system() {
 
 undo_1() {
   local ns cells part out
+  # Revue PR #8, P3 : lab-pg (Namespace + Cluster CNPG) est synchronisé par Argo avec selfHeal ; le
+  # supprimer sous Argo recréerait un block volume de 50 Go. Et dp-* ne se suppriment qu'une fois les
+  # Components partis (sinon le contrôleur OpenChoreo les recrée). Gardes AVANT toute écriture.
+  refuse_if_argo 1
+  refuse_if_components 1
   # dp-* : uniquement ceux créés par le CPT du labo (label en constante platform.smadja.dev/cell).
   cells="$(kubectl get ns -l platform.smadja.dev/cell=restricted -o name)" || die "liste des namespaces de cellule en erreur"
   for ns in ${cells//namespace\//}; do

@@ -1,0 +1,24 @@
+# BOOTSTRAP PRIVILÉGIÉ (étape 11, tools/oke/install.sh ; jamais synchronisé par Argo).
+# AppProject `default` VERROUILLÉ (revue PR #8, P1) : Argo CD crée seul ce projet avec « tout dépôt, toute
+# destination, tout kind ». Une Application qui déclarerait `project: default` obtiendrait le ClusterRole
+# `*/*/*` du contrôleur. Ici : aucun dépôt source, aucune destination, aucune whitelist, blacklist totale.
+# Toute Application `project: default` est donc refusée par Argo (et par la CI : tools/oke/argo_guard.py).
+# Appliqué en server-side avec --force-conflicts (les champs appartiennent à argocd-server, qui a créé le
+# projet) ; chaque liste est POSÉE vide (une liste omise resterait à la valeur d'argocd-server).
+# Vérifié par tools/oke/verify.sh --step 11 (B11-default-locked).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: lab-argocd
+spec:
+  description: Projet par défaut VERROUILLÉ (labo) - aucun dépôt, aucune destination, aucun kind
+  sourceRepos: []
+  sourceNamespaces: []
+  destinations: []
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist: []
+  clusterResourceBlacklist:
+    - {group: "*", kind: "*"}
+  namespaceResourceBlacklist:
+    - {group: "*", kind: "*"}

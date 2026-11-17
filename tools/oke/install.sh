@@ -64,10 +64,7 @@ step_1() { # Socle : namespaces, quotas, réseau
 }
 
 step_2() { # Gateway API CRD (standard v1.5.1), manifest vérifié par sha256
-  local f="$STATE_DIR/gateway-api-$GW_CRDS_VERSION.yaml" got
-  [[ -f "$f" ]] || curl -fsSL -o "$f" "$GW_CRDS_URL"
-  got="$(shasum -a 256 "$f" | awk '{print $1}')"
-  [[ "$got" == "$GW_CRDS_SHA256" ]] || die "sha256 Gateway API : $got != $GW_CRDS_SHA256"
+  local f; f="$(fetch_gw_crds)"
   run "${KA[@]}" -f "$f"
   run kubectl wait --for=condition=Established --timeout=120s crd/gateways.gateway.networking.k8s.io crd/httproutes.gateway.networking.k8s.io
 }
@@ -122,8 +119,13 @@ cp_upgrade() {
     -f "$V/openchoreo-control-plane.yaml" --set "backstage.enabled=$portal" --wait --timeout 10m
   wait_deploys openchoreo-control-plane
   copy_gateway_ca
-  run kubectl -n openchoreo-control-plane rollout restart deployment/controller-manager deployment/openchoreo-api deployment/cluster-gateway
-  wait_deploys openchoreo-control-plane
+  # Redémarrage EN SÉRIE avec `rollout status` (revue m5) : un seul surge à la fois sous le quota de 640 Mi,
+  # et l'attente porte sur les NOUVEAUX pods (wait Available passait sur les anciens).
+  local d
+  for d in controller-manager openchoreo-api cluster-gateway; do
+    run kubectl -n openchoreo-control-plane rollout restart "deployment/$d"
+    run kubectl -n openchoreo-control-plane rollout status "deployment/$d" --timeout=300s
+  done
 }
 
 step_6() { # OpenChoreo control plane SANS portail (CRD du chart à la 1re installation)
@@ -195,9 +197,15 @@ step_10() { # Opérateur CNPG + lab-pg (1 PVC = 1 block volume OCI de 50 Go)
   run kubectl -n lab-pg wait --for=condition=Ready --timeout=600s cluster.postgresql.cnpg.io/lab-pg
 }
 
-step_11() { # Argo CD minimal + AppProject lab et lab-authz + Application racine (adopte les objets des étapes 7, 9, 10)
+step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProject lab, lab-authz, lab-root + Application racine
+  # Bootstrap PRIVILÉGIÉ (revue PR #8, P1) : le projet `default` est verrouillé AVANT toute Application,
+  # sinon une Application `project: default` obtiendrait les droits */*/* du contrôleur.
   local tgz; tgz="$(fetch_chart argo-cd "$ARGOCD_CHART" "$ARGOCD_VERSION" "$ARGOCD_TGZ_SHA256" "$ARGOCD_REPO")"
   run helm upgrade --install argocd "$tgz" -n lab-argocd -f "$V/argocd.yaml" --wait --timeout 10m
+  # argocd-server crée `default` à son démarrage (champs possédés par argocd-server) : on attend sa
+  # présence, puis --force-conflicts reprend la propriété de chaque liste, posée vide dans le manifest.
+  run kubectl -n lab-argocd wait --for=create appprojects.argoproj.io/default --timeout=120s
+  run "${KA[@]}" --force-conflicts -f "$INSTALL_DIR/argocd/project-default-locked.yaml"
   run "${KA[@]}" -f "$INSTALL_DIR/argocd/project-lab.yaml"
   run "${KA[@]}" -f "$INSTALL_DIR/argocd/root-application.yaml"
 }
@@ -221,7 +229,8 @@ for ((i = IFROM; i <= ITO; i++)); do
   declare -F "step_$n" >/dev/null || die "étape inconnue : $n"
   log "=== étape $n (APPLY=$APPLY)"
   "step_$n"
-  if (( i >= 2 )); then budget_gate "étape $n"; fi
+  # Journalisé AVANT le gate (revue m6) : un arrêt 3/4/5 du gate n'efface pas la trace d'une étape appliquée.
   [[ "$APPLY" != 1 ]] || printf '%s étape %s appliquée\n' "$(date -u +%FT%TZ)" "$n" >> "$STATE_DIR/steps.log"
+  if (( i >= 2 )); then budget_gate "étape $n"; fi
 done
 log "terminé (étapes $FROM..$TO). Suite : tools/oke/verify.sh --step $TO"

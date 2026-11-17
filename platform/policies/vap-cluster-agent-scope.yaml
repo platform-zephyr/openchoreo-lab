@@ -38,8 +38,10 @@ spec:
       - apiGroups: ["*"]
         apiVersions: ["*"]
         operations: [CREATE, UPDATE, DELETE, CONNECT]
-        # "*" seul exclut les sous-ressources ; "*/*" les ajoute (pods/exec, pods/attach, …).
-        resources: ["*", "*/*"]
+        # "*" seul exclut les sous-ressources ; "*/*" couvre ressources ET sous-ressources (pods/exec, …).
+        # ["*", "*/*"] est REJETÉ par l'API (« if '*/*' is present, must not specify other resources »),
+        # constaté sur k3d v1.36 le 2026-11-17 : la version précédente de ce fichier n'était pas appliquable.
+        resources: ["*/*"]
         scope: "*"
   matchConditions:
     - name: agent-or-app-identity
