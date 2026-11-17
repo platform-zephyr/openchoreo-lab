@@ -42,6 +42,10 @@ t "verify-change : CHANGE_SHA/BASE_SHA absents -> BLOCKED" 2 env -u CHANGE_SHA -
 t "verify-change : SHA inconnu -> BLOCKED" 2 env CHANGE_SHA=0000000000000000000000000000000000000001 BASE_SHA=0000000000000000000000000000000000000002 KUBECONFIG="$TMPD/other.yaml" bash "$HERE/verify-change.sh"
 t "verify-rollback : arguments absents -> BLOCKED" 2 env -u REVERT_SHA -u CHANGE_SHA -u BASE_SHA KUBECONFIG="$TMPD/other.yaml" bash "$HERE/verify-rollback.sh"
 
+# Scripts de creation de PR : refus avant toute ecriture Git.
+t "make-revert-pr : CHANGE_SHA absent -> refus" 2 env -u CHANGE_SHA DRY_RUN=1 bash "$HERE/make-revert-pr.sh"
+t "make-revert-pr : SHA inconnu -> refus" 2 env CHANGE_SHA=0000000000000000000000000000000000000003 DRY_RUN=1 bash "$HERE/make-revert-pr.sh"
+
 # Wrapper k : verbes et Secrets refuses avant tout appel.
 t "k : delete refuse" 2 bash -c '. "$1"; k delete ns x' _ "$COMMON_DIR/common.sh"
 t "k : apply refuse" 2 bash -c '. "$1"; k apply -f x' _ "$COMMON_DIR/common.sh"

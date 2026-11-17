@@ -1,183 +1,117 @@
-# Golden path whoami : cycle GitOps sur OKE (préparation)
+# Golden path whoami : cycle GitOps sur OKE
 
-Statut : **DRAFT, préparation statique uniquement.** Rien de ce document n'a été exécuté contre OKE ni contre k3d.
-Tout ce qui touche au runtime est `NOT_TESTED` jusqu'à exécution par le coordinateur, qui est le seul à avoir accès à OKE.
-Ne pas merger avant que la plateforme OKE soit prête (voir §2).
+Statut : **préparation statique.** Rien de ce document n'a été exécuté contre OKE ni k3d. Tout le runtime est `NOT_TESTED` tant que le coordinateur ne l'a pas joué, seul à avoir accès à OKE.
 
-## 0. Résumé
+Base : `origin/main` après #19 (schéma capabilities), #20 (verify), #21 (whoami cible `oke`, gate OKE ouvert par défaut, `lab-apps` en synchro automatique limitée à `generated/namespaces/default/projects/whoami`).
 
-- Le cycle à prouver : déploiement de `whoami` sur OKE par GitOps, modification visible en HTTP, rollback Git avec retour à l'état d'origine.
-- Aucune exposition publique : le HTTP passe par `kubectl port-forward` vers le Service ClusterIP de la cellule, sur `127.0.0.1`.
-- Livrables de cette branche (`tests/golden-path-whoami/`) :
+## 0. Contenu de `tests/golden-path-whoami/`
 
-| Fichier | Rôle | Écrit ou lit le cluster ? |
+| Fichier | Rôle | Touche le cluster ? |
 |---|---|---|
-| `common.sh` | Fonctions communes, garde-fous (KUBECONFIG, contexte, verbes limités, pas de Secret) | lit seulement |
-| `verify-http.sh` | État runtime : Argo, ReleaseBinding, ComponentRelease, pod, sécurité, portée, HTTP 200 | lit seulement (+ tunnel local) |
-| `verify-change.sh` | Prouve que `WHOAMI_NAME` est livré et visible en HTTP | lit seulement |
-| `verify-rollback.sh` | Prouve le retour à la base : même release, même UID de ComponentRelease | lit seulement |
-| `selftest.sh` | Garde-fous testés sans cluster (refus avant tout appel réseau) | aucun |
-| `change.patch` | Changement prêt : `env: {WHOAMI_NAME: ...}` + release régénérée | non (patch git) |
-| `cluster-oke.patch` | Bascule `cluster: k3d` vers `cluster: oke` (à appliquer après ouverture du gate) | non (patch git) |
+| `common.sh` | Garde-fous : `KUBECONFIG` explicite, contexte matchant `CONTEXT_RE` (défaut `oracle-a1`), `admin@homeops` refusé, verbes limités à get/version/api-resources/auth can-i, aucun Secret lu | lecture seule |
+| `verify-http.sh` | État : Argo `lab-apps` Synced/Healthy, ReleaseBinding Ready, ComponentRelease présente, pod Ready, sécurité, Service ClusterIP, 0 PVC / 0 LoadBalancer / 0 route externe / 0 base, HTTP 200 via `port-forward` sur `127.0.0.1` | lecture seule + tunnel local |
+| `verify-change.sh` | Prouve que `WHOAMI_NAME` est livré (Argo, RB, pod) et visible en HTTP | lecture seule |
+| `verify-rollback.sh` | Prouve le retour à la base : blobs Git identiques, même release, même UID de ComponentRelease | lecture seule |
+| `make-change-pr.sh` | Worktree depuis `origin/main`, applique `change.patch`, `appgen validate/check`, commit, push, PR | aucun (Git et GitHub seulement) |
+| `make-revert-pr.sh` | Worktree depuis `origin/main`, `git revert <CHANGE_SHA>`, validation, push, PR | aucun |
+| `selftest.sh` | 14 garde-fous testés sans cluster (refus avant tout appel réseau) | aucun |
+| `change.patch` | Patch sur `origin/main` : `env: {WHOAMI_NAME: whoami-gitops-oke-v2}` dans `apps/whoami/app.yaml`, release `whoami-e4720c4c8b` ajoutée | non |
 
-## 1. Ce qui est vérifié statiquement (PASS)
+## 1. Vérifications statiques
 
-Résultats obtenus sur la branche `feat/whoami-oke-cycle` (commande, résultat) :
+| # | Commande | Résultat |
+|---|---|---|
+| S1 | `python3 tools/appgen/appgen.py validate` | PASS (10 apps) |
+| S2 | `python3 tools/appgen/appgen.py check` | PASS (aucune dérive) |
+| S3 | `python3 -m unittest discover -s tests/appgen` | PASS (103 tests, 1 skip) |
+| S4 | `bash tests/golden-path-whoami/selftest.sh` | PASS |
+| S5 | `shellcheck -x tests/golden-path-whoami/*.sh` | PASS |
+| S6 | `bash -n tests/golden-path-whoami/*.sh` | PASS |
+| S7 | `git apply --check tests/golden-path-whoami/change.patch` sur `origin/main` | PASS |
+| S8 | `DRY_RUN=1 tests/golden-path-whoami/make-change-pr.sh` | PASS (validation, aucun push) |
+| S9 | `DRY_RUN=1 CHANGE_SHA=<sha> tests/golden-path-whoami/make-revert-pr.sh` | PASS sur un revert propre ; refuse, sans push, si le revert ne passe pas la validation (ex. #19 réintroduit F1) |
+| S10 | `gitleaks dir` sur les fichiers ajoutés | PASS |
 
-| # | Contrôle | Commande | Résultat |
-|---|---|---|---|
-| S1 | Validation des apps (10) | `python3 tools/appgen/appgen.py validate` | PASS |
-| S2 | Pas de dérive de `generated/` (72 fichiers) | `python3 tools/appgen/appgen.py check` | PASS |
-| S3 | Tests appgen | `python3 -m unittest discover -s tests/appgen` | PASS (103 tests, 1 skip kubeconform) |
-| S4 | Syntaxe bash | `bash -n tests/golden-path-whoami/*.sh` | PASS |
-| S5 | Shellcheck | `shellcheck -x tests/golden-path-whoami/*.sh` | PASS |
-| S6 | YAML (périmètre CI) | `yamllint -c tools/appgen/yamllint.yaml apps tools tests .github` | PASS (avertissements préexistants sur `mealie`, `rustical-pilot`, `ci.yaml`, hors périmètre) |
-| S7 | Garde-fous sans cluster | `bash tests/golden-path-whoami/selftest.sh` | PASS (12 cas, tous refusés avant tout appel réseau) |
-| S8 | Secrets | `gitleaks dir tests/golden-path-whoami docs/GOLDEN-PATH-WHOAMI.md` | PASS (aucune fuite) |
-| S9 | Patch de changement applicable | `git apply --check tests/golden-path-whoami/change.patch` | PASS |
-| S10 | Patch de bascule OKE applicable | `git apply --check tests/golden-path-whoami/cluster-oke.patch` | PASS |
-| S11 | Ordre des patches indifférent | `git apply` bascule puis `--check` changement, et l'inverse | PASS dans les deux sens |
-| S12 | Rendu OKE simulé (gate ouvert, caps factices, voir F1) | `appgen --allow-oke validate` puis `render` sur une copie | PASS : `generated/whoami` identique à la version k3d (même release `whoami-31985273d8`) |
-| S13 | Changement simulé puis retour (patch inverse) sur une copie | `git apply` change puis `git apply -R` | PASS : `releaseName` revient à `whoami-31985273d8`, fichier de release restauré |
+Le changement ne touche que `apps/whoami/` et `generated/namespaces/default/projects/whoami/`. L'ancienne release `whoami-31985273d8` reste dans `generated/` : `appgen` conserve désormais les releases existantes et pose `Prune=false,Delete=false` sur les ComponentRelease.
 
-Le changement (S9) produit : `releaseName` `whoami-31985273d8` vers `whoami-e4720c4c8b`, un nouveau fichier de release, et la suppression de l'ancien (voir F3).
+## 2. Séquence pour le coordinateur
 
-## 2. Findings bloquants (à traiter par la plateforme, hors de cette branche)
-
-Ces points sont trouvés par la préparation. Ils ne sont pas corrigés ici, car ils touchent `clusters/`, `tools/` ou `.github/`, hors périmètre autorisé.
-
-- **F1. `clusters/oke/capabilities.yaml` est invalide selon son propre schéma.** `databaseInstances: {}` et `storageClasses: {}` violent `minProperties: 1` (`docs/schema/capabilities.schema.json`). Dès qu'une app cible `oke`, `appgen` échoue, même avec `--allow-oke`. Les règles CI ne le voient pas tant qu'aucune app ne cible OKE. **Correctif attendu : PR plateforme** qui rend le fichier valide (sans ouvrir de volume ni de base, ce que la politique interdit encore).
-- **F2. Le gate OKE est fermé sur `main`.** `cluster: oke` est refusé sans `--allow-oke`. La CI (`.github/workflows/ci.yaml`, jobs `appgen`) lance `appgen validate` et `check` sans ce drapeau. Une bascule fusionnée avant l'ouverture du gate fait donc échouer la CI de `main`. Il faut un correctif CI conditionné à l'état du gate, en PR plateforme, avant la bascule.
-- **F3. `appgen render` supprime les releases non courantes.** `cmd_render` fait `shutil.rmtree(generated)` puis réécrit uniquement les releases courantes. Le changement supprime donc `releases/whoami-31985273d8.yaml` (voir `change.patch`). Cela contredit « releases append-only » (`docs/APP-CONTRACT.md` §6 et `golden-paths/A-stateless-http/CHECKLIST.md`). Conséquences :
-  - le rollback par `git revert` fonctionne, car le revert restaure le fichier et le blob est identique (contrôlé par `verify-rollback.sh`, R3) ;
-  - côté cluster, la ComponentRelease d'origine n'est conservée que si elle n'est pas purgée. Le rendu ne pose aucune annotation `Prune=false,Delete=false` sur les ComponentRelease. Le risque est réel dès que `lab-apps` passe en `prune: true`.
-  - **Correctif attendu : PR plateforme** sur `tools/appgen` (conserver les releases existantes, ou au minimum annoter les ComponentRelease `Prune=false,Delete=false`). Tant que ce n'est pas fait, `verify-rollback.sh` R4 est la preuve de non-recréation, à exécuter.
-- **F4. Pas de `Name:` garanti dans la réponse de l'image.** La modification suppose que `traefik/whoami:v1.10.3` lit `WHOAMI_NAME` et affiche `Name: <valeur>`. Ce point n'a pas été exécuté (pas de conteneur lancé). C'est une hypothèse `[S]`. Si la première réponse ne contient pas `Name:`, la modification n'est pas prouvée. Repli documenté : `args: ["--port", "8080", "--name", "<valeur>"]` (à confirmer par `--help` de l'image). Dans ce cas, changer `change.patch` avant la PR.
-- **F5. Nommage et labels de cellule `[S]`.** `cell_ns` suppose le label `openchoreo.dev/project` / `openchoreo.dev/environment` sur le namespace `dp-*`, avec repli sur le nommage `dp-default-whoami-production-*`. À confirmer sur le premier `verify-http.sh`, qui échoue en `W0` si le nommage diffère.
-- **F6. Application Argo `lab-apps` absente d'OKE.** `STATE.md` (étape 11) : Argo CD n'est pas encore installé sur OKE. `verify-http.sh` renvoie `BLOCKED` sur G2 tant que la CRD manque.
-
-## 3. Séquence exacte pour le coordinateur
-
-Prérequis (tous obligatoires avant toute étape runtime) : F1 et F2 traités, gate OKE franchi (Cilium, baseline kube-ops #1620, refus IMDS prouvé, accès opérateur), installation fail-closed des étapes OKE 6 à 11 faite et vérifiée, PR #8 fusionnée (voir `STATE.md` §6).
-
-Variables (à poser dans le shell du coordinateur, jamais dans Git) :
+Variables (shell du coordinateur, jamais dans Git) :
 
 ```bash
-export KUBECONFIG=<kubeconfig OKE dédié, jamais celui de Paul>
+export KUBECONFIG=<kubeconfig OKE dédié>
 export CONTEXT_RE=<motif du contexte OKE, défaut oracle-a1>
-R=<chemin du clone openchoreo-lab à jour sur origin/main>
-EVID=<dossier de preuves hors dépôt, p.ex. ~/evidence-whoami/$(date -u +%Y%m%dT%H%M%SZ)>
-mkdir -p "$EVID"
+R=<clone openchoreo-lab à jour sur origin/main>
+EVID=<dossier de preuves hors dépôt>; mkdir -p "$EVID"
+cd "$R" && git fetch -q origin main
 ```
 
-**Étape 0. Garde-fous sans cluster** (aucune écriture) :
+**Étape 0. Garde-fous, sans cluster** :
 
 ```bash
-cd "$R" && bash tests/golden-path-whoami/selftest.sh
+bash tests/golden-path-whoami/selftest.sh
 python3 tools/appgen/appgen.py validate && python3 tools/appgen/appgen.py check
 ```
 
-Attendu : `selftest : OK`, `appgen validate : OK`, `aucune derive`.
-
-**Étape 1. Bascule OKE** (après F1, F2 et ouverture du gate ; PR distincte) :
+**Étape 1. Baseline runtime** (la release de base se lit dans Git, pas dans cette doc) :
 
 ```bash
-git switch -c feat/whoami-cluster-oke origin/main
-git apply tests/golden-path-whoami/cluster-oke.patch
-python3 tools/appgen/appgen.py --allow-oke validate && python3 tools/appgen/appgen.py --allow-oke check
-git add -A apps/whoami && git commit -m "whoami: cible oke (gate ouvert)" && git push -u origin HEAD
-gh pr create --draft --title "whoami: cible oke" --body-file <corps>
+BASE_REL=$(git show origin/main:generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml | sed -n 's/^  releaseName: //p')
+MAIN=$(git rev-parse origin/main)
+EXPECT_REVISION=$MAIN EXPECT_RELEASE=$BASE_REL bash tests/golden-path-whoami/verify-http.sh | tee "$EVID/01-baseline.txt"; echo "rc=$?"
 ```
 
-Preuve attendue : CI verte (nécessite F2 corrigé), `generated/` inchangé. Merge seulement après GO de Paul.
+Critère : `verdict: PASS`, rc 0. Rc 3 (PARTIAL) n'est pas un PASS.
 
-**Étape 2. Baseline runtime** (après sync Argo de la bascule) :
+**Étape 2. Changement** :
 
 ```bash
-BASE_REL=$(git -C "$R" show origin/main:generated/namespaces/default/projects/whoami/components/whoami/release-bindings/whoami-production.yaml | sed -n 's/^  releaseName: //p')
-MERGE_OKE=<SHA de merge de la bascule>
-EXPECT_REVISION=$MERGE_OKE EXPECT_RELEASE=$BASE_REL \
-  bash "$R/tests/golden-path-whoami/verify-http.sh" | tee "$EVID/01-baseline.txt"; echo "rc=$?"
+bash tests/golden-path-whoami/make-change-pr.sh     # PR draft ; READY=1 pour non-draft (décision de Paul)
+# CI verte, GO de Paul, merge (squash) par le coordinateur :
+CHANGE_SHA=$(gh pr view <N> --json mergeCommit --jq .mergeCommit.oid)
+BASE_SHA=$(git rev-parse "$CHANGE_SHA^")
+git fetch -q origin main
+CHANGE_SHA=$CHANGE_SHA BASE_SHA=$BASE_SHA TIMEOUT=900 bash tests/golden-path-whoami/verify-change.sh | tee "$EVID/02-change.txt"; echo "rc=$?"
 ```
 
-Critère : `verdict: PASS`, code 0 (`BASE_REL` attendu : `whoami-31985273d8` à la date de cette branche ; le lire dans Git, car le hash dépend du CCT). Un `PARTIAL` (code 3) n'est pas un PASS : il faut lire les lignes `NOT_TESTED` et `BLOCKED`.
+Lab-apps synchronise automatiquement (sans prune) : aucun `argocd app sync` à la main. `verify-change.sh` attend la convergence.
 
-**Étape 3. Changement** : PR à partir de `change.patch`, CI verte, merge (squash) :
+Critères : C1 PASS (app.yaml du commit porte `WHOAMI_NAME`, release distincte), C2 PASS (baseline vue, UID de release enregistré hors dépôt), C3 PASS (révision Argo = `CHANGE_SHA`, RB sur `whoami-e4720c4c8b`, `WHOAMI_NAME` dans le pod, `Name: whoami-gitops-oke-v2` dans la réponse HTTP).
 
-```bash
-git switch -c feat/whoami-change origin/main
-git apply "$R/tests/golden-path-whoami/change.patch"
-python3 tools/appgen/appgen.py validate && python3 tools/appgen/appgen.py check
-git add -A apps/whoami generated && git commit -m "whoami: WHOAMI_NAME (preuve GitOps)" && git push -u origin HEAD
-gh pr create --draft --title "whoami: WHOAMI_NAME" --body-file <corps>
-# après GO et merge :
-CHANGE_SHA=$(git -C "$R" rev-parse origin/main)   # SHA du merge sur main
-BASE_SHA=$(git -C "$R" rev-parse "$CHANGE_SHA^")
-CHANGE_SHA=$CHANGE_SHA BASE_SHA=$BASE_SHA TIMEOUT=900 \
-  bash "$R/tests/golden-path-whoami/verify-change.sh" | tee "$EVID/02-change.txt"; echo "rc=$?"
-```
-
-Preuves attendues : `C1` PASS (app.yaml et release de changement distinctes), `C2` PASS (baseline vue, UID enregistré hors dépôt), `C3` PASS (révision Argo = `CHANGE_SHA`, `ReleaseBinding` sur `whoami-e4720c4c8b`, `WHOAMI_NAME` dans le pod, `Name: whoami-gitops-oke-v2` dans la réponse HTTP).
-
-**Étape 4. Rollback** : `git revert` dans une PR de revert, merge, puis preuve :
+**Étape 3. Rollback** :
 
 ```bash
-git switch -c revert/whoami-change origin/main
-git revert --no-edit "$CHANGE_SHA"
-git push -u origin HEAD && gh pr create --draft --title "revert: whoami WHOAMI_NAME" --body-file <corps>
-# après GO et merge :
-REVERT_SHA=$(git -C "$R" rev-parse origin/main)
+CHANGE_SHA=$CHANGE_SHA bash tests/golden-path-whoami/make-revert-pr.sh   # PR draft de revert
+# GO de Paul, merge par le coordinateur :
+REVERT_SHA=$(gh pr view <M> --json mergeCommit --jq .mergeCommit.oid)
+git fetch -q origin main
 REVERT_SHA=$REVERT_SHA CHANGE_SHA=$CHANGE_SHA BASE_SHA=$BASE_SHA TIMEOUT=900 \
-  bash "$R/tests/golden-path-whoami/verify-rollback.sh" | tee "$EVID/03-rollback.txt"; echo "rc=$?"
+  bash tests/golden-path-whoami/verify-rollback.sh | tee "$EVID/03-rollback.txt"; echo "rc=$?"
 ```
 
-Preuves attendues : `R1` à `R3` PASS (Git : revert identique à la base, blobs identiques), `R5` PASS (convergence), `R4` PASS (même UID de ComponentRelease qu'en étape 3, objet non recréé), `W6` PASS (pas de `WHOAMI_NAME` dans le pod), `H4` PASS (plus de `Name: whoami-gitops-oke-v2`).
+Critères : R1, R2, R3 PASS (Git : revert identique à la base, blobs identiques), R5 PASS (convergence vers `whoami-31985273d8`), R4 PASS (même UID de ComponentRelease qu'en étape 2), W6 PASS (pas de `WHOAMI_NAME` dans le pod), H4 PASS. R4 est NOT_TESTED si `verify-change.sh` n'a pas tourné depuis ce poste.
 
-Note : `R4` est `NOT_TESTED` si `verify-change.sh` n'a pas été exécuté depuis ce poste (fichier d'UID absent). Dans ce cas, le rollback n'est pas prouvé « objet d'origine ».
+**Étape 4. Synthèse** : copier `$EVID` dans `evidence/runtime/oke/whoami/` via PR, avec les SHA et les codes retour.
 
-**Étape 5. Synthèse** : copier `$EVID` dans le dossier de preuves du dépôt (`evidence/runtime/oke/whoami/`, en PR), citer les codes retour et le SHA de chaque étape.
+## 3. Codes et critères
 
-## 4. Critères PASS / FAIL / NOT_TESTED
-
-| Statut | Signification | Effet |
+| Code | Statut | Effet |
 |---|---|---|
-| PASS | Contrôle exécuté contre OKE, valeur attendue obtenue | compte |
-| FAIL | Valeur différente, ou ressource absente | l'étape échoue : ne pas poursuivre, `fix-app` |
-| NOT_TESTED | Contrôle non exécutable (CRD absente, UID de référence absent) | verdict PARTIAL, pas PASS |
-| BLOCKED | Prérequis absent (KUBECONFIG, contexte, API server, SHA inconnu) | code 2, rien n'est prouvé |
+| 0 | PASS | seul code qui vaut PASS |
+| 1 | FAIL | ne pas poursuivre, `fix-app` |
+| 2 | BLOCKED | prérequis absent (KUBECONFIG, contexte, API server, SHA inconnu) |
+| 3 | PARTIAL | aucun FAIL, mais NOT_TESTED ou BLOCKED |
 
-Codes retour : 0 PASS, 1 FAIL, 2 BLOCKED, 3 PARTIAL. Seul le code 0 vaut PASS.
+## 4. Findings restants
 
-## 5. Détail des contrôles runtime
+- **F4. Comportement `WHOAMI_NAME` non exécuté `[S]`.** L'hypothèse : `traefik/whoami:v1.10.3` lit `WHOAMI_NAME` et affiche `Name: <valeur>`. Non vérifié (aucun conteneur lancé ici). Si la baseline ne prouve pas le format, repli `args: [..., "--name", "<valeur>"]` à confirmer par `--help` de l'image, puis regénérer `change.patch`.
+- **F5. Nommage de cellule `[S]`.** `cell_ns` lit le label `openchoreo.dev/project` / `environment`, avec repli sur `dp-default-whoami-production-*`. `verify-http.sh` échoue en `W0` si ni l'un ni l'autre ne matche.
+- **F7. Rollback et UID.** `R4` dépend de `verify-change.sh` exécuté depuis le même poste (fichier d'UID hors dépôt, `~/.local/state/golden-path-whoami`). Sinon la preuve « objet d'origine, non recréé » est NOT_TESTED.
+- **F8. Dépendance à la CI.** `make-*-pr.sh` ne contourne pas la CI : la PR n'est mergeable qu'avec les checks requis verts. Ils ne sont pas exécutés ici.
 
-| ID | Contrôle | Source |
-|---|---|---|
-| P0 | KUBECONFIG explicite, contexte autorisé (`CONTEXT_RE`), `kubectl version` répond | `common.sh` `preflight` |
-| G2 | Application `lab-apps` Synced/Healthy, révision = commit attendu | `argocd`, `applications.argoproj.io` |
-| G3 | Component `whoami` avec `autoDeploy: false` | `components.openchoreo.dev` |
-| G4 | ReleaseBinding `releaseName` attendu ; ComponentRelease présente | `releasebindings`, `componentreleases` |
-| G5 | ReleaseBinding Ready, ReleaseSynced, ResourcesReady ; ProjectReleaseBinding Ready | conditions |
-| W0 | Cellule `dp-default-whoami-production-*` trouvée | namespaces |
-| W4 | Deployment disponible (ready = desired), pods Ready, moins de 3 redémarrages | deployment, pods |
-| W5 | runAsNonRoot, automount=false, allowPrivilegeEscalation=false, rootfs RO | deployment |
-| W6 | `WHOAMI_NAME` dans le pod : valeur attendue, ou absente | deployment |
-| W7 | Service `whoami` ClusterIP, port 8080 | service |
-| S1 à S5 | 0 PVC ; 0 Service LoadBalancer/NodePort ; 0 route externe, 0 Ingress ; 0 LoadBalancer ou PVC liés à whoami (tout namespace) ; 0 Resource OpenChoreo `whoami` (pas de base) | cellule, cluster |
-| H1 | GET `/health` = 200 via port-forward | `curl` sur `127.0.0.1` |
-| H2 | GET `/` = 200, corps contenant `Hostname:` (corps non imprimé) | idem |
-| H3 | Corps contenant `Name: <valeur attendue>` | idem |
-| H4 | Corps ne contenant plus `Name: <valeur retirée>` | idem |
-| C1 à C3, R1 à R5 | Voir `verify-change.sh` et `verify-rollback.sh` | Git + runtime |
+## 5. Hors périmètre
 
-## 6. Ce qui reste hors périmètre, et pourquoi
-
-- **Pas d'exposition ni de pod éphémère.** La variante « curl depuis un pod éphémère restricted » a été écartée : créer un pod est une écriture, et le script doit rester en lecture seule. Le tunnel `port-forward` ne modifie aucun objet.
-- **Pas de base, pas de volume, pas de LoadBalancer** (whoami est `stateless`, `exposure: private`, `network: none`, `backup: none`).
-- **Pas de Secret lu**, pas de jeton écrit. Le corps HTTP n'est pas journalisé, seuls les codes et les comparaisons le sont.
-- **Pas de merge, pas de « ready ».** La PR reste en draft.
-
-## 7. Sécurité et hygiène
-
-- Aucun identifiant, aucune adresse de cluster, aucun nom de contexte réel dans ce document ni dans les scripts. Les sorties n'affichent que le fait que le contexte matche.
-- Les fichiers d'UID de référence sont écrits hors dépôt (`$WHOAMI_STATE_DIR`, par défaut `~/.local/state/golden-path-whoami`).
-- Les garde-fous sont testés par `selftest.sh` sans cluster.
+- Pas d'exposition publique, pas de pod éphémère (écriture), pas de `port-forward` vers autre chose que `svc/whoami`.
+- Pas de base, pas de volume, pas de LoadBalancer (stateless, `exposure: private`, `network: none`).
+- Aucun Secret lu, aucun jeton écrit. Le corps HTTP n'est jamais imprimé.
+- Pas de merge, pas de passage en ready hors décision de Paul.
