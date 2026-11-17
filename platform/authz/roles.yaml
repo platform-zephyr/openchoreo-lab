@@ -1,0 +1,256 @@
+# Rôles d'autorisation OpenChoreo v1.3.3 (openchoreo.dev/v1alpha1, cluster-scoped).
+# Modèle : docs/AGENT-ACCESS.md. Preuves : tests/mcp/RESULTS.md (k3d seulement).
+# Sémantique vérifiée dans le code v1.3.3 (internal/authz/casbin/rbac_model.conf) :
+#   allow si au moins une règle allow correspond ET aucune règle deny ne correspond (deny gagne).
+#   Jokers d'action acceptés : "*" et "<famille>:*".
+---
+# Lecture seule pour les agents (Claude, Codex). Aucune écriture, aucun secret
+# (ni secret:*, ni secretreference:*, ni resource:read-secrets), aucune authz, pas de
+# wirelogs/auditlogs/platformlogs, pas de canaux de notification (URL de webhook).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRole
+metadata:
+  name: lab-agent-reader
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  description: "Agents IA : lecture et diagnostic, sans secret ni authz"
+  actions:
+    - clusterdataplane:view
+    - clusterworkflowplane:view
+    - clusterobservabilityplane:view
+    - clustercomponenttype:view
+    - clusterresourcetype:view
+    - clusterprojecttype:view
+    - clustertrait:view
+    - clusterworkflow:view
+    - namespace:view
+    - environment:view
+    - deploymentpipeline:view
+    - dataplane:view
+    - workflowplane:view
+    - observabilityplane:view
+    - componenttype:view
+    - resourcetype:view
+    - projecttype:view
+    - trait:view
+    - workflow:view
+    - project:view
+    - component:view
+    - componentrelease:view
+    - releasebinding:view
+    - resource:view
+    - resourcerelease:view
+    - resourcereleasebinding:view
+    - projectrelease:view
+    - projectreleasebinding:view
+    - workflowrun:view
+    - workload:view
+    - logs:view
+    - events:view
+    - metrics:view
+    - traces:view
+    - alerts:view
+    - incidents:view
+    - rcareport:view
+    - finopsreport:view
+    - finops:view
+    - deliveryinsights:view
+---
+# Écritures opérationnelles bornées (runtime) : s'ajoute à lab-agent-reader.
+# - releasebinding:update  : replicas/ressources (update_release_binding) et bascule de release ;
+# - releasebinding:create  : déploiement/promotion d'une release existante vers un environnement ;
+# - componentrelease:create: figer une release à partir du Workload courant (déclenchement de déploiement).
+# Bornage par environnement : conditions CEL sur le binding (lab-agent-operator-binding).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRole
+metadata:
+  name: lab-agent-operator
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  description: "Agents IA : écritures runtime bornées (release bindings, releases)"
+  actions:
+    - releasebinding:update
+    - releasebinding:create
+    - componentrelease:create
+---
+# Garde-fous : référencé UNIQUEMENT par des bindings effect: deny (deny gagne sur tout allow,
+# y compris un allow ajouté plus tard par erreur). Toute mutation hors runtime borné, les secrets,
+# l'authz, l'exec/connect et la modification des composants (patch_component = ajout de trait,
+# chemin d'une ClusterRoleBinding rendue par un Trait).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRole
+metadata:
+  name: lab-agent-forbidden
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  description: "Garde-fous agents (à n'utiliser qu'en effect: deny)"
+  actions:
+    # authz
+    - authzrole:*
+    - authzrolebinding:*
+    - clusterauthzrole:*
+    - clusterauthzrolebinding:*
+    # secrets
+    - secret:*
+    - secretreference:*
+    - resource:read-secrets
+    - resource:connect
+    - component:exec
+    - component:connect
+    # cycle de vie des composants et des ressources (= Git)
+    - component:create
+    - component:update
+    - component:delete
+    - workload:create
+    - workload:update
+    - workload:delete
+    - resource:create
+    - resource:update
+    - resource:delete
+    - releasebinding:delete
+    - componentrelease:delete
+    - resourcerelease:create
+    - resourcerelease:delete
+    - resourcereleasebinding:create
+    - resourcereleasebinding:update
+    - resourcereleasebinding:delete
+    - projectrelease:create
+    - projectrelease:delete
+    - projectreleasebinding:create
+    - projectreleasebinding:update
+    - projectreleasebinding:delete
+    - workflowrun:create
+    - workflowrun:update
+    - workflowrun:delete
+    # objets plateforme (types, traits, workflows, plans, environnements, namespaces)
+    - namespace:create
+    - namespace:update
+    - namespace:delete
+    - project:create
+    - project:update
+    - project:delete
+    - environment:create
+    - environment:update
+    - environment:delete
+    - deploymentpipeline:create
+    - deploymentpipeline:update
+    - deploymentpipeline:delete
+    - dataplane:create
+    - dataplane:update
+    - dataplane:delete
+    - workflowplane:create
+    - workflowplane:update
+    - workflowplane:delete
+    - observabilityplane:create
+    - observabilityplane:update
+    - observabilityplane:delete
+    - componenttype:create
+    - componenttype:update
+    - componenttype:delete
+    - resourcetype:create
+    - resourcetype:update
+    - resourcetype:delete
+    - projecttype:create
+    - projecttype:update
+    - projecttype:delete
+    - trait:create
+    - trait:update
+    - trait:delete
+    - workflow:create
+    - workflow:update
+    - workflow:delete
+    - clusterdataplane:create
+    - clusterdataplane:update
+    - clusterdataplane:delete
+    - clusterworkflowplane:create
+    - clusterworkflowplane:update
+    - clusterworkflowplane:delete
+    - clusterobservabilityplane:create
+    - clusterobservabilityplane:update
+    - clusterobservabilityplane:delete
+    - clustercomponenttype:create
+    - clustercomponenttype:update
+    - clustercomponenttype:delete
+    - clusterresourcetype:create
+    - clusterresourcetype:update
+    - clusterresourcetype:delete
+    - clusterprojecttype:create
+    - clusterprojecttype:update
+    - clusterprojecttype:delete
+    - clustertrait:create
+    - clustertrait:update
+    - clustertrait:delete
+    - clusterworkflow:create
+    - clusterworkflow:update
+    - clusterworkflow:delete
+    - observabilityalertsnotificationchannel:*
+    - incidents:update
+    - rcareport:update
+    - finopsreport:update
+    # observabilité sensible
+    - auditlogs:view
+    - platformlogs:view
+    - wirelogs:view
+---
+# Lecture navigateur (Backstage/console) pour les humains du groupe openchoreo-viewers.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRole
+metadata:
+  name: lab-viewer
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  description: "Humains : lecture seule (console), sans secret ni authz"
+  actions:
+    - clusterdataplane:view
+    - clusterworkflowplane:view
+    - clusterobservabilityplane:view
+    - clustercomponenttype:view
+    - clusterresourcetype:view
+    - clusterprojecttype:view
+    - clustertrait:view
+    - clusterworkflow:view
+    - namespace:view
+    - environment:view
+    - deploymentpipeline:view
+    - dataplane:view
+    - workflowplane:view
+    - observabilityplane:view
+    - componenttype:view
+    - resourcetype:view
+    - projecttype:view
+    - trait:view
+    - workflow:view
+    - project:view
+    - component:view
+    - componentrelease:view
+    - releasebinding:view
+    - resource:view
+    - resourcerelease:view
+    - resourcereleasebinding:view
+    - projectrelease:view
+    - projectreleasebinding:view
+    - workflowrun:view
+    - workload:view
+    - logs:view
+    - events:view
+    - metrics:view
+    - traces:view
+    - alerts:view
+    - incidents:view
+    - deliveryinsights:view
+---
+# Administrateur plateforme (humain uniquement, jamais un agent).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRole
+metadata:
+  name: lab-platform-admin
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  description: "Humain : administration complète de la plateforme"
+  actions:
+    - "*"

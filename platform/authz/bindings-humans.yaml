@@ -1,0 +1,53 @@
+# Bindings des humains (navigateur : console/Backstage, occ). Sujet = claim `groups`
+# (sous-type user de openchoreo-api, priorité 1). Groupes à créer dans l'IdP :
+# openchoreo-viewers, openchoreo-developers, authentik-admins (noms de docs/IDENTITY.md).
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRoleBinding
+metadata:
+  name: lab-viewers-binding
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  entitlement:
+    claim: groups
+    value: openchoreo-viewers
+  effect: allow
+  roleMappings:
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: lab-viewer
+---
+# Développeur : rôle `developer` livré par le chart v1.3.3 (créer/modifier composants,
+# workloads, release bindings, resources). Il inclut resource:read-secrets et component:exec.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRoleBinding
+metadata:
+  name: lab-developers-binding
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  entitlement:
+    claim: groups
+    value: openchoreo-developers
+  effect: allow
+  roleMappings:
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: developer
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRoleBinding
+metadata:
+  name: lab-platform-admins-binding
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  entitlement:
+    claim: groups
+    value: authentik-admins
+  effect: allow
+  roleMappings:
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: lab-platform-admin

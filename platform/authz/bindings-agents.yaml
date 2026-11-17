@@ -1,0 +1,84 @@
+# Bindings des identités agents (OpenChoreo v1.3.3). Voir docs/AGENT-ACCESS.md.
+# Sujet = claim `client_id` (sous-type service_account de openchoreo-api, priorité 2 :
+# un jeton qui porte `groups` est traité comme utilisateur et n'est jamais évalué sur client_id).
+# Valeurs alignées sur docs/IDENTITY.md : clients Authentik `openchoreo-agent-reader` et
+# `openchoreo-agent-operator` (claim client_id fixe, scope `openchoreo-client-id`). Sur k3d, des clients
+# ThunderID de test portent les mêmes client_id (tests/mcp/thunder.py) : un seul manifeste pour les deux.
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRoleBinding
+metadata:
+  name: lab-agent-reader-binding
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  entitlement:
+    claim: client_id
+    value: openchoreo-agent-reader
+  effect: allow
+  roleMappings:
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: lab-agent-reader
+---
+# Opérateur = lecture + runtime borné. Les écritures de release binding sont limitées aux
+# environnements non productifs par une condition CEL (attribut resource.environment).
+# ATTENTION (vérifié dans le code v1.3.3, services/releasebinding/service_authz.go) : pour un
+# Environment namespacé, resource.environment vaut "<namespace>/<env>" (ex. "default/development"),
+# pas "development" comme le suggère l'exemple de la CRD. D'où endsWith("/<env>").
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRoleBinding
+metadata:
+  name: lab-agent-operator-binding
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  entitlement:
+    claim: client_id
+    value: openchoreo-agent-operator
+  effect: allow
+  roleMappings:
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: lab-agent-reader
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: lab-agent-operator
+      conditions:
+        - actions:
+            - releasebinding:create
+            - releasebinding:update
+          expression: 'resource.environment.endsWith("/development") || resource.environment.endsWith("/staging")'
+---
+# Deny explicites : gagnent sur tout allow (y compris un allow ajouté plus tard par erreur).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRoleBinding
+metadata:
+  name: lab-agent-reader-deny
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  entitlement:
+    claim: client_id
+    value: openchoreo-agent-reader
+  effect: deny
+  roleMappings:
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: lab-agent-forbidden
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRoleBinding
+metadata:
+  name: lab-agent-operator-deny
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  entitlement:
+    claim: client_id
+    value: openchoreo-agent-operator
+  effect: deny
+  roleMappings:
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: lab-agent-forbidden

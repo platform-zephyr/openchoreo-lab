@@ -1,0 +1,111 @@
+# BROUILLON, JAMAIS APPLIQUÉ. À fusionner par le coordinateur dans
+# platform/install/values/openchoreo-control-plane.yaml (remplace le bloc `security:` ThunderID et
+# complète `openchoreoApi.config.security`). Chart openchoreo-control-plane 1.3.3.
+# IdP : Authentik du homelab (https://auth.smadja.dev), externe à OKE. Décision et limites : docs/IDENTITY.md.
+#
+# Faits vérifiés (statique ou GET public, 2026-11-17 19:38 CET) :
+#   - discovery par application : 200 (…/application/o/argocd/.well-known/openid-configuration),
+#     endpoints authorize/token globaux, JWKS RSA RS256 avec kid ;
+#   - discovery racine https://auth.smadja.dev/.well-known/openid-configuration : 404 (impact occ/MCP, §2.4).
+# Hypothèse [S] : issuer_mode global => iss = "https://auth.smadja.dev/" (barre finale incluse ;
+# comparaison stricte, middleware.go l.226). À prouver par T-A1 avant toute fusion.
+
+security:
+  enabled: true
+  oidc:
+    issuer: "https://auth.smadja.dev/"
+    # Discovery d'un des providers OpenChoreo : en mode global elle porte l'issuer global.
+    wellKnownEndpoint: "https://auth.smadja.dev/application/o/openchoreo/.well-known/openid-configuration"
+    # Tous les providers OpenChoreo signent avec la même clé `openchoreo-oidc` : un seul JWKS suffit.
+    jwksUrl: "https://auth.smadja.dev/application/o/openchoreo/jwks/"
+    authorizationUrl: "https://auth.smadja.dev/application/o/authorize/"
+    tokenUrl: "https://auth.smadja.dev/application/o/token/"
+    jwksUrlTlsInsecureSkipVerify: false
+    externalClients:
+      - name: cli
+        client_id: openchoreo-cli
+        scopes: [openid, profile, email, offline_access, openchoreo]
+    mcpOAuthScopes: [openid, profile, email, openchoreo]
+  jwt:
+    # Vide : chaque provider Authentik émet aud = son client_id ; une audience unique rejetterait les
+    # autres clients. L'isolation repose sur iss global + clé de signature dédiée (docs/IDENTITY.md §2.2).
+    audience: ""
+  authz:
+    enabled: true
+
+openchoreoApi:
+  config:
+    security:
+      authentication:
+        jwt:
+          clock_skew: "30s"
+          jwks:
+            refresh_interval: "1h"
+            skip_tls_verify: false
+      subjects:
+        user:
+          display_name: "User"
+          priority: 1
+          mechanisms:
+            jwt:
+              # `username` n'est émis que par un scope non demandé ; profile émet preferred_username.
+              readable_id_claim: "preferred_username"
+              entitlement:
+                claim: "groups"
+                display_name: "User Group"
+        service_account:
+          display_name: "Service Account"
+          priority: 2
+          mechanisms:
+            jwt:
+              readable_id_claim: "client_id"
+              entitlement:
+                claim: "client_id"
+                display_name: "Client ID"
+      authorization:
+        bootstrap:
+          # Remplace INTÉGRALEMENT la liste par défaut du chart (tableau Helm). Retirés volontairement :
+          #   - mcp-tryout-client-binding (admin pour client_id service_mcp_client : inacceptable) ;
+          #   - platform-engineer/sre (groupes ThunderID absents d'Authentik) ;
+          #   - rca/finops/workload-publisher/observer (composants non déployés : pas de clients).
+          # Le hook fait un upsert : il ne SUPPRIME pas les liaisons déjà créées par une installation
+          # antérieure avec les défauts. Vérifier/supprimer par PR (docs/IDENTITY.md §4, T-Z5).
+          # Rôles et liaisons propres au labo (viewer, agents) : platform/authz/ (roles.yaml, bindings-*.yaml).
+          mappings:
+            - name: admin-binding
+              kind: ClusterAuthzRoleBinding
+              roleMappings:
+                - roleRef: {name: admin, kind: ClusterAuthzRole}
+              entitlement: {claim: groups, value: authentik-admins}
+              effect: allow
+            - name: developer-binding
+              kind: ClusterAuthzRoleBinding
+              roleMappings:
+                - roleRef: {name: developer, kind: ClusterAuthzRole}
+                  scope: {namespace: default}
+                - roleRef: {name: cluster-reader, kind: ClusterAuthzRole}
+              entitlement: {claim: groups, value: openchoreo-developers}
+              effect: allow
+            - name: backstage-catalog-reader-binding
+              kind: ClusterAuthzRoleBinding
+              system: true
+              roleMappings:
+                - roleRef: {name: backstage-catalog-reader, kind: ClusterAuthzRole}
+              entitlement: {claim: client_id, value: openchoreo-backstage-service}
+              effect: allow
+
+# Portail (Backstage) : désactivé dans le profil minimal Phase B. Bloc prêt pour son activation.
+# Secret `backstage-secrets` (backend-secret, client-secret, service-client-secret) créé par Paul hors
+# Git dans openchoreo-control-plane, valeurs copiées depuis Authentik (secrets générés par Authentik).
+backstage:
+  baseUrl: "http://localhost:7007"
+  secretName: backstage-secrets
+  auth:
+    clientId: openchoreo-backstage-client
+    redirectUrls:
+      - "http://localhost:7007/api/auth/openchoreo-auth/handler/frame"
+    oidcScope: "openid profile email offline_access openchoreo"
+    serviceClientId: openchoreo-backstage-service
+    serviceClientSecretKey: service-client-secret
+    # Obligatoire avec Authentik : sans ce scope, le jeton client_credentials n'a pas de claim client_id.
+    scope: "openid openchoreo-client-id"

@@ -1,0 +1,55 @@
+# Matrice authz/MCP — k3d (k3d-openchoreo), 2026-11-17T18:49:14Z
+# OpenChoreo v1.3.3
+I1|PASS|jeton client_credentials openchoreo-agent-reader : claim client_id, pas de groups (=> sujet service_account)|claims=['aud', 'client_id', 'exp', 'grant_type', 'iat', 'iss', 'jti', 'nbf', 'sub']
+I2|PASS|jeton client_credentials openchoreo-agent-operator : claim client_id, pas de groups (=> sujet service_account)|claims=['aud', 'client_id', 'exp', 'grant_type', 'iat', 'iss', 'jti', 'nbf', 'sub']
+I3|PASS|MCP sans jeton refusé|{'http': 401, 'body': '{"error":"MISSING_TOKEN","message":"missing or invalid authentication token"}\n'}
+I4|PASS|MCP avec jeton à signature altérée refusé|{'http': 401, 'body': '{"error":"INVALID_TOKEN","message":"invalid or expired token"}\n'}
+L1|PASS|reader : liste filtrée sans aucun outil d'écriture|55 outils, écriture=[]
+L2|PASS|operator : seuls outils d'écriture = runtime borné|58 outils, écriture=['create_component_release', 'create_release_binding', 'update_release_binding']
+L3|PASS|reader/operator : aucun outil authz ni secret_reference listé|trouvés=[]
+L4|PASS|filterByAuthz=false ne fait qu'afficher tous les outils (visibilité, pas permission)|reader filtré=55, non filtré=130, admin=130
+R1|PASS|reader : list_namespaces|list_namespaces -> ok: {"namespaces":[{"createdAt":"2026-11-17T13:26:46Z","name":"default"},{"createdAt":"2026-11-17T18:39:56Z","name":"gl-oc"}
+R2|PASS|reader : list_components (lab-mcp)|list_components -> ok: {"components":[{"autoDeploy":false,"componentType":"deployment/web-application","createdAt":"2026-11-17T18:49:07Z","name
+R3|PASS|reader : get_release_binding|get_release_binding -> ok: {"componentName":"lab-target","componentTypeEnvironmentConfigs":null,"conditions":[{"lastTransitionTime":"2026-11-17T18:
+R4|PASS|reader : list_release_bindings|list_release_bindings -> ok: {"bindings":[{"componentName":"lab-target","createdAt":"2026-11-17T18:49:07Z","environment":"development","name":"lab-ta
+R5|PASS|reader (non filtré) : update_release_binding refusé|update_release_binding -> denied: insufficient permissions to perform this action
+R5b|PASS|reader : ReleaseBinding inchangé après le refus|spec identique
+R6|PASS|reader (non filtré) : create_component refusé|create_component -> denied: insufficient permissions to perform this action
+R7|PASS|reader (non filtré) : delete_component refusé|delete_component -> denied: insufficient permissions to perform this action
+R8|PASS|reader (non filtré) : list_secret_references n'expose rien (référence factice présente)|list_secret_references -> ok: {"secret_references":[]}
+R8b|PASS|reader (non filtré) : get_secret_reference refusé|get_secret_reference -> denied: insufficient permissions to perform this action
+R9|PASS|reader (non filtré) : list_authz_role_bindings (cluster) refusé|list_authz_role_bindings -> denied: insufficient permissions to perform this action
+R10|PASS|reader (non filtré) : create_release_binding refusé|create_release_binding -> denied: insufficient permissions to perform this action
+O1|PASS|operator : update_release_binding replicas/ressources en development autorisé|update_release_binding -> ok: {"action":"patched","name":"lab-target-development","namespace":"lab-mcp"}
+O1b|PASS|operator : écriture effective dans le cluster (hors Git)|spec.replicas=2
+O2|PASS|operator : update_release_binding en production refusé (condition CEL)|update_release_binding -> denied: insufficient permissions to perform this action
+G1|NOT_TESTED|dérive GitOps : Argo CD écrase-t-il l'écriture MCP sur un binding géré par Git ?|A3 (Argo sur k3d) non terminé ; lab-mcp n'est pas géré par Git
+O2b|PASS|operator : binding production inchangé|spec identique
+O3|PASS|operator : create_component_release autorisé par l'authz (échec métier attendu : pas de workload)|create_component_release -> error: workload not found
+O4|PASS|operator (non filtré) : create_component refusé|create_component -> denied: insufficient permissions to perform this action
+O5|PASS|operator (non filtré) : delete_component refusé|delete_component -> denied: insufficient permissions to perform this action
+O6|PASS|operator (non filtré) : update_workload/create_workload refusé (image = Git)|create_workload -> denied: insufficient permissions to perform this action
+O7|PASS|operator (non filtré) : list_secret_references n'expose rien (référence factice présente)|list_secret_references -> ok: {"secret_references":[]}
+O7b|PASS|operator (non filtré) : get_secret_reference refusé|get_secret_reference -> denied: insufficient permissions to perform this action
+O8|PASS|operator (non filtré) : create_secret_reference refusé|create_secret_reference -> denied: insufficient permissions to perform this action
+O9|PASS|operator (non filtré) : create_authz_role_binding (cluster) refusé|create_authz_role_binding -> denied: insufficient permissions to perform this action
+O10|PASS|operator (non filtré) : list_authz_role_bindings (cluster) refusé|list_authz_role_bindings -> denied: insufficient permissions to perform this action
+O11|PASS|constat : list_authz_actions reste appelable (outil non scopé, catalogue statique d'actions, sans binding)|list_authz_actions -> ok: {"actions":[{"lowest_scope":"component","name":"alerts:view"},{"lowest_scope":"c
+T1|PASS|operator : create_trait (ClusterTrait rendant une ClusterRoleBinding) refusé|create_trait -> denied: insufficient permissions to perform this action
+T2|PASS|operator : patch_component (attacher le trait CRB t-add-crb) refusé|patch_component -> denied: insufficient permissions to perform this action
+T3|PASS|operator + allow d'escalade : create_trait CRB toujours refusé (deny gagne)|create_trait -> denied: insufficient permissions to perform this action
+T4|PASS|operator + allow d'escalade : patch_component trait CRB toujours refusé (deny gagne)|patch_component -> denied: insufficient permissions to perform this action
+T5|PASS|evaluate_authz confirme : clustertrait:create refusé malgré l'allow d'escalade|{"decisions":[{"decision":false,"reason":"no matching policies found"}]}
+T6|PASS|aucun ClusterTrait créé, aucun trait attaché|clustertrait='' traits=None
+H1|PASS|PDP groupe openchoreo-viewers : component:view => allow|{"decisions":[{"decision":true,"reason":"Access granted: entitlement value 'openchoreo-viewers' authorized to perform 'component:view' on hierarchy 'ns/lab-mcp/
+H2|PASS|PDP groupe openchoreo-viewers : component:create => deny|{"decisions":[{"decision":false,"reason":"no matching policies found"}]}
+H3|PASS|PDP groupe openchoreo-viewers : secretreference:view => deny|{"decisions":[{"decision":false,"reason":"no matching policies found"}]}
+H4|PASS|PDP groupe openchoreo-developers : component:create => allow|{"decisions":[{"decision":true,"reason":"Access granted: entitlement value 'openchoreo-developers' authorized to perform 'component:create' on hierarchy 'ns/lab
+H5|PASS|PDP groupe openchoreo-developers : clusterauthzrolebinding:create => deny|{"decisions":[{"decision":false,"reason":"no matching policies found"}]}
+H6|PASS|PDP groupe authentik-admins : clusterauthzrolebinding:create => allow|{"decisions":[{"decision":true,"reason":"Access granted: entitlement value 'authentik-admins' authorized to perform 'clusterauthzrolebinding:create' on hierarch
+H7|PASS|PDP groupe groupe-inconnu : component:view => deny|{"decisions":[{"decision":false,"reason":"no matching policies found"}]}
+H8|NOT_TESTED|connexion navigateur réelle (console/Backstage) par groupe|login interactif non joué
+AU1|PASS|journal openchoreo-api : ACCESS-LOG par requête MCP (méthode, chemin, IP, UA, statut)|51 lignes /mcp ; ex. {"time":"2026-11-17T18:49:24.53057169Z","level":"INFO","msg":"ACCESS-LOG","component":"openchoreo-api","component":"mcp","method":"POST","path":"/mcp","remote_a
+AU2|PASS|constat : au niveau INFO, ni sujet (client_id) ni décision authz dans le journal (refus MCP = HTTP 200 JSON-RPC)|0 lignes mentionnant un client agent
+AU3|PASS|trace minimale dans l'objet : managedFields (gestionnaire, horodatage) sans identité agent|managers=['kubectl-client-side-apply', 'manager', 'openchoreo-api']
+BILAN|PASS=50 FAIL=0 NOT_TESTED=2

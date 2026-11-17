@@ -1,0 +1,75 @@
+# Cible jetable des tests MCP (k3d seulement) : namespace OpenChoreo lab-mcp, 2 environnements
+# (development, production), un composant sans workload et 2 release bindings en Undeploy
+# (rien n'est rendu sur le data plane). Supprimé par tests/mcp/run.sh --cleanup.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-mcp
+  labels:
+    openchoreo.dev/control-plane: "true"
+    platform.smadja.dev/owner: lab-authz
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata: {name: development, namespace: lab-mcp}
+spec:
+  dataPlaneRef: {kind: ClusterDataPlane, name: default}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata: {name: production, namespace: lab-mcp}
+spec:
+  dataPlaneRef: {kind: ClusterDataPlane, name: default}
+  isProduction: true
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: DeploymentPipeline
+metadata: {name: default, namespace: lab-mcp}
+spec:
+  promotionPaths:
+    - sourceEnvironmentRef: {kind: Environment, name: development}
+      targetEnvironmentRefs:
+        - {kind: Environment, name: production}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata: {name: lab-mcp, namespace: lab-mcp}
+spec:
+  deploymentPipelineRef: {kind: DeploymentPipeline, name: default}
+  type: {kind: ClusterProjectType, name: default}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: lab-target, namespace: lab-mcp}
+spec:
+  owner: {projectName: lab-mcp}
+  componentType: {kind: ClusterComponentType, name: deployment/web-application}
+  autoDeploy: false
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata: {name: lab-target-development, namespace: lab-mcp}
+spec:
+  owner: {projectName: lab-mcp, componentName: lab-target}
+  environment: development
+  state: Undeploy
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata: {name: lab-target-production, namespace: lab-mcp}
+spec:
+  owner: {projectName: lab-mcp, componentName: lab-target}
+  environment: production
+  state: Undeploy
+---
+# Référence factice (aucune valeur, clé distante inexistante) : sert à vérifier que les agents
+# ne voient pas les SecretReference. Non référencée par un composant, donc jamais rendue.
+apiVersion: openchoreo.dev/v1alpha1
+kind: SecretReference
+metadata: {name: lab-dummy-ref, namespace: lab-mcp}
+spec:
+  template: {type: Opaque}
+  data:
+    - secretKey: dummy
+      remoteRef: {key: lab-mcp-dummy-does-not-exist}
