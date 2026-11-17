@@ -72,6 +72,23 @@ Ordre = impact. Fichier cible entre parenthèses. Aucune n'est appliquée par ce
 9. **O1 — Application `lab-platform` invalide sur OKE** (`platform/install/argocd/apps/lab-platform.yaml`). `destination.namespace` absent, et l'AppProject `lab` n'autorise pas `''` → `InvalidSpecError` (reproduit sur k3d avec l'AppProject calqué). Ajouter `namespace: default`.
 10. **C1 — APP-CONTRACT §5** : retirer « `ignoreDifferences: /spec/projectRelease` » (inutile en SSA, prouvé) et ajouter la règle « une modification des paramètres Project = 2 PR » (A3) ; §6 : un rollback qui traverse un changement de paramètres Project exige aussi de reculer la pin.
 
+### 4.1 Suivi des corrections (2026-11-17, statique : code + tests, AUCUN cluster)
+
+Tests : `tests/appgen/test_gitops_fixes.py` (34 tests ; 17 rouges avant correction, les autres sont des garde-fous de non-régression, A5 et O1 compris), suite complète 137 tests OK. `appgen validate`/`check`/`check --base HEAD` OK, kubeconform `-strict` contre les CRD v1.3.3 (generated/ 63/63, Environment + ClusterDataPlane 4/4), gitleaks : aucune fuite.
+
+| # | Statut | Où | Reste à prouver |
+|---|---|---|---|
+| G1 | **Corrigé statique** : `gateway.ingress.internal` (gateway-default, listener http 19080, hôte `lab.internal` [S]) sur l'Environment ET le gabarit ClusterDataPlane ; l'Environment recopie aussi `external` (sémantique remplacement/fusion non connue [S]) ; appgen refuse au rendu un endpoint sans gateway déclaré | `40-openchoreo-env.yaml`, `30-clusterdataplane.yaml.tmpl`, `appgen.gateway_errors` | k3d : T-GH-RENDER sans commit de correction (Host `production-<ns>.lab.internal` à adapter dans le banc) ; OKE : hôte interne non routé par le tunnel |
+| A1 | **Corrigé** : annotations `sync-options` émises par appgen (noms de release inchangés) ; `annotate_syncopts.py` devient inutile | `appgen.SYNC_OPTIONS` | k3d : T-ANNOT sans script |
+| A2 | **Corrigé** : `releases/` en ajout seul (relu avant réécriture, intégrité par hash) ; `check` vérifie que chaque `releaseName` a son fichier ; `check --base REF` refuse la suppression d'une release d'un composant conservé | `appgen.load_release_history`, `release_deletions`, `binding_errors` | k3d : T-PRUNE-STATUS (Synced après 2 releases). CI : brancher `check --base origin/main` (`.github/`, hors lot) |
+| A3 | **Corrigé** : `appgen pin-project` + `pins/project-releases.yaml` rendu dans `PRB.spec.projectRelease` ; `check --base` avertit si les paramètres d'un Project existant changent sans pin ; règle des 2 PR dans APP-CONTRACT §5-§6 | `cmd_pin_project`, `project_pin_warnings` | k3d : T-PIN-STALE → T-PIN-PRB par la commande. **searxng** : quota nouveau (A7) = 2ᵉ PR si déjà déployé |
+| A4 | **Corrigé (refus)** : `RollingUpdate → Recreate` refusé au rendu si une release `RollingUpdate` existe dans `releases/` ; chemin retrait + ré-ajout documenté. Alternative template (vider `rollingUpdate` dans le CCT) non faite : hors périmètre | `render_component` | k3d : T-STRATEGY via retrait/ré-ajout, puis T-RETRAIT-PVC |
+| A5 | **Écrit et testé hors cluster** : Lua (condition `Ready`) pour ReleaseBinding, PRB, RRB, Component ; testé par `argocd admin settings resource-overrides health` (CLI v3.2.6 locale, KUBECONFIG=/dev/null). Fragment de values séparé, `argocd.yaml` inchangé ; câblage dans `tools/oke/install.sh` à faire (hors lot) | `platform/install/argocd/health/values-openchoreo-health.yaml` | k3d puis OKE (v3.5.1) : T-ARGO-HEALTH `Degraded`. Raisons « Progressing » et condition Ready du Component [S] |
+| A6 | **Documenté, non appliqué** : `automated.allowEmpty: true` sur `lab-apps` seulement, à poser avec le passage en `automated` (aujourd'hui sync manuelle) ; pas de sentinelle. Component/Resource (Prune=false) restent après retrait → suppression opérateur | APP-CONTRACT §5-§6 | `lab-apps.yaml` hors lot ; k3d : T-RETRAIT-1, T-RETRAIT-PVC |
+| A7 | **Corrigé** : quota = requests + `ceil(replicas × 25 %)` pods pour un RollingUpdate (maxSurge par défaut, CCT sans maxSurge) ; Recreate/CronJob sans surplus. Effet : searxng passe à 400m | `appgen.surge_pods`, `_requests` | k3d : rollout 2 × medium non bloqué |
+| O1 | **Déjà corrigé** dans le dépôt (`destination.namespace: default`, autorisé par l'AppProject `lab-platform`) ; test de non-régression ajouté | `lab-platform.yaml` (non modifié) | OKE |
+| C1 | **Corrigé** : APP-CONTRACT §5 sans `ignoreDifferences`, règle des 2 PR (§5) et recul de pin au rollback (§6) | `docs/APP-CONTRACT.md` | — |
+
 ## 5. Limites de l'essai
 
 - k3d seulement (1 nœud, flannel + kube-router, local-path) ; Argo dans `argocd` et apps dans `gl-oc` via un plugin de remappage (source `directory` non testée telle quelle).

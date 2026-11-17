@@ -4,6 +4,8 @@ kind: ComponentRelease
 metadata:
   name: whoami-31985273d8
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
   owner:
     componentName: whoami

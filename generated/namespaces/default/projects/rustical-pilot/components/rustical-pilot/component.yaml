@@ -4,6 +4,8 @@ kind: Component
 metadata:
   name: rustical-pilot
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   owner:
     projectName: rustical-pilot

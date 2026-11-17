@@ -17,7 +17,7 @@ Schéma : [`schema/app.schema.json`](schema/app.schema.json). Base de code : [`B
 
    Les 3 apps du pilote sont **natives**. Le parcours Helm est illustré (§2.4) mais n'est **pas activé**.
 3. **Un générateur CI** (`tools/appgen`, §4) transforme `app.yaml` en 7 à 11 manifests au format sample-gitops. Il appelle `occ` en mode file-system pour les ComponentRelease et les ReleaseBinding. Argo CD synchronise ensuite. Personne n'écrit de manifest OpenChoreo à la main.
-4. **Un objet = un contrôleur (§5).** Git et Argo possèdent tout ce qui est déclaratif. Les contrôleurs OpenChoreo possèdent les objets dérivés (`*Release` générés, RenderedRelease, objets des namespaces `dp-*`). Garde-fous : `autoDeploy: false`, `Prune=false` sur ComponentRelease, Component et Resource. Seule exception de champ : `ProjectReleaseBinding.spec.projectRelease`, initialisé une fois par le contrôleur [C].
+4. **Un objet = un contrôleur (§5).** Git et Argo possèdent tout ce qui est déclaratif. Les contrôleurs OpenChoreo possèdent les objets dérivés (`*Release` générés, RenderedRelease, objets des namespaces `dp-*`). Garde-fous : `autoDeploy: false`, `Prune=false` sur ComponentRelease, Component et Resource (annotations émises par appgen), `releases/` en ajout seul. Seule exception de champ : `ProjectReleaseBinding.spec.projectRelease`, initialisé une fois par le contrôleur [C], puis avancé par une 2ᵉ PR `pin-project`.
 5. **Objets custom minimaux, vérifiés contre les CRD v1.3.3 (§7) :** 1 ClusterComponentType `service-restricted`, 1 ClusterProjectType `cell-restricted`, 1 ClusterResourceType `cnpg-lab-db`, plus 2 ValidatingAdmissionPolicies natives. Aucune CRD custom, aucun fork.
 6. **Deux limites sont prouvées dans le code :**
    - Une `ResourceReleaseBinding` doit être épinglée **à la main** sur `<resource>-<hash>` : aucun seed, aucun générateur `occ` (`api/v1alpha1/resourcereleasebinding_types.go` l.29-34, `internal/controller/resourcereleasebinding/controller.go` l.113) [C]. Une base de données coûte donc **2 PR**.
@@ -232,26 +232,33 @@ Le skill `migrate-to-openchoreo` (openchoreo/skills) peut servir à établir ce 
    | Fichier généré (natif) | Kind | Conditions |
    |---|---|---|
    | `namespaces/default/projects/<n>/project.yaml` | Project (`type: {kind: ClusterProjectType, name: cell-restricted}`, paramètres egress, database, allowIdp, quota) | toujours |
-   | `…/project-bindings/<n>-<env>.yaml` | ProjectReleaseBinding **sans** `projectRelease` (initialisé par le contrôleur) | par environnement |
+   | `…/project-bindings/<n>-<env>.yaml` | ProjectReleaseBinding, `projectRelease` seulement s'il est épinglé (`pins/project-releases.yaml`, A3) ; sinon initialisé une fois par le contrôleur | par environnement |
    | `…/components/<n>/component.yaml` | Component (`componentType: {kind: ClusterComponentType, name: deployment/service-restricted}`, `autoDeploy: false`, traits) | toujours |
    | `…/components/<n>/workload.yaml` | Workload (image, env, endpoints, `dependencies.resources`) | toujours |
    | `…/secret-references/<n>-*.yaml` | SecretReference | si `secrets` ou `oidc` |
    | `…/resources/<n>-db.yaml` + `…/resource-bindings/<n>-db-<env>.yaml` | Resource `cnpg-lab-db` + ResourceReleaseBinding | si `database` |
-   | `…/components/<n>/releases/<n>-<date>-<i>.yaml` | ComponentRelease (`occ componentrelease generate --mode file-system`) | toujours |
+   | `…/components/<n>/releases/<n>-<hash>.yaml` | ComponentRelease (nom = hash de la spec). **Ajout seul** : les releases déjà dans `generated/` sont conservées et réécrites à l'identique (A2) | toujours |
    | `…/components/<n>/release-bindings/<n>-<env>.yaml` | ReleaseBinding (`occ releasebinding generate`), avec `componentTypeEnvironmentConfigs` {size, replicas} | par environnement |
    | `catalog/<n>/catalog-info.yaml` | Entité Backstage (owner, doc, lifecycle) | toujours |
 
    Extensions : un jeu Component/Workload/ComponentRelease/ReleaseBinding par entrée de `workloads[]` et de `jobs[]`. Avec des règles egress E3, `previews/<n>/<env>/` contient les NetworkPolicy et CiliumNetworkPolicy que le CPT rendra. Ce dossier n'est pas synchronisé : il sert à la revue de PR et à kubeconform. L'équivalence avec la CEL du CPT n'est pas prouvée hors cluster [S].
 
    Parcours Helm : `helm/<n>/<env>/application.yaml` + `resources/` (§2.4). Ils remplacent l'ancien `config.yaml` destiné à un ApplicationSet. Aucune app Helm n'est activée dans le pilote.
+   Annotations Argo émises par appgen (A1) : `argocd.argoproj.io/sync-options: Prune=false` sur Component et Resource, `Prune=false,Delete=false` sur ComponentRelease.
+
+   Refus au rendu : endpoint `internal`/`external` sans `gateway.ingress.<v>` sur l'Environment de `platform/` (G1) ; passage `RollingUpdate → Recreate` d'un Deployment déjà déployé, détecté par une release `RollingUpdate` présente dans `releases/` (A4) ; release de `releases/` dont la spec ne correspond plus à son nom (modifiée à la main).
+
+   Quota de cellule (A7) : somme des requests **plus** le surplus d'un RollingUpdate, `ceil(replicas × 25 %)` pods (maxSurge par défaut de Kubernetes : le CCT ne le fixe pas). Recreate et CronJob : aucun surplus.
 3. `appgen pin-resource <n> <env>` : 2ᵉ PR. Elle lit `Resource.status` (latest release) et écrit `spec.resourceRelease`. C'est le seul pas qui exige une lecture du cluster (§0.6). En Phase 0, la lecture `kubectl` est locale. Sur OKE, il faut l'accès opérateur du gate.
-4. CI : `appgen render && git diff --exit-code` (pas de dérive). Elle refuse `autoDeploy: true`, deux bindings pour un même (composant, environnement) (issue #5371), un kind cluster-scoped hors `gitops/platform-shared/`, et une image sans digest.
+   `appgen pin-project <n> <env> <release>` : même mécanisme pour le ProjectReleaseBinding (A3). Valeur : `status.latestRelease.name` du Project, lue après le merge de la PR qui change ses paramètres.
+4. CI : `appgen check --base origin/main` (pas de dérive ; chaque `releaseName` pointe un fichier de `releases/` ; aucune release supprimée d'un composant conservé ; avertissement « 2ᵉ PR pin-project » si les paramètres d'un Project existant changent sans pin). Elle refuse `autoDeploy: true`, deux bindings pour un même (composant, environnement) (issue #5371), un kind cluster-scoped hors `gitops/platform-shared/`, et une image sans digest.
 
 Argo CD, applications fixes, écrites une fois :
 
 - `lab-crds` (wave -1, `ServerSideApply=true`) : CRD OpenChoreo v1.3.3 versionnées dans `gitops/crds/`. Les charts CP et DP sont installés avec `skipCrds`.
 - `lab-platform` (wave 0) : `platform-shared/` (CCT, CPT, CRT, ClusterTrait PVC, VAP), `namespaces/default/platform/` (Environment, DeploymentPipeline, DataPlane), `lab-pg/` (Namespace, Cluster CNPG, NetworkPolicy).
 - `lab-apps` (wave 1) : `namespaces/default/projects/`.
+- Health checks Lua des kinds OpenChoreo (ReleaseBinding, ProjectReleaseBinding, ResourceReleaseBinding, Component ; condition `Ready`) : `platform/install/argocd/health/values-openchoreo-health.yaml`, fragment de values du chart argo-cd (A5). Sans eux, Argo affiche `Healthy` sur un binding en échec.
 
 Deux AppProjects (correction de K8 dans E-revue) :
 
@@ -263,10 +270,10 @@ Deux AppProjects (correction de K8 dans E-revue) :
 | Objet | Unique propriétaire | Règle Argo |
 |---|---|---|
 | CRD, CCT, CPT, CRT, ClusterTrait, Environment, DeploymentPipeline, DataPlane, VAP | Git → Argo `lab-platform` | `prune: true`, selfHeal |
-| Project, Workload, SecretReference, ReleaseBinding (`releaseName` dans Git), ResourceReleaseBinding (`resourceRelease` dans Git) | Git → Argo `lab-apps` | prune, selfHeal |
-| ComponentRelease | Git (généré par `occ`), immuable | **`Prune=false,Delete=false`** : un binding ne doit jamais pointer sur une release purgée |
-| Component, Resource | Git → Argo | **`Prune=false`** : leurs finalizers suppriment les releases et les objets rendus (D[C], `component/controller_finalize.go`) |
-| ProjectReleaseBinding | Git, **sauf `spec.projectRelease`** | Champ initialisé une fois par le contrôleur, puis jamais touché (`projectreleasebinding_types.go` l.31-36) [C]. Absent de Git, ServerSideApply, `ignoreDifferences: /spec/projectRelease`. Faire suivre une modification du CPT = une PR qui avance la pin. |
+| Project, Workload, SecretReference, ReleaseBinding (`releaseName` dans Git), ResourceReleaseBinding (`resourceRelease` dans Git) | Git → Argo `lab-apps` | prune, selfHeal. Retirer la **dernière** app vide l'Application : en `automated`, Argo refuse (« auto-sync will wipe out all resources », T-RETRAIT-1). Chemin retenu : `syncPolicy.automated.allowEmpty: true` sur `lab-apps` **seulement**, à poser en même temps que le passage en `automated` (aujourd'hui synchro manuelle : non bloquant). Pas d'app sentinelle. |
+| ComponentRelease | Git (généré par appgen), immuable, **ajout seul** dans `releases/` | **`Prune=false,Delete=false`** (annotation émise par appgen) : un binding ne doit jamais pointer sur une release purgée. Garder le fichier dans Git évite l'OutOfSync permanent `requiresPruning` (T-PRUNE-STATUS). Purge = retrait du composant entier. |
+| Component, Resource | Git → Argo | **`Prune=false`** (annotation émise par appgen) : leurs finalizers suppriment les releases et les objets rendus (D[C], `component/controller_finalize.go`). Au retrait d'une app, ils restent et se suppriment par geste opérateur après la PR. |
+| ProjectReleaseBinding | Git ; `spec.projectRelease` absent de Git tant qu'il n'est pas épinglé | Champ initialisé une fois par le contrôleur, puis jamais avancé (`projectreleasebinding_types.go` l.31-36) [C], prouvé sur k3d (T-PIN-STALE). ServerSideApply : un champ absent de Git n'est pas comparé, **pas d'`ignoreDifferences`** (prouvé, C1). **Toute modification des paramètres du Project (quota, `pvcs`, egress, database) ou du CPT = 2 PR** : la PR 1 change `app.yaml` (nouvelle ProjectRelease, non adoptée) ; la PR 2 `appgen pin-project` écrit la pin, qu'Argo applique en SSA sans conflit (T-PIN-PRB). |
 | ProjectRelease, ResourceRelease, RenderedRelease, `status` | Contrôleurs OpenChoreo | Jamais dans Git |
 | Tout ce qui est dans `dp-*` (Deployment, Service, HTTPRoute, NetworkPolicy par composant, ExternalSecret, PVC) | Contrôleur OpenChoreo, appliqué par le cluster-agent | Hors AppProject. `kubectl` d'écriture interdit. |
 | ExternalSecret et Job rendus par `cnpg-lab-db` dans `lab-pg` | OpenChoreo, via le cluster-agent | Seule écriture du cluster-agent hors `dp-*`, bornée par VAP-1 |
@@ -279,7 +286,9 @@ Deux AppProjects (correction de K8 dans E-revue) :
 ## 6. Mise à jour et rollback
 
 - **Natif.** Renovate modifie le digest dans `app.yaml` (`automerge: digest` par défaut, jamais pour une version majeure). La CI régénère le Workload, une nouvelle ComponentRelease et le `releaseName` du binding, **dans la même PR**. Au merge, Argo synchronise et le contrôleur rend.
-  - Rollback = `git revert` : le binding revient sur la release précédente, toujours présente puisque non purgée.
+  - Rollback : revenir sur `apps/<n>/app.yaml` puis `appgen render` (le binding revient sur la release précédente, toujours dans `releases/`). Un `git revert` du commit entier supprimerait la nouvelle release du dépôt (A2) : `appgen check --base` le refuse ; garder `generated/…/releases/` (`git checkout HEAD -- generated/` après le revert, puis `render`).
+  - Un rollback qui traverse un changement des paramètres du Project doit aussi reculer la pin (`pin-project` vers l'ancienne ProjectRelease), sinon quota et NetworkPolicy restent ceux de la nouvelle.
+  - Passage stateless → stateful (`RollingUpdate → Recreate`) sur une app déployée : refusé par appgen (A4, 422 côté API). Chemin : PR de retrait + suppression opérateur du Component, puis PR de ré-ajout. Conservation du PVC au retrait : non prouvée.
   - Promotion `development` → `production` = une PR `appgen promote` qui ne change qu'une ligne.
   - Une migration de schéma n'est pas réversible. Dans le labo, on recrée la base.
 - **Helm.** Renovate modifie `chart.version` et `digest`, avec `minimumReleaseAge` (convention onedr0p). Rollback = `git revert`. `prune: false` dès que l'app est stateful.
@@ -632,7 +641,7 @@ Chaque test produit une sortie brute archivée dans `evidence/phase0/<n>.txt`. L
 1. **Empreinte.** OpenChoreo par défaut pèse +650m de requests, contre un reliquat OKE d'environ 375m au seuil de 70 % (DECISION §3 : 1025m déjà réservés). Mesurer sur k3d, baisser les requests, viser ≤ 250m. Sinon, pas d'OKE.
 2. **Gate OKE.** Cilium remplace flannel. Baseline #1620 active, refus IMDS (test 15), accès opérateur ouvert (nécessaire à `appgen pin-resource`).
 3. **PSA de bout en bout.** whoami en uid 65532 sur le port 8080, Miniflux et AIOStreams avec `readOnlyRootFilesystem` et `/tmp` en emptyDir, Job `psql` en uid 26 [S].
-4. **Boucle GitOps.** `occ … generate` en CI, Argo avec ServerSideApply, `ignoreDifferences` sur `projectRelease`. Deux PR par base (pin RRB). Avancer la pin d'un ProjectReleaseBinding après une modification du CPT.
+4. **Boucle GitOps.** Prouvée sur k3d (docs/GITOPS-PROOF.md) : ServerSideApply sans `ignoreDifferences`. Deux PR par base (pin RRB) et par changement des paramètres du Project (pin PRB, `pin-project`). Corrections G1, A1-A7 à re-prouver sur k3d puis OKE (GITOPS-PROOF §4).
 5. **Job immuable** du CRT après une modification du CRT (§7.3).
 6. **ThunderID.** Issuer joignable par le navigateur **et** par le pod ; déclaration du client Miniflux dans Git (sinon geste manuel à documenter) ; namespace réel pour `idpNamespace`.
 7. **Routage** `/{composant}-{endpoint}` avec `ReplacePrefixMatch` (E-revue T3). Miniflux et AIOStreams sur un hôte dédié peuvent exiger un HTTPRoute par hôte dans le CCT (décision D4).

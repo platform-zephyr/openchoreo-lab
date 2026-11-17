@@ -4,6 +4,8 @@ kind: Component
 metadata:
   name: searxng
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   owner:
     projectName: searxng

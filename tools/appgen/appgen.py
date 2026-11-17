@@ -3,9 +3,13 @@
 
 Commandes :
   validate                 schema + regles semantiques (apps/*/app.yaml et apps/_examples/*/app.yaml)
-  render [--out DIR]       ecrit les manifests (suppression prealable de DIR, sortie deterministe)
-  check                    rend dans un dossier temporaire et compare a generated/ (derive = echec)
-  pin-resource APP RELEASE ecrit la pin ResourceRelease d'une base dans pins/resource-releases.yaml
+  render [--out DIR]       ecrit les manifests (sortie deterministe). Les ComponentRelease deja presentes dans
+                           DIR (defaut generated/) sont CONSERVEES (ajout seul, A2) ; integrite verifiee par hash.
+  check [--base REF]       rend dans un dossier temporaire et compare a generated/ (derive = echec) ; verifie que
+                           chaque releaseName pointe un fichier ; avec --base (ex. origin/main) : refuse la
+                           suppression d'une release d'un composant conserve, signale la 2e PR pin-project (A3)
+  pin-resource APP ENV RELEASE  pin ResourceRelease d'une base -> pins/resource-releases.yaml
+  pin-project APP ENV RELEASE   pin ProjectRelease d'une cellule -> pins/project-releases.yaml (2e PR, A3)
 
 Politique par cluster : clusters/<cluster>/capabilities.yaml (docs/schema/capabilities.schema.json).
 Aucun secret n'est lu ni ecrit : seules des references (SecretReference, ExternalSecret) sont generees.
@@ -22,6 +26,7 @@ import ipaddress
 import json
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass, field
@@ -34,6 +39,16 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = ROOT / "docs" / "schema" / "app.schema.json"
 CAPS_SCHEMA_PATH = ROOT / "docs" / "schema" / "capabilities.schema.json"
 PINS_PATH = ROOT / "pins" / "resource-releases.yaml"
+PROJECT_PINS_PATH = ROOT / "pins" / "project-releases.yaml"
+
+# Annotations Argo exigees par APP-CONTRACT §5 (A1) : les finalizers de Component/Resource suppriment releases
+# et objets rendus ; une ComponentRelease referencee ne doit jamais etre purgee ni supprimee.
+SYNC_OPTIONS_KEY = "argocd.argoproj.io/sync-options"
+SYNC_OPTIONS = {"Component": "Prune=false", "Resource": "Prune=false", "ComponentRelease": "Prune=false,Delete=false"}
+
+# Marge de quota pour un RollingUpdate (A7) : le CCT ne fixe pas rollingUpdate.maxSurge, donc defaut Kubernetes
+# 25 % arrondi au superieur (au moins 1 pod). Recreate, CronJob (concurrencyPolicy Forbid) : aucun surplus.
+MAX_SURGE_PERCENT = 25
 
 NS = "default"
 PIPELINE = "standard"
@@ -539,10 +554,28 @@ def _native_errors(doc: dict, caps: dict, envs_secret: list[str], ctx: Context) 
     return errs
 
 
+def surge_pods(replicas: int) -> int:
+    """Pods en surplus pendant un RollingUpdate : ceil(replicas * maxSurge%), maxSurge = defaut Kubernetes."""
+    return -(-replicas * MAX_SURGE_PERCENT // 100)
+
+
+def component_strategy(spec: dict, comp: dict) -> str | None:
+    """Strategie du Deployment rendu (parametre `strategy` du CCT) ; None hors Deployment."""
+    if comp["kind"] != "Deployment":
+        return None
+    vols = [v for v in volumes(spec) if v["workload"] == comp["key"]]
+    if comp["main"]:
+        return spec.get("update", {}).get("strategy", "Recreate" if vols else "RollingUpdate")
+    return "Recreate" if any(v["profile"] == "block-rwo" for v in vols) else "RollingUpdate"
+
+
 def _requests(doc: dict) -> tuple[int, int]:
+    """Somme des requests + surplus d'un RollingUpdate (A7) : le quota doit admettre le pod en surplus."""
     cpu = mem = 0
     for c in components(doc):
         n = 1 if c["kind"] == "CronJob" else c["rt"].get("replicas", 1)
+        if component_strategy(doc["spec"], c) == "RollingUpdate":
+            n += surge_pods(n)
         rc, rm = SIZE_REQUESTS[c["rt"]["size"]]
         cpu, mem = cpu + n * rc, mem + n * rm
     return cpu, mem
@@ -622,9 +655,37 @@ def load_platform(platform_dir: Path) -> dict[tuple[str, str], dict]:
             if not isinstance(doc, dict):
                 continue
             kind = doc.get("kind")
-            if kind in ("ClusterComponentType", "ClusterTrait", "ClusterProjectType"):
+            if kind in ("ClusterComponentType", "ClusterTrait", "ClusterProjectType", "Environment"):
                 index[(kind, doc["metadata"]["name"])] = doc
     return index
+
+
+def gateway_errors(files: dict[str, object], platform: dict) -> list[str]:
+    """G1 : un endpoint `internal`/`external` exige gateway.ingress.<v> sur l'Environment (sinon RenderingFailed,
+    T-GH-RENDER). Controle actif des que platform/ declare au moins un Environment (fixtures sans Environment :
+    controle non applicable, le gateway peut venir du ClusterDataPlane, non lu ici)."""
+    envs = {name: obj for (kind, name), obj in platform.items() if kind == "Environment"}
+    if not envs:
+        return []
+    errs = []
+    owners = {}
+    for obj in files.values():
+        if isinstance(obj, dict) and obj.get("kind") == "ReleaseBinding":
+            owners.setdefault(obj["spec"]["owner"]["componentName"], set()).add(obj["spec"]["environment"])
+    for rel, obj in sorted(files.items()):
+        if not (isinstance(obj, dict) and obj.get("kind") == "Workload"):
+            continue
+        vis = {v for ep in (obj["spec"].get("endpoints") or {}).values() for v in ep.get("visibility", [])}
+        for env in sorted(owners.get(obj["spec"]["owner"]["componentName"], ())):
+            if env not in envs:
+                errs.append(f"{rel} : Environment '{env}' absent de platform/")
+                continue
+            ingress = ((envs[env].get("spec") or {}).get("gateway") or {}).get("ingress") or {}
+            for v in sorted(vis & {"internal", "external"}):
+                if v not in ingress:
+                    errs.append(f"{rel} : endpoint {v} mais Environment '{env}' sans gateway.ingress.{v} "
+                                "(RenderingFailed garanti, G1)")
+    return errs
 
 
 def _declared_params(obj: dict, section: str = "parameters") -> set[str] | None:
@@ -772,6 +833,35 @@ def project_params(doc: dict, caps: dict, index: dict) -> dict:
     return params
 
 
+def _component_release(name: str, spec: dict) -> dict:
+    return {
+        "apiVersion": "openchoreo.dev/v1alpha1", "kind": "ComponentRelease",
+        "metadata": {"name": name, "namespace": NS, "annotations": {SYNC_OPTIONS_KEY: SYNC_OPTIONS["ComponentRelease"]}},
+        "spec": spec,
+    }
+
+
+def load_release_history(generated: Path | None) -> dict[str, dict[str, dict]]:
+    """ComponentRelease deja presentes dans generated/ : {dossier releases relatif: {nom: spec}} (A2).
+
+    Le nom d'une release est le hash de sa spec : une release modifiee a la main est refusee (immuable).
+    Les metadonnees ne sont pas reprises (reecrites au rendu, annotations comprises)."""
+    out: dict[str, dict[str, dict]] = {}
+    if generated is None or not generated.is_dir():
+        return out
+    for path in sorted(generated.glob(f"namespaces/{NS}/projects/*/components/*/releases/*.yaml")):
+        obj = load_yaml(path)
+        rel = str(path.relative_to(generated))
+        if not isinstance(obj, dict) or obj.get("kind") != "ComponentRelease":
+            raise AppError(f"{rel} : ComponentRelease attendue")
+        name, spec = obj["metadata"]["name"], obj["spec"]
+        cname = path.parent.parent.name
+        if name != path.stem or _release_name(spec, cname) != name:
+            raise AppError(f"{rel} : release modifiee a la main (nom != hash de la spec) : restaurer depuis Git")
+        out.setdefault(str(path.parent.relative_to(generated)), {})[name] = spec
+    return out
+
+
 def render_component(doc: dict, comp: dict, platform: dict, caps: dict, targeted: set, rendered: dict) -> None:
     spec = doc["spec"]
     name = doc["metadata"]["name"]
@@ -791,10 +881,7 @@ def render_component(doc: dict, comp: dict, platform: dict, caps: dict, targeted
     if "run-as-root" not in exc:
         params["runAsUser"] = rt.get("runAsUser", 65532)
     if comp["kind"] == "Deployment":
-        has_rwo = any(v["profile"] == "block-rwo" for v in vols)
-        default = "Recreate" if vols else "RollingUpdate"
-        strategy = spec.get("update", {}).get("strategy", default) if comp["main"] else ("Recreate" if has_rwo else "RollingUpdate")
-        params["strategy"] = strategy
+        params["strategy"] = component_strategy(spec, comp)
     if comp["port"] and comp["kind"] == "Deployment":
         exp = spec["exposure"]
         params["publicAuth"] = exp["auth"] if comp["main"] and exp["mode"] == "public" else "none"
@@ -828,7 +915,7 @@ def render_component(doc: dict, comp: dict, platform: dict, caps: dict, targeted
 
     rendered[f"{base}/components/{cname}/component.yaml"] = {
         "apiVersion": "openchoreo.dev/v1alpha1", "kind": "Component",
-        "metadata": {"name": cname, "namespace": NS},
+        "metadata": {"name": cname, "namespace": NS, "annotations": {SYNC_OPTIONS_KEY: SYNC_OPTIONS["Component"]}},
         "spec": {
             "owner": {"projectName": name},
             "componentType": {"kind": "ClusterComponentType", "name": cct_ref},
@@ -884,10 +971,17 @@ def render_component(doc: dict, comp: dict, platform: dict, caps: dict, targeted
     if traits_release:
         release_spec["traits"] = [traits_release[k] for k in sorted(traits_release)]
     rel = _release_name(release_spec, cname)
-    rendered[f"{base}/components/{cname}/releases/{rel}.yaml"] = {
-        "apiVersion": "openchoreo.dev/v1alpha1", "kind": "ComponentRelease",
-        "metadata": {"name": rel, "namespace": NS}, "spec": release_spec,
-    }
+    rdir = f"{base}/components/{cname}/releases"
+    past = rendered["__history__"].get(rdir, {})
+    if params.get("strategy") == "Recreate" and any(
+            (r["componentProfile"].get("parameters") or {}).get("strategy") == "RollingUpdate" for r in past.values()):
+        raise AppError(
+            f"{cname} : passage RollingUpdate -> Recreate refuse sur un composant deja deploye (l'API refuse la "
+            "mise a jour en place : 422 spec.strategy.rollingUpdate, T-STRATEGY). Chemin : PR 1 retrait de l'app "
+            "(+ suppression operateur du Component), PR 2 re-ajout stateful ; ou garder RollingUpdate sans PVC RWO.")
+    for name_, past_spec in past.items():   # A2 : releases deja dans Git conservees (ajout seul)
+        rendered[f"{rdir}/{name_}.yaml"] = _component_release(name_, past_spec)
+    rendered[f"{rdir}/{rel}.yaml"] = _component_release(rel, release_spec)
     if comp["kind"] == "CronJob":
         env_cfg = {"size": rt["size"], "schedule": comp["schedule"]}
     else:
@@ -908,7 +1002,8 @@ def render_component(doc: dict, comp: dict, platform: dict, caps: dict, targeted
 
 
 def render_native(doc: dict, platform: dict[tuple[str, str], dict], cluster: str, pins: dict,
-                  caps: dict | None = None, index: dict | None = None) -> dict[str, object]:
+                  caps: dict | None = None, index: dict | None = None, history: dict | None = None,
+                  project_pins: dict | None = None) -> dict[str, object]:
     spec = copy.deepcopy(doc["spec"])
     meta = doc["metadata"]
     name = meta["name"]
@@ -939,18 +1034,23 @@ def render_native(doc: dict, platform: dict[tuple[str, str], dict], cluster: str
         },
     }
     for env in envs:
+        prb_spec = {"owner": {"projectName": name}, "environment": env}
+        ppin = (project_pins or {}).get(f"{name}/{env}")
+        if ppin:
+            prb_spec["projectRelease"] = ppin   # A3 : pin explicite (2e PR) ; absent = initialise par le controleur
         files[f"{base}/project-bindings/{name}-{env}.yaml"] = {
             "apiVersion": "openchoreo.dev/v1alpha1", "kind": "ProjectReleaseBinding",
             "metadata": {"name": f"{name}-{env}", "namespace": NS,
                          "labels": {"openchoreo.dev/project": name, "openchoreo.dev/environment": env}},
-            "spec": {"owner": {"projectName": name}, "environment": env},
+            "spec": prb_spec,
         }
 
     targeted = egress_targets(index)
-    scratch: dict = {"__index__": index}
+    scratch: dict = {"__index__": index, "__history__": history or {}}
     for comp in components(doc):
         render_component(doc, comp, platform, caps, targeted, scratch)
     scratch.pop("__index__")
+    scratch.pop("__history__")
     files.update(scratch)
 
     if spec.get("secrets"):
@@ -974,7 +1074,8 @@ def render_native(doc: dict, platform: dict[tuple[str, str], dict], cluster: str
         crt = caps["databaseInstances"][db.get("instance", DB_INSTANCE)]["resourceType"]
         files[f"{base}/resources/{name}-db.yaml"] = {
             "apiVersion": "openchoreo.dev/v1alpha1", "kind": "Resource",
-            "metadata": {"name": f"{name}-db", "namespace": NS},
+            "metadata": {"name": f"{name}-db", "namespace": NS,
+                         "annotations": {SYNC_OPTIONS_KEY: SYNC_OPTIONS["Resource"]}},
             "spec": {
                 "owner": {"projectName": name},
                 "type": {"kind": "ClusterResourceType", "name": crt},
@@ -1128,13 +1229,17 @@ def render_helm(doc: dict, caps: dict | None = None) -> dict[str, object]:
 
 
 def render_all(root: Path, platform_dir: Path, cluster_gate_open: bool = False,
-               allow_unenforced_fqdn: bool = False, today: datetime.date | None = None) -> dict[str, object]:
+               allow_unenforced_fqdn: bool = False, today: datetime.date | None = None,
+               history_dir: Path | None = None) -> dict[str, object]:
+    """history_dir : arbre genere existant dont les ComponentRelease sont conservees (defaut root/generated)."""
     _, errors, _ = validate_all_full(root, cluster_gate_open, examples=False,
                                      allow_unenforced_fqdn=allow_unenforced_fqdn, today=today)
     if errors:
         raise AppError("\n".join(errors))
     platform = load_platform(platform_dir)
     pins = load_pins(root)
+    project_pins = load_pins(root, "project-releases.yaml")
+    history = load_release_history(history_dir if history_dir is not None else root / "generated")
     cdir = clusters_dir_for(root)
     docs = [load_yaml(d / "app.yaml") for d in app_dirs(root)]
     index = {doc["metadata"]["name"]: doc for doc in docs}
@@ -1144,7 +1249,10 @@ def render_all(root: Path, platform_dir: Path, cluster_gate_open: bool = False,
         if compute_delivery(doc["spec"]) == "helm":
             files.update(render_helm(doc, caps))
         else:
-            files.update(render_native(doc, platform, doc["spec"]["cluster"], pins, caps, index))
+            files.update(render_native(doc, platform, doc["spec"]["cluster"], pins, caps, index, history, project_pins))
+    errs = gateway_errors(files, platform)
+    if errs:
+        raise AppError("\n".join(errs))
     return files
 
 
@@ -1157,12 +1265,72 @@ def write_tree(files: dict[str, object], out: Path) -> None:
         target.write_text(header + body, encoding="utf-8")
 
 
-def load_pins(root: Path) -> dict[str, str]:
-    path = root / "pins" / "resource-releases.yaml"
+def load_pins(root: Path, filename: str = "resource-releases.yaml") -> dict[str, str]:
+    path = root / "pins" / filename
     if not path.exists():
         return {}
     data = load_yaml(path) or {}
     return {str(k): str(v) for k, v in (data.get("pins") or {}).items()}
+
+
+_RELEASE_PATH = re.compile(r"^(?P<comp>generated/namespaces/[^/]+/projects/[^/]+/components/[^/]+)/releases/(?P<rel>[^/]+)\.yaml$")
+
+
+def release_deletions(base_paths: set[str], current_paths: set[str]) -> list[str]:
+    """A2 : une ComponentRelease presente sur la base et absente maintenant, alors que son composant existe
+    toujours, est une suppression interdite (binding de rollback casse, Application OutOfSync). La purge
+    accompagne le retrait du composant entier (component.yaml absent)."""
+    errs = []
+    for p in sorted(base_paths - current_paths):
+        m = _RELEASE_PATH.match(p)
+        if m and f"{m['comp']}/component.yaml" in current_paths:
+            errs.append(f"release supprimee : {p} (releases/ en ajout seul ; rollback = revert de app.yaml puis render)")
+    return errs
+
+
+def project_pin_warnings(base_params: dict, cur_params: dict, base_pins: dict, cur_pins: dict) -> list[str]:
+    """A3 : parametres d'un Project existant modifies sans changement de pin -> le PRB reste sur l'ancienne
+    ProjectRelease (quota, NetworkPolicy, PVC non appliques, T-PIN-STALE). Signale la 2e PR."""
+    out = []
+    for app in sorted(set(base_params) & set(cur_params)):
+        if base_params[app] == cur_params[app]:
+            continue
+        keys = {k for k in set(base_pins) | set(cur_pins) if k.startswith(f"{app}/")}
+        if any(base_pins.get(k) != cur_pins.get(k) for k in keys):
+            continue
+        out.append(f"{app} : parametres du Project modifies ; 2e PR requise apres merge : "
+                   f"tools/appgen/appgen.py pin-project {app} <env> <status.latestRelease.name du Project>")
+    return out
+
+
+def binding_errors(generated: Path) -> list[str]:
+    """Chaque ReleaseBinding doit pointer une ComponentRelease presente dans generated/ (A2)."""
+    errs = []
+    for path in sorted(generated.glob("namespaces/*/projects/*/components/*/release-bindings/*.yaml")):
+        obj = load_yaml(path)
+        rel = obj["spec"].get("releaseName")
+        if not (path.parent.parent / "releases" / f"{rel}.yaml").exists():
+            errs.append(f"{path.relative_to(generated)} : releaseName '{rel}' sans fichier releases/{rel}.yaml")
+    return errs
+
+
+def _git(args: list[str]) -> str:
+    return subprocess.run(["git", "-C", str(ROOT), *args], check=True, capture_output=True, text=True).stdout
+
+
+def base_state(ref: str) -> tuple[set[str], dict, dict]:
+    """(chemins generated/, parametres Project, pins Project) a la revision ref (lecture git seule)."""
+    paths = set(_git(["ls-tree", "-r", "--name-only", ref, "--", "generated/"]).split())
+    params = {}
+    for p in paths:
+        if re.fullmatch(r"generated/namespaces/[^/]+/projects/[^/]+/project\.yaml", p):
+            obj = yaml.safe_load(_git(["show", f"{ref}:{p}"]))
+            params[obj["metadata"]["name"]] = obj["spec"].get("parameters", {})
+    try:
+        pins = (yaml.safe_load(_git(["show", f"{ref}:pins/project-releases.yaml"])) or {}).get("pins") or {}
+    except subprocess.CalledProcessError:
+        pins = {}
+    return paths, params, {str(k): str(v) for k, v in pins.items()}
 
 
 def diff_trees(expected: Path, actual: Path) -> list[str]:
@@ -1198,7 +1366,9 @@ def cmd_validate(args) -> int:
 def cmd_render(args) -> int:
     out = Path(args.out) if args.out else ROOT / "generated"
     try:
-        files = render_all(ROOT, Path(args.platform_dir), args.allow_oke, args.allow_unenforced_fqdn)
+        # Releases conservees : lues dans le dossier cible avant son effacement (A2, ajout seul).
+        files = render_all(ROOT, Path(args.platform_dir), args.allow_oke, args.allow_unenforced_fqdn,
+                           history_dir=out if out.exists() else ROOT / "generated")
     except AppError as exc:
         print(f"appgen render : ECHEC\n{exc}", file=sys.stderr)
         return 1
@@ -1219,6 +1389,19 @@ def cmd_check(args) -> int:
         tmp_out = Path(tmp) / "generated"
         write_tree(files, tmp_out)
         diffs = diff_trees(tmp_out, ROOT / "generated")
+    diffs += binding_errors(ROOT / "generated")
+    if args.base:
+        try:
+            base_paths, base_params, base_pins = base_state(args.base)
+        except subprocess.CalledProcessError as exc:
+            print(f"appgen check : base '{args.base}' illisible ({exc.stderr.strip()})", file=sys.stderr)
+            return 1
+        cur_paths = {f"generated/{p.relative_to(ROOT / 'generated')}" for p in (ROOT / "generated").rglob("*.yaml")}
+        diffs += release_deletions(base_paths, cur_paths)
+        cur_params = {obj["metadata"]["name"]: obj["spec"].get("parameters", {})
+                      for obj in files.values() if isinstance(obj, dict) and obj.get("kind") == "Project"}
+        for w in project_pin_warnings(base_params, cur_params, base_pins, load_pins(ROOT, "project-releases.yaml")):
+            print(f"AVERTISSEMENT {w}", file=sys.stderr)
     if diffs:
         print("appgen check : DERIVE (lancer tools/appgen render et committer)", file=sys.stderr)
         print("\n".join(diffs), file=sys.stderr)
@@ -1245,6 +1428,27 @@ def cmd_pin_resource(args) -> int:
     return 0
 
 
+def cmd_pin_project(args) -> int:
+    """Pin de ProjectReleaseBinding (A3, 2e PR apres tout changement des parametres du Project) : valeur lue par
+    l'operateur (kubectl get project <app> -n default -o jsonpath='{.status.latestRelease.name}')."""
+    if not re.fullmatch(rf"{re.escape(args.app)}-[0-9a-f]{{10}}", args.release):
+        print(f"pin-project : '{args.release}' ne ressemble pas a une ProjectRelease de {args.app} "
+              f"({args.app}-<10 hex>)", file=sys.stderr)
+        return 1
+    path = PROJECT_PINS_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = load_yaml(path) if path.exists() else None
+    pins = dict((data or {}).get("pins") or {})
+    pins[f"{args.app}/{args.env}"] = args.release
+    path.write_text(
+        "# Pins ProjectRelease (2e PR apres un changement des parametres du Project). Ecrit par tools/appgen pin-project.\n"
+        + yaml.safe_dump({"pins": dict(sorted(pins.items()))}, sort_keys=False),
+        encoding="utf-8",
+    )
+    print(f"pin-project : {args.app}/{args.env} -> {args.release} (relancer render puis committer)")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="appgen", description=__doc__.split("\n")[0])
     parser.add_argument("--platform-dir", default=str(ROOT / "platform"),
@@ -1258,12 +1462,16 @@ def main(argv=None) -> int:
     p_render = sub.add_parser("render")
     p_render.add_argument("--out", default=None)
     p_render.set_defaults(func=cmd_render)
-    sub.add_parser("check").set_defaults(func=cmd_check)
-    p_pin = sub.add_parser("pin-resource")
-    p_pin.add_argument("app")
-    p_pin.add_argument("env", choices=sorted(ALLOWED_ENVIRONMENTS))
-    p_pin.add_argument("release")
-    p_pin.set_defaults(func=cmd_pin_resource)
+    p_check = sub.add_parser("check")
+    p_check.add_argument("--base", default=None,
+                         help="revision git de reference (ex. origin/main) : suppression de release, 2e PR pin-project")
+    p_check.set_defaults(func=cmd_check)
+    for cmd, func in (("pin-resource", cmd_pin_resource), ("pin-project", cmd_pin_project)):
+        p_pin = sub.add_parser(cmd)
+        p_pin.add_argument("app")
+        p_pin.add_argument("env", choices=sorted(ALLOWED_ENVIRONMENTS))
+        p_pin.add_argument("release")
+        p_pin.set_defaults(func=func)
     args = parser.parse_args(argv)
     return args.func(args)
 
