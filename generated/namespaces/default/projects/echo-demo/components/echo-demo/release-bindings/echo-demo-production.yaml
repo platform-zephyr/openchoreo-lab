@@ -1,0 +1,15 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: echo-demo-production
+  namespace: default
+spec:
+  owner:
+    projectName: echo-demo
+    componentName: echo-demo
+  environment: production
+  releaseName: echo-demo-d5ad4c3fc9
+  componentTypeEnvironmentConfigs:
+    size: small
+    replicas: 1
