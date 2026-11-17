@@ -10,9 +10,7 @@ spec:
     componentName: whoami
   container:
     image: docker.io/traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
-    env:
-    - key: WHOAMI_NAME
-      value: whoami-gitops-oke-v2
+    env: []
     args:
     - --port
     - '8080'
