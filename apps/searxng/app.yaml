@@ -1,0 +1,26 @@
+# Metamoteur SearXNG, equivalent de kube-ops applications/catalog/searxng [C].
+# Digest index multi-arch (linux/arm64 present) verifie via docker buildx imagetools inspect [C].
+# Runtime NON VERIFIE (NOT_TESTED) : entrypoint, uid et ecriture de config. Voir NOTES.md.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: searxng
+  owner: user:default/paul
+  description: Metamoteur de recherche SearXNG (usage prive)
+  docs: https://docs.searxng.org/
+spec:
+  source:
+    image: searxng/searxng:2026.9.30-a9d990033@sha256:a07a5cd2da2c63d66e559f9e4d3a3db106cfc6c32fb0ac70abe91cc28bcd7350
+  cluster: k3d
+  environments: [production]
+  profile: stateless
+  runtime:
+    port: 8080
+    healthPath: /healthz   # [S] endpoint a verifier au runtime
+    size: medium
+  secrets:
+    - {env: SEARXNG_SECRET, key: SEARXNG_SECRET}
+  exposure: {mode: private, auth: none}
+  network: {egress: public-internet}   # moteurs de recherche : egress public requis (voir NOTES.md)
+  backup: {class: none}
+  observability: {metrics: {enabled: false}}

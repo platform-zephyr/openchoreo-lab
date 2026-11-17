@@ -1,0 +1,37 @@
+# Lecteur RSS. Image verifiee [C] : ghcr.io/miniflux/miniflux:2.3.3, index multi-arch incluant linux/arm64,
+# utilisateur de l'image 65534, port 8080 (LISTEN_ADDR), sonde GET /healthcheck (internal/http/server/routes.go).
+# Metriques desactivees : /metrics serait expose sur l'hote public (route complete). Voir tools/README.md.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: miniflux
+  owner: user:default/paul
+  description: Lecteur RSS
+  docs: https://miniflux.app/docs/
+spec:
+  source:
+    image: ghcr.io/miniflux/miniflux:2.3.3@sha256:49d7b60987616387c306a8023087b31f2c9b7b21288b523026cb04058e8b6dbb
+  cluster: k3d
+  environments: [production]
+  profile: stateful
+  runtime:
+    port: 8080
+    healthPath: /healthcheck
+    size: small
+    runAsUser: 65534
+    env:
+      RUN_MIGRATIONS: "1"
+      BASE_URL: https://miniflux.lab.smadja.dev
+      OAUTH2_PROVIDER: oidc
+      OAUTH2_OIDC_DISCOVERY_ENDPOINT: https://thunder.lab.smadja.dev   # [S] issuer joignable navigateur ET pod (Phase 0)
+      OAUTH2_REDIRECT_URL: https://miniflux.lab.smadja.dev/oauth2/oidc/callback
+      OAUTH2_USER_CREATION: "1"   # [S] risque : tout porteur d'un token valide cree un compte ; le refus doit venir de l'IdP
+  database: {engine: postgres, instance: lab-pg, envVar: DATABASE_URL}
+  secrets:
+    - {env: OAUTH2_CLIENT_SECRET, key: MINIFLUX_OAUTH2_CLIENT_SECRET}
+  identity:
+    oidc: {provider: thunderid, issuer: https://thunder.lab.smadja.dev, clientId: miniflux, clientSecretKey: MINIFLUX_OAUTH2_CLIENT_SECRET, adminGroup: admin}
+  exposure: {mode: public, host: miniflux.lab.smadja.dev, auth: app-oidc}
+  network: {egress: public-internet, allowIdp: true}
+  backup: {class: regenerable}
+  observability: {metrics: {enabled: false}}

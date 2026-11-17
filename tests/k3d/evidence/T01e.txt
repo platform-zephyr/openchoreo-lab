@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:05Z k3d
+$ dry_pod dp-default-t-cell-a-development-8fec71a2 t-hostpath ghcr.io/cloudnative-pg/postgresql:17.7-standard-trixie@sha256:e079dae5253fa6ed26fc65fda06d515af764dbec392dd4b46b17ab11eebd8131 hostpath
+Error from server (Forbidden): error when creating "STDIN": pods "t-hostpath" is forbidden: violates PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "c" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container "c" must set securityContext.capabilities.drop=["ALL"]), restricted volume types (volume "h" uses restricted volume type "hostPath"), runAsNonRoot != true (pod or container "c" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container "c" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+[rc=1]

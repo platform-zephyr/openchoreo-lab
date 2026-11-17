@@ -1,0 +1,15 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: idp-e2e-production
+  namespace: default
+spec:
+  owner:
+    projectName: idp-e2e
+    componentName: idp-e2e
+  environment: production
+  releaseName: idp-e2e-bd7910ec5e
+  componentTypeEnvironmentConfigs:
+    size: small
+    replicas: 2

@@ -1,0 +1,43 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: miniflux-workload
+  namespace: default
+spec:
+  owner:
+    projectName: miniflux
+    componentName: miniflux
+  container:
+    image: ghcr.io/miniflux/miniflux:2.3.3@sha256:49d7b60987616387c306a8023087b31f2c9b7b21288b523026cb04058e8b6dbb
+    env:
+    - key: RUN_MIGRATIONS
+      value: '1'
+    - key: BASE_URL
+      value: https://miniflux.lab.smadja.dev
+    - key: OAUTH2_PROVIDER
+      value: oidc
+    - key: OAUTH2_OIDC_DISCOVERY_ENDPOINT
+      value: https://thunder.lab.smadja.dev
+    - key: OAUTH2_REDIRECT_URL
+      value: https://miniflux.lab.smadja.dev/oauth2/oidc/callback
+    - key: OAUTH2_USER_CREATION
+      value: '1'
+    - key: OAUTH2_CLIENT_ID
+      value: miniflux
+    - key: OAUTH2_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: miniflux-secrets
+          key: OAUTH2_CLIENT_SECRET
+  endpoints:
+    http:
+      type: HTTP
+      port: 8080
+      visibility:
+      - external
+  dependencies:
+    resources:
+    - ref: miniflux-db
+      envBindings:
+        url: DATABASE_URL

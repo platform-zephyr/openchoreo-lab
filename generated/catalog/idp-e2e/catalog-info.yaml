@@ -1,0 +1,12 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: idp-e2e
+  description: App web interne idp-e2e (echo HTTP de test)
+  annotations:
+    openchoreo.dev/managed: 'true'
+spec:
+  type: service
+  lifecycle: experimental
+  owner: user:default/paul

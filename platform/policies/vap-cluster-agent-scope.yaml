@@ -1,0 +1,69 @@
+# VAP-1 `lab-cluster-agent-scope` (APP-CONTRACT §7.4). ValidatingAdmissionPolicy native (GA 1.30).
+# Identités visées :
+#   - le cluster-agent du data plane : system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane
+#     (nom réel du SA dans le chart v1.3.3, valeur clusterAgent.name ; l'APP-CONTRACT disait `cluster-agent`) ;
+#   - toute identité applicative : ServiceAccounts des namespaces de cellule dp-*.
+# Règles :
+#   R1 aucun objet cluster-scoped, sauf pour le cluster-agent un Namespace nommé dp-* (cellules) ;
+#   R2 le cluster-agent n'écrit d'objets namespacés que dans dp-*, et dans lab-pg seulement les kinds
+#      rendus par le CRT cnpg-lab-db (ExternalSecret, PushSecret, Password, Job) ; Events partout.
+# C'est la seconde barrière derrière postRenderValidations (CCT) ; elle couvre aussi les types,
+# traits et ProjectTypes namespacés qu'une identité non-PE pourrait écrire.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: lab-cluster-agent-scope
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["*"]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE, DELETE]
+        resources: ["*"]
+        scope: "*"
+  matchConditions:
+    - name: agent-or-app-identity
+      expression: >-
+        request.userInfo.username == 'system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane' ||
+        request.userInfo.username.startsWith('system:serviceaccount:dp-')
+  variables:
+    # request.namespace est ABSENT (pas vide) pour un objet cluster-scoped : sans has(), la
+    # variable est en erreur et la VAP refuse « par erreur » (fail-closed) — bug vu au 1er essai.
+    - name: ns
+      expression: "has(request.namespace) ? request.namespace : ''"
+    - name: isAgent
+      expression: "request.userInfo.username == 'system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane'"
+    - name: isNamespace
+      expression: "request.resource.group == '' && request.resource.resource == 'namespaces'"
+    # Pour un objet Namespace, request.namespace porte le nom du namespace lui-même.
+    - name: clusterScoped
+      expression: "variables.isNamespace || variables.ns == ''"
+    - name: reviewOnly
+      expression: "request.resource.group in ['authentication.k8s.io', 'authorization.k8s.io']"
+  validations:
+    - expression: >-
+        !variables.clusterScoped || variables.reviewOnly ||
+        (variables.isAgent && variables.isNamespace && request.name.startsWith('dp-'))
+      messageExpression: >-
+        'lab-cluster-agent-scope: objet cluster-scoped interdit pour ' + request.userInfo.username +
+        ' (' + request.resource.resource + '/' + request.name + ')'
+      reason: Forbidden
+    - expression: >-
+        !variables.isAgent || variables.clusterScoped ||
+        variables.ns.startsWith('dp-') ||
+        request.resource.resource == 'events' ||
+        (variables.ns == 'lab-pg' &&
+          request.resource.resource in ['externalsecrets', 'pushsecrets', 'passwords', 'jobs'])
+      messageExpression: >-
+        'lab-cluster-agent-scope: le cluster-agent ne peut pas écrire ' + request.resource.resource +
+        ' dans le namespace ' + variables.ns
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: lab-cluster-agent-scope
+spec:
+  policyName: lab-cluster-agent-scope
+  validationActions: [Deny]

@@ -1,0 +1,12 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ResourceReleaseBinding
+metadata:
+  name: miniflux-db-production
+  namespace: default
+spec:
+  owner:
+    projectName: miniflux
+    resourceName: miniflux-db
+  environment: production
+  retainPolicy: Retain

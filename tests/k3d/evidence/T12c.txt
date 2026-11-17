@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:14Z k3d
+$ bash -c kubectl get secret -n dp-default-t-cell-a-development-8fec71a2 r-t-alpha-db-development-bc318b89-pg -o json | jq -r '.data | keys | join(" ")'
+password uri
+[rc=0]

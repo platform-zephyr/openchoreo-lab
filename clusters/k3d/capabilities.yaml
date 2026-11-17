@@ -1,0 +1,18 @@
+# Politique du cluster k3d (Phase 0, Mac arm64). Lue par tools/appgen (schema : docs/schema/capabilities.schema.json).
+# Modifier ce fichier = decision plateforme, en PR revue. Ce qui n'est pas liste est refuse.
+apiVersion: platform.smadja.dev/v1alpha1
+kind: ClusterCapabilities
+metadata:
+  name: k3d
+spec:
+  # k3d du labo : flannel + controleur NetworkPolicy de k3s [S, a prouver : tests/k3d]. Pas de Cilium,
+  # donc aucune CiliumNetworkPolicy appliquee : egress FQDN refuse (sauf --allow-unenforced-fqdn, rendu marque).
+  cilium: false
+  privateEgressCIDRs: []
+  databaseInstances:
+    lab-pg: {resourceType: cnpg-lab-db, namespace: lab-pg, cluster: lab-pg, backup: none}
+  identityProviders: [thunderid]
+  storageClasses:
+    block-rwo: local-path   # pas de RWX sur local-path : rwx-shared refuse
+  backupMechanisms: [none]
+  secretStore: doppler-cluster

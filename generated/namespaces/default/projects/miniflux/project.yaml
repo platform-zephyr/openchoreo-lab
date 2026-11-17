@@ -1,0 +1,20 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: miniflux
+  namespace: default
+  annotations:
+    openchoreo.dev/description: Lecteur RSS
+  labels:
+    openchoreo.dev/name: miniflux
+spec:
+  deploymentPipelineRef:
+    name: standard
+  type:
+    kind: ClusterProjectType
+    name: cell-restricted
+  parameters:
+    egress: public-internet
+    database: true
+    allowIdp: true

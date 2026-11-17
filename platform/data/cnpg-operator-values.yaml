@@ -1,0 +1,30 @@
+# Opérateur CloudNativePG pour le labo (k3d seulement en Phase 0).
+# Chart épinglé : cloudnative-pg 0.29.1 (opérateur 1.30.1), publié le 2026-09-23.
+# Digest du .tgz (index.yaml du dépôt) : sha256:b53d3991fe84bcf38767e7702cae78666265427a127a26fff168ab4207d2b1df
+#
+# Installation (k3d) :
+#   helm upgrade --install cnpg cloudnative-pg \
+#     --repo https://cloudnative-pg.github.io/charts --version 0.29.1 \
+#     --namespace cnpg-system --create-namespace \
+#     -f platform/data/cnpg-operator-values.yaml --wait
+#
+# OKE : NE PAS installer avant le gate (Cilium + baseline #1620). Même commande,
+# même version, via Argo `lab-platform` (source Helm + ces values).
+# Image de l'opérateur épinglée par digest (index multi-arch). Elle sert aussi d'init container
+# `bootstrap-controller` dans les pods de lab-pg : sans digest, VAP lab-cell-pod-hardening refuse
+# ces pods.
+image:
+  tag: "1.30.1@sha256:923c267ec29636db3bee20f993d0ec4973fa22998e1adad37da79e4d32b5bc07"
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+# Observer tout le cluster est le défaut ; le labo n'a qu'un Cluster (lab-pg).
+config:
+  clusterWide: true
+monitoring:
+  podMonitorEnabled: false
+  grafanaDashboard:
+    create: false

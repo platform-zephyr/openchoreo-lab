@@ -1,0 +1,29 @@
+# Permission ADDITIONNELLE du cluster-agent, requise par le CPT cell-restricted.
+# Preuve (k3d, OpenChoreo v1.3.3) : sans elle, le ProjectReleaseBinding échoue avec
+#   resourcequotas "cell-quota" is forbidden: User "system:serviceaccount:openchoreo-data-plane:
+#   cluster-agent-dataplane" cannot patch resource "resourcequotas"
+# Le ClusterRole du chart (install/helm/openchoreo-data-plane/templates/cluster-agent/clusterrole.yaml)
+# ne contient ni resourcequotas ni limitranges, alors que la doc project-types.md propose d'en semer.
+# Forme recommandée par la doc (cluster-agent-rbac.mdx) : ClusterRole séparé, non modifié par les
+# upgrades Helm. VAP lab-cluster-agent-scope borne toujours l'écriture aux namespaces dp-*.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: lab-cluster-agent-cell-quota
+rules:
+  - apiGroups: [""]
+    resources: [resourcequotas, limitranges]
+    verbs: [get, list, watch, create, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lab-cluster-agent-cell-quota
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: lab-cluster-agent-cell-quota
+subjects:
+  - kind: ServiceAccount
+    name: cluster-agent-dataplane
+    namespace: openchoreo-data-plane

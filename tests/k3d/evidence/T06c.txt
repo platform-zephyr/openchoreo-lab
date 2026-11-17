@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:06Z k3d
+$ kubectl get pvc -n dp-default-t-cell-b-development-f4914bac -o jsonpath={.items[*].status.phase}
+Bound
+[rc=0]

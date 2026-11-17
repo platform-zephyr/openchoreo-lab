@@ -1,0 +1,53 @@
+T01a|PASS|label PSA enforce=restricted présent malgré namespaceLabels: privileged dans le PRB
+T01b|PASS|pod conforme (restricted + digest) admis dans la cellule (dry-run serveur)
+T01c|PASS|pod digest sans securityContext refusé par PSA
+T01d|PASS|pod privileged refusé dans la cellule
+T01e|PASS|pod hostPath refusé dans la cellule
+T01f|PASS|pod hostNetwork refusé dans la cellule
+T01g|PASS|5 pods rendus par service-restricted Running sous PSA restricted (uid 65532, rootfs RO)
+T02|PASS|trait qui retire capabilities.drop : rendu refusé (postRender)
+T03a|PASS|trait qui rend une ClusterRoleBinding : rendu refusé (postRender)
+T03b|PASS|trait hors allowedTraits sur le vrai CCT : Component refusé
+T04a|PASS|Workload image :latest sans digest : rendu refusé (preRender)
+T05|PASS|endpoint external + publicAuth none : rendu refusé (preRender)
+T06a|PASS|trait qui passe le Service en LoadBalancer : rendu refusé (postRender)
+T06b|PASS|PVC RWO avec strategy RollingUpdate : rendu refusé (postRender)
+T06c|PASS|PVC RWO + Recreate (trait upstream) : déployé, PVC Bound
+T06d|PASS|Service LoadBalancer créé à la main dans la cellule : quota
+T06e|PASS|2e PVC dans la cellule B (quota pvcs=1) : quota
+T04b|PASS|pod direct image taguée sans digest (securityContext conforme) : VAP
+T04c|PASS|dp-* sans PSA : pod privileged refusé par la VAP seule
+T04d|PASS|dp-* sans PSA : pod hostPath refusé par la VAP seule
+T04e|PASS|dp-* sans PSA : pod hostNetwork refusé par la VAP seule
+T04f|PASS|témoin hors portée (t-vap-control, sans PSA) : même pod privileged admis
+T03c|PASS|cluster-agent : create ClusterRoleBinding refusé (VAP)
+T03d|PASS|cluster-agent : create ClusterRole refusé (VAP)
+T03e|PASS|cluster-agent : create Namespace hors dp-* refusé (VAP)
+T03f|PASS|cluster-agent : create Namespace dp-* admis
+T03g|PASS|cluster-agent : écriture dans kube-system refusée (VAP)
+T03h|PASS|cluster-agent : Secret dans lab-pg refusé (VAP)
+T03i|PASS|cluster-agent : Job dans lab-pg admis (kind du CRT)
+T03j|PASS|identité applicative (SA default de la cellule) : create ClusterRole refusé
+T07a|PASS|NetworkPolicy default-deny + allow-dns-and-cell présentes dans la cellule A
+T07b|PASS|intra-cellule A -> t-whoami-a:8080 ouvert (témoin)
+T07c|PASS|cellule A -> whoami de la cellule B : bloqué
+T07d|PASS|DNS depuis la cellule A (egress none) : résolu
+T08a|PASS|cellule A (egress none) -> 1.1.1.1:443 bloqué
+T08b|PASS|cellule B (public-internet) -> 1.1.1.1:443 ouvert (témoin)
+T08c|PASS|cellule B (public-internet) -> example.com:443 ouvert
+T08d|PASS|cellule B -> 10.43.0.1:443 (apiserver, RFC1918) bloqué
+T08e|PASS|témoin : 10.43.0.1:443 joignable depuis lab-pg (autorisé)
+T08f|NOT_TESTED|169.254.169.254 : aucun IMDS sur k3d, un refus n'y prouve rien (test 15, OKE seulement)
+T09a|PASS|rôle alpha -> base alpha_development via DATABASE_URL injectée (TLS)
+T09-beta_development|PASS|rôle alpha -> base beta_development : refus REVOKE CONNECT
+T09-postgres|PASS|rôle alpha -> base postgres : refus REVOKE CONNECT
+T09-app|PASS|rôle alpha -> base app : refus REVOKE CONNECT
+T09b|PASS|rôle alpha sans TLS : rejeté par pg_hba
+T10|PASS|cellule B (sans pg-client) -> lab-pg-rw:5432 bloqué
+T11a|PASS|secret superuser absent de la cellule
+T11b|PASS|SA de cellule : get secrets -n lab-pg = no
+T12a|PASS|mot de passe généré (ESO Password) dans lab-pg : 32 caractères, valeur non affichée
+T12b|PASS|PushSecret vers le store du data plane : Synced
+T12c|PASS|secret de la cellule : clés password + uri (valeurs non affichées)
+T12d|PASS|Job psql idempotent terminé (REVOKE vérifié dans le log)
+FOOTPRINT|INFO|mesure écrite dans tests/k3d/evidence/FOOTPRINT.txt

@@ -1,0 +1,12 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: whoami
+  description: Echo HTTP de diagnostic
+  annotations:
+    openchoreo.dev/managed: 'true'
+spec:
+  type: service
+  lifecycle: experimental
+  owner: user:default/paul

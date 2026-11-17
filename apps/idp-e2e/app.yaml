@@ -1,0 +1,25 @@
+# Echo HTTP interne (traefik/whoami), equivalent de kube-ops apps-generated/idp-e2e (v1 Application) [C].
+# Image identique a kube-ops (digest index multi-arch, linux/arm64 present) [C] verifie via docker buildx imagetools inspect.
+# Ecarts de dimensionnement et de port : voir NOTES.md.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: idp-e2e
+  owner: user:default/paul
+  description: App web interne idp-e2e (echo HTTP de test)
+spec:
+  source:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+  cluster: k3d
+  environments: [production]
+  profile: stateless
+  runtime:
+    port: 8080
+    args: ["--port", "8080"]
+    healthPath: /health
+    size: small
+    replicas: 2
+  exposure: {mode: private, auth: none}
+  network: {egress: none}
+  backup: {class: none}
+  observability: {metrics: {enabled: false}}

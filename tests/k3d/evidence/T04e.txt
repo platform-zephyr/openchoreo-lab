@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:07Z k3d
+$ dry_pod dp-t-vapprobe t-hn ghcr.io/cloudnative-pg/postgresql:17.7-standard-trixie@sha256:e079dae5253fa6ed26fc65fda06d515af764dbec392dd4b46b17ab11eebd8131 hostnet
+Error from server (Forbidden): error when creating "STDIN": pods "t-hn" is forbidden: ValidatingAdmissionPolicy 'lab-cell-pod-hardening' with binding 'lab-cell-pod-hardening' denied request: lab-cell-pod-hardening: hostNetwork, hostPID et hostIPC interdits
+[rc=1]

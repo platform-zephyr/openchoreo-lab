@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:08Z k3d
+$ kubectl --as=system:serviceaccount:dp-default-t-cell-a-development-8fec71a2:default create clusterrole t-evil --verb=get --resource=pods --dry-run=server
+Error from server (Forbidden): clusterroles.rbac.authorization.k8s.io is forbidden: User "system:serviceaccount:dp-default-t-cell-a-development-8fec71a2:default" cannot create resource "clusterroles" in API group "rbac.authorization.k8s.io" at the cluster scope
+[rc=1]

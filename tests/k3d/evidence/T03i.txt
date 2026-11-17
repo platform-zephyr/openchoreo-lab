@@ -1,0 +1,5 @@
+# 2026-11-17T17:00:08Z k3d
+$ as_agent create job t-ok -n lab-pg --image=ghcr.io/cloudnative-pg/postgresql:17.7-standard-trixie@sha256:e079dae5253fa6ed26fc65fda06d515af764dbec392dd4b46b17ab11eebd8131 --dry-run=server -- true
+Warning: would violate PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "t-ok" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container "t-ok" must set securityContext.capabilities.drop=["ALL"]), runAsNonRoot != true (pod or container "t-ok" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container "t-ok" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+job.batch/t-ok created (server dry run)
+[rc=0]

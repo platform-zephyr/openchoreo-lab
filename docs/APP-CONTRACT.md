@@ -34,16 +34,46 @@ Schéma : [`schema/app.schema.json`](schema/app.schema.json). Base de code : [`B
 | `spec.environments` (`development`, `production`) | oui | Un ReleaseBinding et un ProjectReleaseBinding par environnement | Une Application par environnement |
 | `spec.profile` (`stateless` \| `stateful`) | oui | stateless : ni `database` ni `storage`. stateful : au moins l'un des deux (schéma `allOf`). | Documentaire |
 | `spec.runtime` {port ≥ 1024, healthPath, size, replicas ≤ 3, runAsUser, command, args, env non secrets} | natif | Workload (container, endpoint HTTP) + `environmentConfigs` du CCT (`size`, `replicas`) | Interdit : c'est le rôle de `values.yaml` |
-| `spec.storage` {profile `block-rwo`, mountPath, size} | non | ClusterTrait `persistent-volume-claim` (upstream, inchangé) et `update.strategy: Recreate` imposée. Sur OKE : `oci-bv`, **50 Gi minimum facturés** sur un quota de 200 Go [S], jamais Longhorn. | `values.yaml` |
-| `spec.database` {engine `postgres`, instance `lab-pg`, envVar} | non | Resource `cnpg-lab-db` + `dependencies.resources[].envBindings {url: <envVar>}` | Interdit dans le labo |
-| `spec.secrets[]` {env, key, property} | non | `SecretReference` (store `dataplane.secretStore`, ESO) + `env[].valueFrom.secretKeyRef`. Clé préfixée `<NAME>_` (CI). **Jamais de valeur.** | ExternalSecret rendu à côté du chart |
-| `spec.identity.oidc` {provider `thunderid`, issuer, clientId, clientSecretKey, adminGroup} | non | Variables d'env de l'app + SecretReference du secret client. Impose `network.allowIdp` ou `egress: public-internet`. | `values.yaml` |
+| `spec.storage` : objet {profile `block-rwo`, mountPath, size} **ou** liste E8 (§1.1) | non | ClusterTrait `persistent-volume-claim` (upstream, inchangé) par volume, StorageClass lue dans `clusters/<cluster>/capabilities.yaml`, `update.strategy: Recreate` imposée, quota `pvcs` de la cellule ajusté. Sur OKE : `oci-bv`, **50 Gi minimum facturés** sur un quota de 200 Go [S], jamais Longhorn. | `values.yaml` |
+| `spec.database` {engine `postgres`, instance `lab-pg` \| `pg-shared`, envVar} | non | Resource du ClusterResourceType listé pour l'instance dans les capabilities du cluster + `dependencies.resources[].envBindings {url: <envVar>}`. `pg-shared` n'est admis **nulle part** aujourd'hui. | Interdit |
+| `spec.secrets[]` {env, key, property} | non | `SecretReference` (store `dataplane.secretStore`, ESO) + `env[].valueFrom.secretKeyRef`. Clé préfixée `<NAME>_` (CI). **Jamais de valeur.** | ExternalSecret rendu à côté du chart (`capabilities.secretStore`) |
+| `spec.identity.oidc` {provider `thunderid` \| `authentik`, issuer `https://`, clientId, clientSecretKey, allowedGroups, adminGroup} | non | Variables d'env de l'app + SecretReference du secret client. ThunderID : impose `network.allowIdp` ou `public-internet`. Authentik : impose `allowedGroups` et un egress `{fqdn: <hôte de l'issuer>, ports: [443]}`. | `values.yaml` |
 | `spec.exposure` {mode `private` par défaut, host, auth} | oui | Visibilité de l'endpoint : `internal` (private) ou `external` (public). `public` exige un `host` et un `auth` différent de `none`. Sur OKE, l'accès public passe par Cloudflare Tunnel vers le Service ClusterIP de kgateway : **aucun LoadBalancer OCI**. | HTTPRoute rendu à côté |
-| `spec.network` {egress `none` \| `public-internet`, allowIdp} | oui | Paramètres du ClusterProjectType `cell-restricted` | NetworkPolicy à côté |
-| `spec.backup` {class, rpo, rto, retention} | oui | Labo : `none` ou `regenerable`. `irreplaceable` est **refusé par la CI** tant qu'aucune restauration hors Oracle n'est prouvée vers R2 (D-2026-11-14-03). Le CNPG `lab-pg` n'a pas de sauvegarde. | Idem |
+| `spec.network` {egress `none` \| `public-internet` \| liste E3, allowIdp} | oui | Paramètres du ClusterProjectType `cell-restricted` (§1.1) | NetworkPolicy et CiliumNetworkPolicy à côté (§2.4) |
+| `spec.backup` {class, mechanism `none`\|`cnpg`\|`velero`, retention, rpo, rto} | oui | Labo : `none` ou `regenerable`. `irreplaceable` est **refusé par la CI** tant qu'aucune restauration hors Oracle n'est prouvée vers R2 (D-2026-11-14-03). `mechanism` doit figurer dans les capabilities du cluster (aujourd'hui : `none` partout). | Idem |
+| `spec.workloads[]`, `spec.jobs[]`, `spec.securityExceptions[]` | non | §1.1 (E6, E7, E12) | Interdits |
 | `spec.observability` {metrics {enabled, path, port}, alerts} | oui | Annotations de scrape. Sur OKE, export Grafana Cloud existant (kube-ops `oracle-a1/observability`). Pas d'observability plane OpenChoreo (budget). | Idem |
 | `spec.update` {strategy, automerge `digest`\|`patch`\|`minor`} | non | Paramètre `strategy` du CCT et règles Renovate (§6) | Renovate |
 | `spec.delivery` | calculé | Le générateur échoue si la valeur écrite diffère du calcul | |
+
+### 1.1 Extensions 2026-11-17 (schéma toujours `v2alpha1`)
+
+Tous les champs ajoutés sont **optionnels**. Aucune app existante ne change de sens : pas de `v2alpha2`, pas de migration. La politique de chaque cluster vit dans `clusters/<cluster>/capabilities.yaml` (schéma `schema/capabilities.schema.json`). Ce qui n'y figure pas est refusé. La modifier est une décision plateforme, en PR revue, jamais une PR d'app.
+
+| Champ | Objet rendu | Primitive de sécurité | Refus (CI `appgen validate`) |
+|---|---|---|---|
+| `network.egress: [{fqdn\|fqdnPattern, ports}]` (E3) | Paramètre CPT `egressFQDNs` → CiliumNetworkPolicy `egress-fqdn` (règle DNS + `toFQDNs`) | Allowlist L7 DNS, default-deny conservé | Cluster sans Cilium (k3d) ; IP, `*.internal`, `*.local`, `*.svc`, `metadata.*` ; motif plus large que `*.domaine.tld` ; règle sans port |
+| `network.egress: [{cidr, ports}]` (E3) | Paramètre CPT `egressCIDRs` → NetworkPolicy `egress-allowlist` (`ipBlock`, `except` calculés) | Allowlist L3/L4. Les réseaux privés, CGNAT et link-local sont exclus d'office | `0.0.0.0/0` (passer par `public-internet`), plage plus large que /8, `169.254.0.0/16` (IMDS) **toujours**, CIDR privé absent de `capabilities.privateEgressCIDRs`, adresse non canonique |
+| `network.egress: [{app, workload?, envVar?}]` (E3) | `Workload.dependencies.endpoints` (visibilité `namespace`) + paramètre CPT `egressApps` → NetworkPolicy vers `openchoreo.dev/project`/`component` du même environnement. L'endpoint cible reçoit la visibilité `namespace`. | Isolation inter-cellules conservée : seul l'appelant déclaré a l'egress | App inconnue, elle-même, non native, autre cluster, absente d'un environnement |
+| `network.egress: none \| public-internet` | Inchangé (alias historiques) | — | — |
+| `database.instance` (E1) | Resource du `resourceType` de l'instance ; si ≠ `lab-pg`, paramètres CPT `databaseNamespace` et `databaseCluster` | Egress PG limité à l'instance | Instance absente des capabilities (`pg-shared` partout aujourd'hui) |
+| `identity.oidc.provider/allowedGroups/adminGroup` (E2) | Env de l'app (`OAUTH2_CLIENT_ID` injecté), annotations catalogue `oidc-provider`, `oidc-allowed-groups` | Secret client par référence. Liaison des groupes **côté IdP** (blueprint Authentik ou ThunderID, hors générateur [S]) | IdP absent des capabilities ; authentik sans `allowedGroups` ou sans egress vers l'issuer ; `adminGroup` hors `allowedGroups` ; `OAUTH2_ADMIN_GROUP` ≠ `adminGroup` ; issuer non `https` |
+| `workloads[]` {name, kind `Deployment`\|`StatefulSet`, image, runtime, database, secrets} (E6) | 1 Component, Workload, ComponentRelease et ReleaseBinding par workload (`<app>-<nom>`), CCT `worker-restricted` (sans port) ou `statefulset-restricted`. Endpoint visibilité `project`. | Même cellule, jamais exposé ; secrets et base par liste explicite | `main` réservé, doublon, secret non déclaré, secret en clair, **sidecar** (Workload v1.3.3 = 1 conteneur [C]), base absente |
+| `jobs[]` {name, schedule, timeZone, image, runtime, database, secrets} (E7) | Component CCT `cronjob-restricted`, `concurrencyPolicy: Forbid`, `schedule` dans `componentTypeEnvironmentConfigs` | Même durcissement, pas de volume | Cron invalide, port, volume monté |
+| `storage: [{name, profile block-rwo\|rwx-shared, mountPath, size, workload, readOnly}]` (E8) | 1 instance du trait PVC par volume (`accessMode` RWX si besoin), `persistent-volume-claim-sts` pour un StatefulSet, quota `pvcs` de la cellule | Classe imposée par cluster, RWO ⇒ 1 réplica | Profil absent du cluster (RWX sur k3d et OKE), RWO avec réplicas > 1, doublon, volume sur un job |
+| `backup.mechanism` + `retention` (E9) | Annotation catalogue `platform.smadja.dev/backup`. Les objets de sauvegarde (ScheduledBackup de l'instance, Schedule Velero) restent à la plateforme. | Pas de promesse sans mécanisme admis | Mécanisme absent des capabilities, `cnpg` sans instance sauvegardée, `velero` sans volume, pas de `retention` |
+| `securityExceptions[]` {rule, workload, reason ≥ 20 car., expires, approver} (E12) | `writable-rootfs` : paramètre CCT `readOnlyRootFilesystem: false` (PSA restricted conservée). `run-as-root` : CCT `deployment/service-root-exception` + paramètre CPT `podSecurity: baseline` pour **cette** cellule seulement. Annotation catalogue. | Exception nominative, motivée, datée. La PSA n'est jamais désactivée globalement. Drop ALL, seccomp et absence d'escalade restent imposés. | Expirée (date du jour), au-delà de 90 jours, workload inconnu, doublon, `run-as-root` hors Deployment avec endpoint ou avec `runAsUser` |
+
+**Cilium absent (k3d).** Une règle FQDN est **refusée**. Avec `--allow-unenforced-fqdn` (labo seulement), elle devient un avertissement. L'aperçu `previews/…/ciliumnetworkpolicy-egress-fqdn.yaml` est alors marqué `platform.smadja.dev/enforced: "false"`, et `egressFQDNs` n'est **pas** transmis au Project. Le default-deny bloque donc ces flux : l'échec est fermé, l'app est cassée mais rien ne s'ouvre.
+
+**AIOStreams (uid 0).** Le pilote tourne en uid 65532 imposé, sans exception. Si l'image l'exige, voici la voie d'exception :
+
+```yaml
+securityExceptions:
+  - {rule: run-as-root, reason: "image upstream en uid 0, correctif demandé en amont", expires: "2027-01-31", approver: "user:default/paul"}
+```
+
+Elle n'est rendable qu'après la livraison de la CCT et du paramètre CPT par platform/ (§7.4).
 
 ## 2. Exemples
 
@@ -167,17 +197,25 @@ spec:
 
 Le catalogue (`catalog-info.yaml`) le marque `openchoreo.dev/managed: "false"`, avec l'owner, la doc et l'état, c'est-à-dire la santé Argo lue par `app-status`. **OpenChoreo n'en voit rien.**
 
+Rendu par `appgen` pour chaque environnement (`generated/helm/<n>/<env>/`) :
+
+- `application.yaml` : une Application Argo CD multi-source. Source 1 : le chart, avec `targetRevision` = version exacte et l'annotation `chart-digest`. Source 2 : `$values` (`apps/<n>/values.yaml`). Source 3 : `resources/`. L'Application n'a **pas** de finalizer `resources-finalizer` : la supprimer conserve les ressources. C'est l'équivalent de `preserveResourcesOnDeletion`, qui n'existe que sur ApplicationSet. Autres réglages : `automated.prune: false`, `selfHeal`, namespace `lab-<n>-<env>` créé avec les labels PSA `restricted` (`managedNamespaceMetadata`), `FailOnSharedResource`, `PruneLast`, `ServerSideApply`.
+- `resources/` : NetworkPolicy `default-deny` et `allow-dns-and-namespace`, ResourceQuota sans LoadBalancer ni NodePort, egress (profil ou règles E3, CNP si FQDN), ExternalSecret si `secrets[]`.
+- Refus : chart sans `digest` ou sans version exacte, `values.yaml` absent, `hostNetwork`/`hostPID`/`hostIPC`/`privileged`/`allowPrivilegeEscalation` à `true`, `hostPath`, Service `LoadBalancer`/`NodePort`, `runAsUser: 0`, valeur de type secret, `exposure: public` (HTTPRoute non livré), `runtime`/`workloads`/`jobs`/`securityExceptions`.
+- Limites [S] : Argo ne vérifie pas le digest d'un chart. La vérification `helm pull` + sha256 est une étape CI à ajouter. Le `repoURL` OCI est rendu sans préfixe `oci://`, à confirmer avec la version d'Argo installée. L'AppProject `lab-helm` reste à créer. Une annotation `Prune=false` par ressource ne peut venir que du chart (values).
+
 ## 3. Règle de choix automatique du parcours
 
 ```
 si source.chart                                   -> helm
 sinon (source.image) :
   natif si TOUTES les conditions suivantes sont vraies :
-    1 seul conteneur, sans sidecar ni init applicatif
-    au moins 1 endpoint HTTP
-    port >= 1024, PSA restricted possible (non-root, pas de capabilities, rootfs RO + /tmp)
-    au plus 1 PVC RWO, replicas = 1 si PVC
-    base = CNPG lab-pg uniquement
+    1 conteneur par workload, sans sidecar ni init applicatif (workloads[] et jobs[] = composants séparés)
+    au moins 1 endpoint HTTP sur main
+    port >= 1024, PSA restricted possible (non-root, pas de capabilities, rootfs RO + /tmp),
+      sauf exception E12 nominative et datée
+    volumes aux profils admis par le cluster, replicas = 1 si volume RWO
+    base = instance admise par les capabilities du cluster (lab-pg aujourd'hui)
     ni CRD, ni opérateur, ni RBAC applicatif, ni hostNetwork
   sinon -> REFUS « utiliser un chart officiel (parcours helm) », jamais un fallback silencieux
 ```
@@ -203,7 +241,9 @@ Le skill `migrate-to-openchoreo` (openchoreo/skills) peut servir à établir ce 
    | `…/components/<n>/release-bindings/<n>-<env>.yaml` | ReleaseBinding (`occ releasebinding generate`), avec `componentTypeEnvironmentConfigs` {size, replicas} | par environnement |
    | `catalog/<n>/catalog-info.yaml` | Entité Backstage (owner, doc, lifecycle) | toujours |
 
-   Parcours Helm : `gitops/helm/<n>/config.yaml` (chart, version, digest, destination), consommé par l'ApplicationSet `lab-helm` (git files, multi-source `$values`, motif VizzleTF). Désactivé dans le pilote.
+   Extensions : un jeu Component/Workload/ComponentRelease/ReleaseBinding par entrée de `workloads[]` et de `jobs[]`. Avec des règles egress E3, `previews/<n>/<env>/` contient les NetworkPolicy et CiliumNetworkPolicy que le CPT rendra. Ce dossier n'est pas synchronisé : il sert à la revue de PR et à kubeconform. L'équivalence avec la CEL du CPT n'est pas prouvée hors cluster [S].
+
+   Parcours Helm : `helm/<n>/<env>/application.yaml` + `resources/` (§2.4). Ils remplacent l'ancien `config.yaml` destiné à un ApplicationSet. Aucune app Helm n'est activée dans le pilote.
 3. `appgen pin-resource <n> <env>` : 2ᵉ PR. Elle lit `Resource.status` (latest release) et écrit `spec.resourceRelease`. C'est le seul pas qui exige une lecture du cluster (§0.6). En Phase 0, la lecture `kubectl` est locale. Sur OKE, il faut l'accès opérateur du gate.
 4. CI : `appgen render && git diff --exit-code` (pas de dérive). Elle refuse `autoDeploy: true`, deux bindings pour un même (composant, environnement) (issue #5371), un kind cluster-scoped hors `gitops/platform-shared/`, et une image sans digest.
 
@@ -538,7 +578,20 @@ Côté Argo, `lab-pg` contient :
 
 **Risque [S] à tester :** le Job est immuable. Si le CRT change, la nouvelle ResourceRelease rend un Job différent, et l'apply du cluster-agent peut échouer. Repli : suffixer le nom du Job par une version manuelle (`init-v2`).
 
-### 7.4 Deux VAP natives (hors OpenChoreo, propriété d'Argo `lab-platform`)
+### 7.4 Objets à livrer par platform/ pour les extensions
+
+`appgen render` **échoue** (jamais de repli) tant que l'objet requis par une app manque, ou n'en déclare pas les paramètres. Le générateur compare les paramètres qu'il passe à `openAPIV3Schema.properties`. Propositions validées par kubeconform contre les CRD v1.3.3 (la CEL n'est pas évaluée) : `tests/appgen/fixtures/platform-ext/`.
+
+| Objet | Requis par | Contenu |
+|---|---|---|
+| CPT `cell-restricted` : paramètres `egressCIDRs`, `egressFQDNs`, `egressApps`, `databaseNamespace`, `databaseCluster`, `podSecurity` + ressources `egress-allowlist` (NP) et `egress-fqdn` (CNP) | E3, E1 (`pg-shared`), E12 `run-as-root` | `cell-restricted-egress.yaml` (CEL + validations : pas de `169.254.*`, pas de `0.0.0.0/0`, rien de plus large que /8) |
+| CCT `deployment/worker-restricted`, `statefulset/statefulset-restricted`, `cronjob/cronjob-restricted` | E6, E7 | Durcissement identique à `service-restricted`, adapté au workloadType |
+| CCT `deployment/service-root-exception` | E12 `run-as-root` | Sans `runAsUser` ni `runAsNonRoot`, mais drop ALL, sans escalade, seccomp, automount=false |
+| ClusterTrait `persistent-volume-claim-sts` | E8 sur StatefulSet | Trait PVC upstream, `patches` ciblant `apps/v1 StatefulSet` |
+
+La postRender de `service-restricted` interdit tout `NetworkPolicy` rendu par un trait. L'egress déclaratif passe donc par le CPT, là où vit déjà `egress`, et non par un trait.
+
+### 7.5 Deux VAP natives (hors OpenChoreo, propriété d'Argo `lab-platform`)
 
 - **VAP-1 `cluster-agent-scope`.** Pour `system:serviceaccount:openchoreo-data-plane:cluster-agent` : refus de `clusterroles`, `clusterrolebindings` et `namespaces`, sauf les namespaces `dp-*`. Refus de toute écriture dans `lab-pg` hors `external-secrets.io/ExternalSecret` et `batch/Job`, et refus partout ailleurs. Alternative plus propre : `clusterAgent.rbac.create=false` avec une ClusterRole réduite (E-revue rang 5).
 - **VAP-2 `digest-only`.** Pods des namespaces `dp-*` et `lab-pg` : chaque `image` contient `@sha256:`.

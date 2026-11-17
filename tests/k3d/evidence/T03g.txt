@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:08Z k3d
+$ as_agent create configmap t-evil -n kube-system --dry-run=server
+error: failed to create configmap: configmaps "t-evil" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: le cluster-agent ne peut pas écrire configmaps dans le namespace kube-system
+[rc=1]

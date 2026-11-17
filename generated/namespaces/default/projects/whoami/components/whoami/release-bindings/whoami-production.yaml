@@ -1,0 +1,15 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: whoami-production
+  namespace: default
+spec:
+  owner:
+    projectName: whoami
+    componentName: whoami
+  environment: production
+  releaseName: whoami-31985273d8
+  componentTypeEnvironmentConfigs:
+    size: small
+    replicas: 1

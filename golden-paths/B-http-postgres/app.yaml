@@ -1,0 +1,36 @@
+# Golden path B : service HTTP + base PostgreSQL dédiée dans le CNPG éphémère lab-pg (natif OpenChoreo).
+# Copier vers apps/<nom>/app.yaml. Une base coûte DEUX PR :
+#   PR 1 : app.yaml (Resource + ResourceReleaseBinding sans pin) ; le contrôleur coupe une ResourceRelease.
+#   PR 2 : python3 tools/appgen/appgen.py pin-resource <nom> production <nom>-db-<hash> && ... render
+# Prérequis hors Git (MANDAT Paul) : clé <NOM>_PG_PASSWORD (et toute clé de secrets[]) présente dans le store ESO.
+# Exemple réel : apps/miniflux/app.yaml (avec OIDC ThunderID et exposition publique).
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: mon-app-pg                   # À REMPLIR ; donne aussi le nom de la base et du rôle (tirets -> _)
+  owner: user:default/paul
+  description: Service HTTP avec PostgreSQL (à décrire)
+spec:
+  source:
+    image: ghcr.io/exemple/mon-app:2.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000  # À REMPLIR
+  cluster: k3d
+  environments: [production]
+  profile: stateful                  # obligatoire avec database
+  runtime:
+    port: 8080
+    healthPath: /healthcheck
+    size: small
+    env:
+      RUN_MIGRATIONS: "1"            # migrations au démarrage : NON réversibles (rollback = recréer la base dans le labo)
+  database:
+    engine: postgres
+    instance: lab-pg                 # seule valeur admise ; jamais pg-shared
+    envVar: DATABASE_URL             # URL complète injectée par secretKeyRef (sslmode=require), jamais en clair
+  # secrets:
+  #   - {env: OAUTH2_CLIENT_SECRET, key: MON_APP_PG_OAUTH2_CLIENT_SECRET}
+  # identity:                        # OIDC ThunderID : impose network.allowIdp=true ou egress public-internet
+  #   oidc: {provider: thunderid, issuer: https://thunder.lab.smadja.dev, clientId: mon-app-pg, clientSecretKey: MON_APP_PG_OAUTH2_CLIENT_SECRET, adminGroup: admin}
+  exposure: {mode: private, auth: none}
+  network: {egress: none}            # l'accès à lab-pg:5432 est ouvert par la plateforme (NetworkPolicy egress-lab-pg)
+  backup: {class: regenerable}       # lab-pg n'a PAS de sauvegarde ; irreplaceable est refusé par la CI
+  observability: {metrics: {enabled: false}}

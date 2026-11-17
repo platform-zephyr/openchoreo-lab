@@ -1,0 +1,24 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: open-connector
+  namespace: default
+  annotations:
+    openchoreo.dev/description: 'OpenConnector : connecteurs API pour agents, test prive Paperless'
+  labels:
+    openchoreo.dev/name: open-connector
+spec:
+  deploymentPipelineRef:
+    name: standard
+  type:
+    kind: ClusterProjectType
+    name: cell-restricted
+  parameters:
+    egress: none
+    database: false
+    allowIdp: false
+    quota:
+      cpu: 300m
+      memory: 512Mi
+      pvcs: '1'

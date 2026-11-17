@@ -1,0 +1,183 @@
+# Cas de refus OpenChoreo (pré/post-rendu), cellule t-cell-a.
+# Les composants t-neg-caps / t-neg-crb / t-neg-lb utilisent `t-service-restricted-probe` :
+# copie EXACTE de service-restricted générée par run.sh (yq) avec seulement le nom changé et
+# ces 3 Traits de test ajoutés à allowedTraits. Les postRenderValidations testées sont donc
+# celles du fichier livré ; allowedTraits du vrai CCT refuse déjà ces traits (testé à part).
+# Un ClusterComponentType n accepte que des ClusterTrait dans allowedTraits (CRD v1.3.3) :
+# les traits de test sont donc cluster-scoped (préfixe t-).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterTrait
+metadata: {name: t-break-caps}
+spec:
+  patches:
+    - target: {group: apps, version: v1, kind: Deployment}
+      operations:
+        - op: remove
+          path: /spec/template/spec/containers/[?(@.name=='main')]/securityContext/capabilities
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterTrait
+metadata: {name: t-add-crb}
+spec:
+  creates:
+    - template:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: t-evil-${metadata.name}
+        roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: cluster-admin}
+        subjects:
+          - {kind: ServiceAccount, name: default, namespace: "${metadata.namespace}"}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterTrait
+metadata: {name: t-lb}
+spec:
+  patches:
+    - target: {group: "", version: v1, kind: Service}
+      operations:
+        - {op: replace, path: /spec/type, value: LoadBalancer}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-neg-caps, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  componentType: {kind: ClusterComponentType, name: deployment/t-service-restricted-probe}
+  autoDeploy: true
+  traits:
+    - {kind: ClusterTrait, name: t-break-caps, instanceName: breakcaps}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-neg-crb, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  componentType: {kind: ClusterComponentType, name: deployment/t-service-restricted-probe}
+  autoDeploy: true
+  traits:
+    - {kind: ClusterTrait, name: t-add-crb, instanceName: addcrb}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-neg-lb, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  componentType: {kind: ClusterComponentType, name: deployment/t-service-restricted-probe}
+  autoDeploy: true
+  traits:
+    - {kind: ClusterTrait, name: t-lb, instanceName: lb}
+---
+# Trait non autorisé sur le VRAI service-restricted (allowedTraits).
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-neg-trait, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  componentType: {kind: ClusterComponentType, name: deployment/service-restricted}
+  autoDeploy: true
+  traits:
+    - {kind: ClusterTrait, name: t-add-crb, instanceName: addcrb}
+---
+# Image sans digest (tag seul).
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-neg-latest, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  componentType: {kind: ClusterComponentType, name: deployment/service-restricted}
+  autoDeploy: true
+---
+# Endpoint external avec publicAuth: none (défaut).
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-neg-public, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  componentType: {kind: ClusterComponentType, name: deployment/service-restricted}
+  autoDeploy: true
+---
+# Workloads (même image conforme partout, sauf t-neg-latest).
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-neg-caps, namespace: default}
+spec:
+  owner: {projectName: t-cell-a, componentName: t-neg-caps}
+  endpoints: {http: {type: HTTP, port: 8080}}
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    args: ["--port", "8080"]
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-neg-crb, namespace: default}
+spec:
+  owner: {projectName: t-cell-a, componentName: t-neg-crb}
+  endpoints: {http: {type: HTTP, port: 8080}}
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    args: ["--port", "8080"]
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-neg-lb, namespace: default}
+spec:
+  owner: {projectName: t-cell-a, componentName: t-neg-lb}
+  endpoints: {http: {type: HTTP, port: 8080}}
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    args: ["--port", "8080"]
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-neg-trait, namespace: default}
+spec:
+  owner: {projectName: t-cell-a, componentName: t-neg-trait}
+  endpoints: {http: {type: HTTP, port: 8080}}
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    args: ["--port", "8080"]
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-neg-latest, namespace: default}
+spec:
+  owner: {projectName: t-cell-a, componentName: t-neg-latest}
+  endpoints: {http: {type: HTTP, port: 8080}}
+  container:
+    image: traefik/whoami:latest
+    args: ["--port", "8080"]
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-neg-public, namespace: default}
+spec:
+  owner: {projectName: t-cell-a, componentName: t-neg-public}
+  endpoints: {http: {type: HTTP, port: 8080, visibility: [external]}}
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    args: ["--port", "8080"]
+---
+# PVC RWO avec strategy RollingUpdate (défaut) : refus post-rendu.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-neg-pvc, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  componentType: {kind: ClusterComponentType, name: deployment/service-restricted}
+  autoDeploy: true
+  traits:
+    - kind: ClusterTrait
+      name: persistent-volume-claim
+      instanceName: data
+      parameters: {mountPath: /data}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-neg-pvc, namespace: default}
+spec:
+  owner: {projectName: t-cell-a, componentName: t-neg-pvc}
+  endpoints: {http: {type: HTTP, port: 8080}}
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    args: ["--port", "8080"]

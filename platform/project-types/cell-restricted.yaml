@@ -1,0 +1,186 @@
+# Adapted from openchoreo/openchoreo@v1.3.3:samples/getting-started/cluster-project-types/default.yaml (Apache-2.0)
+# Modifications : nom `cell-restricted` ; labels PSA restricted en CONSTANTES (dernier argument
+# d'oc_merge : un namespaceLabels d'environnement ne peut pas les écraser) ; NetworkPolicy
+# default-deny ingress+egress + DNS + intra-cellule ; egress optionnel vers lab-pg, l'IdP et
+# l'Internet public (réseaux privés, CGNAT et link-local/IMDS exclus) ; ResourceQuota ; LimitRange.
+#
+# Propriété vérifiée dans le code v1.3.3 : le ProjectReleaseBinding POSSÈDE le namespace de
+# cellule dp-{ns}-{project}-{env}-{hash} et y applique spec.resources
+# (api/v1alpha1/projectreleasebinding_types.go ; internal/controller/projectreleasebinding/
+# controller_validate.go exige un v1/Namespace nommé ${metadata.namespace}).
+# L'ingress depuis la Gateway est ouvert par les NetworkPolicy PAR COMPOSANT que le contrôleur
+# ReleaseBinding injecte après le rendu (internal/controller/releasebinding/controller.go l.594).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterProjectType
+metadata:
+  name: cell-restricted
+  annotations:
+    openchoreo.dev/display-name: Cellule restreinte
+    openchoreo.dev/description: >-
+      Cellule PSA restricted, default-deny ingress+egress, quota et LimitRange.
+spec:
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        egress:
+          type: string
+          enum: [none, public-internet]
+          default: none
+        database:
+          type: boolean
+          default: false
+        allowIdp:
+          type: boolean
+          default: false
+        quota:
+          type: object
+          default: {}
+          properties:
+            cpu:
+              type: string
+              default: "300m"
+            memory:
+              type: string
+              default: "512Mi"
+            pvcs:
+              type: string
+              default: "0"
+  environmentConfigs:
+    openAPIV3Schema:
+      type: object
+      properties:
+        idpNamespace:
+          type: string
+          default: thunder
+        namespaceLabels:
+          type: object
+          additionalProperties:
+            type: string
+          default: {}
+  resources:
+    - id: cell-namespace
+      template:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: ${metadata.namespace}
+          labels: >-
+            ${oc_merge(metadata.labels, environmentConfigs.namespaceLabels, {
+              "pod-security.kubernetes.io/enforce": "restricted",
+              "pod-security.kubernetes.io/enforce-version": "latest",
+              "pod-security.kubernetes.io/warn": "restricted",
+              "pod-security.kubernetes.io/audit": "restricted",
+              "platform.smadja.dev/cell": "restricted",
+              "platform.smadja.dev/pg-client": parameters.database ? "true" : "false"
+            })}
+
+    - id: default-deny
+      template:
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: default-deny
+          namespace: ${metadata.namespace}
+        spec:
+          podSelector: {}
+          policyTypes: [Ingress, Egress]
+
+    - id: allow-dns-and-cell
+      template:
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: allow-dns-and-cell
+          namespace: ${metadata.namespace}
+        spec:
+          podSelector: {}
+          policyTypes: [Ingress, Egress]
+          ingress:
+            - from: [{podSelector: {}}]
+          egress:
+            - to: [{podSelector: {}}]
+            - to:
+                - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+                  podSelector: {matchLabels: {k8s-app: kube-dns}}
+              ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+
+    - id: egress-pg
+      includeWhen: ${parameters.database}
+      template:
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: egress-lab-pg
+          namespace: ${metadata.namespace}
+        spec:
+          podSelector: {}
+          policyTypes: [Egress]
+          egress:
+            - to:
+                - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: lab-pg}}
+                  podSelector: {matchLabels: {cnpg.io/cluster: lab-pg}}
+              ports: [{protocol: TCP, port: 5432}]
+
+    - id: egress-idp
+      includeWhen: ${parameters.allowIdp}
+      template:
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: egress-idp
+          namespace: ${metadata.namespace}
+        spec:
+          podSelector: {}
+          policyTypes: [Egress]
+          egress:
+            - to:
+                - namespaceSelector:
+                    matchLabels: {kubernetes.io/metadata.name: "${environmentConfigs.idpNamespace}"}
+
+    - id: egress-public
+      includeWhen: '${parameters.egress == "public-internet"}'
+      template:
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: egress-public-internet
+          namespace: ${metadata.namespace}
+        spec:
+          podSelector: {}
+          policyTypes: [Egress]
+          egress:
+            - to:
+                - ipBlock:
+                    cidr: 0.0.0.0/0
+                    except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
+              ports: [{protocol: TCP, port: 80}, {protocol: TCP, port: 443}]
+
+    - id: quota
+      template:
+        apiVersion: v1
+        kind: ResourceQuota
+        metadata:
+          name: cell-quota
+          namespace: ${metadata.namespace}
+        spec:
+          hard:
+            requests.cpu: ${parameters.quota.cpu}
+            requests.memory: ${parameters.quota.memory}
+            persistentvolumeclaims: ${parameters.quota.pvcs}
+            services.loadbalancers: "0"
+            services.nodeports: "0"
+
+    - id: limits
+      template:
+        apiVersion: v1
+        kind: LimitRange
+        metadata:
+          name: cell-limits
+          namespace: ${metadata.namespace}
+        spec:
+          limits:
+            - type: Container
+              default: {cpu: 250m, memory: 256Mi}
+              defaultRequest: {cpu: 50m, memory: 64Mi}
+              max: {cpu: 500m, memory: 512Mi}

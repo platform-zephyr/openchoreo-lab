@@ -1,0 +1,15 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: searxng-production
+  namespace: default
+spec:
+  owner:
+    projectName: searxng
+    componentName: searxng
+  environment: production
+  releaseName: searxng-6be25526ed
+  componentTypeEnvironmentConfigs:
+    size: medium
+    replicas: 1

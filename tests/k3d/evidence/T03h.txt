@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:08Z k3d
+$ as_agent create secret generic t-evil -n lab-pg --from-literal=k=v --dry-run=server
+error: failed to create secret secrets "t-evil" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: le cluster-agent ne peut pas écrire secrets dans le namespace lab-pg
+[rc=1]

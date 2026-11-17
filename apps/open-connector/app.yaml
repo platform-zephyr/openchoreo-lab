@@ -1,0 +1,35 @@
+# OpenConnector (oomol-lab), equivalent de kube-ops applications/platform/open-connector [C].
+# Digest pinne : index v1.8.0 (amd64 2f1a48..., arm64 c3dfd5...) [C] ; kube-ops pinne d8c592... qui est un manifeste amd64 seul.
+# Voir NOTES.md.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: open-connector
+  owner: user:default/paul
+  description: "OpenConnector : connecteurs API pour agents, test prive Paperless"
+spec:
+  source:
+    image: ghcr.io/oomol-lab/open-connector:v1.8.0@sha256:61e5e29a9ae7d8e817e8050d062ed57134e069cea3e7eef7cb15349c11b7a76d
+  cluster: k3d
+  environments: [production]
+  profile: stateful
+  runtime:
+    port: 3000
+    healthPath: /health
+    size: medium
+    runAsUser: 10001
+    env:
+      OOMOL_CONNECT_DATA_DIR: /app/data
+      OOMOL_CONNECT_ALLOW_PRIVATE_NETWORK: "true"   # identique a kube-ops ; ne donne pas l'egress LAN a lui seul
+      OOMOL_CONNECT_CATALOG_LAZY_SCHEMAS: "true"
+      OOMOL_CONNECT_ALLOWED_ACTIONS: "paperless_ngx.list_documents,paperless_ngx.get_document"
+      OOMOL_CONNECT_BLOCKED_PROXIES: "*"
+  storage: {profile: block-rwo, mountPath: /app/data, size: 2Gi}
+  update: {strategy: Recreate}          # impose par le schema (PVC RWO)
+  secrets:
+    - {env: OOMOL_CONNECT_ADMIN_TOKEN, key: OPEN_CONNECTOR_ADMIN_TOKEN}
+    - {env: OOMOL_CONNECT_ENCRYPTION_KEY, key: OPEN_CONNECTOR_ENCRYPTION_KEY}
+  exposure: {mode: private, auth: none}
+  network: {egress: none}               # kube-ops n'autorise que paperless:80/8000 : ecart, voir NOTES.md
+  backup: {class: regenerable}
+  observability: {metrics: {enabled: false}}
