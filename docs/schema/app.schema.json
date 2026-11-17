@@ -1,0 +1,227 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/platform-zephyr/openchoreo-lab/docs/schema/app.schema.json",
+  "title": "platform.smadja.dev/v2alpha1 App",
+  "description": "Contrat applicatif du labo OpenChoreo : apps/<name>/app.yaml (+ values.yaml pour le parcours helm). Derive de kube-ops platform.smadja.dev/v1 Application (k8s/charts/platform-app/values.schema.json@ef50472). Jamais de valeur secrete.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "platform.smadja.dev/v2alpha1" },
+    "kind": { "const": "App" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "owner", "description"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,18}[a-z0-9]$",
+          "description": "= repertoire, Project et Component OpenChoreo, base et role CNPG (tirets -> _)."
+        },
+        "owner": { "type": "string", "pattern": "^(group|user):default/[a-z][a-z0-9-]*$" },
+        "description": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "docs": { "type": "string", "format": "uri" },
+        "lifecycle": { "enum": ["experimental", "production", "deprecated"], "default": "experimental" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "cluster", "environments", "profile", "exposure", "network", "backup", "observability"],
+      "properties": {
+        "delivery": {
+          "enum": ["native", "helm"],
+          "description": "Optionnel, calcule (APP-CONTRACT.md section 3). S'il est ecrit et differe du calcul : CI rouge."
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "oneOf": [{ "required": ["image"] }, { "required": ["chart"] }],
+          "properties": {
+            "image": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._/-]*(:[A-Za-z0-9._-]+)?@sha256:[a-f0-9]{64}$"
+            },
+            "chart": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["repo", "name", "version"],
+              "properties": {
+                "repo": { "type": "string", "pattern": "^(oci|https)://" },
+                "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+                "version": { "type": "string", "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$" },
+                "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$", "description": "Obligatoire si repo oci:// (CI)." }
+              }
+            }
+          }
+        },
+        "cluster": {
+          "enum": ["k3d", "oke"],
+          "description": "k3d = Phase 0 (Mac arm64). oke = seulement apres le gate OKE (Cilium + baseline kube-ops #1620 + refus IMDS prouve + acces operateur)."
+        },
+        "environments": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "enum": ["development", "production"] }
+        },
+        "profile": { "enum": ["stateless", "stateful"] },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["port", "healthPath", "size"],
+          "description": "Parcours native uniquement.",
+          "properties": {
+            "port": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+            "healthPath": { "type": "string", "pattern": "^/[A-Za-z0-9._/-]*$", "maxLength": 128 },
+            "size": { "enum": ["small", "medium"], "description": "small=50m/128Mi req, 250m/256Mi lim ; medium=200m/256Mi req, 500m/512Mi lim (table kube-ops)." },
+            "replicas": { "type": "integer", "minimum": 1, "maximum": 3, "default": 1 },
+            "runAsUser": { "type": "integer", "minimum": 1000, "default": 65532 },
+            "command": { "type": "array", "items": { "type": "string" }, "maxItems": 16 },
+            "args": { "type": "array", "items": { "type": "string" }, "maxItems": 32 },
+            "env": {
+              "type": "object", "maxProperties": 32,
+              "propertyNames": { "pattern": "^[A-Z][A-Z0-9_]{0,63}$" },
+              "additionalProperties": { "type": "string", "maxLength": 1024 },
+              "description": "Variables NON secretes."
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["profile", "mountPath", "size"],
+          "properties": {
+            "profile": { "enum": ["block-rwo"], "description": "Un seul PVC RWO (trait persistent-volume-claim). k3d : local-path. OKE : oci-bv, 50 Gi minimum facture (quota 200 Go). Jamais Longhorn sur OKE." },
+            "mountPath": { "type": "string", "pattern": "^/[A-Za-z0-9._/-]+$" },
+            "size": { "type": "string", "pattern": "^[1-9][0-9]{0,3}Gi$" }
+          }
+        },
+        "database": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["engine"],
+          "properties": {
+            "engine": { "const": "postgres" },
+            "instance": { "const": "lab-pg", "default": "lab-pg", "description": "Cluster CNPG ephemere du namespace d'essai lab-pg. Jamais pg-shared ni un namespace de donnees de production." },
+            "envVar": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$", "default": "DATABASE_URL" }
+          }
+        },
+        "secrets": {
+          "type": "array", "maxItems": 16, "uniqueItems": true,
+          "description": "References seulement (ESO). Valeur jamais dans Git.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["env", "key"],
+            "properties": {
+              "env": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$" },
+              "key": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$", "description": "Cle du store ; prefixe <NAME>_ verifie par la CI." },
+              "property": { "type": "string" }
+            }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "oidc": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["issuer", "clientId", "clientSecretKey"],
+              "properties": {
+                "provider": { "const": "thunderid", "default": "thunderid", "description": "IdP du labo (ThunderID livre avec OpenChoreo). Authentik non requis." },
+                "issuer": { "type": "string", "format": "uri" },
+                "clientId": { "type": "string", "minLength": 1 },
+                "clientSecretKey": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+                "adminGroup": { "type": "string" }
+              }
+            }
+          }
+        },
+        "exposure": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "auth"],
+          "properties": {
+            "mode": { "enum": ["private", "public"], "default": "private", "description": "private = endpoint visibility internal. public = external, via Cloudflare Tunnel -> kgateway ClusterIP. Jamais de LoadBalancer OCI." },
+            "host": { "type": "string", "pattern": "^[a-z0-9-]+\\.[a-z0-9.-]+$" },
+            "auth": { "enum": ["none", "app-oidc", "app-password", "cloudflare-access"], "description": "app-password : authentification propre a l'app (ex. clients Stremio d'AIOStreams, incompatibles avec un login navigateur). none interdit si public." }
+          },
+          "if": { "properties": { "mode": { "const": "public" } } },
+          "then": { "required": ["host"], "properties": { "auth": { "not": { "const": "none" } } } }
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["egress"],
+          "properties": {
+            "egress": { "enum": ["none", "public-internet"], "description": "public-internet = 0.0.0.0/0 sauf RFC1918, 100.64/10, 169.254/16, CIDR pods/services ; TCP 80/443." },
+            "allowIdp": { "type": "boolean", "default": false, "description": "Egress vers le namespace de l'IdP du labo (ThunderID)." }
+          }
+        },
+        "backup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["class"],
+          "properties": {
+            "class": { "enum": ["none", "regenerable", "irreplaceable"], "description": "D-2026-11-11-05. irreplaceable refuse par la CI tant qu'une restauration hors Oracle n'est pas prouvee (D-2026-11-14-03)." },
+            "rpo": { "type": "string", "pattern": "^[0-9]+(m|h|d)$" },
+            "rto": { "type": "string", "pattern": "^[0-9]+(m|h|d)$" },
+            "retention": { "type": "string", "pattern": "^[0-9]+d$" }
+          },
+          "if": { "properties": { "class": { "const": "irreplaceable" } } },
+          "then": { "required": ["rpo", "rto", "retention"] }
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["metrics"],
+          "properties": {
+            "metrics": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["enabled"],
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "path": { "type": "string", "pattern": "^/[A-Za-z0-9/_-]*$", "default": "/metrics" },
+                "port": { "type": "integer", "minimum": 1024, "maximum": 65535 }
+              }
+            },
+            "alerts": { "enum": ["default", "none"], "default": "default" }
+          }
+        },
+        "update": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "strategy": { "enum": ["RollingUpdate", "Recreate"], "default": "RollingUpdate" },
+            "automerge": { "enum": ["none", "digest", "patch", "minor"], "default": "digest" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "profile": { "const": "stateless" } } },
+          "then": { "not": { "anyOf": [ { "required": ["database"] }, { "required": ["storage"] } ] } }
+        },
+        {
+          "if": { "properties": { "profile": { "const": "stateful" } } },
+          "then": { "anyOf": [ { "required": ["database"] }, { "required": ["storage"] } ] }
+        },
+        {
+          "if": { "properties": { "source": { "required": ["image"] } } },
+          "then": { "required": ["runtime"] },
+          "else": { "not": { "anyOf": [ { "required": ["runtime"] }, { "required": ["database"] } ] } }
+        },
+        {
+          "if": { "required": ["storage"] },
+          "then": { "properties": { "update": { "required": ["strategy"], "properties": { "strategy": { "const": "Recreate" } } } }, "required": ["update"] }
+        },
+        {
+          "if": { "required": ["identity"], "properties": { "identity": { "required": ["oidc"] } } },
+          "then": { "properties": { "network": { "anyOf": [ { "properties": { "egress": { "const": "public-internet" } } }, { "properties": { "allowIdp": { "const": true } }, "required": ["allowIdp"] } ] } } }
+        }
+      ]
+    }
+  }
+}

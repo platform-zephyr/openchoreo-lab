@@ -1,0 +1,17 @@
+openchoreo-lab
+Copyright 2026 Paul Smadja
+
+This product includes software adapted from:
+
+- OpenChoreo (https://github.com/openchoreo/openchoreo), v1.3.3
+  Apache License 2.0. Files adapted: samples/getting-started/component-types/service.yaml,
+  samples/getting-started/cluster-project-types/default.yaml.
+- openchoreo/sample-gitops (https://github.com/openchoreo/sample-gitops), commit 9c057d8
+  Apache License 2.0. Repository layout; platform/infra/environments/*.yaml and
+  platform/infra/deployment-pipelines/standard.yaml adapted.
+- [only if copied] VizzleTF/homelab (https://github.com/VizzleTF/homelab)
+  MIT License, Copyright (c) 2024-2026 VizzleTF. ApplicationSet template adapted from
+  argocd/appsets/apps-appset.yaml. (Full MIT text in LICENSES/MIT-VizzleTF.txt.)
+
+Conventions inspired by onedr0p/home-ops (WTFPL). No code from koorikla/platform
+(no license) is included.
