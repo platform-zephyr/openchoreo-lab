@@ -60,12 +60,12 @@ Les providers OpenChoreo ont des `aud` différents, donc pas d'audience unique. 
 
 | Sujet | Claim | Rôle | Portée | Où |
 |---|---|---|---|---|
-| `authentik-admins` (existant) | groups | `admin` | cluster | values `bootstrap.mappings` |
-| `openchoreo-developers` (nouveau) | groups | `developer` + `cluster-reader` | ns `default` / cluster | values |
+| `authentik-admins` (existant) | groups | `lab-platform-admin` (humain uniquement) | cluster | `platform/authz/bindings-humans.yaml` |
+| `openchoreo-developers` (nouveau) | groups | `developer` (rôle du chart ; **pas de `cluster-reader`, pas de portée `default`** dans `bindings-humans.yaml`, décision Paul : `docs/IDP-USABLE.md` §4) | cluster | `platform/authz/bindings-humans.yaml` |
 | `openchoreo-viewers` (nouveau) | groups | `lab-viewer` (lecture sans secrets, exec ni journaux) | cluster | `platform/authz/bindings-humans.yaml` |
 | `openchoreo-backstage-service` | client_id | `backstage-catalog-reader` | cluster | values |
-| `openchoreo-agent-reader` | client_id | `lab-viewer` | cluster | authz |
-| `openchoreo-agent-operator` | client_id | `lab-viewer` + `lab-release-operator` (`releasebinding:view/update`) | cluster / ns `default` | authz |
+| `openchoreo-agent-reader` | client_id | `lab-agent-reader` + deny `lab-agent-forbidden` | cluster | `platform/authz/bindings-agents.yaml` (client Authentik non créé) |
+| `openchoreo-agent-operator` | client_id | `lab-agent-reader` + `lab-agent-operator` (CEL : development/staging) + deny | cluster | `platform/authz/bindings-agents.yaml` (client non créé ; mandat seulement, `docs/IDP-USABLE.md` §4) |
 
 - `bootstrap.mappings` **remplace** la liste du chart. Liaisons retirées : `mcp-tryout-client-binding` (rôle **admin** pour `client_id=service_mcp_client`), `platform-engineer`, `sre`, et celles des agents non déployés.
 - Le hook fait un upsert sans suppression : si une installation a déjà créé les liaisons par défaut, il faut les supprimer par PR et le vérifier (T-Z5).

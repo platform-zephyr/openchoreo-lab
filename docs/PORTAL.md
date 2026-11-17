@@ -44,13 +44,14 @@ Quota du namespace **appliqué dans le dépôt** (`platform/install/manifests/01
 - **Client de service.** Le chart 1.3.3 rend `OPENCHOREO_SERVICE_CLIENT_ID=openchoreo-backstage-service` et lit son secret dans `service-client-secret`. Le jeton `client_credentials` est demandé avec `scope=openid openchoreo-client-id` (`backstage.auth.scope`) : sans ce scope, pas de claim `client_id`, donc 401.
 - **Catalogue.** Le portail lit le catalogue par le **fournisseur d'entités OpenChoreo** (Namespace → Domain, Project → System, Component → Component). **Les fichiers `generated/catalog/*/catalog-info.yaml` ne sont pas lus** : aucune `catalog.locations`. Ne pas les déclarer (collision d'entités, egress GitHub en plus).
 - **Autorisation de la synchro.** La liaison système `backstage-catalog-reader-binding` est redéfinie dans `bootstrap.mappings` sur `client_id = openchoreo-backstage-service`. Les liaisons par défaut du chart sont remplacées ; `mcp-tryout-client-binding` (admin pour `service_mcp_client`) est supprimée.
-- **Accès sans groupe.** Le portail autorise la lecture du catalogue à tout utilisateur connecté (seules les permissions `openchoreo.*` passent par l'authz de l'API). L'interdiction vient donc **d'Authentik** : policy binding de l'application sur les groupes de `docs/IDENTITY.md` §4, **`openchoreo-viewers`, `openchoreo-developers`, `authentik-admins`**. Rôles API : `authentik-admins` → `admin` ; `openchoreo-developers` → `developer` (ns `default`) + `cluster-reader` ; `openchoreo-viewers` → `lab-viewer` (`platform/authz/`, projet Argo `lab-authz`).
+- **Accès sans groupe.** Le portail autorise la lecture du catalogue à tout utilisateur connecté (seules les permissions `openchoreo.*` passent par l'authz de l'API). L'interdiction vient donc **d'Authentik** : policy binding de l'application sur les groupes de `docs/IDENTITY.md` §4, **`openchoreo-viewers`, `openchoreo-developers`, `authentik-admins`**. Rôles API (réalité de `platform/authz/bindings-humans.yaml`, corrigée le 2026-11-18) : `authentik-admins` → `lab-platform-admin` ; `openchoreo-developers` → `developer` (chart, portée cluster, sans `cluster-reader`) ; `openchoreo-viewers` → `lab-viewer` (projet Argo `lab-authz`).
 
 ## 4. Procédure d'activation (étape 6b)
 
 Prérequis (IDENTITY, Paul) :
 - dans Authentik, les providers en `issuer_mode: global` de `docs/IDENTITY.md` §5 : `openchoreo-backstage-client` (redirect URI `http://localhost:7007/api/auth/openchoreo-auth/handler/frame`, scopes `openid profile email offline_access openchoreo`) et `openchoreo-backstage-service` (`client_credentials`, scope `openchoreo-client-id`) ; application liée aux trois groupes ci-dessus ;
 - étape 6 appliquée et validée (`verify.sh --step 6`) ; quota CP à 640 Mi / 2304 Mi (`install.sh --step 1 --apply`).
+- checklist pas à pas (une action par ligne, Paul puis coordinateur) : `docs/IDP-USABLE.md` §5.
 
 Création du Secret (opérateur ; valeurs jamais écrites dans le dépôt ni dans les sorties) :
 
