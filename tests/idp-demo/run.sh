@@ -91,10 +91,10 @@ appgen_gate() { # validate + render + check (dérive = échec) ; sorties dans EV
   fi
 }
 
-# Périmètre Git attendu : seulement apps/<nom>/ et generated/ (platform-guardrails §4).
+# Périmètre Git attendu : apps/<nom>/, generated/ et l'entrée sources[] de lab-apps.yaml (gardée par argo_guard).
 scope_guard() {
   local bad
-  bad="$(git status --porcelain | awk '{print $2}' | grep -Ev "^(apps/$NAME/|generated/)" || true)"
+  bad="$(git status --porcelain | awk '{print $2}' | grep -Ev "^(apps/$NAME/|generated/|platform/install/argocd/apps/lab-apps.yaml$)" || true)"
   [ -z "$bad" ] || die "modifications hors périmètre : $bad"
 }
 
