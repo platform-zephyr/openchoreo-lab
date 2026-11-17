@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# measure.sh : empreinte de l'essai sur OKE (lecture seule). NON EXÉCUTÉ.
+# measure.sh : empreinte de l'essai sur OKE (lecture seule). Exécuté le 2026-11-17 (après étape 5).
 # Usage : tools/oke/measure.sh [LIBELLÉ]   (ex. « avant », « après-étape-7 », « repos-24h »)
 # Mesure : usage (API summary du kubelet ; `kubectl top` en plus si metrics-server existe) et requests,
 # par namespace, puis total de la pile (STACK_NS_RE) comparé au budget (1,5 Gi / 300m au repos).
@@ -9,6 +9,7 @@ set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 label="${1:-mesure}"
+label="${label//[^A-Za-z0-9._-]/_}"   # nom de fichier sûr (revue m9)
 guard_context
 mkdir -p "$STATE_DIR"
 out="$STATE_DIR/measure-$(date -u +%Y%m%dT%H%M%SZ)-$label.txt"

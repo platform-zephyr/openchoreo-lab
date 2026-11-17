@@ -1,0 +1,5 @@
+# FUSIONNÉ le 2026-11-17 dans platform/install/values/openchoreo-control-plane.yaml (bloc `backstage`,
+# `security.oidc` à issuer global Authentik, client de service openchoreo-backstage-service).
+# Ce fichier n'est plus passé à Helm ; ne pas l'éditer : la source unique est le fichier ci-dessus.
+# Décision, mesures et critères : docs/PORTAL.md. Egress : platform/install/manifests/03-idp-egress.yaml.
+{}

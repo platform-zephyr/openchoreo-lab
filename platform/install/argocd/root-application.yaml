@@ -1,4 +1,4 @@
-# Application racine du labo (étape 10, app-of-apps). Elle ne synchronise que platform/install/argocd/apps
+# Application racine du labo (étape 11, app-of-apps). Elle ne synchronise que platform/install/argocd/apps
 # (des Application). Pas de finalizer resources-finalizer : supprimer l'Application CONSERVE les objets.
 apiVersion: argoproj.io/v1alpha1
 kind: Application

@@ -6,9 +6,27 @@
 # Règles :
 #   R1 aucun objet cluster-scoped, sauf pour le cluster-agent un Namespace nommé dp-* (cellules) ;
 #   R2 le cluster-agent n'écrit d'objets namespacés que dans dp-*, et dans lab-pg seulement les kinds
-#      rendus par le CRT cnpg-lab-db (ExternalSecret, PushSecret, Password, Job) ; Events partout.
+#      rendus par le CRT cnpg-lab-db (ExternalSecret, PushSecret, Password, Job) ; Events partout ;
+#   R3 un Namespace dp-* écrit par le cluster-agent garde PSA enforce restricted (ou baseline, exception
+#      appgen `podSecurity: baseline` par cellule), enforce-version latest et le label
+#      platform.smadja.dev/cell=restricted ; jamais de baisse restricted -> baseline (revue I6).
+# Couverture (revue B1, 2026-11-17) : CONNECT et sous-ressources (`*/*`). Le RBAC du chart DP 1.3.3 donne
+# pods/exec à l'agent sur tout le cluster : sans CONNECT, `kubectl exec --as=<agent> -n kube-system …`
+# échappait à la VAP. pods/exec, attach, portforward et proxy ne sont plus permis que dans dp-* ;
+# nodes/proxy (cluster-scoped) est refusé. Preuves : tools/oke/verify.sh --step 7 (B7-exec, B7-psa-lock).
+#   R4 (2026-11-17, flux RBAC) un RoleBinding écrit par l'agent référence ClusterRole/lab-cluster-agent-cell
+#      et a pour UNIQUE sujet le SA de l'agent (amorce de cellule, platform/cluster-agent/cell-rolebinding-cpt.yaml) ;
+#   R5 jamais de roles, clusterroles, clusterrolebindings, admissionregistration.*, CCNP, serviceaccounts/token
+#      (double du RBAC : rien de tout cela n'est accordé) ;
+#   R6 lab-pg : contenu borné des kinds du CRT cnpg-lab-db (PushSecret ne publie que <x>-pg-role vers
+#      lab-pg-roles/*, Job sans jeton SA, volumes emptyDir seulement, image postgresql, secretKeyRef limités).
+# Ce qu'une VAP NE couvre PAS : GET/LIST/WATCH (lecture) ; les objets ValidatingAdmissionPolicy/Binding
+# eux-mêmes (exclus de l'admission) ; le contenu SQL du Job (superuser par construction). Lecture et
+# politiques : RBAC seul (platform/cluster-agent/reduced-clusterrole.yaml, docs/CLUSTER-AGENT-RBAC.md).
 # C'est la seconde barrière derrière postRenderValidations (CCT) ; elle couvre aussi les types,
 # traits et ProjectTypes namespacés qu'une identité non-PE pourrait écrire.
+# [S] À prouver sur OKE (Phase C, rendu de whoami) : aucune écriture légitime de l'agent sur une
+# sous-ressource hors dp-* (journal de l'agent sans refus lab-cluster-agent-scope).
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
@@ -19,8 +37,9 @@ spec:
     resourceRules:
       - apiGroups: ["*"]
         apiVersions: ["*"]
-        operations: [CREATE, UPDATE, DELETE]
-        resources: ["*"]
+        operations: [CREATE, UPDATE, DELETE, CONNECT]
+        # "*" seul exclut les sous-ressources ; "*/*" les ajoute (pods/exec, pods/attach, …).
+        resources: ["*", "*/*"]
         scope: "*"
   matchConditions:
     - name: agent-or-app-identity
@@ -36,11 +55,35 @@ spec:
       expression: "request.userInfo.username == 'system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane'"
     - name: isNamespace
       expression: "request.resource.group == '' && request.resource.resource == 'namespaces'"
+    - name: isSubresource
+      expression: "has(request.subResource) && request.subResource != ''"
     # Pour un objet Namespace, request.namespace porte le nom du namespace lui-même.
     - name: clusterScoped
       expression: "variables.isNamespace || variables.ns == ''"
     - name: reviewOnly
       expression: "request.resource.group in ['authentication.k8s.io', 'authorization.k8s.io']"
+    # Labels du Namespace écrit (évalués seulement pour CREATE/UPDATE d'un Namespace, variables paresseuses).
+    - name: nsLabels
+      expression: "has(object.metadata.labels) ? object.metadata.labels : {}"
+    - name: oldNsLabels
+      expression: "oldObject != null && has(oldObject.metadata.labels) ? oldObject.metadata.labels : {}"
+    - name: psaEnforce
+      expression: >-
+        'pod-security.kubernetes.io/enforce' in variables.nsLabels ?
+        variables.nsLabels['pod-security.kubernetes.io/enforce'] : ''
+    - name: grp
+      expression: "request.resource.group"
+    - name: res
+      expression: "request.resource.resource"
+    - name: isWrite
+      expression: "request.operation in ['CREATE', 'UPDATE']"
+    # Gabarit de pod d'un Job (lab-pg, R6) ; évalué paresseusement, seulement si res == 'jobs'.
+    - name: jobPod
+      expression: "object.spec.template.spec"
+    - name: oldPsaEnforce
+      expression: >-
+        'pod-security.kubernetes.io/enforce' in variables.oldNsLabels ?
+        variables.oldNsLabels['pod-security.kubernetes.io/enforce'] : ''
   validations:
     - expression: >-
         !variables.clusterScoped || variables.reviewOnly ||
@@ -53,11 +96,85 @@ spec:
         !variables.isAgent || variables.clusterScoped ||
         variables.ns.startsWith('dp-') ||
         request.resource.resource == 'events' ||
-        (variables.ns == 'lab-pg' &&
+        (variables.ns == 'lab-pg' && !variables.isSubresource &&
           request.resource.resource in ['externalsecrets', 'pushsecrets', 'passwords', 'jobs'])
       messageExpression: >-
         'lab-cluster-agent-scope: le cluster-agent ne peut pas écrire ' + request.resource.resource +
+        (variables.isSubresource ? '/' + request.subResource : '') + ' (' + request.operation + ')' +
         ' dans le namespace ' + variables.ns
+      reason: Forbidden
+    # R3 : verrou PSA et labels des cellules (CREATE/UPDATE de l'objet Namespace lui-même).
+    - expression: >-
+        !(variables.isAgent && variables.isNamespace && !variables.isSubresource &&
+          request.operation in ['CREATE', 'UPDATE']) ||
+        (variables.psaEnforce in ['restricted', 'baseline'] &&
+          'pod-security.kubernetes.io/enforce-version' in variables.nsLabels &&
+          variables.nsLabels['pod-security.kubernetes.io/enforce-version'] == 'latest' &&
+          'platform.smadja.dev/cell' in variables.nsLabels &&
+          variables.nsLabels['platform.smadja.dev/cell'] == 'restricted' &&
+          (variables.oldPsaEnforce != 'restricted' || variables.psaEnforce == 'restricted'))
+      messageExpression: >-
+        'lab-cluster-agent-scope: namespace ' + request.name +
+        ' : PSA enforce restricted|baseline (sans baisse depuis restricted), enforce-version latest et' +
+        ' platform.smadja.dev/cell=restricted exigés (reçu enforce=' + variables.psaEnforce + ')'
+      reason: Forbidden
+    # R4 : amorce de cellule. RBAC ne sait pas borner le contenu d'un RoleBinding (bind limite le roleRef,
+    # pas les sujets ni le namespace) : la VAP impose roleRef exact et sujet unique = l'agent.
+    - expression: >-
+        !(variables.isAgent && variables.grp == 'rbac.authorization.k8s.io' &&
+          variables.res == 'rolebindings' && !variables.isSubresource && variables.isWrite) ||
+        (object.roleRef.apiGroup == 'rbac.authorization.k8s.io' && object.roleRef.kind == 'ClusterRole' &&
+         object.roleRef.name == 'lab-cluster-agent-cell' &&
+         has(object.subjects) && size(object.subjects) == 1 &&
+         object.subjects[0].kind == 'ServiceAccount' &&
+         object.subjects[0].name == 'cluster-agent-dataplane' &&
+         has(object.subjects[0].namespace) && object.subjects[0].namespace == 'openchoreo-data-plane')
+      messageExpression: >-
+        'lab-cluster-agent-scope: RoleBinding ' + request.name + ' : seul roleRef ClusterRole/lab-cluster-agent-cell' +
+        ' avec pour unique sujet le SA du cluster-agent est permis'
+      reason: Forbidden
+    # R5 : objets d'autorisation et de politique, jamais (même dans dp-*).
+    - expression: >-
+        !variables.isAgent ||
+        !((variables.grp == 'rbac.authorization.k8s.io' &&
+            variables.res in ['roles', 'clusterroles', 'clusterrolebindings']) ||
+          variables.grp == 'admissionregistration.k8s.io' ||
+          (variables.grp == 'cilium.io' && variables.res == 'ciliumclusterwidenetworkpolicies') ||
+          (variables.grp == '' && variables.res == 'serviceaccounts' && variables.isSubresource))
+      messageExpression: >-
+        'lab-cluster-agent-scope: ' + variables.res + (variables.isSubresource ? '/' + request.subResource : '') +
+        ' interdit au cluster-agent'
+      reason: Forbidden
+    # R6 : lab-pg, contenu des kinds du CRT cnpg-lab-db.
+    - expression: >-
+        !(variables.isAgent && variables.ns == 'lab-pg' && !variables.isSubresource && variables.isWrite) ||
+        (variables.res == 'pushsecrets' ?
+          (object.metadata.name.endsWith('-pg-role') &&
+           has(object.spec.selector) && has(object.spec.selector.secret) &&
+           object.spec.selector.secret.name == object.metadata.name &&
+           !has(object.spec.selector.generatorRef) &&
+           has(object.spec.data) &&
+           object.spec.data.all(d, d.match.remoteRef.remoteKey.startsWith('lab-pg-roles/'))) :
+         variables.res == 'externalsecrets' ?
+          (object.metadata.name.endsWith('-pg-role') &&
+           has(object.spec.target) && has(object.spec.target.name) &&
+           object.spec.target.name == object.metadata.name) :
+         variables.res == 'jobs' ?
+          (object.metadata.name.endsWith('-pg-init') &&
+           has(variables.jobPod.automountServiceAccountToken) &&
+           variables.jobPod.automountServiceAccountToken == false &&
+           (!has(variables.jobPod.serviceAccountName) || variables.jobPod.serviceAccountName == 'default') &&
+           !has(variables.jobPod.initContainers) &&
+           (!has(variables.jobPod.volumes) || variables.jobPod.volumes.all(v, has(v.emptyDir))) &&
+           variables.jobPod.containers.all(c,
+             c.image.startsWith('ghcr.io/cloudnative-pg/postgresql:') && !has(c.envFrom) &&
+             (!has(c.env) || c.env.all(e, !has(e.valueFrom) || !has(e.valueFrom.secretKeyRef) ||
+               e.valueFrom.secretKeyRef.name == 'lab-pg-superuser' ||
+               e.valueFrom.secretKeyRef.name.endsWith('-pg-role'))))) :
+         true)
+      messageExpression: >-
+        'lab-cluster-agent-scope: ' + variables.res + '/' + request.name +
+        ' dans lab-pg hors du gabarit cnpg-lab-db (nom, secret sélectionné, clé distante, jeton SA, volumes ou image)'
       reason: Forbidden
 ---
 apiVersion: admissionregistration.k8s.io/v1

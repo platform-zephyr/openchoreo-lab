@@ -1,0 +1,25 @@
+# Authz OpenChoreo du labo, Git -> Argo, depuis le SEUL chemin dédié platform/authz/ (projet lab-authz).
+# Sync MANUELLE (pas d'automated) : chaque changement de droits MCP/API est un geste opérateur après
+# revue de la PR (CODEOWNERS), jamais un effet automatique d'un merge. Prune désactivé.
+# Les rôles par défaut du chart (bootstrap.mappings) restent gérés par les values du CP, pas ici.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lab-authz
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  project: lab-authz
+  source:
+    repoURL: https://github.com/platform-zephyr/openchoreo-lab
+    targetRevision: main
+    path: platform/authz
+    directory:
+      recurse: false
+      include: "*.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
+      - FailOnSharedResource=true

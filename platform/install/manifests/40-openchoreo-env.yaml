@@ -1,4 +1,4 @@
-# Objets OpenChoreo minimaux attendus par les apps générées (namespace `default`, étape 11) :
+# Objets OpenChoreo minimaux attendus par les apps générées (namespace `default`, étape 9) :
 #   - Environment `production` (seul environnement cité par generated/ : `environment: production`) ;
 #   - DeploymentPipeline `standard` (tools/appgen/appgen.py l.39 : PIPELINE = "standard"), sans
 #     promotion (un seul environnement dans l'essai) ;

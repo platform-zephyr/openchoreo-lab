@@ -79,7 +79,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: lab-default-deny
-  namespace: cnpg-system
+  namespace: lab-cnpg
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   podSelector: {}
@@ -229,7 +229,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: lab-allow-dns
-  namespace: cnpg-system
+  namespace: lab-cnpg
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   podSelector: {}
@@ -244,7 +244,7 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: lab-allow-apiserver
-  namespace: cnpg-system
+  namespace: lab-cnpg
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   endpointSelector: {}
@@ -315,7 +315,7 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: lab-allow-webhook-from-apiserver
-  namespace: cnpg-system
+  namespace: lab-cnpg
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   endpointSelector:
@@ -359,12 +359,13 @@ spec:
     - to:
         - namespaceSelector: {matchLabels: {platform.smadja.dev/cell: restricted}}
 ---
-# Opérateur CNPG -> instance manager de lab-pg :8000 (pendant de allow-intra-dns-operator de lab-pg).
+# Opérateur CNPG (lab-cnpg) -> instance manager de lab-pg :8000 (pendant de lab-allow-from-cnpg-operator,
+# overlay 51 : la NP allow-intra-dns-operator de platform/data nomme encore l'ancien namespace cnpg-system).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: lab-allow-to-lab-pg
-  namespace: cnpg-system
+  namespace: lab-cnpg
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   podSelector: {}

@@ -1,4 +1,4 @@
-# TLS du Gateway du data plane (étape 5, avant le chart DP qui référence le Secret dp-gateway-tls).
+# TLS du Gateway du data plane (étape 7, avant le chart DP qui référence le Secret dp-gateway-tls).
 # CA du labo auto-signée, entièrement NAMESPACÉE (Issuer, pas de ClusterIssuer : rien de cluster-scoped
 # en plus). À remplacer par l'origine Cloudflare (ou ACME) quand l'exposition sera décidée par Paul.
 # Hôtes : *.lab.smadja.dev (APP-CONTRACT §2 : miniflux.lab.smadja.dev, thunder.lab.smadja.dev).

@@ -20,15 +20,28 @@ OKE_TLS_SERVER_RE='^10\.0\.2\.[0-9]+$'
 # Budget au repos (missions/MISSION.md) appliqué à la pile de l'essai (STACK_NS).
 BUDGET_MEM_MI="${BUDGET_MEM_MI:-1536}"
 BUDGET_CPU_M="${BUDGET_CPU_M:-300}"
-STACK_NS_RE='^(openchoreo-control-plane|openchoreo-data-plane|openchoreo-cert-manager|openchoreo-external-secrets|lab-argocd|lab-secrets|cnpg-system|lab-pg|dp-.+)$'
-# Namespaces d'essai : seuls lieux d'écriture (plus `default` : label et objets OpenChoreo uniquement,
-# dp-* : créés par OpenChoreo, jamais écrits par ces scripts).
+STACK_NS_RE='^(openchoreo-control-plane|openchoreo-data-plane|openchoreo-cert-manager|openchoreo-external-secrets|lab-argocd|lab-secrets|lab-cnpg|lab-pg|dp-.+)$'
+# Namespaces d'essai : seuls lieux d'écriture. Exceptions IMPOSÉES par OpenChoreo, à acquitter par Paul
+# (missions/MISSION.md) : label + objets OpenChoreo dans `default` ; dp-* créés par le contrôleur
+# (jamais écrits par ces scripts, supprimés au nettoyage seulement s'ils portent platform.smadja.dev/cell).
 # shellcheck disable=SC2034  # utilisé par les scripts qui sourcent lib.sh
 TRIAL_NS=(openchoreo-control-plane openchoreo-data-plane openchoreo-cert-manager
-          openchoreo-external-secrets lab-secrets lab-argocd cnpg-system lab-pg)
+          openchoreo-external-secrets lab-secrets lab-argocd lab-cnpg lab-pg)
+# Ancien nom de lab-cnpg, créé VIDE par l'étape 1 du 2026-11-17 (revue B3). Supprimé uniquement par
+# `uninstall.sh --migrate-cnpg-system`, s'il est vide et porte nos labels (docs/PHASE-B.md §2, migration).
+# shellcheck disable=SC2034
+LEGACY_CNPG_NS=cnpg-system
 
 STATE_DIR="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}"
 APPLY="${APPLY:-0}"
+
+# Helm isolé du poste (revue m8) : un index de dépôt cassé dans ~/.cache/helm (`no cached repo found`)
+# fait échouer `helm pull --repo`. Cache, config, données, dépôts et registres sous STATE_DIR/helm.
+# Sans effet sur les releases (stockées dans le cluster) ni sur le kubeconfig.
+export HELM_CACHE_HOME="$STATE_DIR/helm/cache" HELM_CONFIG_HOME="$STATE_DIR/helm/config" \
+       HELM_DATA_HOME="$STATE_DIR/helm/data"
+export HELM_REPOSITORY_CONFIG="$HELM_CONFIG_HOME/repositories.yaml" \
+       HELM_REPOSITORY_CACHE="$HELM_CACHE_HOME/repository" HELM_REGISTRY_CONFIG="$HELM_CONFIG_HOME/registry/config.json"
 
 log()  { printf '%s %s\n' "$(date -u +%H:%M:%SZ)" "$*" >&2; }
 die()  { log "ABANDON : $*"; exit "${2:-2}"; }
@@ -97,28 +110,34 @@ usage_by_ns() {
 }
 
 # requests_by_ns : "namespace cpu_m mem_Mi" des requests effectives (max(somme des conteneurs, plus
-# grand initContainer)) des pods non terminés.
+# grand initContainer)) des pods non terminés. Code non nul si kubectl échoue (jamais de liste vide silencieuse).
 requests_by_ns() {
-  kubectl get pods -A -o json | jq -r '
+  local pods
+  pods="$(kubectl get pods -A -o json)" || { unavailable "kubectl get pods -A en erreur"; return 4; }
+  jq -r '
     def cpu: if . == null then 0 elif endswith("m") then (.[:-1]|tonumber) else (tonumber*1000) end;
     def mem: if . == null then 0 elif endswith("Mi") then (.[:-2]|tonumber) elif endswith("Gi") then (.[:-2]|tonumber*1024)
-             elif endswith("Ki") then (.[:-2]|tonumber/1024) elif endswith("M") then (.[:-1]|tonumber) else (tonumber/1048576) end;
+             elif endswith("Ki") then (.[:-2]|tonumber/1024) elif endswith("G") then (.[:-1]|tonumber*1e9/1048576)
+             elif endswith("M") then (.[:-1]|tonumber*1e6/1048576) elif endswith("k") then (.[:-1]|tonumber*1000/1048576)
+             else (tonumber/1048576) end;
     def eff(p; f): ([.spec.containers[] | (.resources.requests // {}) | p | f] | add // 0) as $s
                 | ([(.spec.initContainers // [])[] | (.resources.requests // {}) | p | f] | max // 0) as $i
                 | if $i > $s then $i else $s end;
     .items[] | select(.status.phase != "Succeeded" and .status.phase != "Failed")
-    | [.metadata.namespace, eff(.cpu; cpu), eff(.memory; mem)] | @tsv' \
+    | [.metadata.namespace, eff(.cpu; cpu), eff(.memory; mem)] | @tsv' <<<"$pods" \
   | awk -F'\t' '{c[$1]+=$2; m[$1]+=$3} END {for (n in c) printf "%s %d %d\n", n, c[n], m[n]}' | sort
 }
 
-# stack_usage : "cpu_m mem_Mi" sommés sur STACK_NS_RE (pile de l'essai, y compris cnpg-system, lab-pg, dp-*).
-# Code 4 (MEASUREMENT_UNAVAILABLE) si une mesure manque : namespace de la pile avec des pods mais absent de
-# la réponse, ou valeur NA.
+# stack_usage : "cpu_m mem_Mi" sommés sur STACK_NS_RE (pile de l'essai, y compris lab-cnpg, lab-pg, dp-*).
+# Code 4 (MEASUREMENT_UNAVAILABLE) si une mesure manque : kubectl en erreur, namespace de la pile avec des
+# pods mais absent de la réponse, ou valeur NA. Seul le filtrage grep tolère « aucune ligne » (revue I11).
 stack_usage() {
-  local u wanted ns
+  local u wanted ns pods all
   u="$(usage_by_ns)" || return 4
-  wanted="$(kubectl get pods -A --field-selector=status.phase=Running -o json 2>/dev/null \
-    | jq -r '.items[].metadata.namespace' | sort -u | grep -E "$STACK_NS_RE" || true)"
+  pods="$(kubectl get pods -A --field-selector=status.phase=Running -o json)" \
+    || { unavailable "kubectl get pods (Running) en erreur"; return 4; }
+  all="$(jq -r '.items[].metadata.namespace' <<<"$pods")" || { unavailable "liste des pods illisible"; return 4; }
+  wanted="$(sort -u <<<"$all" | { grep -E "$STACK_NS_RE" || true; })"
   for ns in $wanted; do
     awk -v n="$ns" '$1==n {f=1} END {exit !f}' <<<"$u" || { unavailable "namespace $ns : pods Running mais absent de /stats/summary"; return 4; }
   done
@@ -140,10 +159,14 @@ capacity_gate() {
   amem="$(awk '{v=$2; if (v ~ /Ki$/) {sub(/Ki$/,"",v); print v/1024} else if (v ~ /Mi$/) {sub(/Mi$/,"",v); print v} else if (v ~ /Gi$/) {sub(/Gi$/,"",v); print v*1024} else print v/1048576}' <<<"$alloc")"
   rq="$(requests_by_ns)" && [[ -n "$rq" ]] || { unavailable "requests des pods illisibles"; return 4; }
   read -r rcpu rmem < <(awk '{c+=$2; m+=$3} END {printf "%d %d\n", c, m}' <<<"$rq")
-  pcpu=$(( rcpu * 100 / ${acpu%.*} )); pmem=$(( rmem * 100 / ${amem%.*} ))
+  acpu="${acpu%.*}"; amem="${amem%.*}"
+  [[ "$acpu" =~ ^[0-9]+$ && "$amem" =~ ^[0-9]+$ && "$acpu" -gt 0 && "$amem" -gt 0 ]] \
+    || { unavailable "allocatable non numérique ($acpu m, $amem Mi)"; return 4; }
+  # Pourcentage affiché arrondi au supérieur ; comparaison exacte en entiers (70,9 % ne passe plus, revue m6).
+  pcpu=$(( (rcpu * 100 + acpu - 1) / acpu )); pmem=$(( (rmem * 100 + amem - 1) / amem ))
   printf '%s capacité (tous pods) requests cpu=%sm/%sm (%s%%) mem=%sMi/%sMi (%s%%) seuil=%s%%\n' "$(date -u +%FT%TZ)" \
-    "$rcpu" "${acpu%.*}" "$pcpu" "$rmem" "${amem%.*}" "$pmem" "$CAP_THRESHOLD_PCT" | tee -a "$STATE_DIR/budget.log" >&2
-  if (( pcpu > CAP_THRESHOLD_PCT || pmem > CAP_THRESHOLD_PCT )); then
+    "$rcpu" "$acpu" "$pcpu" "$rmem" "$amem" "$pmem" "$CAP_THRESHOLD_PCT" | tee -a "$STATE_DIR/budget.log" >&2
+  if (( rcpu * 100 > acpu * CAP_THRESHOLD_PCT || rmem * 100 > amem * CAP_THRESHOLD_PCT )); then
     log "SEUIL DE CAPACITÉ DÉPASSÉ (${CAP_THRESHOLD_PCT} %) : arrêt, ne pas réduire les requests pour passer (risque d'éviction)."
     return 5
   fi
@@ -171,7 +194,7 @@ budget_gate() {
     sc=$((sc + cpu)); sm=$((sm + mem)); (( cpu > maxc )) && maxc=$cpu; (( mem > maxm )) && maxm=$mem
     [[ $i == 3 ]] || sleep 20
   done
-  printf '%s %s usage pile (essais+cnpg-system+lab-pg+dp-*) cpu=[%s]m moy=%sm max=%sm ; mem=[%s]Mi moy=%sMi max=%sMi ; budget=%sm/%sMi (comparé au MAX)\n' \
+  printf '%s %s usage pile (essais+lab-cnpg+lab-pg+dp-*) cpu=[%s]m moy=%sm max=%sm ; mem=[%s]Mi moy=%sMi max=%sMi ; budget=%sm/%sMi (comparé au MAX)\n' \
     "$(date -u +%FT%TZ)" "$label" "$(IFS=,; echo "${cpus[*]}")" $((sc / n)) "$maxc" "$(IFS=,; echo "${mems[*]}")" $((sm / n)) "$maxm" \
     "$BUDGET_CPU_M" "$BUDGET_MEM_MI" | tee -a "$STATE_DIR/budget.log" >&2
   if (( maxm > BUDGET_MEM_MI || maxc > BUDGET_CPU_M )); then
@@ -186,7 +209,7 @@ budget_gate() {
 fetch_chart() {
   local name="$1" src="$2" ver="$3" sha="$4" repo="${5:-}" dir="$STATE_DIR/charts" tgz got
   need helm shasum
-  mkdir -p "$dir"
+  mkdir -p "$dir" "$HELM_CACHE_HOME" "$HELM_CONFIG_HOME" "$HELM_DATA_HOME"
   tgz="$dir/$name-$ver.tgz"
   if [[ ! -f "$tgz" ]]; then
     if [[ -n "$repo" ]]; then
