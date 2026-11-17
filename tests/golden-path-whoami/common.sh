@@ -139,7 +139,7 @@ check_gitops() { # check_gitops REVISION_ATTENDUE RELEASE_ATTENDUE  (arguments v
   fi
   st="$(k get applications.argoproj.io "$ARGO_APP" -n "$ARGOCD_NS" -o jsonpath='{.status.sync.status}/{.status.health.status}' 2>/dev/null || true)"
   expect G2 "Argo $ARGO_APP Synced/Healthy" "$st" "Synced/Healthy"
-  rev="$(k get applications.argoproj.io "$ARGO_APP" -n "$ARGOCD_NS" -o jsonpath='{.status.sync.revision}' 2>/dev/null || true)"
+  rev="$(k get applications.argoproj.io "$ARGO_APP" -n "$ARGOCD_NS" -o jsonpath='{.status.sync.revision}{.status.sync.revisions[0]}' 2>/dev/null || true)"
   if [ -n "$want_rev" ]; then expect G2 "Argo $ARGO_APP revision = commit attendu" "$rev" "$want_rev"
   else rec INFO G2 "Argo revision observee : ${rev:-inconnue}"; fi
 
