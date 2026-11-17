@@ -189,6 +189,10 @@ check_runtime() { # check_runtime NS EXPECT_NAME NAME_ABSENT : deployment, pods,
 
   # Variable d'environnement : presente avec la valeur attendue, ou absente pour la base.
   env_name="$(k get deploy "$dep" -n "$ns" -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="WHOAMI_NAME")].value}' 2>/dev/null || true)"
+  if [ -z "$env_name" ]; then  # OpenChoreo livre les variables par envFrom ConfigMap (preuve runtime OKE 22:45Z)
+    cm="$(k get deploy "$dep" -n "$ns" -o jsonpath='{.spec.template.spec.containers[0].envFrom[0].configMapRef.name}' 2>/dev/null || true)"
+    [ -n "$cm" ] && env_name="$(k get configmap "$cm" -n "$ns" -o jsonpath='{.data.WHOAMI_NAME}' 2>/dev/null || true)"
+  fi
   if [ -n "$want_name" ]; then
     expect W6 "WHOAMI_NAME dans le pod" "$env_name" "$want_name"
   elif [ -n "$absent" ]; then
