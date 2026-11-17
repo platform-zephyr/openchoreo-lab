@@ -72,8 +72,25 @@ spec:
               "pod-security.kubernetes.io/warn": "restricted",
               "pod-security.kubernetes.io/audit": "restricted",
               "platform.smadja.dev/cell": "restricted",
+              "platform.smadja.dev/egress-isolated": "true",
               "platform.smadja.dev/pg-client": parameters.database ? "true" : "false"
             })}
+
+    - id: cluster-agent-rolebinding
+      template:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        metadata:
+          name: lab-cluster-agent-cell
+          namespace: ${metadata.namespace}
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: lab-cluster-agent-cell
+        subjects:
+          - kind: ServiceAccount
+            name: cluster-agent-dataplane
+            namespace: openchoreo-data-plane
 
     - id: default-deny
       template:

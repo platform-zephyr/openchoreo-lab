@@ -192,16 +192,18 @@ jobs:
             platform/identity platform/portal tools/oke tests/argo-guard tests/argo-escalation
       - name: shellcheck et bash -n
         run: |
-          shellcheck -x -P SCRIPTDIR tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh
-          for f in tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh; do bash -n "$f"; done
+          shellcheck -x -P SCRIPTDIR tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh
+          for f in tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh; do bash -n "$f"; done
       - name: Regles Argo (projets, chemins, whitelists nommees)
         run: python3 -I tools/oke/argo_guard.py .
       - name: Cas negatifs argo_guard (pieges hors depot, chacun refuse ; A2 lab-apps/lab-authz inclus)
         run: tests/argo-guard/run.sh
       # Les tests sur VRAI Argo (tests/argo-escalation/run.sh) exigent un cluster jetable : hors CI, preuve
       # archivee dans tests/argo-escalation/RESULTS.md (docs/ARGO-ESCALATION.md).
-      - name: Security bundle - tests de refus (fail-closed, sans cluster ni bundle reel ; obligatoires via ci-ok)
+      - name: Security bundle - refus fail-closed (sans cluster)
         run: tests/security-bundle/run.sh
+      - name: Cellule restreinte - RoleBinding borne + label egress-isolated (statique)
+        run: tests/cell-cpt/run.sh
       - name: Rendus Helm epingles + psa_check + 0 PVC/LB/image sans digest
         run: tools/oke/render-check.sh
       - name: Gardes uninstall.sh (kubectl et helm factices, CRD rendues)
