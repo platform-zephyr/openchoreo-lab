@@ -34,7 +34,7 @@ Prérequis : charger `platform-guardrails`. Référence : `golden-paths/README.m
 
    CI rouge : `gh run view <run-id> --log-failed`, corriger dans la même branche, re-pousser. Ne jamais contourner.
 6. **Merge** : classe AUTONOME et contrôles du §4 de `platform-guardrails` OK ⇒ `gh pr merge --squash --delete-branch`. Sinon `gh pr edit --add-label needs-paul`, compte rendu, arrêt.
-7. **Réconciliation** (lecture) : `kubectl --context $KUBE_CONTEXT get applications.argoproj.io -n argocd lab-apps -o jsonpath='{.status.sync.revision} {.status.sync.status} {.status.health.status}'`, jusqu'à révision = SHA du merge (10 min au plus).
+7. **Réconciliation** (lecture) : `kubectl --context $KUBE_CONTEXT get applications.argoproj.io -n argocd lab-apps -o jsonpath='{.status.sync.revisions[0]} {.status.sync.status} {.status.health.status}'`, jusqu'à révision = SHA du merge (10 min au plus).
 8. **Archétype B** : PR 2 de pin (`golden-paths/B-http-postgres/CHECKLIST.md`), puis retour à l'étape 5.
 9. **Preuve** :
 
@@ -50,3 +50,6 @@ Prérequis : charger `platform-guardrails`. Référence : `golden-paths/README.m
 - `verdict: PASS`, ou `PARTIAL` avec chaque BLOCKED et NOT_TESTED expliqué (par exemple G2 tant qu'Argo n'est pas installé).
 - Compte rendu de 5 lignes : archétype, classe, URL de PR, SHA de merge, chemin de l'evidence et verdict. Il dit aussi ce qui attend Paul (clés, label `needs-paul`).
 - Rien d'autre modifié que `apps/<nom>/`, `generated/`, `pins/` et `evidence/`.
+
+## Cluster OKE : déclarer l'app dans lab-apps (même PR)
+Pour `cluster: oke`, ajouter dans `platform/install/argocd/apps/lab-apps.yaml` UNE entrée `sources[]` (copie de la précédente, `path: generated/namespaces/default/projects/<app>`). Ce fichier est libre de revue humaine : `tools/oke/argo_guard.py` (CI) refuse toute entrée hors app OKE stateless (sans storage ni database). Toute autre modification de `platform/`, `tools/`, `.github/` exige l'approbation de Paul (docs/AGENT-PR-MODEL.md).
