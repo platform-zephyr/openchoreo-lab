@@ -27,7 +27,7 @@
           "description": "CIDR prives (RFC1918, CGNAT) qu'une app peut viser nominativement. Jamais 169.254.0.0/16 (IMDS)."
         },
         "databaseInstances": {
-          "type": "object", "minProperties": 1,
+          "type": "object",
           "propertyNames": { "enum": ["lab-pg", "pg-shared"] },
           "additionalProperties": {
             "type": "object",
@@ -46,7 +46,7 @@
           "items": { "enum": ["thunderid", "authentik"] }
         },
         "storageClasses": {
-          "type": "object", "minProperties": 1,
+          "type": "object",
           "propertyNames": { "enum": ["block-rwo", "rwx-shared"] },
           "additionalProperties": { "type": "string", "pattern": "^[a-z][a-z0-9.-]*$" },
           "description": "Profil de volume -> StorageClass. Profil absent = refuse sur ce cluster."
