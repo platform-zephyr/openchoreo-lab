@@ -1,13 +1,18 @@
-# Propriétaire des zones sensibles. La revue des code owners n'est PAS exigée par le ruleset main-protection
-# (décision : ne pas bloquer l'autonomie des agents) : ces lignes désignent le relecteur et documentent la
-# zone ; le blocage effectif vient du job CI `platform` (argo_guard, docs/CI-PLATFORM-CHECKS.md). Option :
-# activer require_code_owner_review dans le ruleset (voir ce document).
-* @SmadjaPaul
-/apps/ @SmadjaPaul
-/tools/ @SmadjaPaul
+# Frontière agents / humain (docs/AGENT-PR-MODEL.md). Le ruleset main-protection exige la revue des code owners :
+# une PR qui touche une ligne ci-dessous ne peut PAS être fusionnée sans approbation du propriétaire (Paul),
+# quel que soit l'auteur. Les chemins SANS propriétaire (apps/**, generated/**, docs/ hors schéma) sont livrables
+# en autonomie par un agent : PR + CI verte (ci-ok) suffisent.
+# Un agent n'a jamais le droit d'administrer le dépôt ni de contourner le ruleset (compte dédié, rôle Write).
 /.github/ @SmadjaPaul
-# Bootstrap privilégié Argo (projets, Application racine), droits cluster et authz OpenChoreo.
-/platform/install/argocd/ @SmadjaPaul
-/platform/policies/ @SmadjaPaul
-/platform/authz/ @SmadjaPaul
-/tools/oke/ @SmadjaPaul
+/tools/ @SmadjaPaul
+/platform/ @SmadjaPaul
+/security/ @SmadjaPaul
+/clusters/ @SmadjaPaul
+/tests/ @SmadjaPaul
+/docs/schema/ @SmadjaPaul
+/golden-paths/ @SmadjaPaul
+/AGENTS.md @SmadjaPaul
+/CLAUDE.md @SmadjaPaul
+/.agents/ @SmadjaPaul
+/.claude/ @SmadjaPaul
+/missions/ @SmadjaPaul

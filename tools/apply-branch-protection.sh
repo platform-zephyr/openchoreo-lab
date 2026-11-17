@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Cree un ruleset GitHub sur main : PR obligatoire, check "ci-ok" requis, pas de force push, pas de suppression.
+# Cree/met a jour le ruleset GitHub sur main : PR obligatoire, check "ci-ok" requis, revue des code owners (CODEOWNERS :
+# zones sensibles = approbation de Paul ; apps/** et generated/** libres), pas de force push, pas de suppression.
+# L'admin du depot (Paul) peut contourner en mode "pull_request" (merge explicite) ; un compte agent (role Write) ne le peut pas.
 # Par defaut : affiche la charge utile (aucun appel reseau en ecriture). Ecriture seulement avec --apply.
 # Usage : tools/apply-branch-protection.sh [--apply] [owner/repo]
 # Prerequis pour --apply : gh authentifie avec des droits d'administration du depot.
@@ -24,13 +26,14 @@ PAYLOAD="$(cat <<JSON
   "target": "branch",
   "enforcement": "active",
   "conditions": {"ref_name": {"include": ["refs/heads/main"], "exclude": []}},
+  "bypass_actors": [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "pull_request"}],
   "rules": [
     {"type": "non_fast_forward"},
     {"type": "deletion"},
     {"type": "pull_request", "parameters": {
       "required_approving_review_count": 0,
       "dismiss_stale_reviews_on_push": true,
-      "require_code_owner_review": false,
+      "require_code_owner_review": true,
       "require_last_push_approval": false,
       "required_review_thread_resolution": false
     }},
@@ -49,4 +52,9 @@ if [ "$APPLY" -eq 0 ]; then
   exit 0
 fi
 
-echo "$PAYLOAD" | gh api --method POST "repos/$REPO/rulesets" --input -
+ID="$(gh api "repos/$REPO/rulesets" --jq '.[] | select(.name=="main-protection") | .id')"
+if [ -n "$ID" ]; then
+  echo "$PAYLOAD" | gh api --method PUT "repos/$REPO/rulesets/$ID" --input -
+else
+  echo "$PAYLOAD" | gh api --method POST "repos/$REPO/rulesets" --input -
+fi
