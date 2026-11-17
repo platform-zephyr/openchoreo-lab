@@ -1,0 +1,453 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ComponentRelease
+metadata:
+  name: whoami-647fc6bfc1
+  namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  owner:
+    componentName: whoami
+    projectName: whoami
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service-restricted
+    spec:
+      workloadType: deployment
+      allowedWorkflows: []
+      allowedTraits:
+      - kind: ClusterTrait
+        name: persistent-volume-claim
+      - kind: ClusterTrait
+        name: health-probes
+      parameters:
+        openAPIV3Schema:
+          type: object
+          properties:
+            runAsUser:
+              type: integer
+              minimum: 1000
+              default: 65532
+            strategy:
+              type: string
+              enum:
+              - RollingUpdate
+              - Recreate
+              default: RollingUpdate
+            readOnlyRootFilesystem:
+              type: boolean
+              default: true
+            publicAuth:
+              type: string
+              enum:
+              - none
+              - app-oidc
+              - app-password
+              - cloudflare-access
+              default: none
+      environmentConfigs:
+        openAPIV3Schema:
+          type: object
+          properties:
+            replicas:
+              type: integer
+              minimum: 0
+              maximum: 3
+              default: 1
+            size:
+              type: string
+              enum:
+              - small
+              - medium
+              default: small
+      preRenderValidations:
+      - rule: ${size(workload.endpoints) > 0}
+        message: au moins un endpoint (service-restricted)
+      - rule: ${workload.container.image.matches('^[^@]+@sha256:[a-f0-9]{64}$')}
+        message: image épinglée par digest obligatoire
+      - rule: "${workload.endpoints.exists(name, ep, \"external\" in ep.visibility)\n  ? parameters.publicAuth != \"none\" : true}"
+        message: exposition publique sans authentification interdite
+      - rule: "${workload.endpoints.exists(name, ep, \"external\" in ep.visibility)\n  ? has(gateway.ingress) && has(gateway.ingress.external)\n  : true}"
+        message: 'endpoint external : gateway.ingress.external requis sur l''Environment ou le DataPlane'
+      - rule: "${workload.endpoints.exists(name, ep, \"internal\" in ep.visibility)\n  ? has(gateway.ingress) && has(gateway.ingress.internal)\n  : true}"
+        message: 'endpoint internal : gateway.ingress.internal requis sur l''Environment ou le DataPlane'
+      - rule: '${parameters.strategy == "Recreate" ? environmentConfigs.replicas <= 1 : true}'
+        message: 'PVC RWO : replicas <= 1'
+      resources:
+      - id: deployment
+        template:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: ${metadata.name}
+            namespace: ${metadata.namespace}
+            labels: ${metadata.labels}
+          spec:
+            replicas: ${environmentConfigs.replicas}
+            strategy:
+              type: ${parameters.strategy}
+            selector:
+              matchLabels: ${metadata.podSelectors}
+            template:
+              metadata:
+                labels: ${metadata.podSelectors}
+              spec:
+                automountServiceAccountToken: false
+                enableServiceLinks: false
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: ${parameters.runAsUser}
+                  runAsGroup: ${parameters.runAsUser}
+                  fsGroup: ${parameters.runAsUser}
+                  seccompProfile:
+                    type: RuntimeDefault
+                containers:
+                - name: main
+                  image: ${workload.container.image}
+                  imagePullPolicy: IfNotPresent
+                  command: '${has(workload.container.command) ? workload.container.command : oc_omit()}
+
+                    '
+                  args: '${has(workload.container.args) ? workload.container.args : oc_omit()}
+
+                    '
+                  securityContext:
+                    allowPrivilegeEscalation: false
+                    privileged: false
+                    readOnlyRootFilesystem: ${parameters.readOnlyRootFilesystem}
+                    capabilities:
+                      drop:
+                      - ALL
+                  resources:
+                    requests:
+                      cpu: '${environmentConfigs.size == "medium" ? "200m" : "50m"}'
+                      memory: '${environmentConfigs.size == "medium" ? "256Mi" : "128Mi"}'
+                    limits:
+                      cpu: '${environmentConfigs.size == "medium" ? "500m" : "250m"}'
+                      memory: '${environmentConfigs.size == "medium" ? "512Mi" : "256Mi"}'
+                  env: ${dependencies.toContainerEnvs()}
+                  envFrom: ${configurations.toContainerEnvFrom()}
+                  volumeMounts: '${configurations.toContainerVolumeMounts() + dependencies.toContainerVolumeMounts() + dyn([{"name": "tmp", "mountPath": "/tmp"}])}'
+                volumes: '${configurations.toVolumes() + dependencies.toVolumes() + dyn([{"name": "tmp", "emptyDir": {"sizeLimit": "64Mi"}}])}'
+      - id: service
+        includeWhen: ${size(workload.endpoints) > 0}
+        template:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: ${metadata.componentName}
+            namespace: ${metadata.namespace}
+            labels: ${metadata.labels}
+          spec:
+            type: ClusterIP
+            selector: ${metadata.podSelectors}
+            ports: ${workload.toServicePorts()}
+      - id: httproute-external
+        forEach: ${workload.endpoints.transformMap(name, ep, "external" in ep.visibility && ep.type in ["HTTP", "GraphQL", "Websocket"], ep)}
+        var: endpoint
+        template:
+          apiVersion: gateway.networking.k8s.io/v1
+          kind: HTTPRoute
+          metadata:
+            name: ${oc_generate_name(metadata.componentName, endpoint.key)}
+            namespace: ${metadata.namespace}
+            labels: '${oc_merge(metadata.labels, {"openchoreo.dev/endpoint-name": endpoint.key, "openchoreo.dev/endpoint-visibility": "external"})}'
+          spec:
+            parentRefs:
+            - name: ${gateway.ingress.external.name}
+              namespace: ${gateway.ingress.external.namespace}
+            hostnames: "${[gateway.ingress.external.?http, gateway.ingress.external.?https]\n  .filter(g, g.hasValue()).map(g, g.value().host).distinct()\n  .map(h, metadata.environmentName + \"-\" + metadata.componentNamespace + \".\" + h)}\n"
+            rules:
+            - matches:
+              - path:
+                  type: PathPrefix
+                  value: /${metadata.componentName}-${endpoint.key}
+              filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: ${endpoint.value.?basePath.orValue("/")}
+              backendRefs:
+              - name: ${metadata.componentName}
+                port: ${endpoint.value.port}
+      - id: httproute-internal
+        forEach: ${workload.endpoints.transformMap(name, ep, "internal" in ep.visibility && ep.type in ["HTTP", "GraphQL", "Websocket"], ep)}
+        var: endpoint
+        template:
+          apiVersion: gateway.networking.k8s.io/v1
+          kind: HTTPRoute
+          metadata:
+            name: ${oc_generate_name(metadata.componentName, endpoint.key, "internal")}
+            namespace: ${metadata.namespace}
+            labels: '${oc_merge(metadata.labels, {"openchoreo.dev/endpoint-name": endpoint.key, "openchoreo.dev/endpoint-visibility": "internal"})}'
+          spec:
+            parentRefs:
+            - name: ${gateway.ingress.internal.name}
+              namespace: ${gateway.ingress.internal.namespace}
+            hostnames: "${[gateway.ingress.internal.?http, gateway.ingress.internal.?https]\n  .filter(g, g.hasValue()).map(g, g.value().host).distinct()\n  .map(h, metadata.environmentName + \"-\" + metadata.componentNamespace + \".\" + h)}\n"
+            rules:
+            - matches:
+              - path:
+                  type: PathPrefix
+                  value: /${metadata.componentName}-${endpoint.key}
+              filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: ${endpoint.value.?basePath.orValue("/")}
+              backendRefs:
+              - name: ${metadata.componentName}
+                port: ${endpoint.value.port}
+      - id: env-config
+        forEach: ${configurations.toConfigEnvsByContainer()}
+        var: envConfig
+        template:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: ${envConfig.resourceName}
+            namespace: ${metadata.namespace}
+          data: '${envConfig.envs.transformMapEntry(index, env, {env.name: env.value})}
+
+            '
+      - id: file-config
+        forEach: ${configurations.toConfigFileList()}
+        var: config
+        template:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: ${config.resourceName}
+            namespace: ${metadata.namespace}
+          data:
+            ${config.name}: '${config.value}
+
+              '
+      - id: secret-env-external
+        forEach: ${configurations.toSecretEnvsByContainer()}
+        var: secretEnv
+        template:
+          apiVersion: external-secrets.io/v1
+          kind: ExternalSecret
+          metadata:
+            name: ${secretEnv.resourceName}
+            namespace: ${metadata.namespace}
+          spec:
+            refreshInterval: 15s
+            secretStoreRef:
+              name: ${dataplane.secretStore}
+              kind: ClusterSecretStore
+            target:
+              name: ${secretEnv.resourceName}
+              creationPolicy: Owner
+            data: "${secretEnv.envs.map(secret, {\n  \"secretKey\": secret.name,\n  \"remoteRef\": {\n    \"key\": secret.remoteRef.key,\n    ?\"property\": secret.remoteRef.?property\n  }\n})}\n"
+      - id: secret-file-external
+        forEach: ${configurations.toSecretFileList()}
+        var: file
+        template:
+          apiVersion: external-secrets.io/v1
+          kind: ExternalSecret
+          metadata:
+            name: ${file.resourceName}
+            namespace: ${metadata.namespace}
+          spec:
+            refreshInterval: 15s
+            secretStoreRef:
+              name: ${dataplane.secretStore}
+              kind: ClusterSecretStore
+            target:
+              name: ${file.resourceName}
+              creationPolicy: Owner
+            data:
+            - secretKey: ${file.name}
+              remoteRef:
+                key: ${file.remoteRef.key}
+                property: '${has(file.remoteRef.property) ? file.remoteRef.property : oc_omit()}
+
+                  '
+      postRenderValidations:
+      - target:
+          group: apps
+          version: v1
+          kind: Deployment
+        rule: "${has(resource.spec.template.spec.securityContext) &&\n  has(resource.spec.template.spec.securityContext.runAsNonRoot) &&\n  resource.spec.template.spec.securityContext.runAsNonRoot == true &&\n  has(resource.spec.template.spec.securityContext.runAsUser) &&\n  resource.spec.template.spec.securityContext.runAsUser >= 1000 &&\n  has(resource.spec.template.spec.securityContext.seccompProfile) &&\n  resource.spec.template.spec.securityContext.seccompProfile.type == \"RuntimeDefault\" &&\n  has(resource.spec.template.spec.automountServiceAccountToken) &&\n  resource.spec.template.spec.automountServiceAccountToken == false}"
+        message: 'securityContext restricted altéré (pod : runAsNonRoot, runAsUser>=1000, seccomp, automount)'
+      - target:
+          group: apps
+          version: v1
+          kind: Deployment
+        rule: "${resource.spec.template.spec.containers.all(c,\n    has(c.securityContext) &&\n    has(c.securityContext.allowPrivilegeEscalation) && c.securityContext.allowPrivilegeEscalation == false &&\n    (!has(c.securityContext.privileged) || c.securityContext.privileged == false) &&\n    (!has(c.securityContext.runAsUser) || c.securityContext.runAsUser >= 1000) &&\n    has(c.securityContext.capabilities) && has(c.securityContext.capabilities.drop) &&\n    \"ALL\" in c.securityContext.capabilities.drop &&\n    (!has(c.securityContext.capabilities.add) || size(c.securityContext.capabilities.add) == 0) &&\n    (parameters.readOnlyRootFilesystem\n      ? (has(c.securityContext.readOnlyRootFilesystem) && c.securityContext.readOnlyRootFilesystem == true)\n      : true))}"
+        message: 'securityContext restricted altéré (conteneur : privilege escalation, privileged, capabilities, rootfs)'
+      - target:
+          group: apps
+          version: v1
+          kind: Deployment
+        rule: "${!has(resource.spec.template.spec.initContainers) &&\n  !has(resource.spec.template.spec.ephemeralContainers) &&\n  size(resource.spec.template.spec.containers) == 1 &&\n  resource.spec.template.spec.containers.all(c, c.image.matches('^[^@]+@sha256:[a-f0-9]{64}$'))}"
+        message: un seul conteneur, sans init ni sidecar, image épinglée par digest
+      - target:
+          group: apps
+          version: v1
+          kind: Deployment
+        rule: "${!(has(resource.spec.template.spec.hostNetwork) && resource.spec.template.spec.hostNetwork) &&\n  !(has(resource.spec.template.spec.hostPID) && resource.spec.template.spec.hostPID) &&\n  !(has(resource.spec.template.spec.hostIPC) && resource.spec.template.spec.hostIPC) &&\n  (!has(resource.spec.template.spec.volumes) ||\n    resource.spec.template.spec.volumes.all(v, !has(v.hostPath)))}"
+        message: hostNetwork, hostPID, hostIPC et hostPath interdits
+      - target:
+          group: apps
+          version: v1
+          kind: Deployment
+        rule: "${has(resource.spec.template.spec.volumes) &&\n  resource.spec.template.spec.volumes.exists(v, has(v.persistentVolumeClaim))\n  ? (has(resource.spec.strategy) && resource.spec.strategy.type == \"Recreate\" &&\n     (!has(resource.spec.replicas) || resource.spec.replicas <= 1))\n  : true}"
+        message: 'PVC RWO : strategy Recreate et replicas <= 1 obligatoires'
+      - target:
+          group: ''
+          version: v1
+          kind: Service
+          mustMatch: false
+        rule: ${!has(resource.spec.type) || resource.spec.type == "ClusterIP"}
+        message: Service ClusterIP seulement (ni LoadBalancer ni NodePort)
+      - target:
+          group: ''
+          version: v1
+          kind: Namespace
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : Namespace'
+      - target:
+          group: ''
+          version: v1
+          kind: PersistentVolume
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : PersistentVolume'
+      - target:
+          group: ''
+          version: v1
+          kind: ServiceAccount
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : ServiceAccount'
+      - target:
+          group: rbac.authorization.k8s.io
+          version: v1
+          kind: ClusterRole
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : ClusterRole'
+      - target:
+          group: rbac.authorization.k8s.io
+          version: v1
+          kind: ClusterRoleBinding
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : ClusterRoleBinding'
+      - target:
+          group: rbac.authorization.k8s.io
+          version: v1
+          kind: Role
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : Role'
+      - target:
+          group: rbac.authorization.k8s.io
+          version: v1
+          kind: RoleBinding
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : RoleBinding'
+      - target:
+          group: networking.k8s.io
+          version: v1
+          kind: NetworkPolicy
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : NetworkPolicy (réservée au CPT et au contrôleur)'
+      - target:
+          group: storage.k8s.io
+          version: v1
+          kind: StorageClass
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : StorageClass'
+      - target:
+          group: admissionregistration.k8s.io
+          version: v1
+          kind: ValidatingWebhookConfiguration
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : ValidatingWebhookConfiguration'
+      - target:
+          group: admissionregistration.k8s.io
+          version: v1
+          kind: MutatingWebhookConfiguration
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : MutatingWebhookConfiguration'
+      - target:
+          group: admissionregistration.k8s.io
+          version: v1
+          kind: ValidatingAdmissionPolicy
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : ValidatingAdmissionPolicy'
+      - target:
+          group: apiextensions.k8s.io
+          version: v1
+          kind: CustomResourceDefinition
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : CustomResourceDefinition'
+      - target:
+          group: scheduling.k8s.io
+          version: v1
+          kind: PriorityClass
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : PriorityClass'
+      - target:
+          group: external-secrets.io
+          version: v1
+          kind: ClusterSecretStore
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : ClusterSecretStore'
+      - target:
+          group: external-secrets.io
+          version: v1
+          kind: SecretStore
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : SecretStore'
+      - target:
+          group: cilium.io
+          version: v2
+          kind: CiliumClusterwideNetworkPolicy
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : CiliumClusterwideNetworkPolicy'
+      - target:
+          group: apps
+          version: v1
+          kind: DaemonSet
+          mustMatch: false
+        rule: ${false}
+        message: 'kind interdit : DaemonSet'
+  workload:
+    container:
+      image: docker.io/traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+      env: []
+      args:
+      - --port
+      - '8080'
+    endpoints:
+      http:
+        type: HTTP
+        port: 8080
+        visibility:
+        - internal
+  componentProfile:
+    parameters:
+      runAsUser: 65532
+      strategy: RollingUpdate
+      publicAuth: none
+    traits: []
