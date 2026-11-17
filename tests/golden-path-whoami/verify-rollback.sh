@@ -44,10 +44,26 @@ if [ -n "$(git_blob "$BASE_SHA" "$APP_PATH")" ] && [ "$(git_blob "$BASE_SHA" "$A
 else
   rec FAIL R1 "app.yaml du revert different de la base"
 fi
-if git -C "$REPO_ROOT" diff --quiet "$BASE_SHA" "$REVERT_SHA" -- "generated/namespaces/default/projects/$WHOAMI_APP" "$APP_PATH"; then
-  rec PASS R2 "arbre whoami (generated/ + app.yaml) identique entre la base et le revert"
+# R2 : arbre (generated/ + app.yaml) identique a la base, SAUF la release de changement, conservee par le revert
+# (historique append-only : tests/release-history/check.sh). Cette release doit avoir le contenu de CHANGE_SHA.
+REL_DIR="generated/namespaces/default/projects/$WHOAMI_APP/components/$WHOAMI_APP/releases/"
+r2_diff="$(git -C "$REPO_ROOT" diff --name-status "$BASE_SHA" "$REVERT_SHA" -- "generated/namespaces/default/projects/$WHOAMI_APP" "$APP_PATH" \
+  | grep -v -E "^A[[:space:]]+$REL_DIR" || true)"
+if [ -z "$r2_diff" ]; then
+  rec PASS R2 "arbre $WHOAMI_APP (app.yaml + generated/) identique a la base, hors releases historiques"
 else
-  rec FAIL R2 "arbre whoami different entre la base et le revert"
+  rec FAIL R2 "arbre $WHOAMI_APP different entre la base et le revert (hors releases historiques)"
+fi
+kept=0; kept_bad=0
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  kept=$((kept + 1))
+  [ "$(git_blob "$REVERT_SHA" "$f")" = "$(git_blob "$CHANGE_SHA" "$f")" ] || kept_bad=$((kept_bad + 1))
+done < <(git -C "$REPO_ROOT" diff --name-only --diff-filter=A "$BASE_SHA" "$REVERT_SHA" -- "$REL_DIR")
+if [ "$kept_bad" = 0 ]; then
+  rec PASS R2 "release(s) de changement conservee(s) par le revert (append-only) : $kept, contenu = CHANGE_SHA"
+else
+  rec FAIL R2 "$kept_bad release(s) de changement conservee(s) differente(s) de CHANGE_SHA"
 fi
 
 base_rel="$(release_of_rev "$BASE_SHA")"

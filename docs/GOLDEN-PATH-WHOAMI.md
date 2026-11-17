@@ -13,7 +13,7 @@ Base : `origin/main` après #19 (schéma capabilities), #20 (verify), #21 (whoam
 | `verify-change.sh` | Prouve que `WHOAMI_NAME` est livré (Argo, RB, pod) et visible en HTTP | lecture seule |
 | `verify-rollback.sh` | Prouve le retour à la base : blobs Git identiques, même release, même UID de ComponentRelease | lecture seule |
 | `make-change-pr.sh` | Worktree depuis `origin/main`, applique `change.patch`, `appgen validate/check`, commit, push, PR | aucun (Git et GitHub seulement) |
-| `make-revert-pr.sh` | Worktree depuis `origin/main`, `git revert <CHANGE_SHA>`, validation, push, PR | aucun |
+| `make-revert-pr.sh` | Worktree depuis `origin/main`, `git revert --no-commit <CHANGE_SHA>`, restauration des releases historiques (append-only), validation `check --base`, push, PR. Paramètres `APP` (défaut `whoami`) et `MARKER` | aucun |
 | `selftest.sh` | 14 garde-fous testés sans cluster (refus avant tout appel réseau) | aucun |
 | `change.patch` | Patch sur `origin/main` : `env: {WHOAMI_NAME: whoami-gitops-oke-v2}` dans `apps/whoami/app.yaml`, release `whoami-69a1749676` ajoutée | non |
 
@@ -118,3 +118,11 @@ Image : `docker.io/traefik/whoami:v1.10.3@sha256:43a68d...` (nom qualifié, #22 
 - Pas de base, pas de volume, pas de LoadBalancer (stateless, `exposure: private`, `network: none`).
 - Aucun Secret lu, aucun jeton écrit. Le corps HTTP n'est jamais imprimé.
 - Pas de merge, pas de passage en ready hors décision de Paul.
+
+## 6. Plusieurs apps OKE : `lab-apps` en `sources[]` (golden path n°2 : ntfy)
+
+- **`lab-apps` ne synchronise pas `generated/` en entier.** L'Application `platform/install/argocd/apps/lab-apps.yaml` porte `spec.sources[]` : **une source par dossier d'app OKE**, même dépôt, `targetRevision: main`, `directory.recurse: true`, `include: "*.yaml"`. Aujourd'hui : `whoami` et `ntfy`. Les apps k3d (ex. miniflux, qui demande un volume) n'ont pas de dossier admis.
+- **Garde CI** (`tools/oke/argo_guard.py`, A2/A3) : `sources[]` n'est admis que pour `lab-apps` ; chaque chemin doit être exactement `generated/namespaces/default/projects/<app>` ; l'app doit être `cluster: oke`, `profile: stateless`, sans `storage` ni `database` dans `apps/<app>/app.yaml`. Refusés : chemin parent, sous-dossier, autre dépôt ou révision, `chart`/`helm`/`kustomize`, `recurse: false`, include différent de `"*.yaml"`, doublon, `source` unique à côté de `sources[]`. `tests/argo-guard/run.sh` couvre chaque cas (41 PASS).
+- **Ajouter une app OKE** : `apps/<app>/app.yaml` (cluster oke, stateless) → `appgen render` → **une entrée** dans `sources[]` (PR). Un retrait d'app est une PR séparée qui retire l'entrée puis le dossier.
+- **Revert sans suppression de release** : `tests/golden-path-whoami/make-revert-pr.sh` (paramètres `APP` et `MARKER`, défaut whoami) restaure, dans le même commit de revert, les fichiers `generated/**/releases/*` supprimés par `git revert`, depuis `CHANGE_SHA`. La CI `tests/release-history/check.sh` impose cette règle. `verify-rollback.sh` R2 tolère la release de changement conservée (contenu = `CHANGE_SHA`).
+- **ntfy (golden path n°2)** : `apps/ntfy/app.yaml` (oke, stateless, sans PVC, sans secret, `exposure: private`, `network: none`). Cache et auth en mémoire (variables non posées), donc aucun chemin inscriptible : `readOnlyRootFilesystem` tient sans `emptyDir`. Scripts : `tests/golden-path-ntfy/make-change-pr.sh` (ajoute `NTFY_LOG_LEVEL: DEBUG`), `tests/golden-path-ntfy/verify-http.sh` (lecture seule, `/v1/health` via `port-forward`), revert par `APP=ntfy MARKER=NTFY_LOG_LEVEL make-revert-pr.sh`. Preuves runtime OKE : NOT_TESTED tant que la PR n'est pas mergée et déployée. La 2e PR `pin-project ntfy` sera requise après le premier déploiement (avertissement d'`appgen check --base`).

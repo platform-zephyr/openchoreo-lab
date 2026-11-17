@@ -14,6 +14,10 @@ Refuse :
       platform/authz), lab-apps à l'Application lab-apps (chemin generated/namespaces/default) ;
   A3. une Application `lab-platform` dont le chemin n'est pas sous platform/, ou vise
       platform/install/argocd/ ou platform/authz/ ; toute source multiple, Helm, plugin ou kustomize ;
+  A2/A3 lab-apps (sources[]) : l'Application `lab-apps` seulement, UNE source par app OKE (chemin exact
+      generated/namespaces/default/projects/<app>, app = apps/<app>/app.yaml cluster oke, profile stateless,
+      sans storage ni database), même dépôt, targetRevision main, directory.recurse true, include "*.yaml" ;
+      `source` unique et sources[] simultanés refusés ; les apps k3d (volumes) jamais ;
   A4. une synchro `automated` sur un projet lab-authz ou lab-platform (synchro MANUELLE, flux A2) ;
   P1. un AppProject hors des fichiers de bootstrap (project-lab.yaml : lab-platform, lab-apps, lab-authz,
       lab-root ; project-default-locked.yaml : default) ; le projet `default` non verrouillé (listes
@@ -54,6 +58,7 @@ ALLOWED_PROJECTS = set(LAB_PROJECTS)
 CHILD_PROJECTS = {"lab-platform", "lab-apps", "lab-authz"}
 SYNC_PROJECTS = ("lab-platform", "lab-apps")  # projets dont les objets synchronisés sont contrôlés (S1)
 APPS_PATH = "generated/namespaces/default"
+REPO_URLS = {"https://github.com/platform-zephyr/openchoreo-lab", "https://github.com/platform-zephyr/openchoreo-lab.git"}
 # Kinds OpenChoreo applicatifs (sortie de tools/appgen) : seuls admis par lab-apps et sous generated/namespaces.
 APP_KINDS = {"Project", "Component", "ComponentRelease", "Workload", "ReleaseBinding", "ProjectReleaseBinding",
              "Resource", "ResourceReleaseBinding", "SecretReference"}
@@ -237,8 +242,10 @@ class Guard:
                               f"({', '.join(sorted(CHILD_PROJECTS))})")
             if rel != ROOT_APP and proj == "lab-root":
                 self.err(rel, f"A2 Application '{name}' : projet lab-root réservé à {ROOT_APP}")
-            if "sources" in spec:
-                self.err(rel, f"A3 Application '{name}' : sources multiples interdites")
+            if "sources" in spec and proj != "lab-apps":
+                self.err(rel, f"A3 Application '{name}' : sources multiples interdites hors lab-apps")
+            if proj == "lab-apps":
+                self.check_lab_apps_sources(rel, name, spec)
             src = spec.get("source") or {}
             for k in ("chart", "helm", "kustomize", "plugin"):
                 if k in src:
@@ -249,8 +256,6 @@ class Guard:
                     self.err(rel, "A2 projet lab-authz réservé à l'Application lab-authz (chemin platform/authz)")
             if proj in MANUAL_PROJECTS and (spec.get("syncPolicy") or {}).get("automated") is not None:
                 self.err(rel, f"A4 Application '{name}' ({proj}) : synchro automated interdite (sync MANUELLE)")
-            if proj == "lab-apps" and (name != "lab-apps" or not (path == APPS_PATH or path.startswith(APPS_PATH + "/projects/"))):
-                self.err(rel, f"A2 projet lab-apps réservé à l'Application lab-apps (chemin {APPS_PATH})")
             if proj == "lab-platform":
                 norm = pathlib.PurePosixPath(path)
                 if ".." in norm.parts or not (path == "platform" or path.startswith("platform/")) \
@@ -259,24 +264,78 @@ class Guard:
             apps.append((rel, d))
         return apps
 
+    def oke_apps(self):
+        """Apps admises à lab-apps : apps/<nom>/app.yaml, cluster oke, stateless (ni volume, ni base)."""
+        out = set()
+        for rel, objs in self.files.items():
+            parts = pathlib.PurePosixPath(rel).parts
+            if len(parts) != 3 or parts[0] != "apps" or parts[2] != "app.yaml":
+                continue
+            for d in objs:
+                s = (d.get("spec") or {}) if d.get("kind") == "App" else {}
+                if s.get("cluster") == "oke" and s.get("profile") == "stateless" \
+                        and "storage" not in s and "database" not in s:
+                    out.add(parts[1])
+        return out
+
+    def check_lab_apps_sources(self, rel, name, spec):
+        """A2/A3 (lab-apps) : Application `lab-apps` seulement, `sources[]` avec UNE source par app OKE stateless."""
+        if name != "lab-apps":
+            self.err(rel, f"A2 projet lab-apps réservé à l'Application lab-apps (Application '{name}')")
+        if "source" in spec:
+            self.err(rel, "A3 lab-apps : `source` unique interdit, sources[] exigé (une entrée par app OKE)")
+        srcs = spec.get("sources")
+        if not isinstance(srcs, list) or not srcs:
+            self.err(rel, "A3 lab-apps : sources[] absent ou vide")
+            return
+        oke, seen = self.oke_apps(), set()
+        for i, s in enumerate(srcs):
+            if not isinstance(s, dict):
+                self.err(rel, f"A3 lab-apps : sources[{i}] n'est pas un mapping")
+                continue
+            for k in sorted(set(s) - {"repoURL", "targetRevision", "path", "directory"}):
+                self.err(rel, f"A3 lab-apps : sources[{i}].{k} interdit (répertoire YAML seulement)")
+            if s.get("repoURL") not in REPO_URLS:
+                self.err(rel, f"A3 lab-apps : sources[{i}].repoURL '{s.get('repoURL')}' hors dépôt du labo")
+            if s.get("targetRevision") != "main":
+                self.err(rel, f"A3 lab-apps : sources[{i}].targetRevision doit être main")
+            path = str(s.get("path", ""))
+            prefix = APPS_PATH + "/projects/"
+            app = path[len(prefix):] if path.startswith(prefix) else ""
+            if not app or "/" in app or ".." in pathlib.PurePosixPath(path).parts:
+                self.err(rel, f"A2 lab-apps : sources[{i}].path '{path}' : seul {prefix}<app> est admis")
+            elif app not in oke:
+                self.err(rel, f"A2 lab-apps : sources[{i}].path '{path}' : app '{app}' non OKE stateless "
+                              "(apps/<app>/app.yaml : cluster oke, profile stateless, sans storage ni database)")
+            if path in seen:
+                self.err(rel, f"A3 lab-apps : sources[{i}].path '{path}' en double")
+            seen.add(path)
+            dr = s.get("directory") or {}
+            if dr.get("recurse") is not True:
+                self.err(rel, f"A3 lab-apps : sources[{i}].directory.recurse doit être true")
+            if dr.get("include") != "*.yaml":
+                self.err(rel, f"A3 lab-apps : sources[{i}].directory.include doit être \"*.yaml\"")
+
     def synced(self, apps):
         out = {p: set() for p in SYNC_PROJECTS}
         for _rel, a in apps:
             spec = a.get("spec") or {}
-            src = spec.get("source") or {}
-            if spec.get("project") not in SYNC_PROJECTS or "path" not in src:
+            if spec.get("project") not in SYNC_PROJECTS:
                 continue
-            base = str(src["path"]).rstrip("/")
-            dr = src.get("directory") or {}
-            pats = expand_include(dr.get("include") or "*.yaml") if dr.get("include") else ["*.yaml", "*.yml", "*.json"]
-            for rel in self.files:
-                if not rel.startswith(base + "/"):
+            for src in source_list(spec):
+                if "path" not in src:
                     continue
-                sub = rel[len(base) + 1:]
-                if not dr.get("recurse") and "/" in sub:
-                    continue
-                if any(fnmatch.fnmatch(sub, p) for p in pats):
-                    out[spec["project"]].add(rel)
+                base = str(src["path"]).rstrip("/")
+                dr = src.get("directory") or {}
+                pats = expand_include(dr.get("include") or "*.yaml") if dr.get("include") else ["*.yaml", "*.yml", "*.json"]
+                for rel in self.files:
+                    if not rel.startswith(base + "/"):
+                        continue
+                    sub = rel[len(base) + 1:]
+                    if not dr.get("recurse") and "/" in sub:
+                        continue
+                    if any(fnmatch.fnmatch(sub, p) for p in pats):
+                        out[spec["project"]].add(rel)
         return out
 
     # --- Authz ----------------------------------------------------------------------------------------
@@ -351,6 +410,13 @@ class Guard:
 
 def group_of(api_version):
     return api_version.split("/")[0] if "/" in api_version else ""
+
+
+def source_list(spec):
+    """Sources d'une Application : `sources[]` (multi, lab-apps seulement) ou `source` (unique)."""
+    if "sources" in spec:
+        return [s for s in (spec.get("sources") or []) if isinstance(s, dict)]
+    return [spec.get("source") or {}]
 
 
 def expand_include(pattern):
