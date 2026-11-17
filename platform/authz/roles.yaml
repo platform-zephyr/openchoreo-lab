@@ -75,6 +75,22 @@ spec:
     - releasebinding:create
     - componentrelease:create
 ---
+# Développeur humain : lecture (lab-viewer) + écritures runtime bornées, namespace `default` seulement (portée du
+# binding). Ni secret (resource:read-secrets), ni exec (component:exec), ni création/suppression de composants :
+# le changement durable passe par une PR (appgen). Remplace le rôle `developer` du chart.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRole
+metadata:
+  name: lab-developer
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  description: "Développeurs : release bindings et releases bornés, sans secret ni exec"
+  actions:
+    - releasebinding:update
+    - releasebinding:create
+    - componentrelease:create
+---
 # Garde-fous : référencé UNIQUEMENT par des bindings effect: deny (deny gagne sur tout allow,
 # y compris un allow ajouté plus tard par erreur). Toute mutation hors runtime borné, les secrets,
 # l'authz, l'exec/connect et la modification des composants (patch_component = ajout de trait,

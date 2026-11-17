@@ -18,8 +18,8 @@ spec:
         kind: ClusterAuthzRole
         name: lab-viewer
 ---
-# Développeur : rôle `developer` livré par le chart v1.3.3 (créer/modifier composants,
-# workloads, release bindings, resources). Il inclut resource:read-secrets et component:exec.
+# Développeur : lecture (lab-viewer) + écritures runtime bornées (lab-developer, namespace default). Le rôle
+# `developer` du chart (resource:read-secrets, component:exec) n'est plus lié à personne.
 apiVersion: openchoreo.dev/v1alpha1
 kind: ClusterAuthzRoleBinding
 metadata:
@@ -34,7 +34,12 @@ spec:
   roleMappings:
     - roleRef:
         kind: ClusterAuthzRole
-        name: developer
+        name: lab-viewer
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: lab-developer
+      scope:
+        namespace: default
 ---
 apiVersion: openchoreo.dev/v1alpha1
 kind: ClusterAuthzRoleBinding

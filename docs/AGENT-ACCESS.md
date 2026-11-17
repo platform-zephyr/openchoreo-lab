@@ -17,7 +17,7 @@ Manifestes : `platform/authz/`. Identités IdP : `docs/IDENTITY.md` (autre agent
 | `openchoreo-agent-reader` (agent) | `client_id` | `lab-agent-reader`, deny `lab-agent-forbidden` | namespaces, projets, composants, workloads, releases, bindings, ressources, logs, événements, métriques, diagnostics | rien |
 | `openchoreo-agent-operator` (agent, sous mandat) | `client_id` | `lab-agent-reader` + `lab-agent-operator` (CEL : development/staging), deny `lab-agent-forbidden` | idem | `update_release_binding`, `create_release_binding`, `create_component_release`, hors production |
 | `openchoreo-viewers` (humain) | `groups` | `lab-viewer` | console en lecture, sans secret ni authz | rien |
-| `openchoreo-developers` (humain) | `groups` | `developer` (rôle du chart) | tout le périmètre applicatif | composants, workloads, bindings, ressources |
+| `openchoreo-developers` (humain) | `groups` | `lab-viewer` + `lab-developer` (namespace `default`) | lecture + release bindings/releases | PAS de secrets, PAS d'exec, PAS de création de composants (changement durable = PR) |
 | `authentik-admins` (humain) | `groups` | `lab-platform-admin` (`*`) | tout | tout, authz comprise |
 
 Interdits explicites aux deux agents (deny) :
@@ -122,4 +122,4 @@ Pour un PoC, l'option 3 suffit. L'option 1 ne doit servir que le temps d'une inv
 - Connexion navigateur par groupe non jouée (H8). Seule la décision du PDP est prouvée.
 - La dérive GitOps d'une écriture MCP n'est pas mesurée (G1, attend A3).
 - `list_authz_actions` reste appelable par tout sujet authentifié (catalogue statique).
-- Le rôle `developer` du chart inclut `resource:read-secrets` et `component:exec` pour les humains.
+- Le rôle `developer` du chart inclut `resource:read-secrets` et `component:exec` : il n'est lié à personne (corrigé 2026-11-18 : `lab-developer`).
