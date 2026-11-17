@@ -1,0 +1,19 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: echo-demo
+  namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  owner:
+    projectName: echo-demo
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service-restricted
+  autoDeploy: false
+  parameters:
+    runAsUser: 65532
+    strategy: RollingUpdate
+    publicAuth: none
