@@ -195,8 +195,24 @@ probe_rc() { # NS POD URL [curl args] -> echo "RC"
   kubectl -n "$ns" exec "$p" -- curl -sS -o /dev/null --connect-timeout 5 -m 8 "$@" >/dev/null 2>&1 || rc=$?
   echo "$rc"
 }
+# Nettoyage garanti (trap EXIT/INT/TERM) : supprime les sondes, supprime le namespace témoin en ATTENDANT sa
+# disparition et vérifie qu'il n'existe plus ; sinon FAIL « nettoyage » (ressource de test résiduelle).
+SEC_NS=openchoreo-control-plane SEC_POD=lab-netprobe SEC_CNS=lab-netcontrol
+security_cleanup() {
+  trap - EXIT INT TERM
+  kubectl -n "$SEC_NS" delete pod "$SEC_POD" --ignore-not-found --wait=true --timeout=60s >/dev/null 2>&1 || true
+  kubectl delete namespace "$SEC_CNS" --ignore-not-found --wait=true --timeout=120s >/dev/null 2>&1 || true
+  if kubectl get namespace "$SEC_CNS" >/dev/null 2>&1; then
+    res FAIL S-cleanup "namespace témoin $SEC_CNS encore présent après suppression"
+  elif kubectl -n "$SEC_NS" get pod "$SEC_POD" >/dev/null 2>&1; then
+    res FAIL S-cleanup "pod de sonde $SEC_POD encore présent"
+  else
+    res PASS S-cleanup "sondes et namespace témoin $SEC_CNS supprimés et absents (vérifié)"
+  fi
+}
 security() {
-  local ns=openchoreo-control-plane p=lab-netprobe cns=lab-netcontrol
+  local ns=$SEC_NS p=$SEC_POD cns=$SEC_CNS
+  trap security_cleanup EXIT INT TERM
   probe_pod "$ns" "$p"
   # Namespace témoin NON isolé (sans platform.smadja.dev/egress-isolated) : supprimé à la fin.
   kubectl create namespace "$cns" --dry-run=client -o yaml | kubectl label --local -f - -o yaml \
@@ -234,8 +250,7 @@ security() {
       *) res FAIL S-intra "intra-namespace vers $svc:$svcport : $(classify "$cross_rc")";;
     esac
   fi
-  kubectl -n "$ns" delete pod "$p" --wait=false >/dev/null
-  kubectl delete namespace "$cns" --wait=false >/dev/null
+  security_cleanup
 }
 
 case "$MODE" in
