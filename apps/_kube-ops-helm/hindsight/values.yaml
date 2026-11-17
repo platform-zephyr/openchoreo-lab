@@ -1,0 +1,63 @@
+# Valeurs Helm Hindsight (parcours helm). Aucun secret : references par existingSecret (ESO, cle nommee).
+# Source : kube-ops k8s/clusters/oracle-a1/hindsight/values.yaml (@ef50472), durcie.
+# Image epinglee par digest d'index multi-arch via le tag (le chart construit repository:tag).
+existingSecret: hindsight-secrets          # genere par appgen : {name}-secrets. Cle postgres-password : BLOQUANT (NOTES)
+podSecurityContext:
+  fsGroup: 1000
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities: {drop: [ALL]}
+  seccompProfile: {type: RuntimeDefault}
+api:
+  enabled: true
+  replicaCount: 1
+  automountServiceAccountToken: false
+  image:
+    repository: ghcr.io/vectorize-io/hindsight-api
+    tag: "1.2.1@sha256:662109ece429871a81e036427fb93fbb09ba9dc4b01d320d356f114c0e1aedd8"   # [C] imagetools inspect 2026-11-17
+  env:
+    HINDSIGHT_API_LLM_PROVIDER: openai
+    HINDSIGHT_API_LLM_BASE_URL: https://api.minimax.io/v1
+    HINDSIGHT_API_LLM_MODEL: MiniMax-M2.7
+    HINDSIGHT_API_LLM_MAX_CONCURRENT: "1"
+    HINDSIGHT_API_EMBEDDINGS_PROVIDER: local
+    HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL: BAAI/bge-small-en-v1.5
+    HINDSIGHT_API_ENABLE_BANK_CONFIG_API: "false"
+    HINDSIGHT_API_MENTAL_MODEL_MIN_REFRESH_INTERVAL_SECONDS: "86400"
+    HINDSIGHT_API_REFLECT_DEFAULT_OPTIONS: '{"reflect_search_observations_max_tokens":3000}'
+    HINDSIGHT_API_TENANT_EXTENSION: hindsight_api.extensions.builtin.tenant:ApiKeyTenantExtension
+    HF_HUB_OFFLINE: "true"
+    TRANSFORMERS_OFFLINE: "true"
+  persistence:
+    modelCache:
+      enabled: false
+  # Ecritures hors rootfs (readOnlyRootFilesystem) : /tmp et cache HF [S : chemins a prouver au runtime].
+  extraVolumes:
+    - {name: tmp, emptyDir: {sizeLimit: 512Mi}}
+    - {name: hf-cache, emptyDir: {sizeLimit: 1Gi}}
+  extraVolumeMounts:
+    - {name: tmp, mountPath: /tmp}
+    - {name: hf-cache, mountPath: /home/hindsight/.cache}
+  resources:
+    requests: {cpu: 25m, memory: 768Mi}
+    limits: {cpu: "2", memory: 3Gi}
+  startupProbe:
+    httpGet: {path: /health/live, port: 8888}
+    periodSeconds: 10
+    failureThreshold: 60
+worker: {enabled: false}
+controlPlane: {enabled: false}
+postgresql:
+  enabled: false
+  external:
+    # Base CNPG dediee (pas pg-shared). Namespace = lab-hindsight-production (appgen). CNPG NON rendu : voir NOTES.
+    host: hindsight-db-rw.lab-hindsight-production.svc.cluster.local
+    port: 5432
+    database: hindsight
+    username: hindsight
+ingress: {enabled: false}
+gatewayApi: {enabled: false}

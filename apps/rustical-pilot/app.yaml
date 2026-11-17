@@ -1,0 +1,37 @@
+# RustiCal (CalDAV/CardDAV), pilote prive, DONNEES SYNTHETIQUES UNIQUEMENT (kube-ops README pilote).
+# Image verifiee : index multi-arch contenant linux/arm64 [C] (digest identique a kube-ops optional/rustical,
+# `docker buildx imagetools inspect ghcr.io/lennart-k/rustical:0.18.0`, 2026-11-17).
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: rustical-pilot
+  owner: user:default/paul
+  description: RustiCal CalDAV/CardDAV, pilote prive (donnees synthetiques)
+spec:
+  source:
+    image: ghcr.io/lennart-k/rustical:0.18.0@sha256:33ec65f695eeed3fafb15270f274a89f7201d2bb3ffe3369e1be1a94e04af880
+  cluster: k3d
+  environments: [production]
+  profile: stateful
+  runtime:
+    port: 4000
+    healthPath: /   # [S] kube-ops sonde `rustical health` (exec) ; sonde HTTP a prouver
+    size: small
+    runAsUser: 1000   # comme kube-ops [C]
+    env:
+      RUSTICAL_OIDC__NAME: ThunderID
+      RUSTICAL_OIDC__ISSUER: https://thunder.lab.smadja.dev
+      RUSTICAL_OIDC__CLAIM_USERID: sub
+      RUSTICAL_OIDC__SCOPES: '["openid", "profile", "email", "groups"]'
+      RUSTICAL_OIDC__ALLOW_SIGN_UP: "true"          # comme kube-ops ; la porte reelle est allowedGroups cote IdP
+  storage: {profile: block-rwo, mountPath: /var/lib/rustical, size: 1Gi}   # SQLite ; kube-ops : longhorn-bulk 1Gi
+  update: {strategy: Recreate}
+  secrets:
+    - {env: RUSTICAL_OIDC__CLIENT_ID, key: RUSTICAL_PILOT_OIDC_CLIENT_ID}
+    - {env: RUSTICAL_OIDC__CLIENT_SECRET, key: RUSTICAL_PILOT_OIDC_CLIENT_SECRET}
+  identity:
+    oidc: {provider: thunderid, issuer: https://thunder.lab.smadja.dev, clientId: rustical-pilot, clientSecretKey: RUSTICAL_PILOT_OIDC_CLIENT_SECRET, allowedGroups: [family, admin], adminGroup: admin}
+  exposure: {mode: private, auth: app-oidc}
+  network: {egress: none, allowIdp: true}   # FQDN refuse sur k3d (sans Cilium) ; a ajouter au gate OKE (NOTES.md)
+  backup: {class: regenerable}   # donnees synthetiques = regenerables ; aucune donnee reelle (NOTES.md)
+  observability: {metrics: {enabled: false}}

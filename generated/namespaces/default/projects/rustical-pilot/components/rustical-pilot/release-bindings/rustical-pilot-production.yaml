@@ -1,0 +1,19 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: rustical-pilot-production
+  namespace: default
+spec:
+  owner:
+    projectName: rustical-pilot
+    componentName: rustical-pilot
+  environment: production
+  releaseName: rustical-pilot-5cfb16559f
+  componentTypeEnvironmentConfigs:
+    size: small
+    replicas: 1
+  traitEnvironmentConfigs:
+    data:
+      size: 1Gi
+      storageClass: local-path

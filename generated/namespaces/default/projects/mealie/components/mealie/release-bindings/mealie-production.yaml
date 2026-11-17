@@ -1,0 +1,19 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: mealie-production
+  namespace: default
+spec:
+  owner:
+    projectName: mealie
+    componentName: mealie
+  environment: production
+  releaseName: mealie-95adb7ee06
+  componentTypeEnvironmentConfigs:
+    size: small
+    replicas: 1
+  traitEnvironmentConfigs:
+    data:
+      size: 5Gi
+      storageClass: local-path
