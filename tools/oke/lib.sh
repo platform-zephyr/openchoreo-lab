@@ -154,11 +154,12 @@ stack_usage() {
 CAP_THRESHOLD_PCT="${CAP_THRESHOLD_PCT:-70}"
 capacity_gate() {
   local alloc acpu amem rq rcpu rmem pcpu pmem
-  alloc="$(kubectl get nodes -o json 2>/dev/null | jq -r '.items[0].status.allocatable | [.cpu, .memory] | @tsv')" \
-    && [[ -n "$alloc" ]] || { unavailable "allocatable du nœud illisible"; return 4; }
+  alloc="$(kubectl get nodes -o json 2>/dev/null | jq -r '.items[0].status.allocatable | [.cpu, .memory] | @tsv')" || alloc=""
+  [[ -n "$alloc" ]] || { unavailable "allocatable du nœud illisible"; return 4; }
   acpu="$(awk '{v=$1; if (v ~ /m$/) {sub(/m$/,"",v); print v} else print v*1000}' <<<"$alloc")"
   amem="$(awk '{v=$2; if (v ~ /Ki$/) {sub(/Ki$/,"",v); print v/1024} else if (v ~ /Mi$/) {sub(/Mi$/,"",v); print v} else if (v ~ /Gi$/) {sub(/Gi$/,"",v); print v*1024} else print v/1048576}' <<<"$alloc")"
-  rq="$(requests_by_ns)" && [[ -n "$rq" ]] || { unavailable "requests des pods illisibles"; return 4; }
+  rq="$(requests_by_ns)" || rq=""
+  [[ -n "$rq" ]] || { unavailable "requests des pods illisibles"; return 4; }
   read -r rcpu rmem < <(awk '{c+=$2; m+=$3} END {printf "%d %d\n", c, m}' <<<"$rq")
   acpu="${acpu%.*}"; amem="${amem%.*}"
   [[ "$acpu" =~ ^[0-9]+$ && "$amem" =~ ^[0-9]+$ && "$acpu" -gt 0 && "$amem" -gt 0 ]] \
