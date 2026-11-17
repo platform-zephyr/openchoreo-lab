@@ -50,7 +50,7 @@ printf 'helm %s\n' "\$*" >> "\$LOGF"
 args=("\$@"); [[ "\${args[0]}" == -n ]] && args=("\${args[@]:2}")
 case "\${args[0]}" in
   template|pull|version|show) exec "$REAL_HELM" "\$@";;
-  list) printf '%s\n' kgateway kgateway-crds cert-manager external-secrets;;  # releases présentes
+  list) [[ -n "\${HELM_LIST_EMPTY:-}" ]] || printf '%s\n' kgateway kgateway-crds cert-manager external-secrets;;  # releases présentes (vide si HELM_LIST_EMPTY)
   status|get) exit 1;;
   uninstall|upgrade|install|rollback) printf 'WRITE helm %s\n' "\$*" >> "\$LOGF"; exit 0;;
   *) printf 'UNHANDLED helm %s\n' "\$*" >> "\$LOGF"; exit 1;;
@@ -142,7 +142,10 @@ w="$(writes)"; if [[ $RC != 0 && "$w" == 0 ]] && grep -q 'Components existent en
 reset; cluster_crds "$(crd components.openchoreo.dev openchoreo.dev components Namespaced)" \
   "$(crd applications.argoproj.io argoproj.io applications Namespaced)"
 printf 'namespace/dp-default-x\n' > "$FIX/cells.txt"; printf 'lab-pg\n' > "$FIX/ns.txt"
+# aucune release Helm ne reste dans les namespaces d'essai (nouvelle garde de undo_1, preuve k3d A3)
+export HELM_LIST_EMPTY=1
 run_uninstall --step 1 --apply
+unset HELM_LIST_EMPTY
 if [[ $RC == 0 ]] && grep -q '^WRITE kubectl delete namespace dp-default-x' "$LOGF" \
   && grep -q '^WRITE kubectl delete namespace lab-pg' "$LOGF"; then ok=0; else ok=1; fi
 verdict P3c-positif-undo1 $ok "rc=$RC, écritures=$(writes)"
