@@ -1,0 +1,12 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-egress-report}
+policies: [../../../platform/kyverno/policies/lab-egress-report.yaml]
+resources: [resources.yaml]
+clusterResources: [cluster-resources.yaml]
+results:
+  - {policy: lab-egress-report, isValidatingPolicy: true, kind: Namespace, result: pass, resources: [dp-cell-ok]}
+  - {policy: lab-egress-report, isValidatingPolicy: true, kind: Namespace, result: fail, resources: [dp-cell-unlabelled]}
+  - {policy: lab-egress-report, isValidatingPolicy: true, kind: Deployment, result: pass, resources: [ok-with-default-deny]}
+  - {policy: lab-egress-report, isValidatingPolicy: true, kind: Deployment, result: fail,
+     resources: [bad-no-egress-policy, bad-partial-egress-policy]}

@@ -1,0 +1,21 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-protect-persistent-data-as-operator}
+policies: [../../../../platform/kyverno/policies/lab-protect-persistent-data.yaml]
+resources: [../objects.yaml]
+clusterResources: [../cluster-resources.yaml]
+userinfo: user.yaml
+results:
+  # DELETE : même un admin (system:masters) doit annoter d'abord.
+  - {policy: lab-protect-persistent-data, isValidatingPolicy: true, kind: PersistentVolumeClaim, operation: DELETE, result: pass,
+     resources: [pvc-approved]}
+  - {policy: lab-protect-persistent-data, isValidatingPolicy: true, kind: PersistentVolumeClaim, operation: DELETE, result: fail,
+     resources: [pvc-unannotated, pvc-expired, pvc-window-too-long, pvc-malformed]}
+  - {policy: lab-protect-persistent-data, isValidatingPolicy: true, kind: PersistentVolumeClaim, operation: DELETE, result: skip,
+     resources: [pvc-kube-ops]}
+  - {policy: lab-protect-persistent-data, isValidatingPolicy: true, kind: PersistentVolume, operation: DELETE, result: fail, resources: [pv-lab-pg-1]}
+  - {policy: lab-protect-persistent-data, isValidatingPolicy: true, kind: Cluster, operation: DELETE, result: fail, resources: [lab-pg]}
+  - {policy: lab-protect-persistent-data, isValidatingPolicy: true, kind: Cluster, operation: DELETE, result: pass, resources: [lab-pg-approved]}
+  # Namespace : refus seulement s'il contient des PVC (lab-pg), pas pour une cellule sans état.
+  - {policy: lab-protect-persistent-data, isValidatingPolicy: true, kind: Namespace, operation: DELETE, result: fail, resources: [lab-pg]}
+  - {policy: lab-protect-persistent-data, isValidatingPolicy: true, kind: Namespace, operation: DELETE, result: pass, resources: [dp-stateless]}

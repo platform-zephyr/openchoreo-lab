@@ -1,0 +1,10 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-cluster-scoped-provenance}
+policies: [../../../platform/kyverno/policies/lab-cluster-scoped-provenance.yaml]
+resources: [resources.yaml]
+results:
+  - {policy: lab-cluster-scoped-provenance, isValidatingPolicy: true, kind: ClusterRole, result: pass, resources: [ok-platform-clusterrole]}
+  - {policy: lab-cluster-scoped-provenance, isValidatingPolicy: true, kind: PriorityClass, result: skip, resources: [skip-no-marker]}
+  - {policy: lab-cluster-scoped-provenance, isValidatingPolicy: true, kind: ClusterRoleBinding, result: fail,
+     resources: [bad-app-crb, bad-component-sc, widgets.example.com]}

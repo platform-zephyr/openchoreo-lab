@@ -1,0 +1,11 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-egress-declared}
+policies: [../../../platform/kyverno/policies/lab-egress-declared.yaml]
+resources: [resources.yaml]
+results:
+  - {policy: lab-egress-declared, isValidatingPolicy: true, kind: Namespace, result: pass, resources: [lab-pg, openchoreo-control-plane]}
+  - {policy: lab-egress-declared, isValidatingPolicy: true, kind: Namespace, result: fail, resources: [lab-unlabelled, openchoreo-bad]}
+  - {policy: lab-egress-declared, isValidatingPolicy: true, kind: Namespace, result: skip, resources: [lab-netcontrol]}
+  # dp-* : rapport (K-09) tant que le CPT ne pose pas le label ; hors périmètre : jamais.
+  - {policy: lab-egress-declared, isValidatingPolicy: true, kind: Namespace, result: skip, resources: [dp-cell-not-yet, monitoring]}

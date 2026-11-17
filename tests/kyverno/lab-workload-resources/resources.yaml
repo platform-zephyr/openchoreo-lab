@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ok-resources, namespace: dp-demo}
+spec:
+  selector: {matchLabels: {app: ok}}
+  template:
+    metadata: {labels: {app: ok}}
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 128Mi}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: bad-no-requests, namespace: dp-demo}
+spec:
+  selector: {matchLabels: {app: n}}
+  template:
+    metadata: {labels: {app: n}}
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          resources: {limits: {memory: 128Mi}}
+---
+apiVersion: batch/v1
+kind: Job
+metadata: {name: bad-init-no-limit, namespace: lab-demo}
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: init
+          image: ghcr.io/example/init@sha256:0000000000000000000000000000000000000000000000000000000000000004
+          resources: {requests: {cpu: 10m, memory: 16Mi}}
+      containers:
+        - name: job
+          image: ghcr.io/example/job@sha256:0000000000000000000000000000000000000000000000000000000000000002
+          resources: {requests: {cpu: 10m, memory: 16Mi}, limits: {memory: 32Mi}}
+---
+# Conforme pour les resources, mais namespace sans ResourceQuota.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: bad-no-quota, namespace: lab-noquota}
+spec:
+  selector: {matchLabels: {app: q}}
+  template:
+    metadata: {labels: {app: q}}
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 128Mi}}

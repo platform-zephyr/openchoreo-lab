@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata: {name: ok-clusterip, namespace: dp-demo}
+spec: {type: ClusterIP, selector: {app: a}, ports: [{port: 80, targetPort: 8080}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: ok-default-type, namespace: lab-demo}
+spec: {selector: {app: a}, ports: [{port: 80}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: bad-loadbalancer, namespace: openchoreo-data-plane}
+spec: {type: LoadBalancer, selector: {app: gw}, ports: [{port: 443}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: bad-nodeport, namespace: dp-demo}
+spec: {type: NodePort, selector: {app: a}, ports: [{port: 80, nodePort: 30080}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: bad-externalips, namespace: lab-demo}
+spec: {type: ClusterIP, externalIPs: [203.0.113.10], selector: {app: a}, ports: [{port: 80}]}
+---
+# Exception gouvernée (voir exceptions.yaml) : LB autorisé pour ce seul Service.
+apiVersion: v1
+kind: Service
+metadata: {name: excepted-lb, namespace: lab-demo}
+spec: {type: LoadBalancer, selector: {app: a}, ports: [{port: 443}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: skip-kube-ops-lb, namespace: ingress}
+spec: {type: LoadBalancer, selector: {app: a}, ports: [{port: 443}]}

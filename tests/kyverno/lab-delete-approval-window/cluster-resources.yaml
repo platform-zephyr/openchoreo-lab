@@ -1,0 +1,9 @@
+# CRD minimale CNPG (chemin relatif au dossier du kyverno-test.yaml) + namespaces des objets de K-10.
+apiVersion: cli.kyverno.io/v1alpha1
+kind: ClusterResource
+metadata: {name: k12}
+spec:
+  crds: [../lab-protect-persistent-data/cnpg-cluster-crd.yaml]
+  resources:
+    - {apiVersion: v1, kind: Namespace, metadata: {name: dp-aiostreams}}
+    - {apiVersion: v1, kind: Namespace, metadata: {name: databases}}

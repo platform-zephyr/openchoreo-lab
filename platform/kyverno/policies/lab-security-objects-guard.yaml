@@ -1,0 +1,129 @@
+# K-07 `lab-security-objects-guard` — namespaces du lab et objets de sécurité de la plateforme.
+#   a) Namespace du périmètre (dp-*, lab-*, openchoreo-*) : PSA enforce ∈ {restricted, baseline} et
+#      enforce-version absent (= latest pour la PSA) ou latest ; `baseline` admis SEULEMENT pour openchoreo-data-plane (schéma du chart DP)
+#      et les cellules dp-* (exception appgen run-as-root) ; jamais `privileged`, jamais absent.
+#   b) Pas de baisse restricted -> autre, sauf identité plateforme (REVIEW-PHASE-B I6, REVIEW-PR8 A2).
+#   c) NetworkPolicy lab-default-deny|default-deny|lab-allow-*, ResourceQuota lab-quota|cell-quota,
+#      LimitRange lab-defaults|cell-limits : UPDATE/DELETE réservés aux identités plateforme.
+# Identités plateforme : groupe system:masters (break-glass), contrôleurs kube-system, Argo CD SEULEMENT
+# pour une Application plateforme (annotation de suivi), cluster-agent OpenChoreo dans dp-* (il rend ces
+# objets depuis le CPT ; ses écritures restent bornées par VAP-1 R3).
+# Couvre namespaces/status et namespaces/finalize : un PUT /status conserve les labels (VAP-1 V1-N13).
+# Propriétaires sans webhook pour le même risque : VAP-1 R3 (identité cluster-agent), RBAC (humains),
+# argo_guard.py S3 (PR). Kyverno est le contrôle RUNTIME pour toutes les autres identités.
+# NE PEUT PAS protéger les VAP/VAPB ni les webhooks (exclus de l'admission par Kubernetes) : RBAC + CI.
+# failurePolicy Ignore : Kyverno arrêté, la PSA du namespace reste celle en place ; RBAC + VAP-1 tiennent.
+# Tests : tests/kyverno/lab-security-objects-guard/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-security-objects-guard
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: guardrail
+  annotations:
+    platform.smadja.dev/ownership: "K-07 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-security-objects-guard
+    platform.smadja.dev/exceptionable: "false"
+spec:
+  validationActions: [Deny]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: false
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [namespaces, namespaces/status, namespaces/finalize]
+      - apiGroups: [networking.k8s.io]
+        apiVersions: [v1]
+        operations: [UPDATE, DELETE]
+        resources: [networkpolicies]
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [UPDATE, DELETE]
+        resources: [resourcequotas, limitranges]
+  matchConditions:
+    - name: lab-perimeter
+      expression: >-
+        (request.resource.resource == 'namespaces' ? request.name : request.namespace).matches('^(dp-|lab-|openchoreo-)')
+    - name: guarded-object
+      expression: >-
+        request.resource.resource == 'namespaces' ||
+        (request.resource.resource == 'networkpolicies' &&
+          (request.name in ['lab-default-deny', 'default-deny', 'allow-dns-and-cell'] || request.name.startsWith('lab-allow-'))) ||
+        (request.resource.resource == 'resourcequotas' && request.name in ['lab-quota', 'cell-quota']) ||
+        (request.resource.resource == 'limitranges' && request.name in ['lab-defaults', 'cell-limits'])
+    - name: not-terminating
+      # DELETE : object est null (API server) ou vide (CLI) ; les deux cas sont gardés.
+      expression: "object == null || !has(object.metadata) || !has(object.metadata.deletionTimestamp)"
+  variables:
+    - name: user
+      expression: "request.userInfo.username"
+    - name: groups
+      expression: "has(request.userInfo.groups) ? request.userInfo.groups : []"
+    - name: subject
+      expression: "object != null && has(object.metadata) ? object : oldObject"
+    - name: subjectAnn
+      expression: >-
+        has(variables.subject.metadata.annotations) ? variables.subject.metadata.annotations : {}
+    - name: argoApp
+      expression: >-
+        'argocd.argoproj.io/tracking-id' in variables.subjectAnn ?
+          variables.subjectAnn['argocd.argoproj.io/tracking-id'].split(':')[0] : ''
+    - name: isPlatform
+      expression: >-
+        'system:masters' in variables.groups ||
+        variables.user.startsWith('system:serviceaccount:kube-system:') ||
+        variables.user == 'system:kube-controller-manager' ||
+        (variables.user == 'system:serviceaccount:lab-argocd:argocd-application-controller' &&
+          variables.argoApp in ['lab-root', 'lab-platform', 'lab-authz', 'lab-kyverno']) ||
+        (variables.user == 'system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane' &&
+          (request.resource.resource == 'namespaces' ? request.name : request.namespace).startsWith('dp-'))
+    - name: isNs
+      expression: "request.resource.resource == 'namespaces'"
+    - name: nsLabels
+      expression: >-
+        variables.isNs && object != null && has(object.metadata) && has(object.metadata.labels) ?
+          object.metadata.labels : {}
+    - name: oldNsLabels
+      expression: >-
+        variables.isNs && oldObject != null && has(oldObject.metadata) && has(oldObject.metadata.labels) ?
+          oldObject.metadata.labels : {}
+    - name: enforce
+      expression: >-
+        'pod-security.kubernetes.io/enforce' in variables.nsLabels ?
+          variables.nsLabels['pod-security.kubernetes.io/enforce'] : ''
+    - name: oldEnforce
+      expression: >-
+        'pod-security.kubernetes.io/enforce' in variables.oldNsLabels ?
+          variables.oldNsLabels['pod-security.kubernetes.io/enforce'] : ''
+  validations:
+    - expression: >-
+        !variables.isNs || (
+          (variables.enforce == 'restricted' ||
+            (variables.enforce == 'baseline' &&
+              (request.name == 'openchoreo-data-plane' || request.name.startsWith('dp-')))) &&
+          (!('pod-security.kubernetes.io/enforce-version' in variables.nsLabels) ||
+            variables.nsLabels['pod-security.kubernetes.io/enforce-version'] == 'latest'))
+      messageExpression: >-
+        'lab-security-objects-guard: namespace ' + request.name + ' : PSA enforce=' +
+        (variables.enforce == '' ? '<absent>' : variables.enforce) +
+        ' refusé (restricted ; baseline seulement openchoreo-data-plane et dp-* ; enforce-version latest ou absent)'
+      reason: Forbidden
+    - expression: >-
+        !variables.isNs || variables.isPlatform || variables.oldEnforce != 'restricted' ||
+        variables.enforce == 'restricted'
+      messageExpression: >-
+        'lab-security-objects-guard: namespace ' + request.name +
+        ' : baisse PSA restricted -> ' + variables.enforce + ' réservée à la plateforme (' + variables.user + ')'
+      reason: Forbidden
+    - expression: "variables.isNs || variables.isPlatform"
+      messageExpression: >-
+        'lab-security-objects-guard: ' + request.resource.resource + ' ' + request.namespace + '/' + request.name +
+        ' (' + request.operation + ') réservé aux identités plateforme (' + variables.user + ')'
+      reason: Forbidden
