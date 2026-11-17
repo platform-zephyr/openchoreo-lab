@@ -1,0 +1,14 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: mealie
+  description: Gestionnaire de recettes (pilote, donnees de test)
+  annotations:
+    openchoreo.dev/managed: 'true'
+    platform.smadja.dev/oidc-provider: thunderid
+    platform.smadja.dev/oidc-allowed-groups: family,admin
+spec:
+  type: service
+  lifecycle: experimental
+  owner: user:default/paul

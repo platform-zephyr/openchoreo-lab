@@ -1,0 +1,24 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: mealie
+  namespace: default
+  annotations:
+    openchoreo.dev/description: Gestionnaire de recettes (pilote, donnees de test)
+  labels:
+    openchoreo.dev/name: mealie
+spec:
+  deploymentPipelineRef:
+    name: standard
+  type:
+    kind: ClusterProjectType
+    name: cell-restricted
+  parameters:
+    egress: none
+    database: false
+    allowIdp: true
+    quota:
+      cpu: 300m
+      memory: 512Mi
+      pvcs: '1'

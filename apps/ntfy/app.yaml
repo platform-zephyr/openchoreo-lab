@@ -1,0 +1,35 @@
+# Notifications push. Image verifiee [C] : binwiederhier/ntfy:v2.28.0, index multi-arch (linux/arm64 present), 2026-11-17.
+# Source kube-ops [C] : k8s/applications/catalog/ntfy/{app.yaml,externalsecret.yaml}@ef50472. Ecarts : voir NOTES.md.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: ntfy
+  owner: user:default/paul
+  description: Serveur de notifications push
+  docs: https://docs.ntfy.sh/
+spec:
+  source:
+    image: binwiederhier/ntfy:v2.28.0@sha256:6ef4b819f722fccdc036af611c4774cfdc2de821ab74fdd48bbf4c9d6f8973da
+  cluster: k3d
+  environments: [production]
+  profile: stateful
+  runtime:
+    port: 8080
+    healthPath: /v1/health
+    size: small
+    runAsUser: 65532
+    args: ["serve"]
+    env:
+      NTFY_LISTEN_HTTP: ":8080"
+      NTFY_BASE_URL: https://ntfy.lab.smadja.dev
+      NTFY_CACHE_FILE: /var/lib/ntfy/cache.db
+      NTFY_AUTH_FILE: /var/lib/ntfy/auth.db
+      NTFY_AUTH_DEFAULT_ACCESS: deny-all
+  storage: {profile: block-rwo, mountPath: /var/lib/ntfy, size: 1Gi}
+  secrets:
+    - {env: NTFY_AUTH_USERS, key: NTFY_AUTH_USERS}
+  exposure: {mode: public, host: ntfy.lab.smadja.dev, auth: app-password}
+  network: {egress: none}
+  backup: {class: regenerable}
+  observability: {metrics: {enabled: false}}
+  update: {strategy: Recreate}

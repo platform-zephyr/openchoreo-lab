@@ -1,0 +1,24 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: rustical-pilot
+  namespace: default
+  annotations:
+    openchoreo.dev/description: RustiCal CalDAV/CardDAV, pilote prive (donnees synthetiques)
+  labels:
+    openchoreo.dev/name: rustical-pilot
+spec:
+  deploymentPipelineRef:
+    name: standard
+  type:
+    kind: ClusterProjectType
+    name: cell-restricted
+  parameters:
+    egress: none
+    database: false
+    allowIdp: true
+    quota:
+      cpu: 300m
+      memory: 512Mi
+      pvcs: '1'
