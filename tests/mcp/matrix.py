@@ -213,7 +213,10 @@ spec:
     cases = [("H1", "openchoreo-viewers", "component:view", "component", True),
              ("H2", "openchoreo-viewers", "component:create", "component", False),
              ("H3", "openchoreo-viewers", "secretreference:view", "secretreference", False),
-             ("H4", "openchoreo-developers", "component:create", "component", True),
+             ("H4", "openchoreo-developers", "component:create", "component", False),
+             ("H4b", "openchoreo-developers", "releasebinding:update", "releasebinding", True),
+             ("H4c", "openchoreo-developers", "resource:read-secrets", "resource", False),
+             ("H4d", "openchoreo-developers", "component:exec", "component", False),
              ("H5", "openchoreo-developers", "clusterauthzrolebinding:create", "clusterauthzrolebinding", False),
              ("H6", "authentik-admins", "clusterauthzrolebinding:create", "clusterauthzrolebinding", True),
              ("H7", "groupe-inconnu", "component:view", "component", False)]
