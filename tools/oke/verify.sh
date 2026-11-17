@@ -352,8 +352,8 @@ v10() {
 
 v11() {
   expect_ok B11-argo "Argo CD Available" deploys_ok lab-argocd
-  expect_ok B11-projects "AppProject lab, lab-authz et lab-root présents" \
-    kubectl -n lab-argocd get appprojects.argoproj.io lab lab-authz lab-root
+  expect_ok B11-projects "AppProjects lab-platform, lab-apps, lab-authz et lab-root présents" \
+    kubectl -n lab-argocd get appprojects.argoproj.io/lab-platform appprojects.argoproj.io/lab-apps appprojects.argoproj.io/lab-authz appprojects.argoproj.io/lab-root
   # Revue PR #8, P1 : `default` verrouillé (aucun dépôt, aucune destination, aucune whitelist, blacklist totale).
   expect_ok B11-default-locked "AppProject default verrouillé (0 dépôt, 0 destination, 0 whitelist)" bash -c \
     "kubectl -n lab-argocd get appproject default -o json | jq -e '.spec as \$s
@@ -367,11 +367,11 @@ v11() {
     "kubectl -n lab-argocd get applications.argoproj.io -o json | jq -e '[.items[] | select(.spec.project == \"default\")] | length == 0'"
   expect_ok B11-authz-manual "Application lab-authz sans synchro automatique" bash -c \
     "kubectl -n lab-argocd get application lab-authz -o json | jq -e '.spec.syncPolicy.automated == null'"
-  local a
-  for a in lab-root lab-platform; do
-    expect_ok "B11-$a" "Application $a Synced et Healthy" bash -c \
-      "kubectl -n lab-argocd get application $a -o json | jq -e '.status.sync.status==\"Synced\" and .status.health.status==\"Healthy\"'"
-  done
+  expect_ok B11-lab-root-sync "Application lab-root Synced et Healthy" bash -c \
+    "kubectl -n lab-argocd get application lab-root -o json | jq -e '.status.sync.status==\"Synced\" and .status.health.status==\"Healthy\"'"
+  # lab-platform : synchro MANUELLE, volontairement non lancée tant que l'étape 10 (lab-pg, volume OCI) n'est pas autorisée.
+  expect_ok B11-lab-platform-manual "Application lab-platform sans synchro automatique (adoption différée)" bash -c \
+    "kubectl -n lab-argocd get application lab-platform -o json | jq -e '.spec.syncPolicy.automated == null'"
 }
 
 v12() { # Étape 12 intégrée à l'étape 7 : mêmes contrôles (utile après un upgrade ou un rollback_secure du DP).
