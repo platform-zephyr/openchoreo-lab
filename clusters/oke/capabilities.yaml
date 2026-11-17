@@ -8,12 +8,14 @@ spec:
   # Cible du gate : Cilium en chaining (aujourd'hui FLANNEL_OVERLAY, qui n'applique pas les NetworkPolicy [C]).
   cilium: true
   privateEgressCIDRs: []
-  databaseInstances:
-    lab-pg: {resourceType: cnpg-lab-db, namespace: lab-pg, cluster: lab-pg, backup: none}
+  # lab-pg n'est PAS admis sur OKE : CNPG demande un PVC et l'overlay impose oci-bv (>= 50 Go) = le dernier quota,
+  # conserve comme marge de remplacement du worker (aucun nouveau volume autorise). Voir docs/storage/.
+  databaseInstances: {}
     # pg-shared n'est PAS admis : aucune restauration hors Oracle prouvee (D-2026-11-14-03).
     # Pour l'admettre (PR plateforme) : pg-shared: {resourceType: cnpg-shared-db, namespace: <ns>, cluster: pg-shared, backup: cnpg}
   identityProviders: [thunderid]
-  storageClasses:
-    block-rwo: oci-bv       # 50 Gi minimum factures ; jamais Longhorn sur OKE ; pas de RWX (FSS non provisionne)
+  # Aucun volume persistant admis sur OKE tant que Paul n'autorise pas le dernier Block Volume de 50 Go
+  # (150/200 Go alloues : boot + 2 volumes de drill detaches). Jamais Longhorn sur OKE ; pas de RWX.
+  storageClasses: {}
   backupMechanisms: [none]
   secretStore: lab-store
