@@ -37,7 +37,7 @@ kube-ops (brouillons, non mergés) : **#1629** correctif C1 (CCNP `allow-egress-
 | Flux | Cluster k3d | Statut |
 |---|---|---|
 | GitOps whoami k3d (tests/gitops-k3d) | `openchoreo` (partagé) | EN COURS (long) |
-| A1 Secrets LIST (cluster-agent ET control plane) : analyse, patch, tests, image arm64 | `lab-sec-a1` | EN COURS |
+| A1 Isolation des Secrets (cluster-agent ET control plane) : analyse, correctif, tests | `lab-sec-a1` | EN COURS |
 | A2 preuve négative Argo (projets lab-apps/lab-platform/lab-authz/lab-root/default verrouillé) | `lab-sec-argo` | EN COURS |
 | A3 VAP CEL sur vrai API server + helm uninstall CRD + rollback | `lab-sec-vap` | EN COURS |
 | Stockage OKE/Talos (docs/storage, tests/storage : recherche seule, aucun accès cluster) | — | EN COURS |
@@ -45,14 +45,14 @@ kube-ops (brouillons, non mergés) : **#1629** correctif C1 (CCNP `allow-egress-
 | Portail, identité, authz/MCP | — | LIVRÉS (PR #6) ; portail/Authentik NON connectés (secrets clients = credentials de production) |
 
 ## Constats de sécurité ouverts (ne pas déclarer le modèle d'isolation sûr)
-- **LIST Secrets (CRITIQUE)** : le cluster-agent v1.3.3 liste à chaque réconciliation 20 types dont `Secret` cluster-wide (renderedrelease/controller.go l.473-625) ; LIST renvoie `data` ⇒ lecture des valeurs de TOUS les Secrets (y compris kube-system), même sans sélecteur de labels. Les ClusterRoles du **control plane** (openchoreo-api get/list, controller-manager get/list/watch) ont le même défaut. Correctif en cours (RBAC namespace-scoped + patch minimal/fork). Règle : AUCUN credential de production (secret client Authentik, tokens) dans un environnement accessible à ces comptes tant que ce n'est pas prouvé corrigé.
+- **Isolation des Secrets (CRITIQUE, en coordination privée avec l'amont)** : un point de sécurité sur les droits de lecture des Secrets de composants OpenChoreo est en cours de traitement ; les détails ne sont volontairement PAS publiés dans ce dépôt (signalement privé en cours, dossier hors dépôt). Règle : AUCUN credential externe réel (secret client Authentik, tokens) dans un environnement accessible à ces composants tant que l'isolation n'est pas prouvée.
 - C1 : prouvé sur OKE pour les 7 namespaces d'essai ; `dp-*` pas encore labellisés `egress-isolated` (à corriger dans le CPT `cell-restricted` + tests de trafic).
 
 ## Stockage OKE (audit lecture seule 2026-11-17 19:35Z : docs/storage/OKE-AUDIT-2026-11-17.md)
 Aucun PV/PVC. StorageClass `oci-bv` (défaut, WaitForFirstConsumer, expansion OUI), `oci`. 2 Block Volumes `csi-…` de 50 Go AVAILABLE non attachés (restes de drills : ne jamais les supposer libres) + boot 50 Go = 150/200 Go ⇒ un seul PVC de 50 Go possible, NON autorisé. Disque éphémère du nœud ≈ 28 GB.
 
 ## Bloquants de sécurité avant étape 6/7 (docs/REVIEW-PHASE-B.md)
-1. cluster-agent : RBAC `*` sur secrets, `pods/exec` cluster-wide, VAP-1 sans CONNECT → remédiation en cours (flux RBAC + intégration).
+1. cluster-agent : moindre privilège du RBAC et VAP-1 (CONNECT/sous-ressources) → remédiation en cours (flux RBAC + intégration).
 2. Désinstallation : `helm uninstall` supprime les CRD d'ESO/kgateway-crds (à vérifier chart par chart), rollback ne doit jamais recréer/supprimer un volume 50 Go → tester sur k3d avant OKE.
 3. Périmètre : `cnpg-system` → renommer `lab-cnpg` ; AppProject Argo `lab` trop large (Namespace/VAP) → séparer bootstrap privilégié et GitOps applicatif.
 
@@ -76,5 +76,5 @@ Authentik externe = unique issuer OIDC (pas ThunderID). Clients distincts : port
 5. PR kube-ops pour les blueprints Authentik (texte dans docs/IDENTITY.md) ; réutiliser une clé de signature Authentik existante si possible.
 
 ## Journal
-- 2026-11-17 19:45Z : nouveau mandat ; audit stockage OKE ; constat CP+agent LIST Secrets ; 4 flux de sécurité/stockage lancés ; PR #8 gardée ouverte.
+- 2026-11-17 19:45Z : nouveau mandat ; audit stockage OKE ; constat de sécurité (coordination privée) ; 4 flux de sécurité/stockage lancés ; PR #8 gardée ouverte.
 - 2026-11-17 : PR #1-#6 ; accès bastion ouvert (accord Paul) ; étapes 1-5 OKE PASS ; C1 confirmé runtime ; revue indépendante ; 8 flux d'agents lancés.
