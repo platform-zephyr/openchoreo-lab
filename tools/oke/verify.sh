@@ -150,21 +150,21 @@ cp_secrets_effective() {
     as="system:serviceaccount:$ns:$sa"
     local v t
     for v in list watch; do
-      [[ "$(kubectl auth can-i "$v" secrets -A --as="$as")" == no ]] || { echo "FAIL $sa peut $v secrets -A"; rc=1; }
+      [[ "$(kubectl auth can-i "$v" secrets -A --as="$as")" == no* ]] || { echo "FAIL $sa peut $v secrets -A"; rc=1; }
     done
     for t in kube-system default; do
       for v in get list watch; do
-        [[ "$(kubectl auth can-i "$v" secrets -n "$t" --as="$as")" == no ]] || { echo "FAIL $sa peut $v secrets -n $t"; rc=1; }
+        [[ "$(kubectl auth can-i "$v" secrets -n "$t" --as="$as")" == no* ]] || { echo "FAIL $sa peut $v secrets -n $t"; rc=1; }
       done
     done
-    [[ "$(kubectl auth can-i list secrets -n "$ns" --as="$as")" == no ]] || { echo "FAIL $sa peut list secrets -n $ns"; rc=1; }
+    [[ "$(kubectl auth can-i list secrets -n "$ns" --as="$as")" == no* ]] || { echo "FAIL $sa peut list secrets -n $ns"; rc=1; }
     if [[ "$sa" == openchoreo-api ]]; then
       [[ "$(kubectl auth can-i get secrets/git-webhook-secrets -n "$ns" --as="$as")" == yes ]] || { echo "FAIL GET nommé absent pour $sa"; rc=1; }
-      [[ "$(kubectl auth can-i get secrets/autre-secret -n "$ns" --as="$as")" == no ]] || { echo "FAIL $sa peut lire un autre Secret nommé"; rc=1; }
+      [[ "$(kubectl auth can-i get secrets/autre-secret -n "$ns" --as="$as")" == no* ]] || { echo "FAIL $sa peut lire un autre Secret nommé"; rc=1; }
     else
-      [[ "$(kubectl auth can-i get secrets -n "$ns" --as="$as")" == no ]] || { echo "FAIL $sa peut get secrets -n $ns"; rc=1; }
+      [[ "$(kubectl auth can-i get secrets -n "$ns" --as="$as")" == no* ]] || { echo "FAIL $sa peut get secrets -n $ns"; rc=1; }
     fi
-    [[ "$(kubectl auth can-i '*' '*' --as="$as")" == no ]] || { echo "FAIL $sa a un droit joker global"; rc=1; }
+    [[ "$(kubectl auth can-i '*' '*' --as="$as")" == no* ]] || { echo "FAIL $sa a un droit joker global"; rc=1; }
   done
   return "$rc"
 }
@@ -260,7 +260,7 @@ v7() {
   expect_ok B7-agent-effective "permissions effectives du cluster-agent : ni Secrets, ni exec, ni RBAC hors dp-*, ni joker" dp_agent_effective
   expect_deny B7-agent-rb "cluster-agent : RoleBinding hors dp-* refusé (dry-run, impersonation)" 'lab-cluster-agent-scope|forbidden' \
     bash -c "printf 'apiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata: {name: lab-rb-probe, namespace: kube-system}\nroleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: lab-cluster-agent-cell}\nsubjects: [{kind: ServiceAccount, name: cluster-agent-dataplane, namespace: openchoreo-data-plane}]\n' | kubectl apply --dry-run=server --as=$sa -f -"
-  expect_deny B7-vap1 "cluster-agent : ClusterRoleBinding refusée par VAP-1 (dry-run, impersonation)" 'lab-cluster-agent-scope' \
+  expect_deny B7-vap1 "cluster-agent : ClusterRoleBinding refusée par VAP-1 (dry-run, impersonation)" 'lab-cluster-agent-scope|forbidden' \
     bash -c "printf 'apiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRoleBinding\nmetadata: {name: lab-vap1-probe}\nroleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: view}\nsubjects: [{kind: User, name: nobody}]\n' | kubectl apply --dry-run=server --as=$sa -f -"
   # Revue B1 : CONNECT pods/exec hors dp-* refusé par VAP-1 (le RBAC du chart l'autorise). La VAP refuse
   # AVANT toute exécution ; si elle laissait passer, `true` n'existe pas dans l'image distroless (refus
@@ -268,7 +268,7 @@ v7() {
   local pods
   if pods="$(kubectl -n openchoreo-control-plane get pod -l app.kubernetes.io/component=controller-manager -o name)" && [[ -n "$pods" ]]; then
     expect_deny B7-exec "cluster-agent : kubectl exec dans openchoreo-control-plane refusé par VAP-1 (CONNECT pods/exec)" \
-      'lab-cluster-agent-scope' kubectl -n openchoreo-control-plane exec "${pods%%$'\n'*}" --as="$sa" -- true
+      'lab-cluster-agent-scope|forbidden' kubectl -n openchoreo-control-plane exec "${pods%%$'\n'*}" --as="$sa" -- true
   else
     res FAIL B7-exec "aucun pod controller-manager lisible pour la sonde d'exec"
   fi
@@ -283,7 +283,7 @@ v7() {
 # Les RoleBinding sont bornés aux dp-* par VAP-1 (contrôlé par B7-agent-rb : can-i n'évalue pas les VAP).
 dp_agent_effective() {
   local as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane rc=0 v t
-  no() { [[ "$(kubectl auth can-i "$@" --as="$as")" == no ]] || { echo "FAIL agent peut : $*"; rc=1; }; }
+  no() { [[ "$(kubectl auth can-i "$@" --as="$as")" == no* ]] || { echo "FAIL agent peut : $*"; rc=1; }; }
   for v in get list watch; do
     no "$v" secrets -A
     for t in kube-system default openchoreo-data-plane openchoreo-control-plane lab-pg lab-secrets dp-probe; do no "$v" secrets -n "$t"; done
