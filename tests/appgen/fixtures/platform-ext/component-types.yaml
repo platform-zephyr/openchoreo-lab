@@ -1,0 +1,114 @@
+# FIXTURES DE TEST : PROPOSITIONS a livrer par platform/ (APP-CONTRACT section 7.4). Non appliquees.
+# Seuls workloadType, parametres declares et la forme des resources sont significatifs ici.
+# Chaque CCT reelle doit reprendre le durcissement de service-restricted (securityContext restricted,
+# automount=false, digest, postRenderValidations, kinds interdits) adapte a son workloadType.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterComponentType
+metadata:
+  name: worker-restricted
+spec:
+  workloadType: deployment
+  allowedWorkflows: []
+  allowedTraits:
+    - {kind: ClusterTrait, name: persistent-volume-claim}
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        runAsUser: {type: integer, minimum: 1000, default: 65532}
+        strategy: {type: string, enum: [RollingUpdate, Recreate], default: RollingUpdate}
+        readOnlyRootFilesystem: {type: boolean, default: true}
+  environmentConfigs:
+    openAPIV3Schema: {type: object}
+  resources:
+    - id: deployment
+      template: {apiVersion: apps/v1, kind: Deployment, metadata: {name: "${metadata.name}"}}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterComponentType
+metadata:
+  name: statefulset-restricted
+spec:
+  workloadType: statefulset
+  allowedWorkflows: []
+  allowedTraits:
+    - {kind: ClusterTrait, name: persistent-volume-claim-sts}
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        runAsUser: {type: integer, minimum: 1000, default: 65532}
+        readOnlyRootFilesystem: {type: boolean, default: true}
+  environmentConfigs:
+    openAPIV3Schema: {type: object}
+  resources:
+    - id: statefulset
+      template: {apiVersion: apps/v1, kind: StatefulSet, metadata: {name: "${metadata.name}"}}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterComponentType
+metadata:
+  name: cronjob-restricted
+spec:
+  workloadType: cronjob
+  allowedWorkflows: []
+  allowedTraits: []
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        runAsUser: {type: integer, minimum: 1000, default: 65532}
+        concurrencyPolicy: {type: string, enum: [Forbid], default: Forbid}
+        timeZone: {type: string}
+        readOnlyRootFilesystem: {type: boolean, default: true}
+  environmentConfigs:
+    openAPIV3Schema:
+      type: object
+      properties:
+        schedule: {type: string}
+        size: {type: string, enum: [small, medium], default: small}
+  resources:
+    - id: cronjob
+      template: {apiVersion: batch/v1, kind: CronJob, metadata: {name: "${metadata.name}"}}
+---
+# Exception E12 run-as-root : pas de runAsUser (uid de l'image), runAsNonRoot absent, MAIS
+# drop ALL, allowPrivilegeEscalation=false, seccomp RuntimeDefault, automount=false conserves.
+# Admise par la PSA baseline du SEUL namespace de la cellule (CPT podSecurity: baseline).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterComponentType
+metadata:
+  name: service-root-exception
+spec:
+  workloadType: deployment
+  allowedWorkflows: []
+  allowedTraits:
+    - {kind: ClusterTrait, name: persistent-volume-claim}
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        strategy: {type: string, enum: [RollingUpdate, Recreate], default: RollingUpdate}
+        readOnlyRootFilesystem: {type: boolean, default: true}
+        publicAuth: {type: string, enum: [none, app-oidc, app-password, cloudflare-access], default: none}
+  environmentConfigs:
+    openAPIV3Schema: {type: object}
+  resources:
+    - id: deployment
+      template: {apiVersion: apps/v1, kind: Deployment, metadata: {name: "${metadata.name}"}}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterTrait
+metadata:
+  name: persistent-volume-claim-sts
+spec:
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        containerName: {type: string, default: main}
+        mountPath: {type: string}
+        accessMode: {type: string, default: ReadWriteOnce, enum: [ReadWriteOnce, ReadWriteMany]}
+        readOnly: {type: boolean, default: false}
+      required: [mountPath]
+  creates:
+    - template: {apiVersion: v1, kind: PersistentVolumeClaim, metadata: {name: "${metadata.name}-${trait.instanceName}"}}

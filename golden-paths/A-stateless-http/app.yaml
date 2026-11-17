@@ -1,0 +1,34 @@
+# Golden path A : service HTTP sans état (natif OpenChoreo).
+# Copier vers apps/<nom>/app.yaml, remplacer les valeurs marquées « À REMPLIR », puis :
+#   python3 tools/appgen/appgen.py validate && python3 tools/appgen/appgen.py render
+# Exemple réel : apps/whoami/app.yaml.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: mon-service                  # À REMPLIR : = nom du répertoire apps/<nom>/, 3 à 20 car. [a-z0-9-]
+  owner: user:default/paul           # user:default/<id> ou group:default/<id>
+  description: Service HTTP sans état (à décrire en une phrase)
+  # docs: https://...                # optionnel, lien vers la doc amont
+  # lifecycle: experimental          # défaut ; production | deprecated
+spec:
+  source:
+    # Tag lisible + digest OBLIGATOIRE. Obtenir le digest d'un index multi-arch (arm64 requis sur k3d Mac et OKE A1) :
+    #   docker buildx imagetools inspect <image>:<tag> --format '{{json .Manifest.Digest}}'
+    image: ghcr.io/exemple/mon-service:1.2.3@sha256:0000000000000000000000000000000000000000000000000000000000000000  # À REMPLIR
+  cluster: k3d                       # k3d tant que le gate OKE n'est pas franchi (appgen refuse oke sans --allow-oke)
+  environments: [production]         # ou [development, production] ; chaque env = 1 ReleaseBinding
+  profile: stateless                 # interdit database et storage
+  runtime:
+    port: 8080                       # >= 1024 (non-root) ; adapter args/env si l'image écoute sur 80 par défaut
+    healthPath: /health              # chemin HTTP qui répond 200 sans authentification
+    size: small                      # small = 50m/128Mi req, 250m/256Mi lim ; medium = 200m/256Mi, 500m/512Mi
+    # replicas: 1                    # 1 à 3
+    # runAsUser: 65532               # >= 1000 ; mettre l'uid de l'image si elle en impose un (ex. 65534)
+    # args: ["--port", "8080"]
+    # env: {LOG_LEVEL: info}         # NON secret uniquement ; un nom en *PASSWORD*/*TOKEN*/*SECRET* est refusé
+  # secrets:                         # références ESO ; la clé doit exister dans le store (créée hors Git par Paul)
+  #   - {env: API_KEY, key: MON_SERVICE_API_KEY}   # préfixe <NOM>_ obligatoire
+  exposure: {mode: private, auth: none}   # private = endpoint interne. public = classe PROTÉGÉE (voir platform-guardrails)
+  network: {egress: none}            # none = aucune sortie hors cellule et DNS. public-internet = classe PROTÉGÉE
+  backup: {class: none}              # sans état : none
+  observability: {metrics: {enabled: false}}   # true + path seulement si /metrics n'est pas exposé publiquement

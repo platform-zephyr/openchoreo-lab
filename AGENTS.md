@@ -8,3 +8,13 @@
 - Périmètre cluster : namespaces `openchoreo-*` et `lab-*` uniquement.
 - Un résultat n'est « PASS » qu'avec une preuve runtime datée (PASS / FAIL / NOT_TESTED / BLOCKED). k3d ≠ OKE.
 - Réponses en français, conclusion d'abord.
+
+## Skills disponibles (`.agents/skills/`, lus par Claude Code via `.claude/skills`)
+- `add-app` : intention → archétype → `app.yaml` → PR → CI → preuves.
+- `fix-app` : diagnostic en lecture seule → correctif par PR → vérification → rollback par `git revert`.
+- `diagnose-app`, `promote-or-rollback`, `platform-guardrails` (classes AUTONOME / REVUE / MANDAT / INTERDIT).
+- Adaptés d'OpenChoreo : `openchoreo-platform-engineer-gitops`, `openchoreo-developer-gitops`, `migrate-to-openchoreo`, `openchoreo-setup`.
+Golden paths et vérifications runtime en lecture seule : `golden-paths/`.
+
+## Périmètre de lecture
+Écriture : namespaces `openchoreo-*` et `lab-*` uniquement. Lecture seule autorisée en plus : `dp-*` (data plane OpenChoreo), `argocd`, `cnpg-system`, `external-secrets`, `default` (objets OpenChoreo).

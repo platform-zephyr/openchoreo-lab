@@ -1,0 +1,39 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: open-connector-workload
+  namespace: default
+spec:
+  owner:
+    projectName: open-connector
+    componentName: open-connector
+  container:
+    image: ghcr.io/oomol-lab/open-connector:v1.8.0@sha256:61e5e29a9ae7d8e817e8050d062ed57134e069cea3e7eef7cb15349c11b7a76d
+    env:
+    - key: OOMOL_CONNECT_DATA_DIR
+      value: /app/data
+    - key: OOMOL_CONNECT_ALLOW_PRIVATE_NETWORK
+      value: 'true'
+    - key: OOMOL_CONNECT_CATALOG_LAZY_SCHEMAS
+      value: 'true'
+    - key: OOMOL_CONNECT_ALLOWED_ACTIONS
+      value: paperless_ngx.list_documents,paperless_ngx.get_document
+    - key: OOMOL_CONNECT_BLOCKED_PROXIES
+      value: '*'
+    - key: OOMOL_CONNECT_ADMIN_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: open-connector-secrets
+          key: OOMOL_CONNECT_ADMIN_TOKEN
+    - key: OOMOL_CONNECT_ENCRYPTION_KEY
+      valueFrom:
+        secretKeyRef:
+          name: open-connector-secrets
+          key: OOMOL_CONNECT_ENCRYPTION_KEY
+  endpoints:
+    http:
+      type: HTTP
+      port: 3000
+      visibility:
+      - internal

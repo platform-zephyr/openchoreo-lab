@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:06Z k3d
+$ cond_msg releasebinding t-neg-public-development ReleaseSynced
+Failed to render resources: component type validation failed: rule[2] "${workload.endpoints.exists(name, ep, \"external\" in ep.visibility)\n  ? parameters.publicAuth != \"none\" : true}" evaluated to false: exposition publique sans authentification interdite
+[rc=0]

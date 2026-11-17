@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:05Z k3d
+$ kubectl get ns dp-default-t-cell-a-development-8fec71a2 -o jsonpath={.metadata.labels.pod-security\.kubernetes\.io/enforce}
+restricted
+[rc=0]

@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:09Z k3d
+$ kubectl -n dp-default-t-cell-a-development-8fec71a2 exec pod/t-pgclient-a-development-a588893c-6bf9db4456-r5c9t -- getent hosts kubernetes.default.svc.cluster.local
+10.43.0.1       kubernetes.default.svc.cluster.local
+[rc=0]

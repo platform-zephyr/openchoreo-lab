@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:14Z k3d
+$ kubectl get pushsecret -n lab-pg r-t-alpha-db-development-bc318b89-pg-role -o jsonpath={.status.conditions[0].reason}
+Synced
+[rc=0]

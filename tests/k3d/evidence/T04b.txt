@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:06Z k3d
+$ dry_pod dp-default-t-cell-a-development-8fec71a2 t-tag traefik/whoami:v1.10.3 restricted
+Error from server (Forbidden): error when creating "STDIN": pods "t-tag" is forbidden: ValidatingAdmissionPolicy 'lab-cell-pod-hardening' with binding 'lab-cell-pod-hardening' denied request: lab-cell-pod-hardening: image épinglée par digest (@sha256:...) obligatoire
+[rc=1]

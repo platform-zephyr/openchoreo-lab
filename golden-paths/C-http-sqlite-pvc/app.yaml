@@ -1,0 +1,32 @@
+# Golden path C : service HTTP + un seul volume RWO (SQLite ou fichiers) (natif OpenChoreo).
+# Copier vers apps/<nom>/app.yaml. Une réplique, stratégie Recreate (imposées par le schéma et la CCT).
+# OKE : StorageClass oci-bv, 50 Gi facturés minimum sur un quota de 200 Go -> classe PROTÉGÉE (dépense).
+# Exemple réel : apps/aiostreams/app.yaml.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: mon-app-fichiers             # À REMPLIR
+  owner: user:default/paul
+  description: Service HTTP avec SQLite sur volume (à décrire)
+spec:
+  source:
+    image: ghcr.io/exemple/mon-app:3.1.0@sha256:0000000000000000000000000000000000000000000000000000000000000000  # À REMPLIR
+  cluster: k3d
+  environments: [production]
+  profile: stateful                  # obligatoire avec storage
+  runtime:
+    port: 3000
+    healthPath: /api/status
+    size: small
+    # runAsUser: 65532               # l'image doit pouvoir écrire sur le volume en non-root (fsGroup posé par la CCT)
+    env:
+      DATABASE_URI: "sqlite:///data/db.sqlite"   # chemin SOUS mountPath ; rootfs en lecture seule, /tmp en emptyDir
+  storage:
+    profile: block-rwo               # seul profil ; un seul PVC par app
+    mountPath: /data
+    size: 1Gi                        # k3d : local-path ; OKE : arrondi à 50 Gi
+  exposure: {mode: private, auth: none}
+  network: {egress: none}
+  backup: {class: regenerable}       # données reconstructibles ; aucune sauvegarde de PVC dans le labo
+  observability: {metrics: {enabled: false}}
+  update: {strategy: Recreate}       # OBLIGATOIRE avec storage (schéma)

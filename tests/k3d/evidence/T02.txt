@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:06Z k3d
+$ cond_msg releasebinding t-neg-caps-development ReleaseSynced
+Failed to render resources: post-render validation failed: "ComponentType deployment/t-service-restricted-probe" post-render validation on Deployment/t-neg-caps-development-3800c872 failed: securityContext restricted altéré (conteneur : privilege escalation, privileged, capabilities, rootfs)
+[rc=0]

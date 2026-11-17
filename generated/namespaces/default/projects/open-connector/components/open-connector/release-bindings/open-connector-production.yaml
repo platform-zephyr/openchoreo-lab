@@ -1,0 +1,19 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: open-connector-production
+  namespace: default
+spec:
+  owner:
+    projectName: open-connector
+    componentName: open-connector
+  environment: production
+  releaseName: open-connector-d7cf33eec0
+  componentTypeEnvironmentConfigs:
+    size: medium
+    replicas: 1
+  traitEnvironmentConfigs:
+    data:
+      size: 2Gi
+      storageClass: local-path

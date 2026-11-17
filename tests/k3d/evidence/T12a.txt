@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:14Z k3d
+$ bash -c kubectl get secret -n lab-pg r-t-alpha-db-development-bc318b89-pg-role -o jsonpath='{.data.password}' | base64 -d | wc -c | tr -d ' '
+32
+[rc=0]

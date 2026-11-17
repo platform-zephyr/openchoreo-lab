@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:06Z k3d
+$ cond_msg releasebinding t-neg-latest-development ReleaseSynced
+Failed to render resources: component type validation failed: rule[1] "${workload.container.image.matches('^[^@]+@sha256:[a-f0-9]{64}$')}" evaluated to false: image épinglée par digest obligatoire
+[rc=0]

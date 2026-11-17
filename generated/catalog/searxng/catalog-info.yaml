@@ -1,0 +1,14 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: searxng
+  description: Metamoteur de recherche SearXNG (usage prive)
+  annotations:
+    openchoreo.dev/managed: 'true'
+  links:
+  - url: https://docs.searxng.org/
+spec:
+  type: service
+  lifecycle: experimental
+  owner: user:default/paul

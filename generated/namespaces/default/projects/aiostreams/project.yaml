@@ -1,0 +1,24 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: aiostreams
+  namespace: default
+  annotations:
+    openchoreo.dev/description: Agregateur d'addons Stremio
+  labels:
+    openchoreo.dev/name: aiostreams
+spec:
+  deploymentPipelineRef:
+    name: standard
+  type:
+    kind: ClusterProjectType
+    name: cell-restricted
+  parameters:
+    egress: public-internet
+    database: false
+    allowIdp: false
+    quota:
+      cpu: 300m
+      memory: 512Mi
+      pvcs: '1'

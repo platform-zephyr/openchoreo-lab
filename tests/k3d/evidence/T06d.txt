@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:06Z k3d
+$ kubectl create service loadbalancer t-lb -n dp-default-t-cell-a-development-8fec71a2 --tcp=80:8080
+error: failed to create LoadBalancer service: services "t-lb" is forbidden: exceeded quota: cell-quota, requested: services.loadbalancers=1,services.nodeports=1, used: services.loadbalancers=0,services.nodeports=0, limited: services.loadbalancers=0,services.nodeports=0
+[rc=1]

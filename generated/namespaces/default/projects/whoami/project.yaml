@@ -1,0 +1,20 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: whoami
+  namespace: default
+  annotations:
+    openchoreo.dev/description: Echo HTTP de diagnostic
+  labels:
+    openchoreo.dev/name: whoami
+spec:
+  deploymentPipelineRef:
+    name: standard
+  type:
+    kind: ClusterProjectType
+    name: cell-restricted
+  parameters:
+    egress: none
+    database: false
+    allowIdp: false

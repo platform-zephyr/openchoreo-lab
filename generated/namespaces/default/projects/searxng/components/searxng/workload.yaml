@@ -1,0 +1,24 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: searxng-workload
+  namespace: default
+spec:
+  owner:
+    projectName: searxng
+    componentName: searxng
+  container:
+    image: searxng/searxng:2026.9.30-a9d990033@sha256:a07a5cd2da2c63d66e559f9e4d3a3db106cfc6c32fb0ac70abe91cc28bcd7350
+    env:
+    - key: SEARXNG_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: searxng-secrets
+          key: SEARXNG_SECRET
+  endpoints:
+    http:
+      type: HTTP
+      port: 8080
+      visibility:
+      - internal

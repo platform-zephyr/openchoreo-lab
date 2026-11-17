@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:08Z k3d
+$ bash -c kubectl get netpol -n dp-default-t-cell-a-development-8fec71a2 -o name | sort | tr '\n' ' '
+networkpolicy.networking.k8s.io/allow-dns-and-cell networkpolicy.networking.k8s.io/default-deny networkpolicy.networking.k8s.io/egress-lab-pg networkpolicy.networking.k8s.io/openchoreo-t-pgclient-a networkpolicy.networking.k8s.io/openchoreo-t-whoami-a 
+[rc=0]

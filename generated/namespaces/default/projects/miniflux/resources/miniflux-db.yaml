@@ -1,0 +1,15 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Resource
+metadata:
+  name: miniflux-db
+  namespace: default
+spec:
+  owner:
+    projectName: miniflux
+  type:
+    kind: ClusterResourceType
+    name: cnpg-lab-db
+  parameters:
+    database: miniflux
+    passwordKey: MINIFLUX_PG_PASSWORD

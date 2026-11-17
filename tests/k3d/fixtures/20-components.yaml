@@ -1,0 +1,110 @@
+# Composants conformes sur deployment/service-restricted (k3d).
+# autoDeploy: true UNIQUEMENT dans ce banc de test (pas d'occ en CI ici) : le contrôleur crée la
+# ComponentRelease et le ReleaseBinding `development`. Le dépôt GitOps garde autoDeploy: false.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-whoami-a, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  componentType: {kind: ClusterComponentType, name: deployment/service-restricted}
+  autoDeploy: true
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-whoami-a, namespace: default}
+spec:
+  owner: {projectName: t-cell-a, componentName: t-whoami-a}
+  endpoints:
+    http: {type: HTTP, port: 8080}
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    args: ["--port", "8080"]
+---
+# Client PG (image CNPG, sans serveur) : reçoit DATABASE_URL de la Resource t-alpha-db.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-pgclient-a, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  componentType: {kind: ClusterComponentType, name: deployment/service-restricted}
+  autoDeploy: true
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-pgclient-a, namespace: default}
+spec:
+  owner: {projectName: t-cell-a, componentName: t-pgclient-a}
+  endpoints:
+    http: {type: HTTP, port: 8080}
+  dependencies:
+    resources:
+      - ref: t-alpha-db
+        envBindings: {url: DATABASE_URL}
+  container:
+    image: ghcr.io/cloudnative-pg/postgresql:17.7-standard-trixie@sha256:e079dae5253fa6ed26fc65fda06d515af764dbec392dd4b46b17ab11eebd8131
+    command: ["sleep", "infinity"]
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-whoami-b, namespace: default}
+spec:
+  owner: {projectName: t-cell-b}
+  componentType: {kind: ClusterComponentType, name: deployment/service-restricted}
+  autoDeploy: true
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-whoami-b, namespace: default}
+spec:
+  owner: {projectName: t-cell-b, componentName: t-whoami-b}
+  endpoints:
+    http: {type: HTTP, port: 8080}
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    args: ["--port", "8080"]
+---
+# Sonde réseau de la cellule B (bash /dev/tcp, getent).
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-probe-b, namespace: default}
+spec:
+  owner: {projectName: t-cell-b}
+  componentType: {kind: ClusterComponentType, name: deployment/service-restricted}
+  autoDeploy: true
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-probe-b, namespace: default}
+spec:
+  owner: {projectName: t-cell-b, componentName: t-probe-b}
+  endpoints:
+    http: {type: HTTP, port: 8080}
+  container:
+    image: ghcr.io/cloudnative-pg/postgresql:17.7-standard-trixie@sha256:e079dae5253fa6ed26fc65fda06d515af764dbec392dd4b46b17ab11eebd8131
+    command: ["sleep", "infinity"]
+---
+# Profil stateful : PVC RWO via le trait upstream persistent-volume-claim + strategy Recreate.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata: {name: t-pvc-b, namespace: default}
+spec:
+  owner: {projectName: t-cell-b}
+  componentType: {kind: ClusterComponentType, name: deployment/service-restricted}
+  autoDeploy: true
+  parameters: {strategy: Recreate}
+  traits:
+    - kind: ClusterTrait
+      name: persistent-volume-claim
+      instanceName: data
+      parameters: {mountPath: /data}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata: {name: t-pvc-b, namespace: default}
+spec:
+  owner: {projectName: t-cell-b, componentName: t-pvc-b}
+  endpoints:
+    http: {type: HTTP, port: 8080}
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    args: ["--port", "8080"]

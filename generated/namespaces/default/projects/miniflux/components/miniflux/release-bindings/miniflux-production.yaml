@@ -1,0 +1,15 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: miniflux-production
+  namespace: default
+spec:
+  owner:
+    projectName: miniflux
+    componentName: miniflux
+  environment: production
+  releaseName: miniflux-03808293e2
+  componentTypeEnvironmentConfigs:
+    size: small
+    replicas: 1

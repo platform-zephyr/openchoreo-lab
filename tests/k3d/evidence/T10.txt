@@ -1,0 +1,6 @@
+# 2026-11-17T17:00:14Z k3d
+$ tcp dp-default-t-cell-b-development-f4914bac pod/t-probe-b-development-3abdc8b2-79cb86cf8d-md9qj lab-pg-rw.lab-pg.svc.cluster.local 5432
+bash: connect: Connection refused
+bash: line 1: /dev/tcp/lab-pg-rw.lab-pg.svc.cluster.local/5432: Connection refused
+BLOCKED
+[rc=0]

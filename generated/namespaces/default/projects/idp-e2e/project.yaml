@@ -1,0 +1,20 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: idp-e2e
+  namespace: default
+  annotations:
+    openchoreo.dev/description: App web interne idp-e2e (echo HTTP de test)
+  labels:
+    openchoreo.dev/name: idp-e2e
+spec:
+  deploymentPipelineRef:
+    name: standard
+  type:
+    kind: ClusterProjectType
+    name: cell-restricted
+  parameters:
+    egress: none
+    database: false
+    allowIdp: false

@@ -1,0 +1,22 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: whoami-workload
+  namespace: default
+spec:
+  owner:
+    projectName: whoami
+    componentName: whoami
+  container:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+    env: []
+    args:
+    - --port
+    - '8080'
+  endpoints:
+    http:
+      type: HTTP
+      port: 8080
+      visibility:
+      - internal

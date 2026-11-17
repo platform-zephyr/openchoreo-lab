@@ -5,10 +5,16 @@ This product includes software adapted from:
 
 - OpenChoreo (https://github.com/openchoreo/openchoreo), v1.3.3
   Apache License 2.0. Files adapted: samples/getting-started/component-types/service.yaml,
+  samples/getting-started/component-traits/pvc-trait.yaml (unmodified),
   samples/getting-started/cluster-project-types/default.yaml.
 - openchoreo/sample-gitops (https://github.com/openchoreo/sample-gitops), commit 9c057d8
   Apache License 2.0. Repository layout; platform/infra/environments/*.yaml and
   platform/infra/deployment-pipelines/standard.yaml adapted.
+- openchoreo/skills (https://github.com/openchoreo/skills), commit cefd81b
+  Apache License 2.0. Adapted skills (source cited in each file header):
+  .agents/skills/openchoreo-platform-engineer-gitops, openchoreo-developer-gitops,
+  migrate-to-openchoreo, openchoreo-setup, diagnose-app (from verify-and-debug.md),
+  promote-or-rollback (from promote.md). No upstream script or asset is copied.
 - [only if copied] VizzleTF/homelab (https://github.com/VizzleTF/homelab)
   MIT License, Copyright (c) 2024-2026 VizzleTF. ApplicationSet template adapted from
   argocd/appsets/apps-appset.yaml. (Full MIT text in LICENSES/MIT-VizzleTF.txt.)

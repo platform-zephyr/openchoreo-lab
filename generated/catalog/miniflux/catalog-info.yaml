@@ -1,0 +1,14 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: miniflux
+  description: Lecteur RSS
+  annotations:
+    openchoreo.dev/managed: 'true'
+  links:
+  - url: https://miniflux.app/docs/
+spec:
+  type: service
+  lifecycle: experimental
+  owner: user:default/paul

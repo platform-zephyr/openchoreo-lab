@@ -1,0 +1,6 @@
+# 2026-11-17T17:00:12Z k3d
+$ tcp dp-default-t-cell-b-development-f4914bac pod/t-probe-b-development-3abdc8b2-79cb86cf8d-md9qj 10.43.0.1 443
+bash: connect: Connection refused
+bash: line 1: /dev/tcp/10.43.0.1/443: Connection refused
+BLOCKED
+[rc=0]

@@ -1,0 +1,33 @@
+# Agregateur d'addons Stremio. Image verifiee [C] : ghcr.io/viren070/aiostreams:v2.38.1 (index, linux/arm64 present).
+# Port 3000 (PORT par defaut, packages/core/src/utils/env.ts), sante GET /api/v1/status (scripts/healthcheck.js),
+# base SQLite par defaut sqlite://./data/db.sqlite, WORKDIR /app => /app/data (PVC).
+# L'image tourne en uid 0 [C] : runAsUser 65532 impose par la CCT, a prouver sur PVC (fsGroup) en Phase 0 [S].
+# ADDON_PASSWORD est deprecie [C] : la cle d'acces est CONFIG_ACCESS_KEY (env-managed, auth.ts l.375).
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: aiostreams
+  owner: user:default/paul
+  description: Agregateur d'addons Stremio
+spec:
+  source:
+    image: ghcr.io/viren070/aiostreams:v2.38.1@sha256:1b90bc2fda70f365dff2ce98fc311a24708cca9841efe09aefe309cd4da1fb2c
+  cluster: k3d
+  environments: [production]
+  profile: stateful
+  runtime:
+    port: 3000
+    healthPath: /api/v1/status
+    size: small
+    env:
+      DATABASE_URI: "sqlite://./data/db.sqlite"
+      BASE_URL: https://aiostreams.lab.smadja.dev
+  storage: {profile: block-rwo, mountPath: /app/data, size: 1Gi}
+  secrets:
+    - {env: SECRET_KEY, key: AIOSTREAMS_SECRET_KEY}
+    - {env: CONFIG_ACCESS_KEY, key: AIOSTREAMS_CONFIG_ACCESS_KEY}
+  exposure: {mode: public, host: aiostreams.lab.smadja.dev, auth: app-password}
+  network: {egress: public-internet}
+  backup: {class: regenerable}
+  observability: {metrics: {enabled: false}}
+  update: {strategy: Recreate}

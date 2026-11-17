@@ -1,0 +1,51 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "docker:pinDigests", "helpers:pinGitHubActionDigests"],
+  "minimumReleaseAge": "14 days",
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Digests d'images des apps : mise a jour automatique (pas de changement de version majeure)",
+      "matchFileNames": ["apps/**/app.yaml"],
+      "matchUpdateTypes": ["digest"],
+      "automerge": true
+    },
+    {
+      "description": "Versions d'images et de charts : revue humaine",
+      "matchFileNames": ["apps/**/app.yaml"],
+      "matchUpdateTypes": ["minor", "major", "patch"],
+      "automerge": false
+    },
+    {
+      "description": "Actions GitHub : digest seulement",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest"],
+      "automerge": true
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "Image + digest dans apps/*/app.yaml (champ spec.source.image)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^apps/[^/]+/app\\.yaml$/"],
+      "matchStrings": [
+        "image:\\s*(?<depName>[^\\s:@]+):(?<currentValue>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Charts Helm OCI dans apps/*/app.yaml (version et digest)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^apps/[^/]+/app\\.yaml$/"],
+      "matchStrings": [
+        "repo:\\s*oci://(?<registryUrl>[^\\s]+)\\s*\\n\\s*name:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*version:\\s*(?<currentValue>[^\\s]+)"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "postUpgradeTasks": {
+    "commands": ["python3 tools/appgen/appgen.py render"],
+    "fileFilters": ["apps/**"],
+    "executionMode": "branch"
+  }
+}

@@ -1,0 +1,23 @@
+# Echo HTTP de diagnostic. Image verifiee : index multi-arch (linux/amd64, linux/arm64)
+# via `docker buildx imagetools inspect traefik/whoami:v1.10.3` [C]. Digest identique a kube-ops idp-e2e [C].
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: whoami
+  owner: user:default/paul
+  description: Echo HTTP de diagnostic
+spec:
+  source:
+    image: traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c
+  cluster: k3d
+  environments: [production]
+  profile: stateless
+  runtime:
+    port: 8080
+    args: ["--port", "8080"]
+    healthPath: /health
+    size: small
+  exposure: {mode: private, auth: none}
+  network: {egress: none}
+  backup: {class: none}
+  observability: {metrics: {enabled: false}}

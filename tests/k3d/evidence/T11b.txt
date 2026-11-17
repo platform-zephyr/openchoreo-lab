@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:14Z k3d
+$ bash -c kubectl auth can-i get secrets -n lab-pg --as=system:serviceaccount:dp-default-t-cell-a-development-8fec71a2:default || true
+no
+[rc=0]

@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:06Z k3d
+$ cond_msg component t-neg-trait Ready
+ComponentType "service-restricted": traits [ClusterTrait:t-add-crb] are not in the allowed list [ClusterTrait:persistent-volume-claim ClusterTrait:health-probes]
+[rc=0]

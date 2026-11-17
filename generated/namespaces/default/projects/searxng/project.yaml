@@ -1,0 +1,20 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: searxng
+  namespace: default
+  annotations:
+    openchoreo.dev/description: Metamoteur de recherche SearXNG (usage prive)
+  labels:
+    openchoreo.dev/name: searxng
+spec:
+  deploymentPipelineRef:
+    name: standard
+  type:
+    kind: ClusterProjectType
+    name: cell-restricted
+  parameters:
+    egress: public-internet
+    database: false
+    allowIdp: false
