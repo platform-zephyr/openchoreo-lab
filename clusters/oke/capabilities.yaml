@@ -16,4 +16,4 @@ spec:
   storageClasses:
     block-rwo: oci-bv       # 50 Gi minimum factures ; jamais Longhorn sur OKE ; pas de RWX (FSS non provisionne)
   backupMechanisms: [none]
-  secretStore: doppler-cluster
+  secretStore: lab-store

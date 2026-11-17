@@ -1,0 +1,400 @@
+# Réseau des namespaces d'essai (Phase B), appliqué par Cilium 1.20.4 (chaining OCI VCN-native).
+# Modèle : default-deny ingress+egress par namespace, puis ouvertures nominatives (DNS, kube-apiserver,
+# flux internes listés dans docs/PHASE-B.md §3). Aucun egress Internet, sauf Argo -> github.com:443.
+# Les pulls d'images (ghcr.io, quay.io, cr.kgateway.dev, registry.k8s.io, ecr-public) sont faits par
+# cri-o sur le nœud, hors réseau de pod : aucune règle FQDN de registre n'est nécessaire.
+#
+# kube-apiserver : CiliumNetworkPolicy toEntities/fromEntities (un ipBlock ne sélectionne pas l'identité
+# réservée kube-apiserver ; endpoint privé OKE 10.0.2.65:6443, Service kubernetes 443).
+# Webhooks (cert-manager :10250, controller-manager OpenChoreo :9443, CNPG :9443) : ingress depuis
+# l'entité kube-apiserver. [S] à prouver sur OKE (verify.sh) : identité vue par Cilium pour les appels
+# du control plane managé. Repli minimal si refus : fromCIDR 10.0.2.65/32 sur le seul port du webhook.
+#
+# CONFLIT C1 (docs/PHASE-B.md §6) : la CCNP kube-ops `allow-egress-unisolated` (toEntities: all, tous
+# namespaces hors auth/backstage/hindsight/databases) s'ajoute à ces règles (union Cilium) : tant
+# qu'elle n'exclut pas `platform.smadja.dev/egress-isolated=true`, l'egress de ces namespaces reste
+# ouvert. L'installation fonctionne ; la primitive « default-deny egress » est NON PROUVABLE.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-default-deny
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-default-deny
+  namespace: openchoreo-data-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-default-deny
+  namespace: openchoreo-cert-manager
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-default-deny
+  namespace: openchoreo-external-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-default-deny
+  namespace: lab-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-default-deny
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-default-deny
+  namespace: cnpg-system
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-dns
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-apiserver
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "6443", protocol: TCP}, {port: "443", protocol: TCP}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-dns
+  namespace: openchoreo-data-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-apiserver
+  namespace: openchoreo-data-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "6443", protocol: TCP}, {port: "443", protocol: TCP}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-dns
+  namespace: openchoreo-cert-manager
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-apiserver
+  namespace: openchoreo-cert-manager
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "6443", protocol: TCP}, {port: "443", protocol: TCP}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-dns
+  namespace: openchoreo-external-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-apiserver
+  namespace: openchoreo-external-secrets
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "6443", protocol: TCP}, {port: "443", protocol: TCP}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-dns
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-apiserver
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "6443", protocol: TCP}, {port: "443", protocol: TCP}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-dns
+  namespace: cnpg-system
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-apiserver
+  namespace: cnpg-system
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "6443", protocol: TCP}, {port: "443", protocol: TCP}]
+---
+# Trafic intra-namespace (api/controller-manager -> cluster-gateway :8444, kgateway).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-intra
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {}}]
+  egress:
+    - to: [{podSelector: {}}]
+---
+# Trafic intra-namespace (server/controller -> repo-server :8081, redis :6379).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-intra
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {}}]
+  egress:
+    - to: [{podSelector: {}}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-webhook-from-apiserver
+  namespace: openchoreo-cert-manager
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector:
+    matchLabels: {app.kubernetes.io/component: webhook}
+  ingress:
+    - fromEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "10250", protocol: TCP}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-webhook-from-apiserver
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector:
+    matchLabels: {app.kubernetes.io/component: controller-manager}
+  ingress:
+    - fromEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "9443", protocol: TCP}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-webhook-from-apiserver
+  namespace: cnpg-system
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector:
+    matchLabels: {app.kubernetes.io/name: cloudnative-pg}
+  ingress:
+    - fromEntities: [kube-apiserver]
+      toPorts:
+        - ports: [{port: "9443", protocol: TCP}]
+---
+# Data plane -> control plane : cluster-agent -> cluster-gateway :8443 (WebSocket mTLS) ;
+# Envoy du data plane -> kgateway :9977 (xDS).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-from-data-plane
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: openchoreo-data-plane}}
+      ports: [{port: 8443, protocol: TCP}, {port: 9977, protocol: TCP}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-to-control-plane-and-cells
+  namespace: openchoreo-data-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: openchoreo-control-plane}}
+      ports: [{port: 8443, protocol: TCP}, {port: 9977, protocol: TCP}]
+    # Envoy -> backends des cellules (label posé en constante par le CPT cell-restricted). L'ingress
+    # côté cellule est ouvert par les NetworkPolicy par composant rendues par OpenChoreo.
+    - to:
+        - namespaceSelector: {matchLabels: {platform.smadja.dev/cell: restricted}}
+---
+# Opérateur CNPG -> instance manager de lab-pg :8000 (pendant de allow-intra-dns-operator de lab-pg).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-to-lab-pg
+  namespace: cnpg-system
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: lab-pg}}
+      ports: [{port: 8000, protocol: TCP}]
+---
+# Argo CD repo-server -> GitHub (dépôt public, HTTPS, sans identifiant). toFQDNs exige la visibilité DNS
+# (règle dns L7 vers kube-dns) pour apprendre les IP de github.com.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-github
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector:
+    matchLabels: {app.kubernetes.io/name: argocd-repo-server}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports: [{port: "53", protocol: ANY}]
+          rules:
+            dns: [{matchPattern: "*"}]
+    - toFQDNs:
+        - matchName: github.com
+      toPorts:
+        - ports: [{port: "443", protocol: TCP}]

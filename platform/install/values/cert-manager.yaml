@@ -1,0 +1,38 @@
+# cert-manager v1.19.4. Chart : oci://quay.io/jetstack/charts/cert-manager --version v1.19.4.
+# Namespace : openchoreo-cert-manager (non imposé par OpenChoreo : ses charts n'utilisent que des
+# Issuer namespacés ; la ClusterIssuer du labo garde sa CA dans ce namespace, clusterResourceNamespace).
+# Obligatoire : Certificates du cluster-gateway, du cluster-agent et des webhooks ; cainjector requis
+# (annotation cert-manager.io/inject-ca-from sur les webhooks du controller-manager).
+#
+# Mesure k3d : 3 pods = 3m et 192 Mi au total (FOOTPRINT.txt). Requests mémoire réparties à cette
+# hauteur (aucune sous l'usage mesuré du namespace). Le chart est conforme à PSA restricted par défaut
+# (runAsNonRoot, seccomp RuntimeDefault, drop ALL, rootfs RO) : vérifié par tools/oke/psa_check.py.
+crds:
+  enabled: true
+  keep: true
+global:
+  # Défaut kube-system : interdit (Role/RoleBinding et leases hors openchoreo-*/lab-*).
+  leaderElection:
+    namespace: openchoreo-cert-manager
+image:
+  digest: sha256:9cad8065bbf57815cbcfa813b903dd8822bcd0271f7443192082b54e96a55585
+resources:
+  requests: {cpu: 5m, memory: 80Mi}
+  limits: {cpu: 250m, memory: 256Mi}
+cainjector:
+  image:
+    digest: sha256:5d810724b177746a8aeafd5db111b55b72389861bcec03a6d50f9c6d56ec37c0
+  resources:
+    requests: {cpu: 5m, memory: 64Mi}
+    limits: {cpu: 250m, memory: 256Mi}
+webhook:
+  image:
+    digest: sha256:f41b4ac798c8ff200c29756cf86e70a00e73fe489fb6ab80d9210d1b5f476852
+  resources:
+    requests: {cpu: 5m, memory: 48Mi}
+    limits: {cpu: 200m, memory: 128Mi}
+# Job post-install (1 IP de pod VCN-native) remplacé par tools/oke/verify.sh --step 2.
+startupapicheck:
+  enabled: false
+prometheus:
+  enabled: false

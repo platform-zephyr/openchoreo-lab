@@ -1,0 +1,33 @@
+# Enregistrement du data plane (single-cluster), étape 7. GABARIT : tools/oke/install.sh remplace
+# __AGENT_CA__ par `ca.crt` du Secret openchoreo-data-plane/cluster-agent-tls (CA auto-signée de
+# l'agent, clusterAgent.tls.generateCerts=true) : c'est la CA qui signe le certificat CLIENT de l'agent,
+# vérifié par le cluster-gateway en mTLS. Ne pas prendre tls.crt (=> « bad handshake »,
+# multi-cluster-connectivity.mdx). Aucune clé privée n'est lue ni écrite.
+# L'agent joint wss://cluster-gateway.openchoreo-control-plane.svc.cluster.local:8443/ws (défaut du chart) :
+# aucune exposition du cluster-gateway hors cluster.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterDataPlane
+metadata:
+  name: default
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  planeID: default
+  clusterAgent:
+    clientCA:
+      value: |
+__AGENT_CA__
+  secretStoreRef:
+    name: lab-store
+  gateway:
+    ingress:
+      external:
+        name: gateway-default
+        namespace: openchoreo-data-plane
+        http:
+          host: lab.smadja.dev
+          listenerName: http
+          port: 19080
+        https:
+          host: lab.smadja.dev
+          listenerName: https
+          port: 19443

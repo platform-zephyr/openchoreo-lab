@@ -1,0 +1,84 @@
+# Argo CD minimal pour l'essai. Chart : argo-cd 10.3.3 (https://argoproj.github.io/argo-helm,
+# Argo CD v3.5.1), même version que le bootstrap OKE de kube-ops (#1620, bootstrap/kustomization.yaml).
+# Namespace : lab-argocd (PAS `argocd` : réservé au futur Argo de kube-ops ; périmètre lab-*).
+# Base : values OKE de kube-ops (bootstrap/values.yaml), avec trois écarts voulus :
+#   - server.insecure NON repris : argocd-server garde TLS (interdit de mission « TLS désactivé ») ;
+#     accès par `kubectl port-forward` seulement, aucun Ingress/HTTPRoute ;
+#   - images épinglées par digest ;
+#   - pas de health custom pour les Application enfants (une seule racine, pas de wave à attendre).
+# CRD argoproj.io : cluster-scoped et partagées avec un futur Argo kube-ops ; `crds.keep: true` et
+# suppression manuelle seulement si aucun autre Argo n'existe (CLEANUP.md, tools/oke/uninstall.sh).
+#
+# Requests : celles de kube-ops (controller 25m/256Mi, repo 25m/128Mi, server 10m/64Mi, redis 10m/32Mi).
+# Pas de mesure k3d d'Argo (A3 non faite) : [S], à mesurer à l'étape 10 de docs/PHASE-B.md.
+global:
+  image:
+    tag: "v3.5.1@sha256:0deb1a1c917629b960ead995ae3b6069450a866992676599658687ef9a641ee8"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
+configs:
+  cm:
+    create: true
+    application.resourceTrackingMethod: annotation
+    # Compte local de secours (port-forward). Le mot de passe initial (Secret argocd-initial-admin-secret)
+    # n'est jamais affiché par les scripts du labo ; il est lu par Paul seulement.
+    admin.enabled: true
+  params:
+    controller.diff.server.side: true
+    reposerver.parallelism.limit: "1"
+  rbac:
+    policy.default: role:readonly
+crds:
+  install: true
+  keep: true
+dex:
+  enabled: false
+notifications:
+  enabled: false
+# Le chart 10.3.3 n'a PAS de clé applicationSet.enabled (ignorée : kube-ops #1620 la pose aussi, sans
+# effet) ; replicas: 0 évite le pod (1 IP VCN, ~40 Mi) tout en gardant la CRD inerte.
+applicationSet:
+  replicas: 0
+controller:
+  replicas: 1
+  resources:
+    requests: {cpu: 25m, memory: 256Mi}
+    limits: {cpu: "1", memory: 1Gi}
+  emptyDir: {sizeLimit: 1Gi}
+server:
+  replicas: 1
+  resources:
+    requests: {cpu: 10m, memory: 64Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+  emptyDir: {sizeLimit: 256Mi}
+repoServer:
+  replicas: 1
+  resources:
+    requests: {cpu: 25m, memory: 128Mi}
+    limits: {cpu: "1", memory: 512Mi}
+  emptyDir: {sizeLimit: 2Gi}
+redis:
+  image:
+    tag: "8.6.4-alpine@sha256:2cc044fc5a07c9b701f8f1255a309ae9ad7856e694ac03513bf3648c01e40763"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile: {type: RuntimeDefault}
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {cpu: 250m, memory: 128Mi}
+redisSecretInit:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile: {type: RuntimeDefault}

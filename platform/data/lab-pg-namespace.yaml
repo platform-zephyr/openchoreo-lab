@@ -5,6 +5,8 @@ kind: Namespace
 metadata:
   name: lab-pg
   labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: latest
     pod-security.kubernetes.io/warn: restricted
