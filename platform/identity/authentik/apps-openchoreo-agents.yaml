@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+# BROUILLON, JAMAIS APPLIQUÉ. Cible : kube-ops k8s/infrastructure/auth/authentik/extra/blueprints/apps-openchoreo-agents.yaml
+# (PR kube-ops, décision de Paul : docs/IDENTITY.md §5). Prérequis : apps-openchoreo.yaml (clé openchoreo-oidc).
+#
+# Deux identités d'agent DISTINCTES (client_credentials), une par provider :
+#   - agent-reader   : lecture seule (rôle lab-viewer côté OpenChoreo) ;
+#   - agent-operator : lecture + écriture bornée (releasebinding:update dans le namespace `default`).
+# L'API OpenChoreo identifie l'agent par le claim `client_id` (sujet service_account, priorité 2). Ce
+# claim est émis par un mapping à valeur FIXE par provider (scope `openchoreo-client-id`, à demander
+# explicitement : scope=openchoreo-client-id). Aucun mapping `groups` : un jeton d'agent ne peut pas
+# être classé « user ».
+# Secrets : `client_secret` absent => Authentik le génère à la création. Jamais dans Git ; Paul le
+# remet à l'agent hors Git (Doppler). Rotation/révocation : docs/IDENTITY.md §6.
+# Jetons courts (15 min) : un jeton JWT n'est pas révocable côté API avant son expiration.
+version: 1
+metadata:
+  name: Apps - OpenChoreo agents (OKE lab)
+entries:
+  - id: agent-reader-client-id-mapping
+    model: authentik_providers_oauth2.scopemapping
+    identifiers:
+      name: "OAuth mapping: OpenChoreo client_id openchoreo-agent-reader"
+    attrs:
+      name: "OAuth mapping: OpenChoreo client_id openchoreo-agent-reader"
+      scope_name: openchoreo-client-id
+      description: OpenChoreo service identity
+      expression: |
+        return {"client_id": "openchoreo-agent-reader"}
+  - id: agent-operator-client-id-mapping
+    model: authentik_providers_oauth2.scopemapping
+    identifiers:
+      name: "OAuth mapping: OpenChoreo client_id openchoreo-agent-operator"
+    attrs:
+      name: "OAuth mapping: OpenChoreo client_id openchoreo-agent-operator"
+      scope_name: openchoreo-client-id
+      description: OpenChoreo service identity
+      expression: |
+        return {"client_id": "openchoreo-agent-operator"}
+
+  - id: agent-reader-provider
+    model: authentik_providers_oauth2.oauth2provider
+    identifiers:
+      name: lab.smadja.dev/openchoreo-agent-reader
+    attrs:
+      authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, "openchoreo-oidc"]]
+      issuer_mode: global
+      client_type: confidential
+      grant_types: [client_credentials]
+      client_id: openchoreo-agent-reader
+      redirect_uris: []
+      access_token_validity: minutes=15
+      sub_mode: hashed_user_id
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "openid"]]
+        - !KeyOf agent-reader-client-id-mapping
+  - id: agent-reader-application
+    model: authentik_core.application
+    identifiers: {slug: openchoreo-agent-reader}
+    attrs:
+      name: OpenChoreo agent-reader
+      group: Infrastructure
+      meta_description: Agent OpenChoreo, lecture seule (client_credentials)
+      meta_launch_url: "blank://blank"
+      provider: !KeyOf agent-reader-provider
+      policy_engine_mode: any
+
+  - id: agent-operator-provider
+    model: authentik_providers_oauth2.oauth2provider
+    identifiers:
+      name: lab.smadja.dev/openchoreo-agent-operator
+    attrs:
+      authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, "openchoreo-oidc"]]
+      issuer_mode: global
+      client_type: confidential
+      grant_types: [client_credentials]
+      client_id: openchoreo-agent-operator
+      redirect_uris: []
+      access_token_validity: minutes=15
+      sub_mode: hashed_user_id
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "openid"]]
+        - !KeyOf agent-operator-client-id-mapping
+  - id: agent-operator-application
+    model: authentik_core.application
+    identifiers: {slug: openchoreo-agent-operator}
+    attrs:
+      name: OpenChoreo agent-operator
+      group: Infrastructure
+      meta_description: Agent OpenChoreo, écriture bornée (client_credentials)
+      meta_launch_url: "blank://blank"
+      provider: !KeyOf agent-operator-provider
+      policy_engine_mode: any
+# Pas de policybinding : identité de machine, aucun compte humain ne doit s'y connecter
+# (grant_types sans authorization_code). Modèle des comptes de service : docs/operations/authentik-access-model.md.

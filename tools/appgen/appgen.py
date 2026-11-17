@@ -603,13 +603,22 @@ def validate_all(root: Path, cluster_gate_open: bool = False, examples: bool = T
 # --------------------------------------------------------------------------- platform
 
 
+class _PlatformLoader(yaml.SafeLoader):
+    """Lecture tolerante des fichiers de platform/ qui ne sont pas des objets OpenChoreo (ex. blueprints
+    Authentik : tags !Find, !KeyOf). Les tags inconnus donnent None ; seuls CCT/ClusterTrait/CPT sont retenus.
+    Les descripteurs d'applications restent lus par yaml.safe_load (tag inconnu = erreur)."""
+
+
+_PlatformLoader.add_multi_constructor("!", lambda loader, suffix, node: None)
+
+
 def load_platform(platform_dir: Path) -> dict[tuple[str, str], dict]:
     """Indexe les objets de plateforme (CCT, ClusterTrait, ClusterProjectType) par (kind, name)."""
     index: dict[tuple[str, str], dict] = {}
     if not platform_dir.is_dir():
         raise AppError(f"dossier plateforme absent : {platform_dir} (CCT et ClusterTrait requis)")
     for path in sorted(platform_dir.rglob("*.yaml")):
-        for doc in yaml.safe_load_all(path.read_text(encoding="utf-8")):
+        for doc in yaml.load_all(path.read_text(encoding="utf-8"), Loader=_PlatformLoader):  # noqa: S506 (SafeLoader)
             if not isinstance(doc, dict):
                 continue
             kind = doc.get("kind")

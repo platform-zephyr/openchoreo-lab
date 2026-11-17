@@ -1,0 +1,18 @@
+# Test seulement (k3d) : client lab-platform-admin-test -> lab-platform-admin. Sert à appeler
+# evaluate_authz pour d'autres sujets (groupes navigateur) sans connexion interactive.
+# Ne jamais déployer hors banc de test ; supprimé par tests/mcp/run.sh --cleanup.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterAuthzRoleBinding
+metadata:
+  name: lab-platform-admin-test-binding
+  labels:
+    platform.smadja.dev/owner: lab-authz
+spec:
+  entitlement:
+    claim: client_id
+    value: lab-platform-admin-test
+  effect: allow
+  roleMappings:
+    - roleRef:
+        kind: ClusterAuthzRole
+        name: lab-platform-admin
