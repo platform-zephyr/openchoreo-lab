@@ -1,0 +1,103 @@
+# OpenChoreo control plane 1.3.3, profil MINIMAL pour OKE oracle-a1 (Phase B, docs/PHASE-B.md).
+# Chart : oci://ghcr.io/openchoreo/helm-charts/openchoreo-control-plane --version 1.3.3
+#         (digest OCI et sha256 du .tgz : platform/install/versions.env). Namespace : openchoreo-control-plane.
+#
+# Requests : basées sur l'usage mesuré sur k3d (tests/k3d/RESULTS.md, FOOTPRINT.txt, 2026-11-17) :
+# namespace CP = 19-51m et 447 Mi, dont Backstage 256 Mi et kgateway 85 Mi, soit ≈ 106 Mi pour
+# controller-manager + openchoreo-api + cluster-gateway + event-forwarder. Les requests ci-dessous
+# couvrent cet usage (aucune request mémoire sous l'usage mesuré) ; les limites donnent la marge du
+# démarrage (caches d'informers). À re-mesurer sur OKE (tools/oke/measure.sh) : si l'usage au repos
+# d'un pod dépasse sa request, remonter la request, jamais l'inverse.
+#
+# PSA : tous les pods de ce chart sont conformes à `restricted` avec ces values :
+#   - appArmorProfile: Unconfined (défaut du chart) est REFUSÉ par PSA baseline ET restricted : on
+#     le retire (null). L'OS des nœuds OKE (Oracle Linux, SELinux) n'a pas AppArmor de toute façon.
+#   - cluster-gateway : le chart n'a ni seccompProfile ni securityContext de conteneur : ajoutés.
+#   - Job authz-bootstrap : conforme (template du chart), image épinglée par digest ci-dessous.
+
+# Images épinglées par digest d'index multi-arch (arm64 présent, vérifié le 2026-11-17).
+controllerManager:
+  image:
+    tag: "v1.3.3@sha256:ce7e9d6394cd10bdd7d4f9f5746468b3f1f010b714b878a8a51051aac0b97863"
+    pullPolicy: IfNotPresent
+  resources:
+    requests: {cpu: 15m, memory: 64Mi}
+    limits: {cpu: 500m, memory: 384Mi}
+  containerSecurityContext:
+    appArmorProfile: null
+
+openchoreoApi:
+  image:
+    tag: "v1.3.3@sha256:ed0fb79a93c55946a1b38b51fdf34ba9cccec0998a7befbdd62a4e3aae1ef63f"
+  resources:
+    requests: {cpu: 10m, memory: 48Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+  containerSecurityContext:
+    appArmorProfile: null
+  http:
+    # Route HTTP rendue mais NON attachée tant que gateway.enabled=false (accès par port-forward).
+    hostnames:
+      - api.lab.smadja.dev
+  config:
+    server:
+      publicUrl: "https://api.lab.smadja.dev"
+    mcp:
+      enabled: true
+      # Lecture/déploiement seulement ; « build » retiré (pas de workflow plane). Les écritures restent
+      # refusées par l'authz (APP-CONTRACT §5 : rôle agent en lecture seule, Git = source de vérité).
+      toolsets: [namespace, project, component, deployment, resource]
+    security:
+      authorization:
+        bootstrap:
+          image: "registry.k8s.io/kubectl:v1.36.0@sha256:63e5e76b746bb8b891a94968d380736c035e768dab0d56ddad1f50c750a4be39"
+
+clusterGateway:
+  image:
+    tag: "v1.3.3@sha256:a3486320d84c4dcbdccb6ecef09550b015d268c7002e504b221021a517cc0360"
+  resources:
+    requests: {cpu: 5m, memory: 24Mi}
+    limits: {cpu: 200m, memory: 128Mi}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile: {type: RuntimeDefault}
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: {drop: [ALL]}
+  # Single-cluster : l'agent joint le cluster-gateway par le Service interne ; pas de TLSRoute.
+  tlsRoute:
+    enabled: false
+
+# Profil minimal : ni Backstage ni event-forwarder (sans Backstage il n'a pas de destinataire).
+# Le MCP et l'API restent servis par openchoreo-api (values.yaml l.~1883, D-gitops-empreinte §5.2).
+backstage:
+  enabled: false
+eventForwarder:
+  enabled: false
+portalAssistant:
+  enabled: false
+
+# OIDC : l'issuer est celui prévu par APP-CONTRACT (ThunderID, exposé en Phase C). ThunderID n'est PAS
+# installé en Phase B (3 PVC obligatoires = 150 Go de block volume OCI, voir docs/PHASE-B.md §5).
+# Le cache JWKS de l'API est paresseux (internal/server/middleware/auth/jwt/middleware.go l.120-128) :
+# sans IdP, l'API démarre et refuse tout appel authentifié (401) : échec fermé, attendu en Phase B.
+security:
+  enabled: true
+  oidc:
+    issuer: "https://thunder.lab.smadja.dev"
+    jwksUrl: "https://thunder.lab.smadja.dev/oauth2/jwks"
+    authorizationUrl: "https://thunder.lab.smadja.dev/oauth2/authorize"
+    tokenUrl: "https://thunder.lab.smadja.dev/oauth2/token"
+  authz:
+    enabled: true
+
+# Pas de Gateway CP en Phase B : un seul Envoy (celui du data plane) ; API et MCP par port-forward.
+# À réactiver (avec GatewayParameters ClusterIP, voir manifests/12-gateway-parameters.yaml) quand une
+# exposition (Cloudflare Tunnel) aura l'accord de Paul.
+gateway:
+  enabled: false
+  tls:
+    enabled: false

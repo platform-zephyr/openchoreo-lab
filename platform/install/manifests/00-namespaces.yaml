@@ -1,0 +1,106 @@
+# Namespaces de l'essai sur OKE oracle-a1 (Phase B, docs/PHASE-B.md §3). Appliqués par
+# tools/oke/install.sh --step 1, AVANT tout chart (les charts sont installés sans --create-namespace).
+#
+# Labels communs :
+#   - app.kubernetes.io/part-of=openchoreo-lab : sélection par CLEANUP.md et tools/oke/uninstall.sh ;
+#   - platform.smadja.dev/egress-isolated=true : marqueur demandé à kube-ops pour exclure ces namespaces
+#     de la CCNP `allow-egress-unisolated` (conflit C1, docs/PHASE-B.md §6). Tant que la CCNP n'est pas
+#     corrigée, leur default-deny egress est NEUTRALISÉ par cet allow-all cluster-wide (union Cilium).
+# PSA : `restricted` partout où chaque pod peut y être contraint (vérifié statiquement par
+# tools/oke/psa_check.py sur les rendus Helm épinglés). Exception unique : openchoreo-data-plane.
+#
+# Namespaces hors de ce fichier :
+#   - lab-pg : platform/data/lab-pg-namespace.yaml (restricted, NetworkPolicy propres) ;
+#   - dp-* : créés par OpenChoreo via le CPT cell-restricted (préfixe imposé par le contrôleur) ;
+#   - cnpg-system : ci-dessous, nom IMPOSÉ par platform/data/lab-pg-namespace.yaml (NetworkPolicy
+#     par nom) : namespace d'essai à nettoyer, hors préfixe openchoreo-*/lab-* ;
+#   - default : seulement le label openchoreo.dev/control-plane=true (objets OpenChoreo des apps,
+#     generated/namespaces/default) ; aucun pod. Exception documentée, retirée au nettoyage.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openchoreo-control-plane
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+# Exception PSA : `baseline` en enforce. Le schéma du chart DP 1.3.3 interdit seccompProfile sur le
+# cluster-agent (values.schema.json, additionalProperties:false) ; le pod ne peut donc pas être
+# `restricted`. warn/audit restent `restricted` pour tracer l'écart. Les autres contrôles (VAP
+# baseline-pod-hardening de kube-ops : ni privileged, ni host*, ni hostPath) s'appliquent.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openchoreo-data-plane
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openchoreo-cert-manager
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openchoreo-external-secrets
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+# Coffre des secrets générés (provider ESO kubernetes, store lab-store). Aucun pod.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-secrets
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-argocd
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cnpg-system
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

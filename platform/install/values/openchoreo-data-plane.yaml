@@ -1,0 +1,58 @@
+# OpenChoreo data plane 1.3.3, profil MINIMAL pour OKE oracle-a1 (Phase B, docs/PHASE-B.md).
+# Chart : oci://ghcr.io/openchoreo/helm-charts/openchoreo-data-plane --version 1.3.3
+#         (digests : platform/install/versions.env). Namespace : openchoreo-data-plane (imposé : VAP-1
+#         et platform/cluster-agent/*.yaml nomment le SA openchoreo-data-plane:cluster-agent-dataplane).
+#
+# Mesure k3d (tests/k3d/RESULTS.md) : namespace DP = 6-12m et 33 Mi (cluster-agent + Envoy).
+# Requests posées à ce niveau, limites ×4-5 pour les rafales de rendu.
+#
+# PSA : namespace en `baseline` (enforce) + `restricted` (warn, audit). Cause : le schéma du chart
+# (values.schema.json, clusterAgent.podSecurityContext et .securityContext, additionalProperties:false)
+# INTERDIT seccompProfile ; le pod cluster-agent ne peut donc pas satisfaire `restricted` par values.
+# Il satisfait tout le reste (non-root, drop ALL, pas d'escalade, rootfs RO). Correctif amont à
+# proposer (ouvrir seccompProfile dans le schéma) ; pas de --skip-schema-validation ni de post-renderer.
+# L'Envoy du Gateway est rendu par kgateway : securityContext restricted via GatewayParameters
+# (manifests/12-gateway-parameters.yaml), référencé ci-dessous par gateway.infrastructure.parametersRef.
+
+clusterAgent:
+  image:
+    tag: "v1.3.3@sha256:de4907fcf4ffa6822dcbcaff876b02861bae0804c3aa86db6df64f918ef8451c"
+  resources:
+    requests: {cpu: 5m, memory: 24Mi}
+    limits: {cpu: 100m, memory: 128Mi}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: {drop: [ALL]}
+  # Étape 6 (docs/PHASE-B.md) : RBAC du chart (prouvé sur k3d) + ClusterRole additionnel quota.
+  # Étape 9 : basculer à false APRÈS `kubectl apply` de platform/cluster-agent/reduced-clusterrole.yaml
+  # (tools/oke/install.sh --step 9). Retour arrière : remettre true (helm upgrade).
+  rbac:
+    create: true
+
+gateway:
+  # Ports ≥ 1024 : Envoy n'a besoin d'aucune capability (pas de NET_BIND_SERVICE) ; mêmes ports que k3d.
+  httpPort: 19080
+  httpsPort: 19443
+  infrastructure:
+    # Service ClusterIP (aucun LoadBalancer OCI, quota services.loadbalancers=0), requests Envoy et
+    # securityContext restricted : voir manifests/12-gateway-parameters.yaml.
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: lab-envoy-clusterip
+  tls:
+    # TLS ACTIVÉ (interdit de mission : « TLS désactivé ») : certificat émis par la CA du labo
+    # (manifests/11-gateway-tls.yaml). Le listener HTTP reste rendu par le chart (non désactivable).
+    enabled: true
+    hostname: "*.lab.smadja.dev"
+    certificateRefs:
+      - name: dp-gateway-tls
+
+# Désactivés par défaut, réaffirmés : pas de routeur `occ remote` (NodePort), pas d'agentgateway.
+remoteAgentRouter:
+  enabled: false
