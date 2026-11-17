@@ -5,9 +5,10 @@ Dernière mise à jour : 2026-11-17 ~20:45Z. Lire ensuite `missions/MISSION.md` 
 **Règle de preuve** : PASS = preuve runtime datée. k3d ≠ OKE. Statique ≠ runtime. NOT_TESTED / BLOCKED ne sont jamais des PASS.
 
 ## 1. Où on en est (en une minute)
-- OKE : étapes 1-5 installées et vérifiées (namespaces/quotas/NP, Gateway API, cert-manager, ESO+`lab-store`, kgateway). Correctif réseau C1 appliqué sur le cluster et prouvé. **Rien d'autre** n'est installé (ni control plane, ni data plane, ni Argo, ni Backstage, ni Kyverno, ni Authentik, ni PostgreSQL).
+- OKE (preuves runtime 2026-11-17/18, `verify.sh`) : étapes 1-5, **6 control plane** (21:47Z), **7 data plane** (21:51Z, agent sans Secrets/exec/RBAC hors `dp-*`), **8 ClusterDataPlane** (21:56Z, agent connecté), **9 types/pipeline** (21:59Z), **11 Argo CD** (22:01Z, `default` verrouillé) : PASS. Installation fail-closed par security bundle 1.0.1. Résidu accepté : `B6-sa-effective` FAIL = SA `kgateway` (Secrets cluster-wide), traitement en cours (flux kgateway). 6b (Backstage) et 10 (CNPG/lab-pg, volume OCI) NON faits. `lab-platform` volontairement non synchronisé (il inclut lab-pg).
+- **Pilote whoami sur OKE = PASS fonctionnel** : baseline HTTP 200 (22:27Z, 29 PASS, 0 PVC/LB/route externe, port-forward local) ; modification GitOps `WHOAMI_NAME` via PR #23 (Argo rev 8ae9c9a, release whoami-69a1749676, réponse `Name: whoami-gitops-oke-v2`, 22:45Z) ; rollback par PR de revert #24 (23:04Z : release d'origine whoami-647fc6bfc1, même UID de ComponentRelease, `Name:` disparu, HTTP 200). Drift Argo post-revert fermé par PR #25 (release historique restaurée + job CI `release-history`) : `lab-apps` Synced/Healthy (23:15Z). Leçons : image DOIT être qualifiée `docker.io/…` (CRI-O OKE refuse les noms courts) ; un `git revert` ne doit pas supprimer les releases historiques.
 - k3d (jetable) : boucle `whoami` prouvée (18 PASS/6 FAIL, défauts corrigés statiquement depuis), preuves Argo réel (20 PASS), VAP/uninstall sur vrai API server (91+59 PASS), authz/MCP (50 PASS).
-- **Bloqué avant OKE** : (a) la PR #8 n'est pas fusionnée (elle doit embarquer l'installation FAIL-CLOSED par « security bundle » privé) ; (b) phase 2 k3d du durcissement RBAC en cours ; (c) l'image du contrôleur corrigé doit atteindre OKE (registre privé : peut exiger un jeton de lecture de Paul).
+- **Plus de blocage OKE.** Prochaine phase : golden path n°2 stateless (ntfy interne, sans PVC), IDP utilisable (Backstage privé, Authentik, MCP, rôles agents), résidu kgateway avant tout credential réel.
 - Un point de sécurité amont est en **coordination privée** : ne publie AUCUN détail dans ce dépôt public. Fichiers de sécurité locaux exclus de git (`.git/info/exclude`). **Handoff privé (hors dépôt)** : le retrouver avec `find ~/Library/Application\ Support/Claude -name HANDOFF-PRIVATE.md 2>/dev/null` (ne jamais en copier le contenu ici). Dépôt privé du bundle : `platform-zephyr/openchoreo-lab-security` (clone local à côté de ce dépôt ; `gh repo view` pour vérifier l'accès).
 
 ## 2. Accès OKE (un seul exécutant : le coordinateur ; les agents n'y ont pas accès)
@@ -20,9 +21,9 @@ Dernière mise à jour : 2026-11-17 ~20:45Z. Lire ensuite `missions/MISSION.md` 
 |---|---|
 | 0 préflight, 1 namespaces/quotas/NP, 2 Gateway API v1.5.1, 3 cert-manager, 4 ESO+lab-store, 5 kgateway v2.3.11 | **PASS** (2026-11-17 18:21-18:34Z) |
 | Réseau : IMDS refusé ; intra-namespace ; egress isolé en timeout avec témoin ouvert après correctif C1 ; rollback CCNP 23 s | **PASS** (19:00-19:06Z, 7 namespaces d'essai ; `dp-*` PAS encore couverts) |
-| 6 control plane, 6b portail, 7 data plane, 8 ClusterDataPlane, 9 types/pipeline | **À FAIRE** : uniquement via l'installation fail-closed (bundle) |
+| 6 control plane, 7 data plane, 8 ClusterDataPlane, 9 types/pipeline | **PASS** (2026-11-17 21:47–21:59Z, bundle 1.0.1) ; 6b portail : à faire |
 | 10 CNPG + lab-pg | **NON AUTORISÉ** (volume OCI 50 Go) |
-| 11 Argo CD | À FAIRE (projets lab-root / lab-platform / lab-apps / lab-authz, `default` verrouillé) |
+| 11 Argo CD | **PASS** (22:01Z ; lab-root Synced ; lab-apps automatique limité à whoami ; lab-platform manuel) |
 Mesures OKE (18:31Z, méthode MAX de 3 échantillons) : requests de tous les pods 385m/1830m (21 %), 1038Mi/8650Mi (12 %) ; seuil dur 70 % ; budget OpenChoreo = objectif ≤ 1,5 GiB et ≤ 0,3 vCPU. Les lignes `0m/0Mi` de `budget.log` des étapes 3-5 sont INVALIDES (bug corrigé).
 
 ## Security bundle (temporaire, privé)
