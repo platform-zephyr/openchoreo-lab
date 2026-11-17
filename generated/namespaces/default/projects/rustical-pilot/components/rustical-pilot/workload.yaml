@@ -1,0 +1,41 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: rustical-pilot-workload
+  namespace: default
+spec:
+  owner:
+    projectName: rustical-pilot
+    componentName: rustical-pilot
+  container:
+    image: ghcr.io/lennart-k/rustical:0.18.0@sha256:33ec65f695eeed3fafb15270f274a89f7201d2bb3ffe3369e1be1a94e04af880
+    env:
+    - key: RUSTICAL_OIDC__NAME
+      value: ThunderID
+    - key: RUSTICAL_OIDC__ISSUER
+      value: https://thunder.lab.smadja.dev
+    - key: RUSTICAL_OIDC__CLAIM_USERID
+      value: sub
+    - key: RUSTICAL_OIDC__SCOPES
+      value: '["openid", "profile", "email", "groups"]'
+    - key: RUSTICAL_OIDC__ALLOW_SIGN_UP
+      value: 'true'
+    - key: OAUTH2_CLIENT_ID
+      value: rustical-pilot
+    - key: RUSTICAL_OIDC__CLIENT_ID
+      valueFrom:
+        secretKeyRef:
+          name: rustical-pilot-secrets
+          key: RUSTICAL_OIDC__CLIENT_ID
+    - key: RUSTICAL_OIDC__CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: rustical-pilot-secrets
+          key: RUSTICAL_OIDC__CLIENT_SECRET
+  endpoints:
+    http:
+      type: HTTP
+      port: 4000
+      visibility:
+      - internal

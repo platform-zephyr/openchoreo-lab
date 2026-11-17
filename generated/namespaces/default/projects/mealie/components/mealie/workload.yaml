@@ -1,0 +1,48 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: mealie-workload
+  namespace: default
+spec:
+  owner:
+    projectName: mealie
+    componentName: mealie
+  container:
+    image: ghcr.io/mealie-recipes/mealie:v3.28.0@sha256:8b02290f4d1806f02acac6f25f6d48a3c965612fda1f8e914d5af533276f8688
+    env:
+    - key: BASE_URL
+      value: https://mealie.lab.smadja.dev
+    - key: ALLOW_SIGNUP
+      value: 'false'
+    - key: OIDC_AUTH_ENABLED
+      value: 'true'
+    - key: OIDC_CONFIGURATION_URL
+      value: https://thunder.lab.smadja.dev/.well-known/openid-configuration
+    - key: OIDC_CLIENT_ID
+      value: mealie
+    - key: OIDC_PROVIDER_NAME
+      value: ThunderID
+    - key: OIDC_AUTO_REDIRECT
+      value: 'true'
+    - key: OIDC_USER_GROUP
+      value: family
+    - key: OIDC_ADMIN_GROUP
+      value: admin
+    - key: OIDC_SIGNUP_ENABLED
+      value: 'true'
+    - key: OIDC_REQUIRES_EMAIL_VERIFICATION
+      value: 'false'
+    - key: OAUTH2_CLIENT_ID
+      value: mealie
+    - key: OIDC_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: mealie-secrets
+          key: OIDC_CLIENT_SECRET
+  endpoints:
+    http:
+      type: HTTP
+      port: 9000
+      visibility:
+      - internal

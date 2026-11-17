@@ -1,0 +1,42 @@
+# Mealie (recettes). Image verifiee : index multi-arch contenant linux/arm64 [C] via
+# `docker buildx imagetools inspect ghcr.io/mealie-recipes/mealie:v3.28.0` (2026-11-17).
+# Equivalent de kube-ops k8s/applications/catalog/mealie [C]. Ecarts : voir NOTES.md.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: mealie
+  owner: user:default/paul
+  description: Gestionnaire de recettes (pilote, donnees de test)
+spec:
+  source:
+    image: ghcr.io/mealie-recipes/mealie:v3.28.0@sha256:8b02290f4d1806f02acac6f25f6d48a3c965612fda1f8e914d5af533276f8688
+  cluster: k3d
+  environments: [production]
+  profile: stateful
+  runtime:
+    port: 9000
+    healthPath: /api/app/about   # [S] endpoint public de Mealie, a prouver en Phase 0
+    size: small
+    runAsUser: 1000              # kube-ops : 911, sous le minimum du schema (1000) ; [S] a prouver (NOTES.md)
+    env:
+      BASE_URL: https://mealie.lab.smadja.dev   # [S] nom interne, hors schema (host reserve au public)
+      ALLOW_SIGNUP: "false"
+      OIDC_AUTH_ENABLED: "true"
+      OIDC_CONFIGURATION_URL: https://thunder.lab.smadja.dev/.well-known/openid-configuration   # [S] chemin discovery ThunderID
+      OIDC_CLIENT_ID: mealie
+      OIDC_PROVIDER_NAME: ThunderID
+      OIDC_AUTO_REDIRECT: "true"
+      OIDC_USER_GROUP: family
+      OIDC_ADMIN_GROUP: admin
+      OIDC_SIGNUP_ENABLED: "true"  # comme kube-ops ; la porte reelle est allowedGroups cote IdP
+      OIDC_REQUIRES_EMAIL_VERIFICATION: "false"
+  storage: {profile: block-rwo, mountPath: /app/data, size: 5Gi}   # SQLite + medias (kube-ops : longhorn-fast 5Gi)
+  update: {strategy: Recreate}   # impose par le schema (PVC RWO)
+  secrets:
+    - {env: OIDC_CLIENT_SECRET, key: MEALIE_OIDC_CLIENT_SECRET}   # kube-ops : APP_MEALIE_OIDC_CLIENT_SECRET, a renommer dans Doppler
+  identity:
+    oidc: {provider: thunderid, issuer: https://thunder.lab.smadja.dev, clientId: mealie, clientSecretKey: MEALIE_OIDC_CLIENT_SECRET, allowedGroups: [family, admin], adminGroup: admin}
+  exposure: {mode: private, auth: app-oidc}
+  network: {egress: none, allowIdp: true}   # FQDN thunder.lab.smadja.dev refuse sur k3d (sans Cilium) ; a ajouter au gate OKE (NOTES.md)
+  backup: {class: none}   # donnees reelles : aucune sauvegarde admise sur le labo (NOTES.md) ; pilote uniquement
+  observability: {metrics: {enabled: false}}

@@ -1,0 +1,36 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: ntfy-workload
+  namespace: default
+spec:
+  owner:
+    projectName: ntfy
+    componentName: ntfy
+  container:
+    image: binwiederhier/ntfy:v2.28.0@sha256:6ef4b819f722fccdc036af611c4774cfdc2de821ab74fdd48bbf4c9d6f8973da
+    env:
+    - key: NTFY_LISTEN_HTTP
+      value: :8080
+    - key: NTFY_BASE_URL
+      value: https://ntfy.lab.smadja.dev
+    - key: NTFY_CACHE_FILE
+      value: /var/lib/ntfy/cache.db
+    - key: NTFY_AUTH_FILE
+      value: /var/lib/ntfy/auth.db
+    - key: NTFY_AUTH_DEFAULT_ACCESS
+      value: deny-all
+    - key: NTFY_AUTH_USERS
+      valueFrom:
+        secretKeyRef:
+          name: ntfy-secrets
+          key: NTFY_AUTH_USERS
+    args:
+    - serve
+  endpoints:
+    http:
+      type: HTTP
+      port: 8080
+      visibility:
+      - external

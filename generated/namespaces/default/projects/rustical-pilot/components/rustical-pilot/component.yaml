@@ -1,0 +1,23 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: rustical-pilot
+  namespace: default
+spec:
+  owner:
+    projectName: rustical-pilot
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service-restricted
+  autoDeploy: false
+  parameters:
+    runAsUser: 1000
+    strategy: Recreate
+    publicAuth: none
+  traits:
+  - kind: ClusterTrait
+    name: persistent-volume-claim
+    instanceName: data
+    parameters:
+      mountPath: /var/lib/rustical

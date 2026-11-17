@@ -1,0 +1,35 @@
+# Hindsight API (memoire d'agents), parcours Helm GitOps (APP-CONTRACT 2.4, archetype E/H).
+# Source kube-ops : k8s/clusters/oracle-a1/hindsight (overlay OKE) + k8s/optional/personal-ai-2026/hindsight (homelab).
+# Chart verifie [C] : helm pull oci://ghcr.io/vectorize-io/charts/hindsight:1.2.1 (2026-11-17).
+#   digest OCI (rapporte par helm pull) = sha256:4781a117dcafa4e776218a5988f8047a30379d2e195130cf44cc2055dc028258
+#   sha256 du .tgz (CI helm pull + sha256) = 967438cfbc5e3737da176cb33d52840268add6c84c2039c12513f3597748ecca
+# Le champ digest ci-dessous = sha256 du .tgz. Image index multi-arch (linux/arm64 present) [C] : sha256:662109ec...
+# BLOQUANTS (voir apps/_kube-ops-helm/NOTES.md) : cluster oke refuse tant que le gate OKE n'est pas franchi ;
+# secret postgres-password non rendable ; base CNPG non rendue en parcours helm ; pas de sauvegarde.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: hindsight
+  owner: user:default/paul
+  description: Hindsight API, memoire d'agents (PostgreSQL + embeddings locaux), parcours Helm
+  lifecycle: experimental
+spec:
+  source:
+    chart:
+      repo: oci://ghcr.io/vectorize-io/charts
+      name: hindsight
+      version: 1.2.1
+      digest: "sha256:967438cfbc5e3737da176cb33d52840268add6c84c2039c12513f3597748ecca"
+  cluster: oke
+  environments: [production]
+  # stateless : le schema impose database/storage pour stateful, interdits en helm. L'etat reel est dans PostgreSQL externe (values.yaml).
+  profile: stateless
+  secrets:
+    - {env: HINDSIGHT_API_LLM_API_KEY, key: HINDSIGHT_API_LLM_API_KEY}
+    - {env: HINDSIGHT_API_TENANT_API_KEY, key: HINDSIGHT_MCP_API_KEY}
+  exposure: {mode: private, auth: none}
+  network:
+    egress:
+      - {fqdn: api.minimax.io, ports: [443]}
+  backup: {class: none}
+  observability: {metrics: {enabled: false}}
