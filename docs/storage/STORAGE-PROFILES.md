@@ -70,10 +70,11 @@ storageClasses:
 storageClasses:
   ephemeral: {kind: emptyDir, maxSize: 2Gi}
 # fast-rwo, bulk-rwo, block-rwo : ABSENTS. Le dernier quota (50 Go) n'est pas autorisé et sert
-# de marge au remplacement du nœud (STORAGE-RECOMMENDATION §5). Une app à PVC attend ou passe
-# en ephemeral + database.
-databaseInstances:
-  lab-pg: {resourceType: cnpg-lab-db, namespace: lab-pg, cluster: lab-pg, backup: none}
+# de marge au remplacement du nœud (STORAGE-RECOMMENDATION §5). Une app à PVC est refusée.
+databaseInstances: {}
+# lab-pg ABSENT : CNPG demande un PVC (platform/data/lab-pg-cluster.yaml) ; l'overlay OKE impose oci-bv >= 50 Go
+# (51-lab-pg-oke-overlay.yaml) = le dernier quota. Correction du 2026-11-17 : une version précédente de ce fichier
+# listait lab-pg « sans nouveau volume », ce qui est faux.
 ```
 
 Changement par rapport au fichier actuel : `block-rwo: oci-bv` est **retiré** (il promettait un volume que le quota et la règle « aucun nouveau volume » n'autorisent pas). Effet : AIOStreams (SQLite sur PVC) est refusé sur OKE au lieu d'échouer au runtime ou de consommer le dernier quota. `emptyDir` sur OKE consomme le disque de démarrage (≈ 28,4 Go allouables [A]) : la somme des `maxSize` doit rester petite ; ResourceQuota `limits.ephemeral-storage` par cellule recommandé.
