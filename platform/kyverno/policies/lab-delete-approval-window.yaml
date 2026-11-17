@@ -1,0 +1,54 @@
+# K-12 `lab-delete-approval-window` — l'annotation d'approbation de suppression de K-10
+# (`platform.smadja.dev/delete-approved-until`) n'est admise à l'ÉCRITURE que bien formée (RFC3339 UTC),
+# dans le futur et à 24 h au plus : on ne peut pas préparer une approbation longue (dans Git par exemple)
+# qui deviendrait valable plus tard.
+# Séparée de K-10 pour le failurePolicy : Ignore ici (une panne Kyverno ne bloque aucune création ni mise
+# à jour de PVC/namespace), Fail sur K-10 (seuls les DELETE sont bloqués pendant une panne).
+# Ne s'évalue que si l'annotation est présente (matchCondition) : coût nul pour les écritures ordinaires.
+# Propriétaire : Kyverno seul. Tests : tests/kyverno/lab-delete-approval-window/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-delete-approval-window
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: guardrail
+  annotations:
+    platform.smadja.dev/ownership: "K-12 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-delete-approval-window
+    platform.smadja.dev/exceptionable: "false"
+spec:
+  validationActions: [Deny]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: false
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [persistentvolumeclaims, persistentvolumes, namespaces]
+      - apiGroups: [postgresql.cnpg.io]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE]
+        resources: [clusters]
+  matchConditions:
+    - name: carries-approval
+      expression: >-
+        has(object.metadata.annotations) &&
+        'platform.smadja.dev/delete-approved-until' in object.metadata.annotations
+  variables:
+    - name: value
+      expression: "object.metadata.annotations['platform.smadja.dev/delete-approved-until']"
+  validations:
+    - expression: >-
+        variables.value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$') &&
+        timestamp(variables.value) > time.now() &&
+        timestamp(variables.value) <= time.now() + duration('24h')
+      messageExpression: >-
+        'lab-delete-approval-window: platform.smadja.dev/delete-approved-until=' + variables.value +
+        ' refusée : RFC3339 UTC (AAAA-MM-JJTHH:MM:SSZ), dans le futur, 24 h au plus'
+      reason: Forbidden

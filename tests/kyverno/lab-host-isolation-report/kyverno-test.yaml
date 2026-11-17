@@ -1,0 +1,9 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-host-isolation-report}
+policies: [../../../platform/kyverno/policies/lab-host-isolation-report.yaml]
+resources: [resources.yaml]
+results:
+  - {policy: lab-host-isolation-report, isValidatingPolicy: true, kind: Deployment, result: pass, resources: [ok-isolated]}
+  - {policy: lab-host-isolation-report, isValidatingPolicy: true, kind: Deployment, result: fail,
+     resources: [bad-privileged, bad-hostnetwork, bad-hostpath, bad-hostport]}

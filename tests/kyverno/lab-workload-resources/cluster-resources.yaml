@@ -1,0 +1,17 @@
+# État simulé du cluster lu par resource.List : un quota dans dp-demo et lab-demo, aucun dans lab-noquota.
+apiVersion: cli.kyverno.io/v1alpha1
+kind: ClusterResource
+metadata: {name: quotas}
+spec:
+  resources:
+    - apiVersion: v1
+      kind: ResourceQuota
+      metadata: {name: cell-quota, namespace: dp-demo}
+      spec: {hard: {requests.cpu: 300m, requests.memory: 512Mi}}
+    - apiVersion: v1
+      kind: ResourceQuota
+      metadata: {name: lab-quota, namespace: lab-demo}
+      spec: {hard: {requests.cpu: 100m, requests.memory: 256Mi}}
+    - {apiVersion: v1, kind: Namespace, metadata: {name: dp-demo, labels: {pod-security.kubernetes.io/enforce: restricted}}}
+    - {apiVersion: v1, kind: Namespace, metadata: {name: lab-demo, labels: {pod-security.kubernetes.io/enforce: restricted}}}
+    - {apiVersion: v1, kind: Namespace, metadata: {name: lab-noquota, labels: {pod-security.kubernetes.io/enforce: restricted}}}

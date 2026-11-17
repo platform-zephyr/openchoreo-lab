@@ -1,0 +1,76 @@
+# K-05 `lab-workload-resources` — requests cpu/mémoire et limite mémoire déclarées, namespace sous quota.
+# Budget OKE (1 nœud arm64, 1830m / 8,4 GiB) : un conteneur sans requests n'est pas planifiable de façon
+# prévisible, et le LimitRange ne s'applique qu'aux Pods (pas aux gabarits) : un chart qui omet ses
+# resources passe sans bruit puis consomme les valeurs par défaut. Ici le gabarit est refusé.
+# Le quota lui-même reste natif (ResourceQuota/LimitRange, propriétaires : 01-quotas.yaml et CPT
+# cell-restricted). Kyverno vérifie seulement qu'il EXISTE dans le namespace (lecture resource.List).
+# Pas de limite CPU exigée (évite le throttling ; la limite mémoire suffit au budget).
+# failurePolicy Ignore : Kyverno arrêté, le quota natif refuse toujours un Pod sans requests
+# (« must specify requests » quand le quota porte requests.*) et le LimitRange applique ses défauts.
+# Tests : tests/kyverno/lab-workload-resources/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-workload-resources
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: shift-left
+  annotations:
+    platform.smadja.dev/ownership: "K-05 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-workload-resources
+    platform.smadja.dev/exceptionable: "true"
+spec:
+  validationActions: [Deny]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: true
+  autogen:
+    podControllers:
+      controllers: []
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [apps]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [deployments, statefulsets, daemonsets]
+      - apiGroups: [batch]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [jobs, cronjobs]
+  matchConditions:
+    - name: lab-perimeter
+      expression: >-
+        request.namespace.startsWith('dp-') || request.namespace.startsWith('lab-') ||
+        request.namespace.startsWith('openchoreo-')
+    - name: not-terminating
+      expression: "!has(object.metadata.deletionTimestamp)"
+  variables:
+    - name: podSpec
+      expression: >-
+        object.kind == 'CronJob' ? object.spec.jobTemplate.spec.template.spec : object.spec.template.spec
+    - name: containers
+      expression: >-
+        variables.podSpec.containers +
+        (has(variables.podSpec.initContainers) ? variables.podSpec.initContainers : [])
+    - name: quotas
+      expression: "resource.List('v1', 'resourcequotas', request.namespace)"
+  validations:
+    - expression: >-
+        variables.containers.all(c, has(c.resources) &&
+          has(c.resources.requests) && 'cpu' in c.resources.requests && 'memory' in c.resources.requests &&
+          has(c.resources.limits) && 'memory' in c.resources.limits)
+      messageExpression: >-
+        'lab-workload-resources: ' + object.kind + '/' + object.metadata.name +
+        ' : requests.cpu, requests.memory et limits.memory exigés pour : ' +
+        variables.containers.filter(c, !(has(c.resources) && has(c.resources.requests) &&
+          'cpu' in c.resources.requests && 'memory' in c.resources.requests &&
+          has(c.resources.limits) && 'memory' in c.resources.limits)).map(c, c.name).join(', ')
+      reason: Forbidden
+    - expression: >-
+        has(variables.quotas.items) && size(variables.quotas.items) > 0
+      messageExpression: >-
+        'lab-workload-resources: namespace ' + request.namespace + ' sans ResourceQuota : charge refusée'
+      reason: Forbidden

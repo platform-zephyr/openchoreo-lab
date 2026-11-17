@@ -1,0 +1,11 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-security-objects-guard-as-cluster-agent}
+policies: [../../../../platform/kyverno/policies/lab-security-objects-guard.yaml]
+resources: [../guarded.yaml]
+userinfo: user.yaml
+results:
+  # L'agent rend les objets du CPT dans dp-* : admis ; hors dp-* : refusé.
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: NetworkPolicy, operation: UPDATE, result: pass, resources: [default-deny]}
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: NetworkPolicy, operation: DELETE, result: fail, resources: [lab-default-deny]}
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: LimitRange, operation: UPDATE, result: fail, resources: [lab-defaults]}

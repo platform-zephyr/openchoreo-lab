@@ -1,0 +1,6 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: UserInfo
+metadata: {name: cluster-agent}
+userInfo:
+  username: system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane
+  groups: [system:serviceaccounts, system:authenticated]

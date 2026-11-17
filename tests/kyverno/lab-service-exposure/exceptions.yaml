@@ -1,0 +1,17 @@
+# Exception CEL nominative (un Service), conforme à K-11 (dates rendues par run.sh).
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: lab-demo-excepted-lb
+  namespace: lab-policy-exceptions
+  annotations:
+    platform.smadja.dev/reason: "essai d'un LB OCI flexible pour mesurer la latence, 1 Service"
+    platform.smadja.dev/approver: "user:default/paul"
+    platform.smadja.dev/approved-at: "@@T-1d@@"
+spec:
+  expiresAt: "@@T+30d@@"
+  policyRefs:
+    - {name: lab-service-exposure, kind: ValidatingPolicy}
+  matchConditions:
+    - name: only-this-service
+      expression: "object.metadata.namespace == 'lab-demo' && object.metadata.name == 'excepted-lb'"

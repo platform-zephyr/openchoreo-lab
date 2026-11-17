@@ -1,0 +1,93 @@
+# K-10 `lab-protect-persistent-data` — pas de suppression NON INTENTIONNELLE de données persistantes.
+# Vise : PVC (namespaces du périmètre), PV liés à un PVC du périmètre, Cluster CNPG (postgresql.cnpg.io),
+# et Namespace du périmètre QUI CONTIENT des PVC (scénarios REVIEW-PHASE-B I4 et REVIEW-PR8 P3 : prune/
+# selfHeal Argo ou uninstall qui supprime lab-pg et recrée un volume de 50 Go).
+# DELETE admis seulement si l'objet porte `platform.smadja.dev/delete-approved-until: <RFC3339 UTC>`
+# dans le FUTUR et à 24 h au plus (procédure : §4 du contrat). La validité de l'annotation À L'ÉCRITURE
+# (pas de fenêtre > 24 h préparée à l'avance, par ex. dans Git) est portée par K-12
+# lab-delete-approval-window, en Ignore : ainsi une panne Kyverno ne bloque QUE des DELETE.
+# Exemptés (conséquence d'une suppression déjà approuvée) : namespace-controller et garbage-collector
+# pour PVC/Cluster ; contrôleurs kube-system (provisionneur CSI, persistentvolume-binder) pour les PV.
+# Propriétaire : Kyverno seul (aucun équivalent natif : une VAP n'a pas d'horloge).
+# failurePolicy FAIL : Kyverno arrêté, ces DELETE sont REFUSÉS (fail-closed sur une opération destructive,
+# rare, différable). Le reste du cluster n'est pas touché : la règle ne vise QUE l'opération DELETE de
+# 4 types du périmètre (création/mise à jour jamais bloquées), et exclut les namespaces système et
+# lab-kyverno (webhook global). Break-glass : §3 du contrat.
+# Tests : tests/kyverno/lab-protect-persistent-data/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-protect-persistent-data
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: critical-kyverno
+  annotations:
+    platform.smadja.dev/ownership: "K-10 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-protect-persistent-data
+    platform.smadja.dev/exceptionable: "false"
+spec:
+  validationActions: [Deny]
+  failurePolicy: Fail
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: false
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [DELETE]
+        resources: [persistentvolumeclaims, persistentvolumes, namespaces]
+      - apiGroups: [postgresql.cnpg.io]
+        apiVersions: ["*"]
+        operations: [DELETE]
+        resources: [clusters]
+  matchConditions:
+    - name: lab-perimeter
+      expression: >-
+        (request.resource.resource == 'namespaces' ? request.name :
+          request.resource.resource == 'persistentvolumes' ?
+            oldObject.?spec.?claimRef.?namespace.orValue('') :
+          request.namespace).matches('^(dp-|lab-|openchoreo-)')
+  variables:
+    - name: obj
+      expression: "oldObject"
+    - name: ann
+      expression: "has(variables.obj.metadata.annotations) ? variables.obj.metadata.annotations : {}"
+    - name: key
+      expression: "'platform.smadja.dev/delete-approved-until'"
+    - name: hasApproval
+      expression: "variables.key in variables.ann"
+    - name: wellFormed
+      expression: >-
+        variables.hasApproval &&
+        variables.ann[variables.key].matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$')
+    - name: windowOk
+      expression: >-
+        variables.wellFormed &&
+        timestamp(variables.ann[variables.key]) > time.now() &&
+        timestamp(variables.ann[variables.key]) <= time.now() + duration('24h')
+    - name: user
+      expression: "request.userInfo.username"
+    - name: exemptActor
+      expression: >-
+        request.resource.resource == 'persistentvolumes' ?
+          variables.user.startsWith('system:serviceaccount:kube-system:') :
+          variables.user in ['system:serviceaccount:kube-system:namespace-controller',
+                             'system:serviceaccount:kube-system:generic-garbage-collector']
+    - name: nsHasPVC
+      expression: >-
+        request.resource.resource == 'namespaces' &&
+        size(resource.List('v1', 'persistentvolumeclaims', request.name).items) > 0
+  validations:
+    - expression: >-
+        variables.exemptActor ||
+        (request.resource.resource == 'namespaces' && !variables.nsHasPVC) ||
+        variables.windowOk
+      messageExpression: >-
+        'lab-protect-persistent-data: suppression de ' + request.resource.resource + ' ' +
+        (has(request.namespace) && request.namespace != '' ? request.namespace + '/' : '') + request.name +
+        ' refusée : annoter d abord platform.smadja.dev/delete-approved-until=<RFC3339 UTC, futur, <= 24 h>' +
+        (variables.hasApproval ? ' (valeur actuelle expirée, trop lointaine ou mal formée : ' + variables.ann[variables.key] + ')' : '')
+      reason: Forbidden

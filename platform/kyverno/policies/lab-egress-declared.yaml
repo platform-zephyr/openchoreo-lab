@@ -1,0 +1,51 @@
+# K-08 `lab-egress-declared` — les namespaces lab-* et openchoreo-* portent
+# `platform.smadja.dev/egress-isolated: "true"` (00-namespaces.yaml, lab-pg-namespace.yaml ; C1-FIX.md).
+# Sans ce label, l'allow-all `allow-egress-unisolated` de kube-ops neutralise le default-deny (STATE.md C1).
+# Propriétaire : Kyverno (aucune VAP ni PSA ne porte ce label). Statique : argo_guard.py S3 pour lab-pg.
+# Cellules dp-* : le CPT cell-restricted ne pose PAS encore ce label (platform/project-types, hors périmètre
+# de ce flux) ; un Deny casserait la création de cellule -> contrôle en RAPPORT (K-09 lab-egress-report)
+# jusqu'à l'ajout de la constante au CPT, puis bascule de dp-* ici (§6 du contrat).
+# failurePolicy Ignore : Kyverno arrêté, le label existant n'est pas retiré pour autant ; Argo selfHeal le remet.
+# Tests : tests/kyverno/lab-egress-declared/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-egress-declared
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: guardrail
+  annotations:
+    platform.smadja.dev/ownership: "K-08 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-egress-declared
+    platform.smadja.dev/exceptionable: "false"
+spec:
+  validationActions: [Deny]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [namespaces, namespaces/status]
+  matchConditions:
+    - name: lab-or-openchoreo
+      expression: "request.name.startsWith('lab-') || request.name.startsWith('openchoreo-')"
+    # Seule dérogation nominative : le namespace TÉMOIN non isolé de tools/oke/verify.sh (S-imds, revue m2),
+    # créé puis supprimé par le script ; il doit justement rester sans le label.
+    - name: not-verify-witness
+      expression: "request.name != 'lab-netcontrol'"
+    - name: not-terminating
+      expression: "!has(object.metadata.deletionTimestamp)"
+  validations:
+    - expression: >-
+        has(object.metadata.labels) && 'platform.smadja.dev/egress-isolated' in object.metadata.labels &&
+        object.metadata.labels['platform.smadja.dev/egress-isolated'] == 'true'
+      messageExpression: >-
+        'lab-egress-declared: namespace ' + request.name +
+        ' : label platform.smadja.dev/egress-isolated=true obligatoire (sinon l allow-all kube-ops ouvre l egress)'
+      reason: Forbidden

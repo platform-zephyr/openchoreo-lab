@@ -1,0 +1,92 @@
+# K-11 `lab-policy-exception-governance` — exceptions Kyverno bornées, justifiées, révisables, EXPIRABLES.
+# Une PolicyException (policies.kyverno.io, CEL) n'est admise que si :
+#   - elle vit dans `lab-policy-exceptions` (seul namespace lu par Kyverno : --exceptionNamespace,
+#     platform/kyverno/install/values.yaml) ;
+#   - annotations platform.smadja.dev/reason (>= 20 caractères), /approver (`user:<ns>/<nom>` ou
+#     `group:<ns>/<nom>`, même forme que appgen securityExceptions), /approved-at (RFC3339 UTC) ;
+#   - spec.expiresAt présent, dans le futur, au plus 90 jours après approved-at ; approved-at pas dans le
+#     futur (5 min de tolérance d'horloge) : la durée ne peut pas être gonflée en antidatant ;
+#   - elle ne vise que des politiques `lab-*` marquées exceptionable=true (jamais K-02, K-07..K-11) ;
+#   - elle est CIBLÉE : au moins une matchCondition (pas d'exception globale).
+# Expiration à l'exécution : Kyverno >= 1.19 ignore une exception dont expiresAt est passé (« honor expired
+# CEL PolicyExceptions », kyverno#16299) ; la règle ci-dessus empêche d'en créer une déjà expirée.
+# Propriétaire : Kyverno seul. failurePolicy FAIL : sinon une exception non gouvernée créée pendant une
+# panne s'appliquerait au redémarrage. Ne bloque que les PolicyException.
+# Tests : tests/kyverno/lab-policy-exception-governance/ (dates rendues relatives à « maintenant » par run.sh)
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-policy-exception-governance
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: critical-kyverno
+  annotations:
+    platform.smadja.dev/ownership: "K-11 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-policy-exception-governance
+    platform.smadja.dev/exceptionable: "false"
+spec:
+  validationActions: [Deny]
+  failurePolicy: Fail
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: false
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [policies.kyverno.io]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE]
+        resources: [policyexceptions]
+  variables:
+    - name: ann
+      expression: "has(object.metadata.annotations) ? object.metadata.annotations : {}"
+    - name: rfc3339
+      expression: "'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$'"
+    - name: approvedAt
+      expression: >-
+        'platform.smadja.dev/approved-at' in variables.ann &&
+        variables.ann['platform.smadja.dev/approved-at'].matches(variables.rfc3339) ?
+          variables.ann['platform.smadja.dev/approved-at'] : ''
+    - name: expiresAt
+      expression: >-
+        has(object.spec.expiresAt) && string(object.spec.expiresAt).matches(variables.rfc3339) ?
+          string(object.spec.expiresAt) : ''
+    - name: exceptionable
+      expression: >-
+        ['lab-workload-restricted', 'lab-image-digest', 'lab-service-exposure', 'lab-workload-resources',
+         'lab-cluster-scoped-provenance']
+  validations:
+    - expression: "request.namespace == 'lab-policy-exceptions'"
+      messageExpression: >-
+        'lab-policy-exception-governance: PolicyException hors de lab-policy-exceptions (' + request.namespace + ') : refusée'
+      reason: Forbidden
+    - expression: >-
+        'platform.smadja.dev/reason' in variables.ann && size(variables.ann['platform.smadja.dev/reason'].trim()) >= 20 &&
+        'platform.smadja.dev/approver' in variables.ann &&
+        variables.ann['platform.smadja.dev/approver'].matches('^(user|group):[a-z0-9-]+/[a-z0-9._-]+$') &&
+        variables.approvedAt != ''
+      message: >-
+        lab-policy-exception-governance: annotations platform.smadja.dev/reason (>= 20 car.),
+        approver (user:<ns>/<nom> ou group:<ns>/<nom>) et approved-at (RFC3339 UTC) obligatoires
+      reason: Forbidden
+    - expression: >-
+        variables.expiresAt != '' && variables.approvedAt != '' &&
+        timestamp(variables.expiresAt) > time.now() &&
+        timestamp(variables.approvedAt) <= time.now() + duration('5m') &&
+        timestamp(variables.expiresAt) > timestamp(variables.approvedAt) &&
+        timestamp(variables.expiresAt) - timestamp(variables.approvedAt) <= duration('2160h')
+      messageExpression: >-
+        'lab-policy-exception-governance: spec.expiresAt (' + variables.expiresAt + ') obligatoire, futur, et au plus 90 j après approved-at (' +
+        variables.approvedAt + ', pas dans le futur)'
+      reason: Forbidden
+    - expression: >-
+        has(object.spec.policyRefs) && size(object.spec.policyRefs) > 0 &&
+        object.spec.policyRefs.all(r, r.kind == 'ValidatingPolicy' && r.name in variables.exceptionable)
+      messageExpression: >-
+        'lab-policy-exception-governance: policyRefs limitées aux ValidatingPolicy exceptionables : ' +
+        variables.exceptionable.join(', ')
+      reason: Forbidden
+    - expression: "has(object.spec.matchConditions) && size(object.spec.matchConditions) > 0"
+      message: "lab-policy-exception-governance: au moins une matchCondition (exception ciblée, jamais globale)"
+      reason: Forbidden

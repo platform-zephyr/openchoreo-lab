@@ -1,0 +1,42 @@
+# Plateforme (lab-platform) : admis.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ok-platform-clusterrole
+  annotations: {argocd.argoproj.io/tracking-id: "lab-platform:rbac.authorization.k8s.io/ClusterRole:/ok-platform-clusterrole"}
+rules: []
+---
+# Sans marque de provenance (kubectl d'un admin) : hors règle (RBAC propriétaire).
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata: {name: skip-no-marker}
+value: 1000
+---
+# Application lab-apps (chemin applicatif) : refusé.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bad-app-crb
+  annotations: {argocd.argoproj.io/tracking-id: "lab-apps:rbac.authorization.k8s.io/ClusterRoleBinding:/bad-app-crb"}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: view}
+subjects: [{kind: ServiceAccount, name: default, namespace: dp-demo}]
+---
+# Rendu pour un composant OpenChoreo : refusé.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: bad-component-sc
+  labels: {openchoreo.dev/component: miniflux}
+provisioner: rancher.io/local-path
+---
+# Release Helm de cellule : refusée.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: widgets.example.com
+  annotations: {meta.helm.sh/release-name: podinfo, meta.helm.sh/release-namespace: dp-podinfo}
+spec:
+  group: example.com
+  names: {kind: Widget, plural: widgets}
+  scope: Namespaced
+  versions: [{name: v1, served: true, storage: true, schema: {openAPIV3Schema: {type: object}}}]

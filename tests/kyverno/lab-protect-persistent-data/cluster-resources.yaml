@@ -1,0 +1,13 @@
+# lab-pg contient un PVC, dp-stateless aucun (les Namespace eux-mêmes sont dans objects.yaml : le CLI fusionne les deux).
+apiVersion: cli.kyverno.io/v1alpha1
+kind: ClusterResource
+metadata: {name: pvcs}
+spec:
+  crds: [../cnpg-cluster-crd.yaml]   # chemin relatif au dossier du kyverno-test.yaml (as-*/)
+  resources:
+    - {apiVersion: v1, kind: Namespace, metadata: {name: dp-aiostreams}}
+    - {apiVersion: v1, kind: Namespace, metadata: {name: databases}}
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata: {name: lab-pg-1, namespace: lab-pg}
+      spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 50Gi}}}

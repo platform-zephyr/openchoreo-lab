@@ -1,0 +1,129 @@
+# Témoins pour lab-workload-restricted. Digest factice mais bien formé (64 hex).
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ok-restricted, namespace: dp-demo}
+spec:
+  selector: {matchLabels: {app: ok}}
+  template:
+    metadata: {labels: {app: ok}}
+    spec:
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: app
+          image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 128Mi}}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: {name: ok-cronjob, namespace: lab-demo}
+spec:
+  schedule: "0 3 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: job
+              image: ghcr.io/example/job@sha256:0000000000000000000000000000000000000000000000000000000000000002
+              securityContext:
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                capabilities: {drop: [ALL], add: [NET_BIND_SERVICE]}
+                seccompProfile: {type: RuntimeDefault}
+---
+# Namespace baseline (openchoreo-data-plane) : hors règle, la PSA du namespace décide.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ok-baseline-ns, namespace: openchoreo-data-plane}
+spec:
+  selector: {matchLabels: {app: b}}
+  template:
+    metadata: {labels: {app: b}}
+    spec:
+      containers:
+        - {name: app, image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000003"}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: bad-root, namespace: dp-demo}
+spec:
+  selector: {matchLabels: {app: r}}
+  template:
+    metadata: {labels: {app: r}}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 0, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: app
+          image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: bad-escalation, namespace: dp-demo}
+spec:
+  selector: {matchLabels: {app: e}}
+  template:
+    metadata: {labels: {app: e}}
+    spec:
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: app
+          image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          securityContext: {capabilities: {drop: [ALL]}}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: bad-caps, namespace: lab-demo}
+spec:
+  serviceName: s
+  selector: {matchLabels: {app: c}}
+  template:
+    metadata: {labels: {app: c}}
+    spec:
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: app
+          image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL], add: [SYS_ADMIN]}}
+---
+apiVersion: batch/v1
+kind: Job
+metadata: {name: bad-seccomp, namespace: openchoreo-control-plane}
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: Unconfined}}
+      containers:
+        - name: job
+          image: ghcr.io/example/job@sha256:0000000000000000000000000000000000000000000000000000000000000002
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata: {name: bad-hostpath-volume, namespace: lab-demo}
+spec:
+  selector: {matchLabels: {app: h}}
+  template:
+    metadata: {labels: {app: h}}
+    spec:
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: app
+          image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+      volumes:
+        - {name: h, hostPath: {path: /var/run}}
+---
+# Hors périmètre (namespace kube-ops) : jamais évalué.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: skip-out-of-perimeter, namespace: monitoring}
+spec:
+  selector: {matchLabels: {app: o}}
+  template:
+    metadata: {labels: {app: o}}
+    spec:
+      containers: [{name: app, image: "nginx:latest"}]

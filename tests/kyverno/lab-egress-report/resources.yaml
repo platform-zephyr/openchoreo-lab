@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Namespace
+metadata: {name: dp-cell-ok, labels: {platform.smadja.dev/egress-isolated: "true"}}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: dp-cell-unlabelled}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ok-with-default-deny, namespace: dp-cell-ok}
+spec:
+  selector: {matchLabels: {app: ok}}
+  template:
+    metadata: {labels: {app: ok}}
+    spec: {containers: [{name: app, image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: bad-no-egress-policy, namespace: lab-open}
+spec:
+  selector: {matchLabels: {app: o}}
+  template:
+    metadata: {labels: {app: o}}
+    spec: {containers: [{name: app, image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"}]}
+---
+# Une NP Egress qui ne sélectionne qu'une partie des pods ne vaut pas default-deny.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: bad-partial-egress-policy, namespace: lab-partial}
+spec:
+  selector: {matchLabels: {app: p}}
+  template:
+    metadata: {labels: {app: p}}
+    spec: {containers: [{name: app, image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"}]}

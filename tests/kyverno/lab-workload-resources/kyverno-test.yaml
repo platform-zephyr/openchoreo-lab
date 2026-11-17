@@ -1,0 +1,17 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-workload-resources}
+policies: [../../../platform/kyverno/policies/lab-workload-resources.yaml]
+resources: [resources.yaml]
+clusterResources: [cluster-resources.yaml]
+results:
+  - policy: lab-workload-resources
+    isValidatingPolicy: true
+    resources: [ok-resources]
+    kind: Deployment
+    result: pass
+  - policy: lab-workload-resources
+    isValidatingPolicy: true
+    resources: [bad-no-requests, bad-init-no-limit, bad-no-quota]
+    kind: Deployment
+    result: fail
