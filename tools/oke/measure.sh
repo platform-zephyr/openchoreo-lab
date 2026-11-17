@@ -16,20 +16,19 @@ out="$STATE_DIR/measure-$(date -u +%Y%m%dT%H%M%SZ)-$label.txt"
   echo "# $(date -u +%FT%TZ) OKE oracle-a1 libellé=$label"
   kubectl get nodes -o json | jq -r '.items[0] | "nœud allocatable cpu=\(.status.allocatable.cpu) mem=\(.status.allocatable.memory) pods=\(.status.allocatable.pods)"'
   echo "-- usage par namespace (cpu m, mem Mi ; API summary du kubelet, instantané)"
-  usage_by_ns
+  usage_by_ns || echo "MEASUREMENT_UNAVAILABLE (usage kubelet)"
   echo "-- requests par namespace (cpu m, mem Mi)"
   requests_by_ns
   if kubectl top nodes >/dev/null 2>&1; then
     echo "-- kubectl top"; kubectl top nodes; kubectl top pods -A --no-headers | sort
   fi
   echo "-- pile de l'essai ($STACK_NS_RE)"
-  read -r cpu mem < <(stack_usage)
+  if su="$(stack_usage)"; then read -r cpu mem <<<"$su"; else cpu=UNAVAILABLE mem=UNAVAILABLE; fi
   read -r rcpu rmem < <(requests_by_ns | awk -v re="$STACK_NS_RE" '$1 ~ re {c+=$2; m+=$3} END {printf "%d %d\n", c, m}')
   echo "usage=${cpu}m/${mem}Mi requests=${rcpu}m/${rmem}Mi budget-usage=${BUDGET_CPU_M}m/${BUDGET_MEM_MI}Mi"
   echo "référence k3d (tests/k3d/RESULTS.md) : CP+DP usage 30-60m/480Mi, requests 850m/1088Mi (avant réduction)"
 } | tee "$out"
-read -r cpu mem < <(stack_usage)
-if (( mem > BUDGET_MEM_MI || cpu > BUDGET_CPU_M )); then
-  log "BUDGET DÉPASSÉ (${cpu}m/${mem}Mi) : arrêt et rapport (missions/MISSION.md)"; exit 3
-fi
-log "dans le budget (${cpu}m/${mem}Mi) ; fichier : $out"
+# Conclusion : trois échantillons (budget_gate : valeurs individuelles, moyenne, MAX comparé au budget) puis
+# capacité de tous les pods face à l'allocatable (seuil 70 %). MEASUREMENT_UNAVAILABLE => code 4, jamais PASS.
+APPLY=1 budget_gate "$label"
+log "budget et capacité respectés ; fichier : $out"
