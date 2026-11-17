@@ -1,0 +1,12 @@
+### 2026-11-17T19:22:28Z run 2 (k3d), après le commit « whoami: v1.11.0 (digest) » (appgen render supprime l'ancien fichier de release)
+sync=OutOfSync rev=db2396cdceb4fb10447dee74df5a87d4b89c5bbb op=Succeeded
+Component/whoami Synced requiresPruning=
+ComponentRelease/whoami-024137137b Synced requiresPruning=
+ComponentRelease/whoami-31985273d8 OutOfSync requiresPruning=true
+Project/whoami Synced requiresPruning=
+ProjectReleaseBinding/whoami-production Synced requiresPruning=
+ReleaseBinding/whoami-production Synced requiresPruning=
+Workload/whoami-workload Synced requiresPruning=
+whoami-024137137b Prune=false,Delete=false
+whoami-31985273d8 Prune=false,Delete=false
+RB.releaseName=whoami-024137137b

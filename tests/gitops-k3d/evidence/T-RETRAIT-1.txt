@@ -1,0 +1,23 @@
+### 2026-11-17T20:12:51Z run 4 : commit c085b32 « whoami: retrait » poussé à ~20:06:25Z (refresh forcé), état 7 min après
+OutOfSync rev=c085b32b340dd54595e33736c2aef460fafa6c77
+[{"lastTransitionTime":"2026-11-17T20:02:16Z","message":"Application has 2 orphaned resources","type":"OrphanedResourceWarning"},{"lastTransitionTime":"2026-11-17T20:06:26Z","message":"Skipping sync attempt to [c085b32b340dd54595e33736c2aef460fafa6c77]: auto-sync will wipe out all resources","type":"SyncError"}]
+NAME                            AGE
+project.openchoreo.dev/whoami   17m
+
+NAME                              PROJECT   COMPONENTTYPE                   AGE
+component.openchoreo.dev/whoami   whoami    deployment/service-restricted   17m
+
+NAME                                                PROJECT   COMPONENT   AGE
+componentrelease.openchoreo.dev/whoami-024137137b   whoami    whoami      12m
+componentrelease.openchoreo.dev/whoami-31985273d8   whoami    whoami      17m
+componentrelease.openchoreo.dev/whoami-e084f63365   whoami    whoami      10m
+
+NAME                                      PROJECT   COMPONENT   AGE
+workload.openchoreo.dev/whoami-workload   whoami    whoami      17m
+
+NAME                                              PROJECT   COMPONENT   ENVIRONMENT   AGE
+releasebinding.openchoreo.dev/whoami-production   whoami    whoami      production    17m
+
+NAME                                                     PROJECT   ENVIRONMENT   RELEASE             READY   AGE
+projectreleasebinding.openchoreo.dev/whoami-production   whoami    production    whoami-7c4886dc7d   True    17m
+dp-gl-oc-whoami-production-925e72bb        Active   17m

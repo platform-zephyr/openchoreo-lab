@@ -1,0 +1,14 @@
+### 2026-11-17T19:54:36Z $ k -n argocd get pods -o wide
+NAME                                 READY   STATUS      RESTARTS   AGE   IP            NODE                      NOMINATED NODE   READINESS GATES
+argocd-application-controller-0      1/1     Running     0          17s   10.42.0.154   k3d-openchoreo-server-0   <none>           <none>
+argocd-redis-77754886f5-56x66        1/1     Running     0          17s   10.42.0.155   k3d-openchoreo-server-0   <none>           <none>
+argocd-redis-secret-init-hp5wt       0/1     Completed   0          24s   10.42.0.152   k3d-openchoreo-server-0   <none>           <none>
+argocd-repo-server-d6764b499-cz4lr   2/2     Running     0          17s   10.42.0.156   k3d-openchoreo-server-0   <none>           <none>
+argocd-server-7b4898bcb-4dwgq        1/1     Running     0          17s   10.42.0.153   k3d-openchoreo-server-0   <none>           <none>
+
+### 2026-11-17T19:54:36Z $ k get ns argocd gl-oc gl-git --show-labels
+NAME     STATUS   AGE   LABELS
+argocd   Active   28s   app.kubernetes.io/part-of=gl-gitops-k3d,kubernetes.io/metadata.name=argocd,pod-security.kubernetes.io/audit=restricted,pod-security.kubernetes.io/enforce-version=latest,pod-security.kubernetes.io/enforce=restricted,pod-security.kubernetes.io/warn=restricted
+gl-oc    Active   28s   app.kubernetes.io/part-of=gl-gitops-k3d,kubernetes.io/metadata.name=gl-oc,openchoreo.dev/control-plane=true,pod-security.kubernetes.io/enforce-version=latest,pod-security.kubernetes.io/enforce=restricted
+gl-git   Active   28s   app.kubernetes.io/part-of=gl-gitops-k3d,kubernetes.io/metadata.name=gl-git,pod-security.kubernetes.io/enforce-version=latest,pod-security.kubernetes.io/enforce=restricted
+

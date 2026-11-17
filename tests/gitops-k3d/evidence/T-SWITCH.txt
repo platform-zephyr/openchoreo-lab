@@ -1,0 +1,4 @@
+### 2026-11-17T19:55:36Z
+avant : Component/whoami=3 Workload/whoami-workload=1 ReleaseBinding/whoami-production=1 ComponentRelease/whoami-31985273d8=1 Project/whoami=1 
+après : Component/whoami=3 Workload/whoami-workload=1 ReleaseBinding/whoami-production=1 ComponentRelease/whoami-31985273d8=1 Project/whoami=1 
+

@@ -1,0 +1,25 @@
+# AppProject `gl` : calque de platform/install/argocd/project-lab.yaml, destinations gl-oc au lieu de default
+# et sans lab-pg (hors périmètre de l'essai). Liste FERMÉE de kinds ; jamais de destination dp-*.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: gl
+  namespace: argocd
+spec:
+  description: Preuve GitOps k3d (jetable)
+  sourceRepos:
+    - https://github.com/platform-zephyr/openchoreo-lab
+    - git://gl-git.gl-git.svc.cluster.local:9418/gl-repo.git
+  destinations:
+    - {server: https://kubernetes.default.svc, namespace: gl-oc}
+  clusterResourceWhitelist:
+    - {group: openchoreo.dev, kind: ClusterComponentType}
+    - {group: openchoreo.dev, kind: ClusterProjectType}
+    - {group: openchoreo.dev, kind: ClusterResourceType}
+    - {group: openchoreo.dev, kind: ClusterTrait}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding}
+  namespaceResourceWhitelist:
+    - {group: openchoreo.dev, kind: "*"}
+  orphanedResources:
+    warn: true

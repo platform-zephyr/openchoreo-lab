@@ -1,0 +1,40 @@
+### 2026-11-17T19:57:55Z $ k get ns dp-gl-oc-whoami-production-925e72bb --show-labels
+NAME                                  STATUS   AGE     LABELS
+dp-gl-oc-whoami-production-925e72bb   Active   2m49s   kubernetes.io/metadata.name=dp-gl-oc-whoami-production-925e72bb,openchoreo.dev/environment-uid=8425bcdf-6de3-426b-bc8b-afbee25155f8,openchoreo.dev/environment=production,openchoreo.dev/managed-by=renderedrelease-controller,openchoreo.dev/namespace=gl-oc,openchoreo.dev/project-uid=065fc2ac-9ae8-45e5-be32-2c5f796aba36,openchoreo.dev/project=whoami,openchoreo.dev/rendered-release-name=p-whoami-production-1c6f94aa,openchoreo.dev/rendered-release-namespace=gl-oc,openchoreo.dev/rendered-release-resource-id=cell-namespace,openchoreo.dev/rendered-release-uid=c4eda6b3-cab9-4e19-9bc9-1dd4426fdf1e,platform.smadja.dev/cell=restricted,platform.smadja.dev/pg-client=false,pod-security.kubernetes.io/audit=restricted,pod-security.kubernetes.io/enforce-version=latest,pod-security.kubernetes.io/enforce=restricted,pod-security.kubernetes.io/warn=restricted
+
+### 2026-11-17T19:57:55Z $ k -n dp-gl-oc-whoami-production-925e72bb get deploy,pod,svc,netpol,httproute,resourcequota -o wide
+NAME                                         READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                                           SELECTOR
+deployment.apps/whoami-production-58d1cedc   1/1     1            1           7s    main         traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c   openchoreo.dev/component=whoami,openchoreo.dev/component-uid=45ed82ac-e982-4f3c-ac25-93f3e19b9b40,openchoreo.dev/environment=production,openchoreo.dev/environment-uid=8425bcdf-6de3-426b-bc8b-afbee25155f8,openchoreo.dev/namespace=gl-oc,openchoreo.dev/project=whoami,openchoreo.dev/project-uid=065fc2ac-9ae8-45e5-be32-2c5f796aba36
+
+NAME                                             READY   STATUS    RESTARTS   AGE   IP            NODE                      NOMINATED NODE   READINESS GATES
+pod/whoami-production-58d1cedc-8bfbdc965-l8lmh   1/1     Running   0          8s    10.42.0.158   k3d-openchoreo-server-0   <none>           <none>
+
+NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+service/whoami   ClusterIP   10.43.103.120   <none>        8080/TCP   8s    openchoreo.dev/component-uid=45ed82ac-e982-4f3c-ac25-93f3e19b9b40,openchoreo.dev/component=whoami,openchoreo.dev/environment-uid=8425bcdf-6de3-426b-bc8b-afbee25155f8,openchoreo.dev/environment=production,openchoreo.dev/namespace=gl-oc,openchoreo.dev/project-uid=065fc2ac-9ae8-45e5-be32-2c5f796aba36,openchoreo.dev/project=whoami
+
+NAME                                                 POD-SELECTOR                                                                                                                                                                                                                                                                                                                               AGE
+networkpolicy.networking.k8s.io/allow-dns-and-cell   <none>                                                                                                                                                                                                                                                                                                                                     2m50s
+networkpolicy.networking.k8s.io/default-deny         <none>                                                                                                                                                                                                                                                                                                                                     2m50s
+networkpolicy.networking.k8s.io/openchoreo-whoami    openchoreo.dev/component=whoami,openchoreo.dev/component-uid=45ed82ac-e982-4f3c-ac25-93f3e19b9b40,openchoreo.dev/environment=production,openchoreo.dev/environment-uid=8425bcdf-6de3-426b-bc8b-afbee25155f8,openchoreo.dev/namespace=gl-oc,openchoreo.dev/project=whoami,openchoreo.dev/project-uid=065fc2ac-9ae8-45e5-be32-2c5f796aba36   8s
+
+NAME                                                                HOSTNAMES                                 AGE
+httproute.gateway.networking.k8s.io/whoami-http-internal-f4137f5b   ["production-gl-oc.internal.localhost"]   8s
+
+NAME                       REQUEST                                                                                                                                   LIMIT   AGE
+resourcequota/cell-quota   persistentvolumeclaims: 0/0, requests.cpu: 50m/300m, requests.memory: 128Mi/512Mi, services.loadbalancers: 0/0, services.nodeports: 0/0           2m50s
+
+### 2026-11-17T19:57:56Z $ k -n dp-gl-oc-whoami-production-925e72bb get pod -l openchoreo.dev/component=whoami -o jsonpath={.items[0].spec.securityContext}{"\n"}{.items[0].spec.containers[0].securityContext}{"\n"}
+{"fsGroup":65532,"runAsGroup":65532,"runAsNonRoot":true,"runAsUser":65532,"seccompProfile":{"type":"RuntimeDefault"}}
+{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"privileged":false,"readOnlyRootFilesystem":true}
+
+### 2026-11-17T19:57:56Z $ k -n argocd get app gl-apps gl-platform
+NAME          SYNC STATUS   HEALTH STATUS
+gl-apps       Synced        Healthy
+gl-platform   Synced        Healthy
+
+### 2026-11-17T19:57:57Z
+commit bca705ea65fc0172a018bad270f44b63e9b26f67 ; Git->Argo gl-platform 103s ; Argo->pod prêt 36s ; total commit->pod 139s ; HTTP via gateway (Host production-gl-oc.internal.localhost) = 200
+
+### 2026-11-17T19:58:01Z
+sonde gl-git -> whoami.dp-gl-oc-whoami-production-925e72bb:8080 : BLOCKED
+

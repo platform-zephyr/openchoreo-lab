@@ -1,0 +1,27 @@
+### 2026-11-17T19:09:16Z run 1 (k3d), commit f7df927 « whoami: size medium, replicas 2 » appliqué par Argo (Synced)
+Project.spec.parameters={"allowIdp":false,"database":false,"egress":"none","quota":{"cpu":"400m","memory":"512Mi","pvcs":"0"}}
+Project.status.latestRelease=whoami-689fcf7d7b
+PRB.spec.projectRelease=whoami-78b6fd459f
+NAME                PROJECT   AGE
+whoami-689fcf7d7b   whoami    3m13s
+whoami-78b6fd459f   whoami    13m
+Resource                Used   Hard
+--------                ----   ----
+persistentvolumeclaims  0      0
+requests.cpu            250m   300m
+requests.memory         384Mi  512Mi
+services.loadbalancers  0      0
+services.nodeports      0      0
+NAME                                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/whoami-production-58d1cedc   2/2     1            2           7m55s
+
+NAME                                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/whoami-production-58d1cedc-586bffd754   2         1         1       3m13s
+replicaset.apps/whoami-production-58d1cedc-7c598b5fb    1         1         1       7m55s
+
+NAME                                              READY   STATUS    RESTARTS   AGE
+pod/whoami-production-58d1cedc-586bffd754-qhx2f   1/1     Running   0          3m13s
+pod/whoami-production-58d1cedc-7c598b5fb-wvmgs    1/1     Running   0          7m55s
+3m11s       Warning   FailedCreate   replicaset/whoami-production-58d1cedc-586bffd754   Error creating: pods "whoami-production-58d1cedc-586bffd754-tt4m8" is forbidden: exceeded quota: cell-quota, requested: requests.cpu=200m,requests.memory=256Mi, used: reque
+110s        Warning   FailedCreate   replicaset/whoami-production-58d1cedc-586bffd754   (combined from similar events): Error creating: pods "whoami-production-58d1cedc-586bffd754-l4m6c" is forbidden: exceeded quota: cell-quota, requested: requests.cpu=200m,re
+Argo gl-apps: Synced Healthy
