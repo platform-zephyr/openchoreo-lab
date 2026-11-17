@@ -1,0 +1,113 @@
+# I02 — SANS NŒUD : helm upgrade --install des étapes 3-5 (mêmes tgz, values, namespaces ; sans --wait)
+# date : 2026-11-17T20:29:28Z
+$ bash -c 
+      helm upgrade --install cert-manager '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/cert-manager-v1.19.4.tgz' -n openchoreo-cert-manager -f '/Users/<user>/Developer/Perso/openchoreo-lab/platform/install/values/cert-manager.yaml' &&
+      helm upgrade --install external-secrets '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/external-secrets-2.0.1.tgz' -n openchoreo-external-secrets -f '/Users/<user>/Developer/Perso/openchoreo-lab/platform/install/values/external-secrets.yaml' &&
+      kubectl apply --server-side --field-manager=openchoreo-lab -f '/Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/20-eso-lab-store.yaml' &&
+      helm upgrade --install kgateway-crds '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/kgateway-crds-v2.3.11.tgz' -n openchoreo-control-plane &&
+      helm upgrade --install kgateway '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/kgateway-v2.3.11.tgz' -n openchoreo-control-plane -f '/Users/<user>/Developer/Perso/openchoreo-lab/platform/install/values/kgateway.yaml'
+Release "cert-manager" does not exist. Installing it now.
+NAME: cert-manager
+LAST DEPLOYED: Tue Nov 17 21:29:23 2026
+NAMESPACE: openchoreo-cert-manager
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+⚠️  WARNING: New default private key rotation policy for Certificate resources.
+The default private key rotation policy for Certificate resources was
+changed to `Always` in cert-manager >= v1.18.0.
+Learn more in the [1.18 release notes](https://cert-manager.io/docs/releases/release-notes/release-notes-1.18).
+
+cert-manager v1.19.4 has been deployed successfully!
+
+In order to begin issuing certificates, you will need to set up a ClusterIssuer
+or Issuer resource (for example, by creating a 'letsencrypt-staging' issuer).
+
+More information on the different types of issuers and how to configure them
+can be found in our documentation:
+
+https://cert-manager.io/docs/configuration/
+
+For information on how to configure cert-manager to automatically provision
+Certificates for Ingress resources, take a look at the `ingress-shim`
+documentation:
+
+https://cert-manager.io/docs/usage/ingress/
+Release "external-secrets" does not exist. Installing it now.
+NAME: external-secrets
+LAST DEPLOYED: Tue Nov 17 21:29:24 2026
+NAMESPACE: openchoreo-external-secrets
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+external-secrets has been deployed successfully in namespace openchoreo-external-secrets!
+
+In order to begin using ExternalSecrets, you will need to set up a SecretStore
+or ClusterSecretStore resource (for example, by creating a 'vault' SecretStore).
+
+More information on the different types of SecretStores and how to configure them
+can be found in our Github: https://github.com/external-secrets/external-secrets
+serviceaccount/eso-lab-store serverside-applied
+role.rbac.authorization.k8s.io/eso-lab-store serverside-applied
+rolebinding.rbac.authorization.k8s.io/eso-lab-store serverside-applied
+clustersecretstore.external-secrets.io/lab-store serverside-applied
+Release "kgateway-crds" does not exist. Installing it now.
+NAME: kgateway-crds
+LAST DEPLOYED: Tue Nov 17 21:29:27 2026
+NAMESPACE: openchoreo-control-plane
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+Thank you for installing the kgateway-crds chart.
+
+This chart installs the Custom Resource Definitions (CRDs) required by kgateway.
+
+To verify that the CRDs have been installed:
+
+  kubectl get crds | grep 'kgateway'
+
+To uninstall the CRDs:
+
+  helm uninstall kgateway-crds --namespace openchoreo-control-plane
+
+Note: The above command will remove the Custom Resource Definitions (CRDs) installed by this chart.
+
+To learn how to access and use kgateway, please visit the official documentation:
+
+  https://kgateway.dev/docs/about/custom-resources/#kgateway
+Release "kgateway" does not exist. Installing it now.
+NAME: kgateway
+LAST DEPLOYED: Tue Nov 17 21:29:28 2026
+NAMESPACE: openchoreo-control-plane
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+Thank you for installing the kgateway chart.
+
+Your release "kgateway" has been deployed in the "openchoreo-control-plane" namespace.
+
+To check the status of the deployment:
+
+  helm status kgateway --namespace openchoreo-control-plane
+
+To view the resources created by this chart:
+
+  kubectl get all -n openchoreo-control-plane
+
+To learn how to access and use kgateway, please visit the official documentation:
+
+  https://kgateway.dev/docs/
+
+To uninstall the kgateway deployment:
+
+  helm uninstall kgateway --namespace openchoreo-control-plane
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && crd_has certificates.cert-manager.io && crd_has externalsecrets.external-secrets.io && crd_has trafficpolicies.gateway.kgateway.dev)

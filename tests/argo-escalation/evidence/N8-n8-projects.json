@@ -1,0 +1,216 @@
+{
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Application",
+    "metadata": {
+        "annotations": {
+            "argocd.argoproj.io/tracking-id": "lab-root:argoproj.io/Application:lab-argocd/n8-projects"
+        },
+        "creationTimestamp": "2026-11-17T20:25:27Z",
+        "generation": 17,
+        "name": "n8-projects",
+        "namespace": "lab-argocd",
+        "resourceVersion": "2002",
+        "uid": "39d66471-e19c-4337-9e37-3c906cd0e285"
+    },
+    "operation": {
+        "initiatedBy": {
+            "automated": true
+        },
+        "retry": {
+            "limit": 5
+        },
+        "sync": {
+            "revision": "7394388f8331a880490ff1ca7934600f0da0306c",
+            "source": {
+                "directory": {
+                    "include": "project-*.yaml"
+                },
+                "path": "platform/install/argocd",
+                "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                "targetRevision": "main"
+            }
+        }
+    },
+    "spec": {
+        "destination": {
+            "namespace": "default",
+            "server": "https://kubernetes.default.svc"
+        },
+        "project": "lab-apps",
+        "source": {
+            "directory": {
+                "include": "project-*.yaml"
+            },
+            "path": "platform/install/argocd",
+            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+            "targetRevision": "main"
+        },
+        "syncPolicy": {
+            "automated": {
+                "prune": false,
+                "selfHeal": true
+            }
+        }
+    },
+    "status": {
+        "controllerNamespace": "lab-argocd",
+        "health": {
+            "lastTransitionTime": "2026-11-17T20:25:27Z",
+            "status": "Missing"
+        },
+        "operationState": {
+            "finishedAt": "2026-11-17T20:27:57Z",
+            "message": "one or more synchronization tasks are not valid: resource argoproj.io:AppProject is not permitted in project lab-apps. Retrying attempt #5 at 8:29PM.",
+            "operation": {
+                "initiatedBy": {
+                    "automated": true
+                },
+                "retry": {
+                    "limit": 5
+                },
+                "sync": {
+                    "revision": "7394388f8331a880490ff1ca7934600f0da0306c",
+                    "source": {
+                        "directory": {
+                            "include": "project-*.yaml"
+                        },
+                        "path": "platform/install/argocd",
+                        "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                        "targetRevision": "main"
+                    }
+                }
+            },
+            "phase": "Running",
+            "retryCount": 5,
+            "startedAt": "2026-11-17T20:25:27Z",
+            "syncResult": {
+                "resources": [
+                    {
+                        "group": "argoproj.io",
+                        "kind": "AppProject",
+                        "message": "resource argoproj.io:AppProject is not permitted in project lab-apps",
+                        "name": "default",
+                        "namespace": "lab-argocd",
+                        "status": "SyncFailed",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "kind": "AppProject",
+                        "message": "resource argoproj.io:AppProject is not permitted in project lab-apps",
+                        "name": "lab-platform",
+                        "namespace": "lab-argocd",
+                        "status": "SyncFailed",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "kind": "AppProject",
+                        "message": "resource argoproj.io:AppProject is not permitted in project lab-apps",
+                        "name": "lab-apps",
+                        "namespace": "lab-argocd",
+                        "status": "SyncFailed",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "kind": "AppProject",
+                        "message": "resource argoproj.io:AppProject is not permitted in project lab-apps",
+                        "name": "lab-authz",
+                        "namespace": "lab-argocd",
+                        "status": "SyncFailed",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "kind": "AppProject",
+                        "message": "resource argoproj.io:AppProject is not permitted in project lab-apps",
+                        "name": "lab-root",
+                        "namespace": "lab-argocd",
+                        "status": "SyncFailed",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    }
+                ],
+                "revision": "7394388f8331a880490ff1ca7934600f0da0306c",
+                "source": {
+                    "directory": {
+                        "include": "project-*.yaml"
+                    },
+                    "path": "platform/install/argocd",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            }
+        },
+        "reconciledAt": "2026-11-17T20:27:57Z",
+        "resourceHealthSource": "appTree",
+        "resources": [
+            {
+                "group": "argoproj.io",
+                "kind": "AppProject",
+                "name": "default",
+                "namespace": "lab-argocd",
+                "status": "Unknown",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "argoproj.io",
+                "kind": "AppProject",
+                "name": "lab-apps",
+                "namespace": "lab-argocd",
+                "status": "Unknown",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "argoproj.io",
+                "kind": "AppProject",
+                "name": "lab-authz",
+                "namespace": "lab-argocd",
+                "status": "Unknown",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "argoproj.io",
+                "kind": "AppProject",
+                "name": "lab-platform",
+                "namespace": "lab-argocd",
+                "status": "Unknown",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "argoproj.io",
+                "kind": "AppProject",
+                "name": "lab-root",
+                "namespace": "lab-argocd",
+                "status": "Unknown",
+                "version": "v1alpha1"
+            }
+        ],
+        "sourceHydrator": {},
+        "sourceType": "Directory",
+        "summary": {},
+        "sync": {
+            "comparedTo": {
+                "destination": {
+                    "namespace": "default",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "source": {
+                    "directory": {
+                        "include": "project-*.yaml"
+                    },
+                    "path": "platform/install/argocd",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            },
+            "revision": "7394388f8331a880490ff1ca7934600f0da0306c",
+            "status": "OutOfSync"
+        }
+    }
+}

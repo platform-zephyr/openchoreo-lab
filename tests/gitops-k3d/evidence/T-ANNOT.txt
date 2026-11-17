@@ -1,0 +1,4 @@
+### 2026-11-17T20:00:24Z $ k -n gl-oc get component,componentrelease -o jsonpath={range .items[*]}{.kind}/{.metadata.name} {.metadata.annotations.argocd\.argoproj\.io/sync-options}{"\n"}{end}
+Component/whoami Prune=false
+ComponentRelease/whoami-31985273d8 Prune=false,Delete=false
+

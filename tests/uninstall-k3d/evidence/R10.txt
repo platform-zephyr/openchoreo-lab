@@ -1,0 +1,12 @@
+# R10 — --step 10 --apply
+# date : 2026-11-17T20:30:38Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 10 --apply
+20:30:37Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:30:37Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/data/lab-pg-cluster.yaml --wait=true
+error: resource mapping not found for name: "lab-pg" namespace: "lab-pg" from "/Users/<user>/Developer/Perso/openchoreo-lab/platform/data/lab-pg-cluster.yaml": no matches for kind "Cluster" in version "postgresql.cnpg.io/v1"
+ensure CRDs are installed first
+20:30:37Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
+20:30:37Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/51-lab-pg-oke-overlay.yaml
+20:30:38Z release lab-cnpg/cnpg absente
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]])

@@ -1,0 +1,11 @@
+# Security bundle épinglé (privé, temporaire) : docs/SECURITY-BUNDLE.md. Sourcé par tools/oke/security-bundle.sh.
+# Changer de bundle = PR qui modifie ce fichier. Archive vérifiée par sha256 AVANT toute utilisation.
+# shellcheck disable=SC2034
+BUNDLE_VERSION="1.0.1"
+BUNDLE_SHA256="bec1e378ea0dea96fb0fee462f909019f023f04a2fe249ac8144f9de5c88b8fd"
+BUNDLE_REPO="platform-zephyr/openchoreo-lab-security"
+BUNDLE_TAG="bundle-v1.0.1"
+BUNDLE_ASSET="security-bundle-1.0.1.tar.gz"
+BUNDLE_CP_CHART_VERSION="1.3.3"
+BUNDLE_DP_CHART_VERSION="1.3.3"
+BUNDLE_CONTROLLER_IMAGE="ghcr.io/platform-zephyr/openchoreo-lab-security/controller:v1.3.3-seca1@sha256:0658ffc370bdd5cbe64b9c186305e7a549fb0d2e01199de374a2c1e6f51a4acb"

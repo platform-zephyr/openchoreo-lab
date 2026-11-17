@@ -1,0 +1,6 @@
+# V1-A02 — app ConfigMap kube-system (hors de sa cellule)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:16Z
+$ kubectl --as=system:serviceaccount:dp-vap-app:app --as-group=system:serviceaccounts --as-group=system:serviceaccounts:dp-vap-app --as-group=system:authenticated -n kube-system create configmap x --dry-run=server
+configmap/x created (server dry run)
+# rc=0 verdict=FAIL

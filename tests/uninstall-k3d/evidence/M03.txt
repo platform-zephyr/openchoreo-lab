@@ -1,0 +1,8 @@
+# M03 — cnpg-system avec un PVC
+# date : 2026-11-17T20:29:55Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --migrate-cnpg-system --apply
+20:29:52Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+20:29:55Z ABANDON : cnpg-system contient des objets hors essai : PersistentVolumeClaim/p  ; NON supprimé
+# rc=2
+# verdict : PASS ([[ $LAST_RC != 0 ]] && ns_has cnpg-system && kubectl -n cnpg-system get pvc p >/dev/null)

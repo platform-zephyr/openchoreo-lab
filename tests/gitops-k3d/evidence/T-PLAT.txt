@@ -1,0 +1,14 @@
+### 2026-11-17T19:55:04Z $ k -n argocd get app gl-platform -o jsonpath={.status.sync.status} {.status.health.status} {.status.sync.revision}{"\n"}{range .status.resources[*]}{.kind}/{.namespace}/{.name} {.status}{"\n"}{end}
+Synced Healthy d4297af125aaf9cf441a68eac1f9576e96ca25b7
+ValidatingAdmissionPolicy//lab-cell-pod-hardening Synced
+ValidatingAdmissionPolicy//lab-cluster-agent-scope Synced
+ValidatingAdmissionPolicyBinding//lab-cell-pod-hardening Synced
+ValidatingAdmissionPolicyBinding//lab-cluster-agent-scope Synced
+ClusterComponentType//service-restricted Synced
+ClusterProjectType//cell-restricted Synced
+ClusterResourceType//cnpg-lab-db Synced
+ClusterTrait//health-probes Synced
+ClusterTrait//persistent-volume-claim Synced
+DeploymentPipeline/gl-oc/standard Synced
+Environment/gl-oc/production Synced
+

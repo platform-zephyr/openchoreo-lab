@@ -1,0 +1,19 @@
+# R11 — --step 11 --apply
+# date : 2026-11-17T20:30:31Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 11 --apply
+20:30:28Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:30:28Z + kubectl delete --ignore-not-found -n lab-argocd applications.argoproj.io lab-root lab-platform lab-authz
+application.argoproj.io "lab-platform" deleted from lab-argocd namespace
+20:30:29Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/argocd/project-lab.yaml
+20:30:29Z + helm -n lab-argocd uninstall argocd --wait
+These resources were kept due to the resource policy:
+[CustomResourceDefinition] applications.argoproj.io
+[CustomResourceDefinition] applicationsets.argoproj.io
+[CustomResourceDefinition] appprojects.argoproj.io
+
+release "argocd" uninstalled
+20:30:31Z CRD de argo-cd conservées (--delete-crds absent)
+# rc=0
+R11 lab-probe-finalizer deletionTimestamp=- finalizers=["resources-finalizer.argocd.argoproj.io"]
+R11 objets laissés dans lab-argocd : serviceaccount/default configmap/kube-root-ca.crt 
+# verdict : PASS ([[ $LAST_RC == 0 ]] && ! helm -n lab-argocd status argocd >/dev/null 2>&1 && crd_has applications.argoproj.io)

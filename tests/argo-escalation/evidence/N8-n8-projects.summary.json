@@ -1,0 +1,52 @@
+{
+  "name": "n8-projects",
+  "project": "lab-apps",
+  "sync": "OutOfSync",
+  "health": "Missing",
+  "conditions": [],
+  "operation": {
+    "phase": "Running",
+    "revision": "7394388f8331a880490ff1ca7934600f0da0306c",
+    "initiatedBy": {
+      "automated": true
+    },
+    "message": "one or more synchronization tasks are not valid: resource argoproj.io:AppProject is not permitted in project lab-apps. Retrying attempt #5 at 8:29PM."
+  },
+  "refused": [
+    {
+      "kind": "AppProject",
+      "namespace": "lab-argocd",
+      "name": "default",
+      "status": "SyncFailed",
+      "message": "resource argoproj.io:AppProject is not permitted in project lab-apps"
+    },
+    {
+      "kind": "AppProject",
+      "namespace": "lab-argocd",
+      "name": "lab-platform",
+      "status": "SyncFailed",
+      "message": "resource argoproj.io:AppProject is not permitted in project lab-apps"
+    },
+    {
+      "kind": "AppProject",
+      "namespace": "lab-argocd",
+      "name": "lab-apps",
+      "status": "SyncFailed",
+      "message": "resource argoproj.io:AppProject is not permitted in project lab-apps"
+    },
+    {
+      "kind": "AppProject",
+      "namespace": "lab-argocd",
+      "name": "lab-authz",
+      "status": "SyncFailed",
+      "message": "resource argoproj.io:AppProject is not permitted in project lab-apps"
+    },
+    {
+      "kind": "AppProject",
+      "namespace": "lab-argocd",
+      "name": "lab-root",
+      "status": "SyncFailed",
+      "message": "resource argoproj.io:AppProject is not permitted in project lab-apps"
+    }
+  ]
+}

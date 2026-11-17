@@ -1,0 +1,10 @@
+# M08 — release retirée : migration
+# date : 2026-11-17T20:30:27Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --migrate-cnpg-system --apply
+20:30:15Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+20:30:18Z cnpg-system vide et marqué essai : suppression (remplacé par lab-cnpg)
+20:30:18Z + kubectl delete namespace cnpg-system --wait=true --timeout=120s
+namespace "cnpg-system" deleted
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && wait_gone cnpg-system)

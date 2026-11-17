@@ -1,0 +1,6 @@
+# B-11 — auth : pod automount=false (témoin)
+# attendu : ALLOW (baseline-automount-token)
+# date : 2026-11-17T19:50:18Z
+$ kubectl -n auth create --dry-run=server -f -
+pod/b11 created (server dry run)
+# rc=0 verdict=PASS

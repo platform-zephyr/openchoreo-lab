@@ -1,0 +1,69 @@
+# Correction A5 (docs/GITOPS-PROOF.md §4) : health checks Argo CD pour les CRD OpenChoreo.
+# Sans eux, Argo affiche `Healthy` sur un ReleaseBinding `Ready=False RenderingFailed` (T-ARGO-HEALTH)
+# ou `ResourceApplyFailed` (T-STRATEGY).
+#
+# FRAGMENT de values du chart argo-cd (même chart que platform/install/values/argocd.yaml), à passer en
+# second fichier : `-f platform/install/values/argocd.yaml -f platform/install/argocd/health/values-openchoreo-health.yaml`.
+# Il n'ajoute QUE des clés `configs.cm."resource.customizations.health.*"` : aucune valeur existante de
+# argocd.yaml n'est modifiée (Helm fusionne configs.cm clé par clé). Câblage dans tools/oke/install.sh :
+# hors de ce lot (à faire par le propriétaire de tools/oke/**).
+#
+# Règle (identique pour les 4 kinds, condition `Ready` affichée par les printer columns des CRD v1.3.3) :
+#   - pas de status / pas de condition Ready      -> Progressing (contrôleur pas encore passé)
+#   - Ready.observedGeneration < metadata.generation -> Progressing (spec plus récente que le status)
+#   - Ready=True                                   -> Healthy
+#   - Ready=False, reason dans {Progressing, InProgress, Pending, Waiting, Reconciling, ResourcesProgressing,
+#     ReleaseProgressing} -> Progressing [S : raisons de progression non relevées sur k3d ; liste exacte car la
+#     bibliothèque Lua `string` n'est pas ouverte par Argo CD (vérifié : `string.find` -> nil)]
+#   - Ready=False, autre raison (RenderingFailed, ResourceApplyFailed... relevées sur k3d) -> Degraded
+#   - Ready=Unknown                                -> Progressing
+# Component [S] : sa condition Ready n'a pas été observée sur k3d ; sans condition Ready, le Component est
+# déclaré Healthy (simple objet de configuration, autoDeploy: false) pour ne pas bloquer une synchro.
+# Test hors cluster : tests/appgen/test_gitops_fixes.py (`argocd admin settings resource-overrides health`).
+configs:
+  cm:
+    resource.customizations.health.openchoreo.dev_ReleaseBinding: &oc_ready |
+      local hs = {}
+      local kind = obj.kind
+      local cond = nil
+      if obj.status ~= nil and obj.status.conditions ~= nil then
+        for _, c in ipairs(obj.status.conditions) do
+          if c.type == "Ready" then cond = c end
+        end
+      end
+      if cond == nil then
+        if kind == "Component" and obj.status ~= nil then
+          hs.status = "Healthy"
+          hs.message = "Component sans condition Ready (objet de configuration)"
+          return hs
+        end
+        hs.status = "Progressing"
+        hs.message = "En attente du controleur OpenChoreo (aucune condition Ready)"
+        return hs
+      end
+      local gen = obj.metadata.generation
+      if gen ~= nil and cond.observedGeneration ~= nil and cond.observedGeneration < gen then
+        hs.status = "Progressing"
+        hs.message = "Status en retard sur la spec (observedGeneration " .. tostring(cond.observedGeneration) .. " < " .. tostring(gen) .. ")"
+        return hs
+      end
+      local reason = cond.reason or ""
+      local msg = reason .. ": " .. (cond.message or "")
+      if cond.status == "True" then
+        hs.status = "Healthy"
+      elseif cond.status == "False" then
+        local progressing = {Progressing = true, InProgress = true, Pending = true, Waiting = true,
+          Reconciling = true, ResourcesProgressing = true, ReleaseProgressing = true}
+        if progressing[reason] then
+          hs.status = "Progressing"
+        else
+          hs.status = "Degraded"
+        end
+      else
+        hs.status = "Progressing"
+      end
+      hs.message = msg
+      return hs
+    resource.customizations.health.openchoreo.dev_ProjectReleaseBinding: *oc_ready
+    resource.customizations.health.openchoreo.dev_ResourceReleaseBinding: *oc_ready
+    resource.customizations.health.openchoreo.dev_Component: *oc_ready

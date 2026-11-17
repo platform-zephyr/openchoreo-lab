@@ -12,10 +12,14 @@
 # Namespaces hors de ce fichier :
 #   - lab-pg : platform/data/lab-pg-namespace.yaml (restricted, NetworkPolicy propres) ;
 #   - dp-* : créés par OpenChoreo via le CPT cell-restricted (préfixe imposé par le contrôleur) ;
-#   - cnpg-system : ci-dessous, nom IMPOSÉ par platform/data/lab-pg-namespace.yaml (NetworkPolicy
-#     par nom) : namespace d'essai à nettoyer, hors préfixe openchoreo-*/lab-* ;
-#   - default : seulement le label openchoreo.dev/control-plane=true (objets OpenChoreo des apps,
-#     generated/namespaces/default) ; aucun pod. Exception documentée, retirée au nettoyage.
+#   - dp-* et `default` : exceptions IMPOSÉES par OpenChoreo, à acquitter par Paul (missions/MISSION.md) :
+#     `default` reçoit seulement le label openchoreo.dev/control-plane=true et les objets OpenChoreo des apps
+#     (generated/namespaces/default), aucun pod ; retiré au nettoyage.
+# lab-cnpg remplace cnpg-system (revue B3, 2026-11-17) : l'ancien namespace vide créé par l'étape 1 se
+# supprime par `tools/oke/uninstall.sh --migrate-cnpg-system --apply` (vide + nos labels exigés).
+#
+# Garde I3 : install.sh --step 1 REFUSE d'appliquer ce fichier si l'un de ces namespaces existe déjà sans
+# le label part-of=openchoreo-lab (il n'appartient pas à l'essai : on ne le réétiquette jamais).
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -96,7 +100,7 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: cnpg-system
+  name: lab-cnpg
   labels:
     app.kubernetes.io/part-of: openchoreo-lab
     platform.smadja.dev/egress-isolated: "true"

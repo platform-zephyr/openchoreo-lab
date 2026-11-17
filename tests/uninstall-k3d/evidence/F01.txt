@@ -1,0 +1,16 @@
+# F01 — état final : objets cluster-scoped et CRD restants
+# date : 2026-11-17T20:31:25Z
+$ bash -c kubectl get clusterrole,clusterrolebinding,validatingwebhookconfiguration,mutatingwebhookconfiguration -o name | grep -E 'cert-manager|external-secrets|kgateway|argocd|openchoreo|lab-' ; kubectl get crd -o name | grep -v -e cattle.io -e cilium.io; true
+customresourcedefinition.apiextensions.k8s.io/applications.argoproj.io
+customresourcedefinition.apiextensions.k8s.io/applicationsets.argoproj.io
+customresourcedefinition.apiextensions.k8s.io/appprojects.argoproj.io
+customresourcedefinition.apiextensions.k8s.io/backendtlspolicies.gateway.networking.k8s.io
+customresourcedefinition.apiextensions.k8s.io/gatewayclasses.gateway.networking.k8s.io
+customresourcedefinition.apiextensions.k8s.io/gateways.gateway.networking.k8s.io
+customresourcedefinition.apiextensions.k8s.io/grpcroutes.gateway.networking.k8s.io
+customresourcedefinition.apiextensions.k8s.io/httproutes.gateway.networking.k8s.io
+customresourcedefinition.apiextensions.k8s.io/listenersets.gateway.networking.k8s.io
+customresourcedefinition.apiextensions.k8s.io/referencegrants.gateway.networking.k8s.io
+customresourcedefinition.apiextensions.k8s.io/tlsroutes.gateway.networking.k8s.io
+# rc=0
+# verdict : PASS (! grep -qE "clusterrole|webhook" <<<"$LAST_OUT" && ! grep customresourcedefinition <<<"$LAST_OUT" | grep -qvE "argoproj.io|gateway.networking.k8s.io")

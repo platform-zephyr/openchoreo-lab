@@ -1,0 +1,13 @@
+### 2026-11-17T19:55:09Z $ k -n argocd get app gl-apps -o jsonpath={.status.sync.status} {.status.health.status}{"\n"}{range .status.resources[*]}{.kind}/{.name} {.status} health={.health.status}{"\n"}{end}
+Synced Healthy
+Component/whoami Synced health=
+ComponentRelease/whoami-31985273d8 Synced health=
+Project/whoami Synced health=
+ProjectReleaseBinding/whoami-production Synced health=
+ReleaseBinding/whoami-production Synced health=
+Workload/whoami-workload Synced health=
+
+### 2026-11-17T19:55:09Z $ k -n gl-oc get releasebinding whoami-production -o jsonpath={range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{"\n"}{end}
+ReleaseSynced=False RenderingFailed: Failed to render resources: component type validation failed: rule[4] "${workload.endpoints.exists(name, ep, \"internal\" in ep.visibility)\n  ? has(gateway.ingress) && has(gateway…(truncated)" evaluated to false: endpoint internal : gateway.ingress.internal requis sur l'Environment ou le DataPlane
+Ready=False RenderingFailed: Failed to render resources: component type validation failed: rule[4] "${workload.endpoints.exists(name, ep, \"internal\" in ep.visibility)\n  ? has(gateway.ingress) && has(gateway…(truncated)" evaluated to false: endpoint internal : gateway.ingress.internal requis sur l'Environment ou le DataPlane
+

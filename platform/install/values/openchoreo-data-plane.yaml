@@ -28,9 +28,9 @@ clusterAgent:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities: {drop: [ALL]}
-  # Étape 6 (docs/PHASE-B.md) : RBAC du chart (prouvé sur k3d) + ClusterRole additionnel quota.
-  # Étape 9 : basculer à false APRÈS `kubectl apply` de platform/cluster-agent/reduced-clusterrole.yaml
-  # (tools/oke/install.sh --step 9). Retour arrière : remettre true (helm upgrade).
+  # Étape 7 (docs/PHASE-B.md) : RBAC du chart (prouvé sur k3d) + ClusterRole additionnel quota.
+  # Étape 12 (optionnelle) : basculer à false APRÈS `kubectl apply` de platform/cluster-agent/reduced-clusterrole.yaml
+  # (tools/oke/install.sh --step 12). Retour arrière : remettre true (helm upgrade).
   rbac:
     create: true
 

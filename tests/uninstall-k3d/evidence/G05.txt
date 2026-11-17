@@ -1,0 +1,6 @@
+# G05 — chemin oke-access
+# date : 2026-11-17T20:29:20Z
+$ env KUBECONFIG=/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/kc/oke-access/kubeconfig /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 2
+20:29:20Z ABANDON : mode test : KUBECONFIG=/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/kc/oke-access/kubeconfig est le kubeconfig OKE
+# rc=2
+# verdict : PASS ([[ $LAST_RC != 0 ]] && grep -q "kubeconfig OKE" <<<"$LAST_OUT")

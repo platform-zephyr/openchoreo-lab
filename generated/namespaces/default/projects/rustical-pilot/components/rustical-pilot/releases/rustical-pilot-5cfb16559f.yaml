@@ -4,6 +4,8 @@ kind: ComponentRelease
 metadata:
   name: rustical-pilot-5cfb16559f
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
   owner:
     componentName: rustical-pilot

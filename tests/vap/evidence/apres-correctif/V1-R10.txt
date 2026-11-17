@@ -1,0 +1,6 @@
+# V1-R10 — agent TokenReview (cluster-scoped, reviewOnly)
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:20Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated create -f -
+tokenreview.authentication.k8s.io/<unknown> created
+# rc=0 verdict=PASS

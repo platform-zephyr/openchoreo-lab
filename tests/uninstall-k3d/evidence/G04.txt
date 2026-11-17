@@ -1,0 +1,6 @@
+# G04 — OKE_PHASEB_STATE absent
+# date : 2026-11-17T20:29:20Z
+$ env -u OKE_PHASEB_STATE /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 2
+20:29:20Z ABANDON : mode test : OKE_PHASEB_STATE dédié requis (jamais l'état réel /Users/<user>/.cache/openchoreo-lab-phaseb)
+# rc=2
+# verdict : PASS ([[ $LAST_RC != 0 ]] && grep -q "OKE_PHASEB_STATE dédié" <<<"$LAST_OUT")

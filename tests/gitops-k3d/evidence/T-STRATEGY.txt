@@ -1,0 +1,18 @@
+### 2026-11-17T20:06:21Z $ k -n gl-oc get releasebinding whoami-production -o jsonpath={range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{"\n"}{end}
+ReleaseSynced=True ReleaseSynced: Dataplane Release "whoami-production" is up to date (observability release skipped: no observability resources to deploy)
+Ready=False ResourceApplyFailed: Failed to apply resources to target plane: failed to apply resource deployment-whoami-production-58d1cedc: Deployment.apps "whoami-production-58d1cedc" is invalid: spec.strategy.rollingUpdate: Forbidden: may not be specified when strategy `type` is 'Recreate'
+ConnectionsResolved=True NoConnections: No connections to resolve
+ResourceDependenciesReady=True NoResourceDependencies: No resource dependencies to resolve
+ResourcesReady=False ResourceApplyFailed: Failed to apply resources to target plane: failed to apply resource deployment-whoami-production-58d1cedc: Deployment.apps "whoami-production-58d1cedc" is invalid: spec.strategy.rollingUpdate: Forbidden: may not be specified when strategy `type` is 'Recreate'
+
+### 2026-11-17T20:06:21Z $ k -n dp-gl-oc-whoami-production-925e72bb get deploy,pvc,pod -o wide
+NAME                                         READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES                                                                                           SELECTOR
+deployment.apps/whoami-production-58d1cedc   2/2     2            2           8m33s   main         traefik/whoami:v1.10.3@sha256:43a68d10b9dfcfc3ffbfe4dd42100dc9aeaf29b3a5636c856337a5940f1b4f1c   openchoreo.dev/component=whoami,openchoreo.dev/component-uid=45ed82ac-e982-4f3c-ac25-93f3e19b9b40,openchoreo.dev/environment=production,openchoreo.dev/environment-uid=8425bcdf-6de3-426b-bc8b-afbee25155f8,openchoreo.dev/namespace=gl-oc,openchoreo.dev/project=whoami,openchoreo.dev/project-uid=065fc2ac-9ae8-45e5-be32-2c5f796aba36
+
+NAME                                             READY   STATUS    RESTARTS   AGE     IP            NODE                      NOMINATED NODE   READINESS GATES
+pod/whoami-production-58d1cedc-8bfbdc965-mjzfs   1/1     Running   0          5m26s   10.42.0.165   k3d-openchoreo-server-0   <none>           <none>
+pod/whoami-production-58d1cedc-8bfbdc965-w9cr9   1/1     Running   0          5m26s   10.42.0.166   k3d-openchoreo-server-0   <none>           <none>
+
+### 2026-11-17T20:06:22Z $ k -n argocd get app gl-apps -o jsonpath=Argo: {.status.sync.status} {.status.health.status}{"\n"}
+Argo: OutOfSync Healthy
+

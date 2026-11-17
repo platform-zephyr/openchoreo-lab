@@ -1,0 +1,6 @@
+# G06 — sans LAB_TEST_CLUSTER : garde OKE inchangée
+# date : 2026-11-17T20:29:20Z
+$ env -u LAB_TEST_CLUSTER /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 2
+20:29:20Z ABANDON : KUBECONFIG=/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/kc-lab-sec-vap ne pointe pas sur le kubeconfig temporaire /Users/<user>/.cache/oke-access/kubeconfig
+# rc=2
+# verdict : PASS ([[ $LAST_RC != 0 ]] && grep -q "ne pointe pas sur le kubeconfig temporaire" <<<"$LAST_OUT")

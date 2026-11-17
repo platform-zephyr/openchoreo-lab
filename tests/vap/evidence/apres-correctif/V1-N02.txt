@@ -1,0 +1,6 @@
+# V1-N02 — agent CREATE dp-vap-bad sans labels (R3)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:17Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": namespaces "dp-vap-bad" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: namespace dp-vap-bad : PSA enforce restricted|baseline (sans baisse depuis restricted), enforce-version latest et platform.smadja.dev/cell=restricted exigés (reçu enforce=)
+# rc=1 verdict=PASS

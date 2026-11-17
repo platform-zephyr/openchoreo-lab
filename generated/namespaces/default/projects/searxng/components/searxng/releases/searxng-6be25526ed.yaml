@@ -4,6 +4,8 @@ kind: ComponentRelease
 metadata:
   name: searxng-6be25526ed
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
   owner:
     componentName: searxng

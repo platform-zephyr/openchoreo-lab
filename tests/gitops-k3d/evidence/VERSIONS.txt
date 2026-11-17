@@ -1,0 +1,4 @@
+# k3d — 2026-11-17T19:54:07Z
+kubernetes v1.36.1+k3s1
+ghcr.io/openchoreo/controller:v1.3.3
+argo-cd chart 10.3.3

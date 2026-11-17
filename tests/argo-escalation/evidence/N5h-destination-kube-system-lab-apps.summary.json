@@ -1,0 +1,24 @@
+{
+  "name": "lab-apps",
+  "project": "lab-apps",
+  "sync": "OutOfSync",
+  "health": "Healthy",
+  "conditions": [],
+  "operation": {
+    "phase": "Failed",
+    "revision": "755a3e131e3be358d54c643aaae0c1713917a588",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "one or more synchronization tasks are not valid: namespace kube-system is not permitted in project 'lab-apps'"
+  },
+  "refused": [
+    {
+      "kind": "Project",
+      "namespace": "kube-system",
+      "name": "n5-ks",
+      "status": "SyncFailed",
+      "message": "namespace kube-system is not permitted in project 'lab-apps'"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+# V1-N09 — agent DELETE ns lab-vap-test (R1)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:18Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated delete ns lab-vap-test --dry-run=server
+Error from server (Forbidden): namespaces "lab-vap-test" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: objet cluster-scoped interdit pour system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane (namespaces/lab-vap-test)
+# rc=1 verdict=PASS

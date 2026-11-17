@@ -1,0 +1,6 @@
+# B-05 — pod hostPath
+# attendu : DENY (baseline-pod-hardening)
+# date : 2026-11-17T19:52:26Z
+$ kubectl -n vap-plain create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": pods "b5" is forbidden: ValidatingAdmissionPolicy 'baseline-pod-hardening' with binding 'baseline-pod-hardening' denied request: hostPath volumes are denied (baseline).
+# rc=1 verdict=PASS

@@ -1,0 +1,24 @@
+{
+  "name": "lab-apps",
+  "project": "lab-apps",
+  "sync": "OutOfSync",
+  "health": "Healthy",
+  "conditions": [],
+  "operation": {
+    "phase": "Failed",
+    "revision": "778a7ecb708e6a9ca26ea205405deaf9aa616641",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "one or more synchronization tasks are not valid: resource :Namespace is not permitted in project lab-apps"
+  },
+  "refused": [
+    {
+      "kind": "Namespace",
+      "namespace": "default",
+      "name": "lab-pg",
+      "status": "SyncFailed",
+      "message": "resource :Namespace is not permitted in project lab-apps"
+    }
+  ]
+}

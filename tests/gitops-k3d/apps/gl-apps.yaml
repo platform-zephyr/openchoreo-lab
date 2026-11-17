@@ -1,0 +1,33 @@
+# Application `gl-apps` : generated/namespaces/default/projects/whoami (objets RÉELS d'appgen), remappés
+# default -> gl-oc par le plugin. __REPO__ / __REV__ / __PRUNE__ remplacés par run.sh.
+# Les autres apps de generated/ sont exclues : elles exigent lab-pg, des SecretReference et un store ESO
+# hors périmètre de cet essai.
+# APP-CONTRACT §5 : Prune=false sur Component / ComponentRelease / Resource. generated/ ne porte AUCUNE
+# annotation argocd.argoproj.io/sync-options : sur la source GitHub, la seule façon de respecter le contrat
+# est `prune: false` pour toute l'Application (__PRUNE__=false). Sur gl-repo, run.sh ajoute les annotations
+# proposées (correction appgen n°2 de docs/GITOPS-PROOF.md) et passe __PRUNE__=true.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gl-apps
+  namespace: argocd
+spec:
+  project: gl
+  source:
+    repoURL: __REPO__
+    targetRevision: __REV__
+    path: generated/namespaces/default/projects
+    plugin:
+      name: gl-ns-remap
+      env:
+        - {name: TARGET_NS, value: gl-oc}
+        - {name: INCLUDE, value: whoami}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gl-oc
+  syncPolicy:
+    automated:
+      prune: __PRUNE__
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

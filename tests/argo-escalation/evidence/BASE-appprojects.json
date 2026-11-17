@@ -1,0 +1,352 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "AppProject",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T20:05:49Z",
+                "generation": 2,
+                "name": "default",
+                "namespace": "lab-argocd",
+                "resourceVersion": "786",
+                "uid": "08ac00d8-1e7c-4e08-aaf7-3856c46d646a"
+            },
+            "spec": {
+                "clusterResourceBlacklist": [
+                    {
+                        "group": "*",
+                        "kind": "*"
+                    }
+                ],
+                "clusterResourceWhitelist": [],
+                "description": "Projet par défaut VERROUILLÉ (labo) - aucun dépôt, aucune destination, aucun kind",
+                "destinations": [],
+                "namespaceResourceBlacklist": [
+                    {
+                        "group": "*",
+                        "kind": "*"
+                    }
+                ],
+                "namespaceResourceWhitelist": [],
+                "sourceNamespaces": [],
+                "sourceRepos": []
+            },
+            "status": {}
+        },
+        {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "AppProject",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T20:06:09Z",
+                "generation": 1,
+                "labels": {
+                    "app.kubernetes.io/part-of": "openchoreo-lab"
+                },
+                "name": "lab-apps",
+                "namespace": "lab-argocd",
+                "resourceVersion": "788",
+                "uid": "197dfb96-2819-478c-9e90-5532c022a6c2"
+            },
+            "spec": {
+                "clusterResourceWhitelist": [],
+                "description": "Applications du labo (generated/namespaces/default) - kinds OpenChoreo namespacés, default seulement",
+                "destinations": [
+                    {
+                        "namespace": "default",
+                        "server": "https://kubernetes.default.svc"
+                    }
+                ],
+                "namespaceResourceWhitelist": [
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Resource"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ResourceReleaseBinding"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "SecretReference"
+                    }
+                ],
+                "orphanedResources": {
+                    "warn": true
+                },
+                "sourceRepos": [
+                    "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git"
+                ]
+            }
+        },
+        {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "AppProject",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T20:06:09Z",
+                "generation": 1,
+                "labels": {
+                    "app.kubernetes.io/part-of": "openchoreo-lab"
+                },
+                "name": "lab-authz",
+                "namespace": "lab-argocd",
+                "resourceVersion": "789",
+                "uid": "9ec18ccc-0e59-40aa-b7f4-54238a32b3cd"
+            },
+            "spec": {
+                "clusterResourceWhitelist": [
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRole",
+                        "name": "lab-*"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "name": "lab-*"
+                    }
+                ],
+                "description": "Authz OpenChoreo du labo (platform/authz) - roles et liaisons lab-*, synchro MANUELLE forcée",
+                "destinations": [
+                    {
+                        "namespace": "lab-argocd",
+                        "server": "https://kubernetes.default.svc"
+                    }
+                ],
+                "namespaceResourceBlacklist": [
+                    {
+                        "group": "*",
+                        "kind": "*"
+                    }
+                ],
+                "orphanedResources": {
+                    "warn": true
+                },
+                "sourceRepos": [
+                    "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git"
+                ],
+                "syncWindows": [
+                    {
+                        "applications": [
+                            "*"
+                        ],
+                        "duration": "24h",
+                        "kind": "deny",
+                        "manualSync": true,
+                        "schedule": "* * * * *",
+                        "timeZone": "UTC"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "AppProject",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T20:06:09Z",
+                "generation": 1,
+                "labels": {
+                    "app.kubernetes.io/part-of": "openchoreo-lab"
+                },
+                "name": "lab-platform",
+                "namespace": "lab-argocd",
+                "resourceVersion": "787",
+                "uid": "b6a746a1-8658-4665-80cd-5bd3a3acc97c"
+            },
+            "spec": {
+                "clusterResourceBlacklist": [
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRole"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRoleBinding"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterDataPlane"
+                    }
+                ],
+                "clusterResourceWhitelist": [
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterComponentType",
+                        "name": "service-restricted"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterProjectType",
+                        "name": "cell-restricted"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterResourceType",
+                        "name": "cnpg-lab-db"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterTrait",
+                        "name": "persistent-volume-claim"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterTrait",
+                        "name": "health-probes"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "kind": "ValidatingAdmissionPolicy",
+                        "name": "lab-cluster-agent-scope"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "kind": "ValidatingAdmissionPolicy",
+                        "name": "lab-cell-pod-hardening"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "kind": "ValidatingAdmissionPolicyBinding",
+                        "name": "lab-cluster-agent-scope"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "kind": "ValidatingAdmissionPolicyBinding",
+                        "name": "lab-cell-pod-hardening"
+                    },
+                    {
+                        "group": "",
+                        "kind": "Namespace",
+                        "name": "lab-pg"
+                    }
+                ],
+                "description": "Objets plateforme du labo (platform/**) - changement PRIVILÉGIÉ, kinds nommés, synchro MANUELLE forcée",
+                "destinations": [
+                    {
+                        "namespace": "default",
+                        "server": "https://kubernetes.default.svc"
+                    },
+                    {
+                        "namespace": "lab-pg",
+                        "server": "https://kubernetes.default.svc"
+                    }
+                ],
+                "namespaceResourceBlacklist": [
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "AuthzRole"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "AuthzRoleBinding"
+                    }
+                ],
+                "namespaceResourceWhitelist": [
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Environment"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "DeploymentPipeline"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "kind": "NetworkPolicy"
+                    },
+                    {
+                        "group": "postgresql.cnpg.io",
+                        "kind": "Cluster"
+                    }
+                ],
+                "orphanedResources": {
+                    "warn": true
+                },
+                "sourceRepos": [
+                    "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git"
+                ],
+                "syncWindows": [
+                    {
+                        "applications": [
+                            "*"
+                        ],
+                        "duration": "24h",
+                        "kind": "deny",
+                        "manualSync": true,
+                        "schedule": "* * * * *",
+                        "timeZone": "UTC"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "AppProject",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T20:06:09Z",
+                "generation": 1,
+                "labels": {
+                    "app.kubernetes.io/part-of": "openchoreo-lab"
+                },
+                "name": "lab-root",
+                "namespace": "lab-argocd",
+                "resourceVersion": "790",
+                "uid": "54da7ff8-b522-496c-9240-268482a29381"
+            },
+            "spec": {
+                "clusterResourceWhitelist": [],
+                "description": "Application racine du labo - Application enfants de platform/install/argocd/apps seulement",
+                "destinations": [
+                    {
+                        "namespace": "lab-argocd",
+                        "server": "https://kubernetes.default.svc"
+                    }
+                ],
+                "namespaceResourceWhitelist": [
+                    {
+                        "group": "argoproj.io",
+                        "kind": "Application"
+                    }
+                ],
+                "orphanedResources": {
+                    "warn": true
+                },
+                "sourceRepos": [
+                    "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git"
+                ]
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

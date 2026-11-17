@@ -1,0 +1,14 @@
+# R5b — --step 5 --apply --delete-crds (plus d'usage hors essai)
+# date : 2026-11-17T20:30:49Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 5 --apply --delete-crds
+20:30:44Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:30:44Z release openchoreo-control-plane/kgateway absente
+20:30:46Z + helm -n openchoreo-control-plane uninstall kgateway-crds
+release "kgateway-crds" uninstalled
+20:30:47Z + kubectl wait --for=delete crd/backendconfigpolicies.gateway.kgateway.dev crd/backends.gateway.kgateway.dev crd/directresponses.gateway.kgateway.dev crd/gatewayextensions.gateway.kgateway.dev crd/gatewayparameters.gateway.kgateway.dev crd/httplistenerpolicies.gateway.kgateway.dev crd/listenerpolicies.gateway.kgateway.dev crd/trafficpolicies.gateway.kgateway.dev --timeout=180s
+customresourcedefinition.apiextensions.k8s.io/backendconfigpolicies.gateway.kgateway.dev condition met
+customresourcedefinition.apiextensions.k8s.io/gatewayparameters.gateway.kgateway.dev condition met
+# rc=0
+R5b GatewayParameters lab-gwp (essai) après : error: the server doesn't have a resource type "gatewayparameters"
+R5b CRD gateway.kgateway.dev restantes : 0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && ! helm -n openchoreo-control-plane status kgateway-crds >/dev/null 2>&1 && ! crd_has trafficpolicies.gateway.kgateway.dev)

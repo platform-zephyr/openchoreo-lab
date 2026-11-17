@@ -1,0 +1,7 @@
+# R11c — suppression de lab-probe-finalizer sans contrôleur
+# date : 2026-11-17T20:30:33Z
+$ kubectl -n lab-argocd delete applications.argoproj.io lab-probe-finalizer --wait=false
+application.argoproj.io "lab-probe-finalizer" deleted from lab-argocd namespace
+# rc=0
+R11c 2026-11-17T20:30:33Z ["resources-finalizer.argocd.argoproj.io"]
+# verdict : PASS (kubectl -n lab-argocd get applications.argoproj.io lab-probe-finalizer >/dev/null 2>&1)

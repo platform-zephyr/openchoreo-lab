@@ -1,0 +1,6 @@
+# V1-W01 — agent ConfigMap kube-system (R2)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:12Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n kube-system create configmap x --dry-run=server
+error: failed to create configmap: configmaps "x" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: le cluster-agent ne peut pas écrire configmaps (CREATE) dans le namespace kube-system
+# rc=1 verdict=PASS

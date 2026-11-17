@@ -1,0 +1,6 @@
+# R11d — geste opérateur : retrait du finalizer
+# date : 2026-11-17T20:30:36Z
+$ kubectl -n lab-argocd patch applications.argoproj.io lab-probe-finalizer --type=merge -p {"metadata":{"finalizers":null}}
+application.argoproj.io/lab-probe-finalizer patched
+# rc=0
+# verdict : PASS (! kubectl -n lab-argocd get applications.argoproj.io lab-probe-finalizer >/dev/null 2>&1)

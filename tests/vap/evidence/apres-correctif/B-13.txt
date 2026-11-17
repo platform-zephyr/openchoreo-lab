@@ -1,0 +1,7 @@
+# B-13 — auth : image sans digest ADMISE avec avertissement (binding Warn,Audit)
+# attendu : WARN (baseline-image-digest)
+# date : 2026-11-17T19:52:27Z
+$ kubectl -n auth create --dry-run=server -f -
+Warning: Validation failed for ValidatingAdmissionPolicy 'baseline-image-digest' with binding 'baseline-image-digest': container images must be pinned by digest (@sha256:) in this namespace (baseline).
+pod/b13 created (server dry run)
+# rc=0 verdict=PASS

@@ -1,0 +1,23 @@
+{
+  "name": "n1-evil",
+  "project": "default",
+  "sync": "Unknown",
+  "health": "Unknown",
+  "conditions": [
+    {
+      "type": "InvalidSpecError",
+      "message": "application destination server 'https://kubernetes.default.svc' and namespace 'default' do not match any of the allowed destinations in project 'default'"
+    },
+    {
+      "type": "InvalidSpecError",
+      "message": "application repo git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git is not permitted in project 'default'"
+    }
+  ],
+  "operation": {
+    "phase": null,
+    "revision": null,
+    "initiatedBy": null,
+    "message": null
+  },
+  "refused": []
+}

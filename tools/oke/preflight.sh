@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # preflight.sh : vérifications EN LECTURE SEULE avant la Phase B (docs/PHASE-B.md §1, étape 0).
-# Aucune écriture : uniquement get/list, l'API summary du kubelet et `kubectl top` s'il existe.
+# Aucune écriture dans le cluster : uniquement get/list, l'API summary du kubelet et `kubectl top` s'il existe.
+# Écriture LOCALE seulement : $STATE_DIR/crds-before.txt (inventaire des CRD d'avant essai, une fois).
 # Pré-requis : accès ouvert par Paul (open-oke-access.sh open), export KUBECONFIG=~/.cache/oke-access/kubeconfig.
 # Sortie : rapport sur stdout ; code 0 = GO, 1 = NO-GO (au moins un BLOQUANT), 2 = garde de contexte.
 set -euo pipefail
@@ -26,7 +27,7 @@ echo "pods avec IP VCN (hors hostNetwork) : $running_pods / $alloc_pods"
 if (( running_pods + 20 > alloc_pods )); then block "IP de pods insuffisantes : $running_pods + 20 > $alloc_pods"; else ok "marge de pods suffisante"; fi
 
 echo "== Requests déclarées par namespace (cpu m, mem Mi)"
-requests_by_ns
+requests_by_ns || block "requests illisibles (MEASUREMENT_UNAVAILABLE)"
 echo "== Usage instantané par namespace (API summary du kubelet ; cpu m, mem Mi)"
 usage_by_ns || echo "MEASUREMENT_UNAVAILABLE (usage kubelet)"
 if kubectl top nodes >/dev/null 2>&1; then
@@ -44,8 +45,8 @@ for p in allow-egress-unisolated deny-imds; do
 done
 if kubectl -n kube-system get ds cilium >/dev/null 2>&1; then ok "Cilium présent"; else block "Cilium absent"; fi
 # Conflit C1 : la CCNP allow-all neutralise le default-deny egress des namespaces d'essai.
-sel="$(kubectl get ciliumclusterwidenetworkpolicy allow-egress-unisolated -o json 2>/dev/null \
-  | jq -c '.spec.endpointSelector.matchExpressions // []' || echo '[]')"
+ccnp="$(kubectl get ciliumclusterwidenetworkpolicy allow-egress-unisolated -o json)" || ccnp='{}'
+sel="$(jq -c '.spec.endpointSelector.matchExpressions // []' <<<"$ccnp")"
 if grep -q 'platform.smadja.dev/egress-isolated' <<<"$sel"; then
   ok "C1 résolu : allow-egress-unisolated exclut platform.smadja.dev/egress-isolated"
 else
@@ -53,26 +54,41 @@ else
 fi
 
 echo "== CRD déjà présentes (une installation d'essai ne doit pas en écraser d'autres)"
-kubectl get crd -o name | grep -E 'gateway\.networking\.k8s\.io|cert-manager\.io|external-secrets\.io|kgateway\.dev|openchoreo\.dev|argoproj\.io|cnpg\.io' || echo "(aucune)"
+crds="$(kubectl get crd -o name)" || { block "liste des CRD illisible"; crds=""; }
+grep -E 'gateway\.networking\.k8s\.io|cert-manager\.io|external-secrets\.io|kgateway\.dev|openchoreo\.dev|argoproj\.io|cnpg\.io' <<<"$crds" || echo "(aucune)"
+# Inventaire « avant essai » pour uninstall.sh --delete-crds (revue I2) : écrit UNE fois, et seulement si
+# aucune étape n'a encore été appliquée (sinon il contiendrait les CRD de l'essai). Fichier local, pas le cluster.
+mkdir -p "$STATE_DIR"
+if [[ -f "$STATE_DIR/crds-before.txt" ]]; then ok "inventaire CRD d'avant essai déjà présent ($STATE_DIR/crds-before.txt)"
+elif [[ -s "$STATE_DIR/steps.log" ]]; then warn "étapes déjà appliquées : pas d'inventaire CRD d'avant essai ; uninstall.sh --delete-crds conservera les CRD"
+elif [[ -n "$crds" ]]; then printf '%s\n' "$crds" > "$STATE_DIR/crds-before.txt"; ok "inventaire CRD d'avant essai écrit ($STATE_DIR/crds-before.txt)"; fi
 
 echo "== Namespaces"
-for ns in "${TRIAL_NS[@]}" argocd external-secrets cert-manager thunder; do
-  if kubectl get ns "$ns" >/dev/null 2>&1; then
-    part="$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.app\.kubernetes\.io/part-of}')"
-    if [[ "$part" == openchoreo-lab ]]; then ok "$ns existe (essai, reprise)"; else warn "$ns existe HORS essai (part-of='$part')"; fi
-  fi
+# Garde I3 : un namespace d'essai qui existe SANS le label part-of n'est pas à nous => BLOQUANT
+# (install.sh --step 1 refuse aussi ; on ne réétiquette jamais un namespace préexistant).
+nss="$(kubectl get ns -o name)" || { block "liste des namespaces illisible"; nss=""; }
+for ns in "${TRIAL_NS[@]}" "$LEGACY_CNPG_NS" argocd external-secrets cert-manager thunder; do
+  grep -qx "namespace/$ns" <<<"$nss" || continue
+  part="$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.app\.kubernetes\.io/part-of}')" || { block "labels de $ns illisibles"; continue; }
+  if [[ "$ns" == "$LEGACY_CNPG_NS" && "$part" == openchoreo-lab ]]; then
+    warn "$ns (ancien nom de lab-cnpg) présent : migration uninstall.sh --migrate-cnpg-system"
+  elif [[ "$part" == openchoreo-lab ]]; then ok "$ns existe (essai, reprise)"
+  elif printf '%s\n' "${TRIAL_NS[@]}" | grep -qx "$ns"; then block "$ns existe HORS essai (part-of='$part') : nom d'essai déjà pris"
+  else warn "$ns existe HORS essai (part-of='$part')"; fi
 done
-kubectl get ns -o name | grep -E '/dp-' && warn "namespaces dp-* déjà présents" || true
-[[ "$(kubectl get ns default -o jsonpath='{.metadata.labels.openchoreo\.dev/control-plane}')" == true ]] \
-  && warn "default déjà labellisé openchoreo.dev/control-plane" || true
+if grep -qE '^namespace/dp-' <<<"$nss"; then warn "namespaces dp-* déjà présents"; fi
+dlab="$(kubectl get ns default -o jsonpath='{.metadata.labels.openchoreo\.dev/control-plane}')" || block "labels de default illisibles"
+[[ "${dlab:-}" != true ]] || warn "default déjà labellisé openchoreo.dev/control-plane"
 
 echo "== Stockage (block volume OCI : 50 Go minimum par PVC, quota Always Free 200 Go)"
 kubectl get storageclass
-kubectl get pv -o custom-columns=NAME:.metadata.name,SIZE:.spec.capacity.storage,CLAIM:.spec.claimRef.namespace,STATUS:.status.phase --no-headers || true
+kubectl get pv -o custom-columns=NAME:.metadata.name,SIZE:.spec.capacity.storage,CLAIM:.spec.claimRef.namespace,STATUS:.status.phase --no-headers \
+  || block "liste des PV illisible"
 warn "volumes OCI hors cluster (boot 50 Go + 2 x 50 Go du drill, OKE-EXEC.md) invisibles ici : budget à confirmer par Paul avant l'étape 10 (lab-pg)"
 
 echo "== Services LoadBalancer existants"
-kubectl get svc -A -o json | jq -r '.items[] | select(.spec.type=="LoadBalancer") | "\(.metadata.namespace)/\(.metadata.name)"' || true
+svcs="$(kubectl get svc -A -o json)" || { block "liste des Services illisible"; svcs='{"items":[]}'; }
+jq -r '.items[] | select(.spec.type=="LoadBalancer") | "\(.metadata.namespace)/\(.metadata.name)"' <<<"$svcs"
 
 echo "== Verdict"
 if (( BLOCK )); then echo "NO-GO"; exit 1; fi

@@ -1,0 +1,6 @@
+# V1-N12 — identité applicative dp-vap-app:app CREATE ns dp-x (R1)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:18Z
+$ kubectl --as=system:serviceaccount:dp-vap-app:app --as-group=system:serviceaccounts --as-group=system:serviceaccounts:dp-vap-app --as-group=system:authenticated create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": namespaces "dp-x" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: objet cluster-scoped interdit pour system:serviceaccount:dp-vap-app:app (namespaces/dp-x)
+# rc=1 verdict=PASS

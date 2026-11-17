@@ -1,0 +1,24 @@
+{
+  "name": "lab-apps",
+  "project": "lab-apps",
+  "sync": "OutOfSync",
+  "health": "Healthy",
+  "conditions": [],
+  "operation": {
+    "phase": "Failed",
+    "revision": "d6fc27fdf4fbd2bcdbb341ef4563dc08801365a8",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "one or more synchronization tasks are not valid: resource rbac.authorization.k8s.io:ClusterRoleBinding is not permitted in project lab-apps"
+  },
+  "refused": [
+    {
+      "kind": "ClusterRoleBinding",
+      "namespace": "default",
+      "name": "lab-n5-crb",
+      "status": "SyncFailed",
+      "message": "resource rbac.authorization.k8s.io:ClusterRoleBinding is not permitted in project lab-apps"
+    }
+  ]
+}

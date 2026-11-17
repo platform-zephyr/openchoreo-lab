@@ -1,0 +1,14 @@
+{
+  "name": "lab-apps",
+  "project": "lab-apps",
+  "sync": "OutOfSync",
+  "health": "Missing",
+  "conditions": [],
+  "operation": {
+    "phase": null,
+    "revision": null,
+    "initiatedBy": null,
+    "message": null
+  },
+  "refused": []
+}

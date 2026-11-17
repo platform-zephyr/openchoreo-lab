@@ -1,0 +1,6 @@
+# V1-C12 — agent pods/ephemeralcontainers lab-vap-test (R2)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:17Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n lab-vap-test patch pod target --subresource=ephemeralcontainers --type=strategic -p {"spec":{"ephemeralContainers":[{"name":"dbg","image":"docker.io/rancher/mirrored-library-busybox@sha256:101b4afd76732482eff9b95cae5f94bcf295e521fbec4e01b69c5421f3f3f3e5","stdin":true,"tty":true}]}} --dry-run=server
+Error from server (Forbidden): pods "target" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: le cluster-agent ne peut pas écrire pods/ephemeralcontainers (UPDATE) dans le namespace lab-vap-test
+# rc=1 verdict=PASS

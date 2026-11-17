@@ -1,0 +1,6 @@
+# AUD-lab-cluster-agent-scope — journal d'audit : 40 événement(s) annotés validation_failure pour lab-cluster-agent-scope
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:30Z
+$ test 40 -gt 0
+
+# rc=0 verdict=PASS

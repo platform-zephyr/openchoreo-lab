@@ -18,3 +18,7 @@ spec:
     egress: public-internet
     database: false
     allowIdp: false
+    quota:
+      cpu: 400m
+      memory: 512Mi
+      pvcs: '0'

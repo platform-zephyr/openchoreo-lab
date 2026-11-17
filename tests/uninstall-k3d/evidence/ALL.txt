@@ -1,0 +1,187 @@
+# ALL — uninstall.sh --all --apply --delete-crds
+# date : 2026-11-17T20:32:53Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --all --apply --delete-crds
+20:32:15Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:32:15Z === annulation étape 12
+20:32:15Z RBAC réduit absent : rien à annuler
+20:32:15Z === annulation étape 11
+20:32:15Z + kubectl delete --ignore-not-found -n lab-argocd applications.argoproj.io lab-root lab-platform lab-authz
+20:32:15Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/argocd/project-lab.yaml
+20:32:15Z + helm -n lab-argocd uninstall argocd --wait
+These resources were kept due to the resource policy:
+[CustomResourceDefinition] applications.argoproj.io
+[CustomResourceDefinition] applicationsets.argoproj.io
+[CustomResourceDefinition] appprojects.argoproj.io
+
+release "argocd" uninstalled
+20:32:19Z + kubectl delete customresourcedefinition.apiextensions.k8s.io/applications.argoproj.io customresourcedefinition.apiextensions.k8s.io/applicationsets.argoproj.io customresourcedefinition.apiextensions.k8s.io/appprojects.argoproj.io
+customresourcedefinition.apiextensions.k8s.io "applications.argoproj.io" deleted
+customresourcedefinition.apiextensions.k8s.io "applicationsets.argoproj.io" deleted
+customresourcedefinition.apiextensions.k8s.io "appprojects.argoproj.io" deleted
+20:32:21Z === annulation étape 10
+20:32:21Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/data/lab-pg-cluster.yaml --wait=true
+error: resource mapping not found for name: "lab-pg" namespace: "lab-pg" from "/Users/<user>/Developer/Perso/openchoreo-lab/platform/data/lab-pg-cluster.yaml": no matches for kind "Cluster" in version "postgresql.cnpg.io/v1"
+ensure CRDs are installed first
+20:32:21Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
+20:32:21Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/51-lab-pg-oke-overlay.yaml
+20:32:22Z release lab-cnpg/cnpg absente
+20:32:22Z === annulation étape 9
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/resource-types/ -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/project-types/ -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/traits/ -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/component-types/
+resource mapping not found for name: "cnpg-lab-db" namespace: "" from "/Users/<user>/Developer/Perso/openchoreo-lab/platform/resource-types/cnpg-lab-db.yaml": no matches for kind "ClusterResourceType" in version "openchoreo.dev/v1alpha1"
+ensure CRDs are installed first
+resource mapping not found for name: "cell-restricted" namespace: "" from "/Users/<user>/Developer/Perso/openchoreo-lab/platform/project-types/cell-restricted.yaml": no matches for kind "ClusterProjectType" in version "openchoreo.dev/v1alpha1"
+ensure CRDs are installed first
+resource mapping not found for name: "persistent-volume-claim" namespace: "" from "/Users/<user>/Developer/Perso/openchoreo-lab/platform/traits/persistent-volume-claim.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
+ensure CRDs are installed first
+resource mapping not found for name: "service-restricted" namespace: "" from "/Users/<user>/Developer/Perso/openchoreo-lab/platform/component-types/service-restricted.yaml": no matches for kind "ClusterComponentType" in version "openchoreo.dev/v1alpha1"
+ensure CRDs are installed first
+20:32:22Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml
+resource mapping not found for name: "production" namespace: "default" from "/Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "Environment" in version "openchoreo.dev/v1alpha1"
+ensure CRDs are installed first
+resource mapping not found for name: "standard" namespace: "default" from "/Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "DeploymentPipeline" in version "openchoreo.dev/v1alpha1"
+ensure CRDs are installed first
+resource mapping not found for name: "health-probes" namespace: "" from "/Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
+ensure CRDs are installed first
+20:32:22Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
+20:32:22Z + kubectl label namespace default openchoreo.dev/control-plane-
+label "openchoreo.dev/control-plane" not found.
+namespace/default not labeled
+20:32:22Z === annulation étape 8
+20:32:22Z + kubectl delete --ignore-not-found clusterdataplanes.openchoreo.dev default
+error: the server doesn't have a resource type "clusterdataplanes"
+20:32:22Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
+20:32:22Z === annulation étape 7
+20:32:22Z release openchoreo-data-plane/openchoreo-data-plane absente
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/12-gateway-parameters.yaml -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/11-gateway-tls.yaml
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/cluster-agent/extra-rbac-quota.yaml
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/policies/
+20:32:22Z === annulation étape 6b
+20:32:22Z + kubectl delete --ignore-not-found -n openchoreo-control-plane secret backstage-secrets
+20:32:22Z + kubectl delete --ignore-not-found -n openchoreo-control-plane ciliumnetworkpolicies.cilium.io lab-allow-backstage-authentik
+20:32:22Z === annulation étape 6
+20:32:23Z release openchoreo-control-plane/openchoreo-control-plane absente
+20:32:23Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/03-idp-egress.yaml
+20:32:23Z + kubectl delete --ignore-not-found -n openchoreo-control-plane secret backstage-secrets
+20:32:24Z === annulation étape 5
+20:32:24Z + helm -n openchoreo-control-plane uninstall kgateway --wait
+release "kgateway" uninstalled
+20:32:27Z + helm -n openchoreo-control-plane uninstall kgateway-crds
+release "kgateway-crds" uninstalled
+20:32:28Z + kubectl wait --for=delete crd/backendconfigpolicies.gateway.kgateway.dev crd/backends.gateway.kgateway.dev crd/directresponses.gateway.kgateway.dev crd/gatewayextensions.gateway.kgateway.dev crd/gatewayparameters.gateway.kgateway.dev crd/httplistenerpolicies.gateway.kgateway.dev crd/listenerpolicies.gateway.kgateway.dev crd/trafficpolicies.gateway.kgateway.dev --timeout=180s
+customresourcedefinition.apiextensions.k8s.io/backendconfigpolicies.gateway.kgateway.dev condition met
+customresourcedefinition.apiextensions.k8s.io/gatewayparameters.gateway.kgateway.dev condition met
+20:32:29Z === annulation étape 4
+20:32:29Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/20-eso-lab-store.yaml
+serviceaccount "eso-lab-store" deleted from lab-secrets namespace
+role.rbac.authorization.k8s.io "eso-lab-store" deleted from lab-secrets namespace
+rolebinding.rbac.authorization.k8s.io "eso-lab-store" deleted from lab-secrets namespace
+clustersecretstore.external-secrets.io "lab-store" deleted
+20:32:30Z + helm -n openchoreo-external-secrets uninstall external-secrets --wait
+These resources were kept due to the resource policy:
+[CustomResourceDefinition] acraccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] gcraccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] generatorstates.generators.external-secrets.io
+[CustomResourceDefinition] githubaccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] grafanas.generators.external-secrets.io
+[CustomResourceDefinition] mfas.generators.external-secrets.io
+[CustomResourceDefinition] passwords.generators.external-secrets.io
+[CustomResourceDefinition] pushsecrets.external-secrets.io
+[CustomResourceDefinition] quayaccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] secretstores.external-secrets.io
+[CustomResourceDefinition] sshkeys.generators.external-secrets.io
+[CustomResourceDefinition] cloudsmithaccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] stssessiontokens.generators.external-secrets.io
+[CustomResourceDefinition] uuids.generators.external-secrets.io
+[CustomResourceDefinition] vaultdynamicsecrets.generators.external-secrets.io
+[CustomResourceDefinition] webhooks.generators.external-secrets.io
+[CustomResourceDefinition] clusterexternalsecrets.external-secrets.io
+[CustomResourceDefinition] clustergenerators.generators.external-secrets.io
+[CustomResourceDefinition] clusterpushsecrets.external-secrets.io
+[CustomResourceDefinition] clustersecretstores.external-secrets.io
+[CustomResourceDefinition] ecrauthorizationtokens.generators.external-secrets.io
+[CustomResourceDefinition] externalsecrets.external-secrets.io
+[CustomResourceDefinition] fakes.generators.external-secrets.io
+
+release "external-secrets" uninstalled
+20:32:35Z + kubectl delete customresourcedefinition.apiextensions.k8s.io/acraccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/cloudsmithaccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/clusterexternalsecrets.external-secrets.io customresourcedefinition.apiextensions.k8s.io/clustergenerators.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/clusterpushsecrets.external-secrets.io customresourcedefinition.apiextensions.k8s.io/clustersecretstores.external-secrets.io customresourcedefinition.apiextensions.k8s.io/ecrauthorizationtokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/externalsecrets.external-secrets.io customresourcedefinition.apiextensions.k8s.io/fakes.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/gcraccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/generatorstates.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/githubaccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/grafanas.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/mfas.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/passwords.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/pushsecrets.external-secrets.io customresourcedefinition.apiextensions.k8s.io/quayaccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/secretstores.external-secrets.io customresourcedefinition.apiextensions.k8s.io/sshkeys.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/stssessiontokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/uuids.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/vaultdynamicsecrets.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/webhooks.generators.external-secrets.io
+customresourcedefinition.apiextensions.k8s.io "acraccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "cloudsmithaccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clusterexternalsecrets.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clustergenerators.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clusterpushsecrets.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clustersecretstores.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "ecrauthorizationtokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "externalsecrets.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "fakes.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "gcraccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "generatorstates.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "githubaccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "grafanas.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "mfas.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "passwords.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "pushsecrets.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "quayaccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "secretstores.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "sshkeys.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "stssessiontokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "uuids.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "vaultdynamicsecrets.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "webhooks.generators.external-secrets.io" deleted
+20:32:41Z === annulation étape 3
+20:32:41Z + helm -n openchoreo-cert-manager uninstall cert-manager --wait
+These resources were kept due to the resource policy:
+[CustomResourceDefinition] challenges.acme.cert-manager.io
+[CustomResourceDefinition] orders.acme.cert-manager.io
+[CustomResourceDefinition] certificaterequests.cert-manager.io
+[CustomResourceDefinition] certificates.cert-manager.io
+[CustomResourceDefinition] clusterissuers.cert-manager.io
+[CustomResourceDefinition] issuers.cert-manager.io
+
+release "cert-manager" uninstalled
+20:32:44Z + kubectl delete customresourcedefinition.apiextensions.k8s.io/challenges.acme.cert-manager.io customresourcedefinition.apiextensions.k8s.io/orders.acme.cert-manager.io customresourcedefinition.apiextensions.k8s.io/certificaterequests.cert-manager.io customresourcedefinition.apiextensions.k8s.io/certificates.cert-manager.io customresourcedefinition.apiextensions.k8s.io/clusterissuers.cert-manager.io customresourcedefinition.apiextensions.k8s.io/issuers.cert-manager.io
+customresourcedefinition.apiextensions.k8s.io "challenges.acme.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "orders.acme.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "certificaterequests.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "certificates.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clusterissuers.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "issuers.cert-manager.io" deleted
+20:32:46Z === annulation étape 2
+20:32:48Z + kubectl delete customresourcedefinition.apiextensions.k8s.io/backendtlspolicies.gateway.networking.k8s.io customresourcedefinition.apiextensions.k8s.io/gatewayclasses.gateway.networking.k8s.io customresourcedefinition.apiextensions.k8s.io/gateways.gateway.networking.k8s.io customresourcedefinition.apiextensions.k8s.io/grpcroutes.gateway.networking.k8s.io customresourcedefinition.apiextensions.k8s.io/httproutes.gateway.networking.k8s.io customresourcedefinition.apiextensions.k8s.io/listenersets.gateway.networking.k8s.io customresourcedefinition.apiextensions.k8s.io/referencegrants.gateway.networking.k8s.io customresourcedefinition.apiextensions.k8s.io/tlsroutes.gateway.networking.k8s.io
+customresourcedefinition.apiextensions.k8s.io "backendtlspolicies.gateway.networking.k8s.io" deleted
+customresourcedefinition.apiextensions.k8s.io "gatewayclasses.gateway.networking.k8s.io" deleted
+customresourcedefinition.apiextensions.k8s.io "gateways.gateway.networking.k8s.io" deleted
+customresourcedefinition.apiextensions.k8s.io "grpcroutes.gateway.networking.k8s.io" deleted
+customresourcedefinition.apiextensions.k8s.io "httproutes.gateway.networking.k8s.io" deleted
+customresourcedefinition.apiextensions.k8s.io "listenersets.gateway.networking.k8s.io" deleted
+customresourcedefinition.apiextensions.k8s.io "referencegrants.gateway.networking.k8s.io" deleted
+customresourcedefinition.apiextensions.k8s.io "tlsroutes.gateway.networking.k8s.io" deleted
+20:32:50Z === annulation étape 1
+20:32:51Z + kubectl delete namespace openchoreo-control-plane --wait=false
+namespace "openchoreo-control-plane" deleted
+20:32:51Z + kubectl delete namespace openchoreo-data-plane --wait=false
+namespace "openchoreo-data-plane" deleted
+20:32:52Z + kubectl delete namespace openchoreo-cert-manager --wait=false
+namespace "openchoreo-cert-manager" deleted
+20:32:52Z + kubectl delete namespace openchoreo-external-secrets --wait=false
+namespace "openchoreo-external-secrets" deleted
+20:32:52Z + kubectl delete namespace lab-secrets --wait=false
+namespace "lab-secrets" deleted
+20:32:52Z + kubectl delete namespace lab-argocd --wait=false
+namespace "lab-argocd" deleted
+20:32:52Z + kubectl delete namespace lab-cnpg --wait=false
+namespace "lab-cnpg" deleted
+20:32:52Z cnpg-system absent : migration déjà faite
+namespace/lab-argocd
+namespace/lab-cnpg
+namespace/lab-pvc-witness
+namespace/lab-secrets
+namespace/openchoreo-cert-manager
+namespace/openchoreo-control-plane
+namespace/openchoreo-data-plane
+namespace/openchoreo-external-secrets
+20:32:53Z namespaces restants (suppression en cours ?)
+
+20:32:53Z aucun objet cluster-scoped d'essai restant
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]])

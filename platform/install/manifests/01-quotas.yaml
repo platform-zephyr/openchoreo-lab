@@ -4,7 +4,9 @@
 # LimitRange : défauts pour les conteneurs sans resources (Jobs des charts), sinon refus par le quota.
 # Les cellules dp-* reçoivent leurs quotas du CPT cell-restricted, pas d'ici.
 ---
-# openchoreo-control-plane : controller-manager 15m/64Mi, openchoreo-api 10m/48Mi, cluster-gateway 5m/24Mi, kgateway 10m/96Mi = 40m/232Mi ; Job authz-bootstrap (défauts LimitRange) ; marge pour un Envoy CP si la Gateway CP est réactivée.
+# openchoreo-control-plane : controller-manager 15m/64Mi, openchoreo-api 10m/48Mi, cluster-gateway 5m/24Mi, kgateway 10m/96Mi = 40m/232Mi,
+# + portail backstage 10m/320Mi (étape 6b, docs/PORTAL.md §2) = 50m/552Mi ; Job authz-bootstrap (défauts LimitRange 10m/32Mi).
+# Limites : 384+256+128+256+768 = 1792Mi (+128Mi du Job) <= 2304Mi.
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -14,8 +16,8 @@ metadata:
 spec:
   hard:
     requests.cpu: "100m"
-    requests.memory: "384Mi"
-    limits.memory: "1536Mi"
+    requests.memory: "640Mi"
+    limits.memory: "2304Mi"
     pods: "8"
     persistentvolumeclaims: "0"
     services.loadbalancers: "0"
@@ -171,12 +173,12 @@ spec:
       default: {cpu: 200m, memory: 128Mi}
       max: {cpu: "1", memory: 1Gi}
 ---
-# cnpg-system : opérateur CNPG 20m/64Mi (platform/data/cnpg-operator-values.yaml).
+# lab-cnpg (ancien nom cnpg-system, revue B3) : opérateur CNPG 20m/64Mi (platform/data/cnpg-operator-values.yaml).
 apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: lab-quota
-  namespace: cnpg-system
+  namespace: lab-cnpg
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   hard:
@@ -192,7 +194,7 @@ apiVersion: v1
 kind: LimitRange
 metadata:
   name: lab-defaults
-  namespace: cnpg-system
+  namespace: lab-cnpg
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   limits:

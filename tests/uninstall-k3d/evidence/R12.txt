@@ -1,0 +1,7 @@
+# R12 — --step 12 --apply
+# date : 2026-11-17T20:30:28Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 12 --apply
+20:30:28Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:30:28Z RBAC réduit absent : rien à annuler
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]])

@@ -1,0 +1,31 @@
+# R4d — --step 4 --apply --delete-crds (ESO : CRD restantes, store lab-store marqué essai)
+# date : 2026-11-17T20:31:22Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 4 --apply --delete-crds
+20:31:12Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:31:12Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/20-eso-lab-store.yaml
+20:31:12Z release openchoreo-external-secrets/external-secrets absente
+20:31:17Z + kubectl delete customresourcedefinition.apiextensions.k8s.io/acraccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/cloudsmithaccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/clusterexternalsecrets.external-secrets.io customresourcedefinition.apiextensions.k8s.io/clustergenerators.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/clusterpushsecrets.external-secrets.io customresourcedefinition.apiextensions.k8s.io/clustersecretstores.external-secrets.io customresourcedefinition.apiextensions.k8s.io/ecrauthorizationtokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/fakes.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/gcraccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/generatorstates.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/githubaccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/grafanas.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/mfas.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/passwords.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/pushsecrets.external-secrets.io customresourcedefinition.apiextensions.k8s.io/quayaccesstokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/secretstores.external-secrets.io customresourcedefinition.apiextensions.k8s.io/sshkeys.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/stssessiontokens.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/uuids.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/vaultdynamicsecrets.generators.external-secrets.io customresourcedefinition.apiextensions.k8s.io/webhooks.generators.external-secrets.io
+customresourcedefinition.apiextensions.k8s.io "acraccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "cloudsmithaccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clusterexternalsecrets.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clustergenerators.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clusterpushsecrets.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clustersecretstores.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "ecrauthorizationtokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "fakes.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "gcraccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "generatorstates.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "githubaccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "grafanas.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "mfas.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "passwords.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "pushsecrets.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "quayaccesstokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "secretstores.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "sshkeys.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "stssessiontokens.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "uuids.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "vaultdynamicsecrets.generators.external-secrets.io" deleted
+customresourcedefinition.apiextensions.k8s.io "webhooks.generators.external-secrets.io" deleted
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && ! crd_has clustersecretstores.external-secrets.io)

@@ -1,0 +1,13 @@
+### 2026-11-17T20:02:36Z journal pod/cluster-agent-dataplane-686c478cc5-clpmh (ghcr.io/openchoreo/cluster-agent:v1.3.3) de 19:54:00Z à maintenant (run 4)
+lignes:     4237
+statusCode par valeur:
+1361 "statusCode":200
+  21 "statusCode":201
+  19 "statusCode":404
+  12 "statusCode":422
+lignes level=ERROR: 0
+{"time":"2026-11-17T19:57:53.900623277Z","level":"INFO","msg":"agent request completed","component":"router","requestId":"gw-feba9e0c872866b6","target":"k8s","statusCode":404,"bodySize":236}
+{"time":"2026-11-17T19:57:53.914656162Z","level":"INFO","msg":"agent request completed","component":"router","requestId":"gw-935c9232dc16ed6c","target":"k8s","statusCode":404,"bodySize":236}
+{"time":"2026-11-17T20:00:22.043023747Z","level":"INFO","msg":"agent request completed","component":"router","requestId":"gw-9dbbf892ece58426","target":"k8s","statusCode":404,"bodySize":236}
+{"time":"2026-11-17T20:00:30.420978313Z","level":"INFO","msg":"agent request completed","component":"router","requestId":"gw-32eb747eb4b5c274","target":"k8s","statusCode":404,"bodySize":236}
+{"time":"2026-11-17T20:00:30.433627772Z","level":"INFO","msg":"agent request completed","component":"router","requestId":"gw-17ffeb1ff465cda0","target":"k8s","statusCode":404,"bodySize":236}

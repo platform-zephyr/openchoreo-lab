@@ -1,0 +1,6 @@
+# B-07 — pod privileged dans kube-system (exclu par le binding)
+# attendu : ALLOW (baseline-pod-hardening)
+# date : 2026-11-17T19:52:27Z
+$ kubectl -n kube-system create --dry-run=server -f -
+pod/b7 created (server dry run)
+# rc=0 verdict=PASS

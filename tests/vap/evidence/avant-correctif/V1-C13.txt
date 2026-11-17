@@ -1,0 +1,6 @@
+# V1-C13 — admin pods/exec kube-system (hors matchConditions, témoin)
+# attendu : ALLOWC (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:11Z
+$ kubectl get --raw /api/v1/namespaces/kube-system/pods/coredns-8db54c48d-r48mr/exec?command=id&stdout=true
+Error from server (BadRequest): pod coredns-8db54c48d-r48mr does not have a host assigned
+# rc=1 verdict=PASS

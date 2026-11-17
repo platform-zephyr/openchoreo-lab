@@ -4,6 +4,8 @@ kind: ComponentRelease
 metadata:
   name: idp-e2e-bd7910ec5e
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
   owner:
     componentName: idp-e2e

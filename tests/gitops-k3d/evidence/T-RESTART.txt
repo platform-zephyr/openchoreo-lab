@@ -1,0 +1,5 @@
+### 2026-11-17T20:02:12Z
+pods avant : 174c8ede-9103-4d56-9767-2614da70f6e0:0 560c34f6-635a-4c24-a82d-2b46ac4ae20b:0 
+pods après : 174c8ede-9103-4d56-9767-2614da70f6e0:0 560c34f6-635a-4c24-a82d-2b46ac4ae20b:0 
+generation Deployment : 8 -> 8 ; HTTP 200 ; RB Ready=True ; Argo OutOfSync
+

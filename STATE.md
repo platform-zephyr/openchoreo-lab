@@ -25,6 +25,9 @@ Dernière mise à jour : 2026-11-17 ~20:45Z. Lire ensuite `missions/MISSION.md` 
 | 11 Argo CD | À FAIRE (projets lab-root / lab-platform / lab-apps / lab-authz, `default` verrouillé) |
 Mesures OKE (18:31Z, méthode MAX de 3 échantillons) : requests de tous les pods 385m/1830m (21 %), 1038Mi/8650Mi (12 %) ; seuil dur 70 % ; budget OpenChoreo = objectif ≤ 1,5 GiB et ≤ 0,3 vCPU. Les lignes `0m/0Mi` de `budget.log` des étapes 3-5 sont INVALIDES (bug corrigé).
 
+## Security bundle (temporaire, privé)
+Étapes 6, 6b, 7, 10 : `install.sh` exige le security bundle épinglé par `security/bundle.lock` (sinon arrêt avant toute écriture). Obtention, vérification, rollback, plan de retrait : `docs/SECURITY-BUNDLE.md`. Étape 12 intégrée à l'étape 7. Tests : `tests/security-bundle/run.sh`.
+
 ## 4. PR et branches
 - openchoreo-lab `main` protégé (ruleset : PR + `ci-ok`, **0 approbation** : n'est PAS une frontière de sécurité). Mergées : #1-#7, #9-#15 (+ le présent handoff).
 - **PR #8 `feat/oke-remediation-cp-values`** : OUVERTE, CI verte (tête `30ecead`). Contient : remédiation de la revue (P1-P3), VAP corrigées par un vrai API server, projets Argo séparés (preuve 20 PASS), `uninstall.sh` sûr, corrections appgen/contrat (137 tests), preuves GitOps k3d. **À FUSIONNER SEULEMENT après** intégration de l'installation fail-closed (voir §6) — sinon `install.sh` sur `main` pourrait installer le chart non corrigé.

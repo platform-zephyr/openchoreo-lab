@@ -1,0 +1,35 @@
+# R4a — --step 4 --apply --delete-crds (ExternalSecret hors essai à finalizer)
+# date : 2026-11-17T20:30:55Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 4 --apply --delete-crds
+20:30:50Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:30:50Z + kubectl delete --ignore-not-found -f /Users/<user>/Developer/Perso/openchoreo-lab/platform/install/manifests/20-eso-lab-store.yaml
+20:30:51Z + helm -n openchoreo-external-secrets uninstall external-secrets --wait
+These resources were kept due to the resource policy:
+[CustomResourceDefinition] acraccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] gcraccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] generatorstates.generators.external-secrets.io
+[CustomResourceDefinition] githubaccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] grafanas.generators.external-secrets.io
+[CustomResourceDefinition] mfas.generators.external-secrets.io
+[CustomResourceDefinition] passwords.generators.external-secrets.io
+[CustomResourceDefinition] pushsecrets.external-secrets.io
+[CustomResourceDefinition] quayaccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] secretstores.external-secrets.io
+[CustomResourceDefinition] sshkeys.generators.external-secrets.io
+[CustomResourceDefinition] cloudsmithaccesstokens.generators.external-secrets.io
+[CustomResourceDefinition] stssessiontokens.generators.external-secrets.io
+[CustomResourceDefinition] uuids.generators.external-secrets.io
+[CustomResourceDefinition] vaultdynamicsecrets.generators.external-secrets.io
+[CustomResourceDefinition] webhooks.generators.external-secrets.io
+[CustomResourceDefinition] clusterexternalsecrets.external-secrets.io
+[CustomResourceDefinition] clustergenerators.generators.external-secrets.io
+[CustomResourceDefinition] clusterpushsecrets.external-secrets.io
+[CustomResourceDefinition] clustersecretstores.external-secrets.io
+[CustomResourceDefinition] ecrauthorizationtokens.generators.external-secrets.io
+[CustomResourceDefinition] externalsecrets.external-secrets.io
+[CustomResourceDefinition] fakes.generators.external-secrets.io
+
+release "external-secrets" uninstalled
+20:30:55Z CRD externalsecrets.external-secrets.io utilisée hors essai (objets namespacés) : conservée
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && ! helm -n openchoreo-external-secrets status external-secrets >/dev/null 2>&1 && crd_has externalsecrets.external-secrets.io && grep -q "utilisée hors essai" <<<"$LAST_OUT")

@@ -1,5 +1,8 @@
-# Application racine du labo (étape 10, app-of-apps). Elle ne synchronise que platform/install/argocd/apps
-# (des Application). Pas de finalizer resources-finalizer : supprimer l'Application CONSERVE les objets.
+# BOOTSTRAP PRIVILÉGIÉ (étape 11, tools/oke/install.sh ; jamais synchronisé par Argo).
+# Application racine du labo (app-of-apps). Elle ne synchronise que platform/install/argocd/apps
+# (des Application), dans le projet dédié `lab-root` (kind Application dans lab-argocd seulement ; revue
+# PR #8, P1). Seule Application admise hors apps/ par tools/oke/argo_guard.py.
+# Pas de finalizer resources-finalizer : supprimer l'Application CONSERVE les objets.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -7,7 +10,7 @@ metadata:
   namespace: lab-argocd
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
-  project: lab
+  project: lab-root
   source:
     repoURL: https://github.com/platform-zephyr/openchoreo-lab
     targetRevision: main

@@ -1,0 +1,17 @@
+# R3a — --step 3 --apply --delete-crds (Issuer hors essai)
+# date : 2026-11-17T20:31:06Z
+$ /Users/<user>/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 3 --apply --delete-crds
+20:31:02Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:31:02Z + helm -n openchoreo-cert-manager uninstall cert-manager --wait
+These resources were kept due to the resource policy:
+[CustomResourceDefinition] challenges.acme.cert-manager.io
+[CustomResourceDefinition] orders.acme.cert-manager.io
+[CustomResourceDefinition] certificaterequests.cert-manager.io
+[CustomResourceDefinition] certificates.cert-manager.io
+[CustomResourceDefinition] clusterissuers.cert-manager.io
+[CustomResourceDefinition] issuers.cert-manager.io
+
+release "cert-manager" uninstalled
+20:31:06Z CRD issuers.cert-manager.io utilisée hors essai (objets namespacés) : conservée
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && ! helm -n openchoreo-cert-manager status cert-manager >/dev/null 2>&1 && crd_has issuers.cert-manager.io && kubectl -n ext-user get issuer ext-selfsigned >/dev/null)

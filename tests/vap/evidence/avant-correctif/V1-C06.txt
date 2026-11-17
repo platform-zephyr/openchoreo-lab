@@ -1,0 +1,6 @@
+# V1-C06 — agent nodes/proxy (R1, cluster-scoped)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:10Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated get --raw /api/v1/nodes/k3d-lab-sec-vap-server-0/proxy/healthz
+Error from server (Forbidden): nodes "k3d-lab-sec-vap-server-0" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: objet cluster-scoped interdit pour system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane (nodes/k3d-lab-sec-vap-server-0)
+# rc=1 verdict=PASS

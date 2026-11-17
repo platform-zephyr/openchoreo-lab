@@ -1,0 +1,6 @@
+# V1-C05 — agent services/proxy kube-system/kube-dns (R2)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:10Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated get --raw /api/v1/namespaces/kube-system/services/kube-dns:53/proxy/
+Error from server (Forbidden): services "kube-dns:53" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: le cluster-agent ne peut pas écrire services/proxy (CONNECT) dans le namespace kube-system
+# rc=1 verdict=PASS

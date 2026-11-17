@@ -1,0 +1,6 @@
+# V1-N04 — agent UPDATE dp-vap-ok restricted->baseline (R3, baisse)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:17Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated label ns dp-vap-ok pod-security.kubernetes.io/enforce=baseline --overwrite --dry-run=server
+Error from server (Forbidden): namespaces "dp-vap-ok" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: namespace dp-vap-ok : PSA enforce restricted|baseline (sans baisse depuis restricted), enforce-version latest et platform.smadja.dev/cell=restricted exigés (reçu enforce=baseline)
+# rc=1 verdict=PASS

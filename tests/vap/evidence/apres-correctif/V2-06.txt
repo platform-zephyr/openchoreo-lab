@@ -1,0 +1,6 @@
+# V2-06 — pod conforme dans dp-* (témoin)
+# attendu : ALLOW (lab-cell-pod-hardening)
+# date : 2026-11-17T19:52:23Z
+$ kubectl -n dp-vap-nopsa create --dry-run=server -f -
+pod/p6 created (server dry run)
+# rc=0 verdict=PASS
