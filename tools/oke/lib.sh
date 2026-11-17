@@ -98,8 +98,8 @@ unavailable() { printf 'MEASUREMENT_UNAVAILABLE: %s\n' "$1" >&2; }
 # namespace (jamais 0). Code 4 si l'API échoue, répond vide ou n'a aucun pod.
 usage_by_ns() {
   local node raw
-  node="$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)" && [[ -n "$node" ]] \
-    || { unavailable "nom du nœud illisible"; return 4; }
+  node="$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)" || node=""
+  [[ -n "$node" ]] || { unavailable "nom du nœud illisible"; return 4; }
   raw="$(kubectl get --raw "/api/v1/nodes/$node/proxy/stats/summary" 2>/dev/null)" \
     || { unavailable "API kubelet /stats/summary en erreur"; return 4; }
   [[ -n "$raw" ]] || { unavailable "API kubelet /stats/summary : réponse vide"; return 4; }
