@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-approved
+  namespace: dp-aiostreams
+  annotations: {platform.smadja.dev/delete-approved-until: "@@T+2h@@"}
+spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 1Gi}}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: pvc-unannotated, namespace: dp-aiostreams}
+spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 1Gi}}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-expired
+  namespace: lab-pg
+  annotations: {platform.smadja.dev/delete-approved-until: "@@T-1h@@"}
+spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 1Gi}}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-window-too-long
+  namespace: lab-pg
+  annotations: {platform.smadja.dev/delete-approved-until: "@@T+2d@@"}
+spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 1Gi}}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-malformed
+  namespace: lab-pg
+  annotations: {platform.smadja.dev/delete-approved-until: "demain"}
+spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 1Gi}}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: pvc-kube-ops, namespace: databases}
+spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 1Gi}}}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata: {name: pv-lab-pg-1}
+spec:
+  capacity: {storage: 50Gi}
+  accessModes: [ReadWriteOnce]
+  claimRef: {namespace: lab-pg, name: lab-pg-1}
+  csi: {driver: blockvolume.csi.oraclecloud.com, volumeHandle: ocid1.volume.oc1..example}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata: {name: lab-pg, namespace: lab-pg}
+spec: {instances: 1, storage: {size: 50Gi}}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: lab-pg-approved
+  namespace: lab-pg
+  annotations: {platform.smadja.dev/delete-approved-until: "@@T+1h@@"}
+spec: {instances: 1, storage: {size: 50Gi}}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: lab-pg}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: dp-stateless}

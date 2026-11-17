@@ -1,0 +1,16 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-delete-approval-window}
+policies: [../../../platform/kyverno/policies/lab-delete-approval-window.yaml]
+# Mêmes objets que K-10 (fenêtres rendues par run.sh).
+resources: [../lab-protect-persistent-data/objects.yaml]
+clusterResources: [cluster-resources.yaml]
+results:
+  - {policy: lab-delete-approval-window, isValidatingPolicy: true, kind: PersistentVolumeClaim, operation: UPDATE, result: fail,
+     resources: [pvc-window-too-long, pvc-malformed, pvc-expired]}
+  - {policy: lab-delete-approval-window, isValidatingPolicy: true, kind: PersistentVolumeClaim, operation: CREATE, result: pass,
+     resources: [pvc-approved]}
+  - {policy: lab-delete-approval-window, isValidatingPolicy: true, kind: Cluster, operation: UPDATE, result: pass, resources: [lab-pg-approved]}
+  # Sans annotation : jamais évalué (coût nul, aucune dépendance à Kyverno).
+  - {policy: lab-delete-approval-window, isValidatingPolicy: true, kind: PersistentVolumeClaim, operation: CREATE, result: skip,
+     resources: [pvc-unannotated]}

@@ -1,0 +1,19 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-security-objects-guard-as-app}
+policies: [../../../../platform/kyverno/policies/lab-security-objects-guard.yaml]
+resources: [../namespaces.yaml, ../guarded.yaml]
+userinfo: user.yaml
+results:
+  # a) labels PSA du namespace (indépendant de l'identité)
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: Namespace, result: pass,
+     resources: [lab-ok-restricted, openchoreo-data-plane, dp-root-exception, lab-netcontrol]}
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: Namespace, result: fail,
+     resources: [lab-bad-privileged, lab-bad-baseline, openchoreo-bad-nopsa, lab-bad-pinned-version]}
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: Namespace, result: skip, resources: [monitoring]}
+  # c) objets de sécurité : modification/suppression par une identité applicative refusée
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: NetworkPolicy, operation: DELETE, result: fail,
+     resources: [lab-default-deny, default-deny]}
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: ResourceQuota, operation: UPDATE, result: fail, resources: [cell-quota]}
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: LimitRange, operation: DELETE, result: fail, resources: [lab-defaults]}
+  - {policy: lab-security-objects-guard, isValidatingPolicy: true, kind: NetworkPolicy, operation: DELETE, result: skip, resources: [app-allow-metrics]}

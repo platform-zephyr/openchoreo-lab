@@ -1,0 +1,11 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-protect-persistent-data-as-namespace-controller}
+policies: [../../../../platform/kyverno/policies/lab-protect-persistent-data.yaml]
+resources: [../objects.yaml]
+clusterResources: [../cluster-resources.yaml]
+userinfo: user.yaml
+results:
+  # Purge d'un namespace dont la suppression a été approuvée : le contrôleur n'est pas bloqué.
+  - {policy: lab-protect-persistent-data, isValidatingPolicy: true, kind: PersistentVolumeClaim, operation: DELETE, result: pass,
+     resources: [pvc-unannotated]}

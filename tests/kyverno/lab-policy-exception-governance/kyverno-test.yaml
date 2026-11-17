@@ -1,0 +1,10 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-policy-exception-governance}
+policies: [../../../platform/kyverno/policies/lab-policy-exception-governance.yaml]
+resources: [resources.yaml]
+results:
+  - {policy: lab-policy-exception-governance, isValidatingPolicy: true, kind: PolicyException, result: pass, resources: [ok-exception]}
+  - {policy: lab-policy-exception-governance, isValidatingPolicy: true, kind: PolicyException, result: fail,
+     resources: [bad-no-expiry, bad-expired, bad-over-90-days, bad-future-approval, bad-no-reason, bad-non-exceptionable,
+                 bad-global, bad-wrong-namespace]}

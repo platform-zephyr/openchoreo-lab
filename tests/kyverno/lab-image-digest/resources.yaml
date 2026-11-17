@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ok-digest, namespace: openchoreo-control-plane}
+spec:
+  selector: {matchLabels: {app: ok}}
+  template:
+    metadata: {labels: {app: ok}}
+    spec:
+      initContainers: [{name: init, image: "ghcr.io/example/init:v1.2.3@sha256:00000000000000000000000000000000000000000000000000000000000000aa"}]
+      containers: [{name: app, image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: bad-tag, namespace: dp-demo}
+spec:
+  selector: {matchLabels: {app: t}}
+  template:
+    metadata: {labels: {app: t}}
+    spec:
+      containers: [{name: app, image: "ghcr.io/example/app:1.0"}]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: {name: bad-init-latest, namespace: lab-demo}
+spec:
+  schedule: "@daily"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          initContainers: [{name: init, image: "busybox:latest"}]
+          containers: [{name: job, image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"}]
+---
+# Digest tronqué (pas 64 hex) : refusé.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: bad-short-digest, namespace: lab-demo}
+spec:
+  serviceName: s
+  selector: {matchLabels: {app: s}}
+  template:
+    metadata: {labels: {app: s}}
+    spec:
+      containers: [{name: app, image: "ghcr.io/example/app@sha256:abc123"}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: skip-kube-ops, namespace: monitoring}
+spec:
+  selector: {matchLabels: {app: k}}
+  template:
+    metadata: {labels: {app: k}}
+    spec:
+      containers: [{name: app, image: "grafana/alloy:latest"}]

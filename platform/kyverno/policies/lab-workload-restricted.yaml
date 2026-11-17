@@ -1,0 +1,122 @@
+# K-01 `lab-workload-restricted` — PSA restricted appliquée aux GABARITS de pods (contrôleurs).
+# Propriétaire de la règle « pod restricted » : la PSA (namespaces du lab, enforce restricted), sur les Pods.
+# Ce que Kyverno ajoute, SANS doublon de cible : la PSA n'émet qu'un avertissement sur un Deployment non
+# conforme, l'objet est admis et le ReplicaSet échoue en silence (Argo « Progressing » sans fin). Ici le
+# contrôleur lui-même est refusé, l'erreur remonte à Argo/Helm au moment du sync. Les Pods NE sont PAS
+# visés (autogen désactivé, pas de règle `pods`) : un seul propriétaire par cible.
+# Niveau suivi : celui du namespace (label pod-security.kubernetes.io/enforce). Un namespace `baseline`
+# (openchoreo-data-plane, cellule avec securityExceptions run-as-root) n'est pas contrôlé par cette règle :
+# Kyverno ne réécrit pas la décision PSA du namespace.
+# Hors règle (propriétaire VAP natives, Kyverno en rapport seulement : lab-host-isolation-report) :
+# privileged, hostNetwork/PID/IPC, hostPath.
+# failurePolicy Ignore : si Kyverno est indisponible, la PSA refuse toujours le Pod (critique conservé).
+# Tests : tests/kyverno/lab-workload-restricted/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-workload-restricted
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: shift-left
+  annotations:
+    platform.smadja.dev/ownership: "K-01 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-workload-restricted
+    platform.smadja.dev/exceptionable: "true"
+spec:
+  validationActions: [Deny]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: true
+  autogen:
+    podControllers:
+      controllers: []
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [apps]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [deployments, statefulsets, daemonsets]
+      - apiGroups: [batch]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [jobs, cronjobs]
+  matchConditions:
+    - name: lab-perimeter
+      expression: >-
+        request.namespace.startsWith('dp-') || request.namespace.startsWith('lab-') ||
+        request.namespace.startsWith('openchoreo-')
+    # Un objet en cours de suppression (retrait de finalizer) n'est jamais bloqué.
+    - name: not-terminating
+      expression: "!has(object.metadata.deletionTimestamp)"
+  variables:
+    - name: podSpec
+      expression: >-
+        object.kind == 'CronJob' ? object.spec.jobTemplate.spec.template.spec : object.spec.template.spec
+    - name: containers
+      expression: >-
+        variables.podSpec.containers +
+        (has(variables.podSpec.initContainers) ? variables.podSpec.initContainers : [])
+    - name: nsLabels
+      expression: >-
+        namespaceObject != null && has(namespaceObject.metadata.labels) ? namespaceObject.metadata.labels : {}
+    - name: restricted
+      expression: >-
+        'pod-security.kubernetes.io/enforce' in variables.nsLabels &&
+        variables.nsLabels['pod-security.kubernetes.io/enforce'] == 'restricted'
+    - name: psc
+      expression: "has(variables.podSpec.securityContext) ? variables.podSpec.securityContext : {}"
+  validations:
+    - expression: >-
+        !variables.restricted || (
+          ((has(variables.psc.runAsNonRoot) && variables.psc.runAsNonRoot == true) ||
+            variables.containers.all(c, has(c.securityContext) && has(c.securityContext.runAsNonRoot) &&
+              c.securityContext.runAsNonRoot == true)) &&
+          variables.containers.all(c, !has(c.securityContext) || !has(c.securityContext.runAsNonRoot) ||
+            c.securityContext.runAsNonRoot == true) &&
+          !(has(variables.psc.runAsUser) && variables.psc.runAsUser == 0) &&
+          variables.containers.all(c, !has(c.securityContext) || !has(c.securityContext.runAsUser) ||
+            c.securityContext.runAsUser != 0))
+      messageExpression: >-
+        'lab-workload-restricted: ' + object.kind + '/' + object.metadata.name +
+        ' : runAsNonRoot=true exigé et runAsUser=0 interdit (PSA restricted du namespace ' + request.namespace + ')'
+      reason: Forbidden
+    - expression: >-
+        !variables.restricted || variables.containers.all(c, has(c.securityContext) &&
+          has(c.securityContext.allowPrivilegeEscalation) && c.securityContext.allowPrivilegeEscalation == false)
+      messageExpression: >-
+        'lab-workload-restricted: ' + object.kind + '/' + object.metadata.name +
+        ' : allowPrivilegeEscalation=false exigé sur chaque conteneur'
+      reason: Forbidden
+    - expression: >-
+        !variables.restricted || variables.containers.all(c, has(c.securityContext) &&
+          has(c.securityContext.capabilities) && has(c.securityContext.capabilities.drop) &&
+          c.securityContext.capabilities.drop.exists(d, d == 'ALL') &&
+          (!has(c.securityContext.capabilities.add) ||
+            c.securityContext.capabilities.add.all(a, a == 'NET_BIND_SERVICE')))
+      messageExpression: >-
+        'lab-workload-restricted: ' + object.kind + '/' + object.metadata.name +
+        ' : capabilities.drop doit contenir ALL ; seul NET_BIND_SERVICE peut être ajouté'
+      reason: Forbidden
+    - expression: >-
+        !variables.restricted || (
+          variables.containers.all(c,
+            (has(c.securityContext) && has(c.securityContext.seccompProfile) &&
+              c.securityContext.seccompProfile.type in ['RuntimeDefault', 'Localhost']) ||
+            ((!has(c.securityContext) || !has(c.securityContext.seccompProfile)) &&
+              has(variables.psc.seccompProfile) &&
+              variables.psc.seccompProfile.type in ['RuntimeDefault', 'Localhost'])))
+      messageExpression: >-
+        'lab-workload-restricted: ' + object.kind + '/' + object.metadata.name +
+        ' : seccompProfile RuntimeDefault ou Localhost exigé (pod ou conteneur), Unconfined interdit'
+      reason: Forbidden
+    - expression: >-
+        !variables.restricted || !has(variables.podSpec.volumes) || variables.podSpec.volumes.all(v,
+          has(v.configMap) || has(v.csi) || has(v.downwardAPI) || has(v.emptyDir) || has(v.ephemeral) ||
+          has(v.persistentVolumeClaim) || has(v.projected) || has(v.secret))
+      messageExpression: >-
+        'lab-workload-restricted: ' + object.kind + '/' + object.metadata.name +
+        ' : type de volume hors liste PSA restricted (configMap, csi, downwardAPI, emptyDir, ephemeral, persistentVolumeClaim, projected, secret)'
+      reason: Forbidden

@@ -1,0 +1,124 @@
+# Kyverno — profil MINIMAL du lab (chart kyverno 3.9.2 = Kyverno v1.19.2 ; versions.env à côté).
+# Seuls contrôleurs actifs : admission (validation CEL + exceptions) et reports (PolicyReport + scan de fond
+# des politiques en Audit). background (generate/mutate-existing) et cleanup : DÉSACTIVÉS — aucune
+# MutatingPolicy/GeneratingPolicy/DeletingPolicy livrée (contrat §2). Réplicas 1 (nœud unique OKE).
+# Namespace : lab-kyverno (périmètre openchoreo-*/lab-* d'AGENTS.md), exclu des webhooks (anti auto-blocage).
+# Rendu vérifié hors cluster (helm template, 2026-11-17) ; NON INSTALLÉ (pas de cluster libre).
+namespaceOverride: lab-kyverno
+
+crds:
+  install: true
+  # Installation neuve : rien à migrer, pas de Job kyverno-cli.
+  migration:
+    enabled: false
+
+# Images épinglées par digest d'index multi-arch (arm64 présent, vérifié sur ghcr.io le 2026-11-17).
+admissionController:
+  replicas: 1
+  initContainer:
+    image:
+      registry: ghcr.io
+      repository: kyverno/kyvernopre
+      tag: "v1.19.2@sha256:27f3cc52e628559b56d08363b85316819802086c9808606914f7805a244148f4"
+    resources:
+      requests: {cpu: 10m, memory: 64Mi}
+      limits: {memory: 128Mi}
+  container:
+    image:
+      registry: ghcr.io
+      repository: kyverno/kyverno
+      tag: "v1.19.2@sha256:c8c4dd09e720d2cd7fd24ca73ac28e46651001372f988e0cba3f2f612f04b955"
+    # Défaut du chart : requests 100m/128Mi, limite 384Mi. Requests ramenées au repos attendu [S, à mesurer].
+    resources:
+      requests: {cpu: 50m, memory: 128Mi}
+      limits: {memory: 384Mi}
+  rbac:
+    clusterRole:
+      # Lectures des CEL resource.List (K-05 quotas, K-09 NetworkPolicy, K-10 PVC) et des Cluster CNPG (K-10).
+      extraResources:
+        - apiGroups: [""]
+          resources: [resourcequotas, persistentvolumeclaims, persistentvolumes]
+          verbs: [get, list, watch]
+        - apiGroups: [networking.k8s.io]
+          resources: [networkpolicies]
+          verbs: [get, list, watch]
+        - apiGroups: [postgresql.cnpg.io]
+          resources: [clusters]
+          verbs: [get, list, watch]
+
+reportsController:
+  enabled: true
+  replicas: 1
+  image:
+    registry: ghcr.io
+    repository: kyverno/reports-controller
+    tag: "v1.19.2@sha256:5fb6d3e738050dbce84f60ecabaede7665fbe0578d07c1e8c912443b035e79c3"
+  resources:
+    requests: {cpu: 20m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  rbac:
+    clusterRole:
+      # Scan de fond des politiques Audit (K-02, K-09) et des Deny (conformité de l'existant).
+      extraResources:
+        - apiGroups: [""]
+          resources: [resourcequotas, persistentvolumeclaims, persistentvolumes]
+          verbs: [get, list, watch]
+        - apiGroups: [networking.k8s.io]
+          resources: [networkpolicies]
+          verbs: [get, list, watch]
+
+backgroundController:
+  enabled: false
+cleanupController:
+  enabled: false
+
+# Pods `helm test` (hooks, jamais créés à l'installation) : image épinglée quand même.
+test:
+  image:
+    registry: ghcr.io
+    repository: kyverno/readiness-checker
+    tag: "v1.19.2@sha256:02600428e7c956e222f4376413525866ed9fec28e6bcb1222774ce6bf5fc904a"
+grafana:
+  enabled: false
+
+webhooksCleanup:
+  enabled: true
+  image:
+    registry: ghcr.io
+    repository: kyverno/readiness-checker
+    tag: "v1.19.2@sha256:02600428e7c956e222f4376413525866ed9fec28e6bcb1222774ce6bf5fc904a"
+
+config:
+  # Pas de réécriture des images sans registre (docker.io) : le contrat exige des références complètes.
+  enableDefaultRegistryMutation: false
+  # Webhooks : namespaces système et lab-kyverno exclus (évite l'auto-blocage si Kyverno tombe).
+  # Les politiques ajoutent leur propre matchCondition de périmètre (dp-*, lab-*, openchoreo-*).
+  webhooks:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [kube-system, kube-public, kube-node-lease, lab-kyverno]
+  excludeKyvernoNamespace: true
+
+features:
+  # Exceptions CEL lues UNIQUEMENT dans lab-policy-exceptions (--exceptionNamespace ; GHSA-qc9c-3fgf-cgq8
+  # corrigé en 1.19.2 pour les VAP générées).
+  policyExceptions:
+    enabled: true
+    namespace: lab-policy-exceptions
+  # Pas de génération de VAP par Kyverno : les garde-fous natifs restent écrits et testés à la main
+  # (platform/policies, tests/vap) ; un seul propriétaire par règle.
+  generateValidatingAdmissionPolicy:
+    enabled: false
+  generateMutatingAdmissionPolicy:
+    enabled: false
+  # Jamais forcer Ignore globalement : K-10 et K-11 sont volontairement en Fail.
+  forceFailurePolicyIgnore:
+    enabled: false
+  backgroundScan:
+    enabled: true
+    backgroundScanWorkers: 1
+    backgroundScanInterval: 1h
+  logging:
+    verbosity: 1

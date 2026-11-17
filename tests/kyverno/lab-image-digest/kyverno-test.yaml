@@ -1,0 +1,10 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-image-digest}
+policies: [../../../platform/kyverno/policies/lab-image-digest.yaml]
+resources: [resources.yaml]
+results:
+  - {policy: lab-image-digest, isValidatingPolicy: true, kind: Deployment, result: pass, resources: [ok-digest]}
+  - {policy: lab-image-digest, isValidatingPolicy: true, kind: Deployment, result: fail,
+     resources: [bad-tag, bad-init-latest, bad-short-digest]}
+  - {policy: lab-image-digest, isValidatingPolicy: true, kind: Deployment, result: skip, resources: [skip-kube-ops]}

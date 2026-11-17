@@ -1,0 +1,125 @@
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: ok-exception
+  namespace: lab-policy-exceptions
+  annotations:
+    platform.smadja.dev/reason: "image upstream sans digest publié, épinglage demandé en amont"
+    platform.smadja.dev/approver: "user:default/paul"
+    platform.smadja.dev/approved-at: "@@T-1d@@"
+spec:
+  expiresAt: "@@T+60d@@"
+  policyRefs: [{name: lab-image-digest, kind: ValidatingPolicy}]
+  matchConditions: [{name: one-app, expression: "object.metadata.namespace == 'dp-legacy'"}]
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: bad-no-expiry
+  namespace: lab-policy-exceptions
+  annotations:
+    platform.smadja.dev/reason: "image upstream sans digest publié, épinglage demandé en amont"
+    platform.smadja.dev/approver: "user:default/paul"
+    platform.smadja.dev/approved-at: "@@T-1d@@"
+spec:
+  policyRefs: [{name: lab-image-digest, kind: ValidatingPolicy}]
+  matchConditions: [{name: one-app, expression: "object.metadata.namespace == 'dp-legacy'"}]
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: bad-expired
+  namespace: lab-policy-exceptions
+  annotations:
+    platform.smadja.dev/reason: "image upstream sans digest publié, épinglage demandé en amont"
+    platform.smadja.dev/approver: "user:default/paul"
+    platform.smadja.dev/approved-at: "@@T-40d@@"
+spec:
+  expiresAt: "@@T-1h@@"
+  policyRefs: [{name: lab-image-digest, kind: ValidatingPolicy}]
+  matchConditions: [{name: one-app, expression: "object.metadata.namespace == 'dp-legacy'"}]
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: bad-over-90-days
+  namespace: lab-policy-exceptions
+  annotations:
+    platform.smadja.dev/reason: "image upstream sans digest publié, épinglage demandé en amont"
+    platform.smadja.dev/approver: "user:default/paul"
+    platform.smadja.dev/approved-at: "@@T-1d@@"
+spec:
+  expiresAt: "@@T+100d@@"
+  policyRefs: [{name: lab-image-digest, kind: ValidatingPolicy}]
+  matchConditions: [{name: one-app, expression: "object.metadata.namespace == 'dp-legacy'"}]
+---
+# Antidatée dans le futur pour gonfler la durée : refusée.
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: bad-future-approval
+  namespace: lab-policy-exceptions
+  annotations:
+    platform.smadja.dev/reason: "image upstream sans digest publié, épinglage demandé en amont"
+    platform.smadja.dev/approver: "user:default/paul"
+    platform.smadja.dev/approved-at: "@@T+30d@@"
+spec:
+  expiresAt: "@@T+100d@@"
+  policyRefs: [{name: lab-image-digest, kind: ValidatingPolicy}]
+  matchConditions: [{name: one-app, expression: "object.metadata.namespace == 'dp-legacy'"}]
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: bad-no-reason
+  namespace: lab-policy-exceptions
+  annotations:
+    platform.smadja.dev/reason: "parce que"
+    platform.smadja.dev/approver: "paul"
+    platform.smadja.dev/approved-at: "@@T-1d@@"
+spec:
+  expiresAt: "@@T+30d@@"
+  policyRefs: [{name: lab-image-digest, kind: ValidatingPolicy}]
+  matchConditions: [{name: one-app, expression: "object.metadata.namespace == 'dp-legacy'"}]
+---
+# Vise une politique non exceptionable (protection des données) : refusée.
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: bad-non-exceptionable
+  namespace: lab-policy-exceptions
+  annotations:
+    platform.smadja.dev/reason: "purge rapide des volumes de test sans annotation de suppression"
+    platform.smadja.dev/approver: "user:default/paul"
+    platform.smadja.dev/approved-at: "@@T-1d@@"
+spec:
+  expiresAt: "@@T+7d@@"
+  policyRefs: [{name: lab-protect-persistent-data, kind: ValidatingPolicy}]
+  matchConditions: [{name: all-pvc, expression: "true"}]
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: bad-global
+  namespace: lab-policy-exceptions
+  annotations:
+    platform.smadja.dev/reason: "image upstream sans digest publié, épinglage demandé en amont"
+    platform.smadja.dev/approver: "user:default/paul"
+    platform.smadja.dev/approved-at: "@@T-1d@@"
+spec:
+  expiresAt: "@@T+30d@@"
+  policyRefs: [{name: lab-image-digest, kind: ValidatingPolicy}]
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: bad-wrong-namespace
+  namespace: dp-legacy
+  annotations:
+    platform.smadja.dev/reason: "image upstream sans digest publié, épinglage demandé en amont"
+    platform.smadja.dev/approver: "user:default/paul"
+    platform.smadja.dev/approved-at: "@@T-1d@@"
+spec:
+  expiresAt: "@@T+30d@@"
+  policyRefs: [{name: lab-image-digest, kind: ValidatingPolicy}]
+  matchConditions: [{name: one-app, expression: "object.metadata.namespace == 'dp-legacy'"}]
