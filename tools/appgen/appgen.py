@@ -586,7 +586,7 @@ def semantic_errors(doc: dict, dirname: str, cluster_gate_open: bool, ctx: Conte
     return semantic_check(doc, dirname, cluster_gate_open, ctx)[0]
 
 
-def validate_all_full(root: Path, cluster_gate_open: bool = False, examples: bool = True,
+def validate_all_full(root: Path, cluster_gate_open: bool = True, examples: bool = True,
                       allow_unenforced_fqdn: bool = False, today: datetime.date | None = None):
     """Retourne (nb_apps, erreurs, avertissements). Verifie aussi l'unicite des hotes publics."""
     errors: list[str] = []
@@ -626,7 +626,7 @@ def validate_all_full(root: Path, cluster_gate_open: bool = False, examples: boo
     return len(loaded), errors, warnings
 
 
-def validate_all(root: Path, cluster_gate_open: bool = False, examples: bool = True, **kw):
+def validate_all(root: Path, cluster_gate_open: bool = True, examples: bool = True, **kw):
     """Retourne (nb_apps, liste_erreurs)."""
     count = len(app_dirs(root, examples=examples))
     _, errors, _ = validate_all_full(root, cluster_gate_open, examples, **kw)
@@ -1228,7 +1228,7 @@ def render_helm(doc: dict, caps: dict | None = None) -> dict[str, object]:
     return files
 
 
-def render_all(root: Path, platform_dir: Path, cluster_gate_open: bool = False,
+def render_all(root: Path, platform_dir: Path, cluster_gate_open: bool = True,
                allow_unenforced_fqdn: bool = False, today: datetime.date | None = None,
                history_dir: Path | None = None) -> dict[str, object]:
     """history_dir : arbre genere existant dont les ComponentRelease sont conservees (defaut root/generated)."""
@@ -1453,7 +1453,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="appgen", description=__doc__.split("\n")[0])
     parser.add_argument("--platform-dir", default=str(ROOT / "platform"),
                         help="dossier contenant ClusterComponentType, ClusterTrait, ClusterProjectType (defaut : platform/)")
-    parser.add_argument("--allow-oke", action="store_true", help="ouvrir le gate OKE (ne pas utiliser avant gate)")
+    parser.add_argument("--allow-oke", action=argparse.BooleanOptionalAction, default=True,
+                        help="gate OKE franchi le 2026-11-17 (defaut) ; --no-allow-oke pour le refermer")
     parser.add_argument("--allow-unenforced-fqdn", action="store_true",
                         help="labo seulement : egress FQDN sur cluster sans Cilium -> avertissement, apercu marque "
                              "enforced=false, regles NON transmises (flux refuses)")
