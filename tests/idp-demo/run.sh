@@ -184,7 +184,7 @@ cmd_observe() {
   cluster_guard
   # 1. Argo CD : l'Application lab-apps a synchronisé le SHA du merge (lecture).
   for ((i = 0; i < 40; i++)); do
-    argo_rev="$(k get applications.argoproj.io -n "$ARGOCD_NS" lab-apps -o jsonpath='{.status.sync.revision}' 2>/dev/null || true)"
+    argo_rev="$(k get applications.argoproj.io -n "$ARGOCD_NS" lab-apps -o jsonpath='{.status.sync.revision}{.status.sync.revisions[0]}' 2>/dev/null || true)"
     [ "$argo_rev" = "$sha" ] && break
     sleep 15
   done
