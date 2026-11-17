@@ -249,7 +249,7 @@ class Guard:
                     self.err(rel, "A2 projet lab-authz réservé à l'Application lab-authz (chemin platform/authz)")
             if proj in MANUAL_PROJECTS and (spec.get("syncPolicy") or {}).get("automated") is not None:
                 self.err(rel, f"A4 Application '{name}' ({proj}) : synchro automated interdite (sync MANUELLE)")
-            if proj == "lab-apps" and (name != "lab-apps" or path != APPS_PATH):
+            if proj == "lab-apps" and (name != "lab-apps" or not (path == APPS_PATH or path.startswith(APPS_PATH + "/projects/"))):
                 self.err(rel, f"A2 projet lab-apps réservé à l'Application lab-apps (chemin {APPS_PATH})")
             if proj == "lab-platform":
                 norm = pathlib.PurePosixPath(path)

@@ -48,7 +48,10 @@ RICH_CAPS = caps_doc(
 
 
 def whoami() -> dict:
-    return appgen.load_yaml(ROOT / "apps" / "whoami" / "app.yaml")
+    # Racine de test : clusters/k3d uniquement ; le gate OKE est teste dans test_appgen (NegativeCases).
+    doc = appgen.load_yaml(ROOT / "apps" / "whoami" / "app.yaml")
+    doc["spec"]["cluster"] = "k3d"
+    return doc
 
 
 def miniflux() -> dict:

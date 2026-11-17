@@ -2,8 +2,8 @@
 # Projet lab-apps : kinds OpenChoreo NAMESPACÉS applicatifs dans `default`, aucun kind cluster-scoped
 # (flux A2, docs/ARGO-ESCALATION.md). Un manifest glissé dans generated/ (ClusterRoleBinding, Namespace,
 # VAP, Secret, Application...) est refusé par Argo à la synchronisation.
-# Sync MANUELLE tant que la Phase C n'est pas ouverte (décision de Paul) : la déclarer ici ne déploie rien
-# sur OKE à l'étape 11. Passer à `automated: {prune: false, selfHeal: true}` = PR (APP-CONTRACT §5).
+# Phase C ouverte pour whoami seulement : sync AUTOMATIQUE sans prune, limitée au dossier de l'app (les autres apps
+# de generated/ ciblent k3d et ne doivent pas atteindre OKE). Ajouter une app OKE = ajouter son dossier par PR.
 # Prune désactivé : finalizers Component/Resource (APP-CONTRACT §5).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -16,7 +16,7 @@ spec:
   source:
     repoURL: https://github.com/platform-zephyr/openchoreo-lab
     targetRevision: main
-    path: generated/namespaces/default
+    path: generated/namespaces/default/projects/whoami
     directory:
       recurse: true
       include: "*.yaml"
@@ -24,6 +24,7 @@ spec:
     server: https://kubernetes.default.svc
     namespace: default
   syncPolicy:
+    automated: {prune: false, selfHeal: true}
     syncOptions:
       - ServerSideApply=true
       - FailOnSharedResource=true

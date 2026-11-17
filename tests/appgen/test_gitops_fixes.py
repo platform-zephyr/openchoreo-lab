@@ -91,7 +91,7 @@ class G1InternalGateway(Base):
         self.assertTrue(self.sb.render())
 
     def test_real_platform_renders_whoami(self):
-        files = appgen.render_all(ROOT, ROOT / "platform", False)
+        files = appgen.render_all(ROOT, ROOT / "platform", True)
         self.assertIn(f"{BASE_WHOAMI}/components/whoami/component.yaml", files)
 
 
@@ -113,13 +113,13 @@ class A1SyncOptions(Base):
         self.assertTrue({"Component", "ComponentRelease"} <= seen)
 
     def test_resource_annotation_on_real_tree(self):
-        files = appgen.render_all(ROOT, ROOT / "platform", False)
+        files = appgen.render_all(ROOT, ROOT / "platform", True)
         res = files["namespaces/default/projects/miniflux/resources/miniflux-db.yaml"]
         self.assertEqual(res["metadata"]["annotations"][SYNC_KEY], "Prune=false")
 
     def test_release_name_unchanged_by_annotations(self):
         # Le hash ne porte que sur spec : ajouter des annotations ne cree pas de nouvelle release.
-        files = appgen.render_all(ROOT, ROOT / "platform", False)
+        files = appgen.render_all(ROOT, ROOT / "platform", True)
         self.assertIn(f"{BASE_WHOAMI}/components/whoami/releases/whoami-31985273d8.yaml", files)
 
 

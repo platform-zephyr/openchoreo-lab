@@ -22,7 +22,19 @@ REAL_PLATFORM = ROOT / "platform"
 
 
 def base_whoami() -> dict:
-    return appgen.load_yaml(ROOT / "apps" / "whoami" / "app.yaml")
+    # Racine de test : seul clusters/k3d est fourni, donc whoami (cible oke dans le depot) est ramene a k3d.
+    doc = appgen.load_yaml(ROOT / "apps" / "whoami" / "app.yaml")
+    doc["spec"]["cluster"] = "k3d"
+    return doc
+
+
+def copy_apps_k3d(dst: Path) -> None:
+    """Copie apps/ (sans _examples) pour une racine temporaire ; whoami y est force sur k3d."""
+    shutil.copytree(ROOT / "apps", dst / "apps", ignore=shutil.ignore_patterns("_examples"))
+    p = dst / "apps" / "whoami" / "app.yaml"
+    doc = appgen.load_yaml(p)
+    doc["spec"]["cluster"] = "k3d"
+    p.write_text(_dump(doc), encoding="utf-8")
 
 
 def base_miniflux() -> dict:
@@ -72,6 +84,11 @@ class NegativeCases(unittest.TestCase):
         doc = base_whoami()
         doc["spec"]["source"]["image"] = "traefik/whoami:v1.10.3"
         self.assertRefused(doc, "does not match")
+
+    def test_closed_gate_refuses_oke(self):
+        doc = base_whoami()
+        doc["spec"]["cluster"] = "oke"
+        self.assertRefused(doc, "gate OKE non franchi")
 
     def test_public_without_auth(self):
         doc = base_miniflux()
@@ -197,7 +214,7 @@ def _dump(doc) -> str:
 
 class RenderBehaviour(unittest.TestCase):
     def render(self, platform=FIXTURE_PLATFORM, root=ROOT):
-        return appgen.render_all(root, platform, cluster_gate_open=False)
+        return appgen.render_all(root, platform, cluster_gate_open=True)
 
     def test_render_is_deterministic(self):
         first = self.render()
@@ -254,7 +271,7 @@ class RenderBehaviour(unittest.TestCase):
     def test_pin_is_rendered_when_present(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
-            shutil.copytree(ROOT / "apps", tmp_root / "apps", ignore=shutil.ignore_patterns("_examples"))
+            copy_apps_k3d(tmp_root)
             (tmp_root / "pins").mkdir()
             (tmp_root / "pins" / "resource-releases.yaml").write_text(
                 "pins:\n  miniflux/production: miniflux-db-abc123\n", encoding="utf-8")
@@ -277,7 +294,7 @@ class GeneratedTreeNoDrift(unittest.TestCase):
             self.skipTest("CCT service-restricted ou ClusterTrait persistent-volume-claim absente de platform/")
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "generated"
-            appgen.write_tree(appgen.render_all(ROOT, REAL_PLATFORM, False), out)
+            appgen.write_tree(appgen.render_all(ROOT, REAL_PLATFORM, True), out)
             self.assertEqual(appgen.diff_trees(out, ROOT / "generated"), [])
 
 
