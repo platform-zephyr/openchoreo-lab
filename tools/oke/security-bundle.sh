@@ -15,7 +15,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
 fi
 
 SB_LOCK="${SECURITY_BUNDLE_LOCK:-$ROOT/security/bundle.lock}"
-SB_READY=0 SB_DIR="" SB_CP_PLUGIN="" SB_DP_PLUGIN="" SB_IMAGE="" SB_FORCED=()
+SB_READY=0 SB_DIR="" SB_CP_PLUGIN="" SB_DP_PLUGIN="" SB_IMAGE="" SB_FORCED=() SB_RENDERED=""
 
 sb_sha() { shasum -a 256 "$1" | awk '{print $1}'; }
 
@@ -126,8 +126,9 @@ sb_prerender() {
   esac
   [[ "$(sb_sha "$tgz")" == "$exp" ]] || die "helm_secure : chart $tgz != sha256 épinglé"
   # Les --set imposés passent APRÈS ceux de l'appelant : ils l'emportent.
-  helm template "$rel" "$tgz" -n "$ns" "$@" "${SB_FORCED[@]}" | sb_check "$plane" \
-    || die "helm_secure : rendu $rel NON durci, aucune écriture"
+  SB_RENDERED="$(mktemp)"
+  helm template "$rel" "$tgz" -n "$ns" "$@" "${SB_FORCED[@]}" > "$SB_RENDERED" || die "helm_secure : rendu $rel en échec"
+  sb_check "$plane" < "$SB_RENDERED" || die "helm_secure : rendu $rel NON durci, aucune écriture"
   log "rendu $rel vérifié avec le security bundle"
 }
 
@@ -137,11 +138,59 @@ helm_secure() {
   local plane="$1" rel="$2" tgz="$3" ns="$4"; shift 4
   SB_FORCED=()
   sb_prerender "$plane" "$rel" "$tgz" "$ns" "$@"
-  run helm upgrade --install "$rel" "$tgz" -n "$ns" "$@" "${SB_FORCED[@]}"
+  local force=()
+  if [[ "$APPLY" == 1 && "$plane" == cp ]] && helm status "$rel" -n "$ns" >/dev/null 2>&1; then
+    sb_cp_conflicts "$ns" || die "helm_secure : conflit d'écriture hors ConfigMap/$SB_CA_CM sur $rel, aucune écriture"
+    force=(--force-conflicts)
+  fi
+  rm -f "$SB_RENDERED"
+  run helm upgrade --install "$rel" "$tgz" -n "$ns" "$@" "${SB_FORCED[@]}" "${force[@]}"
+  # Le chart remet un ConfigMap CA vide : recopie IMMÉDIATE de la CA, puis redémarrage de ses lecteurs.
+  [[ "$plane" != cp ]] || sb_cp_ca_refresh
   if [[ "$APPLY" == 1 ]]; then
     helm get manifest "$rel" -n "$ns" | sb_check "$plane" \
       || die "helm_secure : révision stockée de $rel NON durcie : rollback_secure vers la dernière révision durcie"
   fi
+}
+
+# Upgrade du CP (Helm 4, server-side apply) : le ConfigMap $SB_CA_CM est rendu VIDE par le chart et peuplé hors Helm
+# (CA publique du cluster-gateway). Seul conflit d'écriture admis ; tout autre conflit => refus (jamais de
+# --force-conflicts aveugle). Contrôle objet par objet en dry-run serveur, avec le gestionnaire de champs de Helm.
+SB_CA_CM=cluster-gateway-ca
+sb_cp_conflicts() {
+  local ns="$1" line name err bad=0
+  while IFS=$'\t' read -r name line; do
+    if ! err="$(kubectl apply --server-side --dry-run=server --field-manager=helm -n "$ns" -f - <<<"$line" 2>&1 >/dev/null)"; then
+      if grep -qi conflict <<<"$err" && [[ "$name" == "ConfigMap/$SB_CA_CM" ]]; then log "conflit attendu : $name (forcé, CA recopiée ensuite)"
+      else log "conflit ou erreur NON admis : $name : ${err:0:200}"; bad=1; fi
+    fi
+  done < <(python3 -I -c '
+import json, sys, yaml
+for d in yaml.safe_load_all(open(sys.argv[1])):
+    if d: print(d["kind"] + "/" + d["metadata"]["name"] + "\t" + json.dumps(d))' "$SB_RENDERED")
+  return "$bad"
+}
+
+# Recopie la CA PUBLIQUE (ca.crt seul) de secret/$SB_CA_CM vers les ConfigMap des deux plans, puis redémarre
+# controller-manager et openchoreo-api (sinon ils gardent une CA vide).
+sb_cp_ca_refresh() {
+  if [[ "$APPLY" != 1 ]]; then echo "[dry-run] recopie CA $SB_CA_CM (CP, DP) + restart controller-manager, openchoreo-api"; return; fi
+  local ns ca d
+  kubectl -n openchoreo-control-plane wait --for=condition=Ready --timeout=180s "certificate/$SB_CA_CM" >/dev/null \
+    || die "certificat $SB_CA_CM non Ready"
+  ca="$(kubectl -n openchoreo-control-plane get secret "$SB_CA_CM" -o jsonpath='{.data.ca\.crt}' | base64 -d)" \
+    || die "CA $SB_CA_CM illisible"
+  [[ "$ca" == "-----BEGIN CERTIFICATE-----"* ]] || die "CA $SB_CA_CM absente ou invalide : ConfigMap non recopié"
+  for ns in openchoreo-control-plane openchoreo-data-plane; do
+    kubectl get namespace "$ns" -o name >/dev/null 2>&1 || continue
+    kubectl create configmap "$SB_CA_CM" --from-file=ca.crt=/dev/stdin -n "$ns" --dry-run=client -o yaml <<<"$ca" \
+      | kubectl apply --server-side --force-conflicts --field-manager=openchoreo-lab -f - >/dev/null || die "recopie CA ($ns) en échec"
+  done
+  for d in controller-manager openchoreo-api; do
+    kubectl -n openchoreo-control-plane rollout restart "deployment/$d" >/dev/null || die "restart $d en échec"
+    kubectl -n openchoreo-control-plane rollout status "deployment/$d" --timeout=300s >/dev/null || die "rollout $d en échec"
+  done
+  log "CA $SB_CA_CM recopiée (CP, DP) ; controller-manager et openchoreo-api redémarrés"
 }
 
 # rollback_secure RELEASE NS REVISION : `helm rollback` rejoue le manifest stocké SANS post-renderer ; refus si ce
@@ -155,6 +204,7 @@ rollback_secure() {
   man="$(helm get manifest "$rel" -n "$ns" --revision "$rev")" || die "rollback_secure : manifest de $rel rév. $rev illisible"
   sb_check "$plane" <<<"$man" || die "rollback_secure : révision $rev de $rel NON durcie : rollback refusé"
   run helm rollback "$rel" "$rev" -n "$ns" --wait --timeout 10m
+  [[ "$plane" != cp ]] || sb_cp_ca_refresh
   if [[ "$APPLY" == 1 ]]; then
     helm get manifest "$rel" -n "$ns" | sb_check "$plane" || die "rollback_secure : révision courante de $rel NON durcie"
   fi

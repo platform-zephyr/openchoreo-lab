@@ -23,6 +23,10 @@ s'arrête **avant toute écriture** (étapes 6, 6b, 7, 10, y compris `--step`, `
 - `helm_secure` (`tools/oke/security-bundle.sh`) est le seul chemin `helm upgrade --install` des deux charts : il
   refuse les arguments de contournement, impose post-renderer et values, vérifie le rendu local avant d'écrire, puis
   la révision stockée.
+- Upgrade du control plane (release existante) : seul conflit d'écriture admis = ConfigMap `cluster-gateway-ca`
+  (vide dans le chart, peuplé hors Helm). Contrôle objet par objet en dry-run serveur, `--force-conflicts` pour ce
+  seul cas, puis recopie immédiate de la CA publique (CP et DP) et redémarrage de controller-manager et
+  openchoreo-api (aussi après `rollback`). Tout autre conflit : refus sans écriture.
 - Data plane : les droits du cluster-agent sont rendus **avec** le chart (étape 7) ; l'ancienne étape 12 est sans
   effet. Complément `lab-pg` appliqué à l'étape 10.
 - Prérequis fonctionnel : le CPT `cell-restricted` doit porter le RoleBinding de cellule (modèle dans le bundle) ;

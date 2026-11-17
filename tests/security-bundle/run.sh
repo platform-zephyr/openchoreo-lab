@@ -7,7 +7,7 @@
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/sb-tests.XXXXXX")"
-trap 'rm -rf "$WORK"' EXIT
+trap '[[ -n "${KEEP:-}" ]] || rm -rf "$WORK"' EXIT
 REAL_HELM="$(command -v helm)"
 BIN="$WORK/bin" FIX="$WORK/fix" STATE="$WORK/state" LOGF="$WORK/calls.log"
 mkdir -p "$BIN" "$FIX" "$STATE/charts" "$WORK/access"
@@ -21,11 +21,16 @@ FAKE_DIGEST="$(printf 'a%.0s' {1..64})"
 cat > "$BIN/kubectl" <<'EOF'
 #!/usr/bin/env bash
 printf 'kubectl %s\n' "$*" >> "$LOGF"
-case "$1" in delete|apply|label|annotate|patch|create|replace|scale|rollout) printf 'WRITE kubectl %s\n' "$*" >> "$LOGF"; exit 0;; esac
+if [[ "$1" == apply && "$*" == *--dry-run=server* ]]; then   # contrôle de conflit : rien n'est écrit
+  in="$(cat)"; while read -r n; do [[ -n "$n" && "$in" == *"\"name\": \"$n\""* ]] && { echo "Apply failed with 1 conflict: conflict with \"kubectl\"" >&2; exit 1; }; done < "$FIX/conflicts"; exit 0
+fi
+v="$1"; [[ "$1" == -n ]] && v="$3"
+case "$v" in delete|apply|label|annotate|patch|create|replace|scale|rollout) printf 'WRITE kubectl %s\n' "$*" >> "$LOGF"; exit 0;; esac
 case "$*" in
   "config current-context") echo context-oracle-a1-test;;
   "config view --minify -o jsonpath={.clusters[0].cluster.server}") echo https://127.0.0.1:16443;;
   "config view --minify -o jsonpath={.clusters[0].cluster.tls-server-name}") echo 10.0.2.10;;
+  "-n openchoreo-control-plane get secret cluster-gateway-ca -o jsonpath={.data.ca\\.crt}") printf -- '-----BEGIN CERTIFICATE-----\nX\n' | base64;;
   "get nodes -o json") echo '{"items":[{"spec":{"providerID":"ocid1.instance.oc1.test"},"status":{"nodeInfo":{"architecture":"arm64"}}}]}';;
   *) exit 0;;   # autres lectures : réponse vide
 esac
@@ -42,6 +47,7 @@ case "\$1" in
       uninstall) [[ -f "\$FIX/plugins" ]] && { grep -vx "\$3" "\$FIX/plugins" > "\$FIX/p2" || true; mv "\$FIX/p2" "\$FIX/plugins"; }; true;;
       list) echo "NAME VERSION"; cat "\$FIX/plugins" 2>/dev/null || true;;
     esac;;
+  status) [[ -f "\$FIX/release-exists" ]];;
   get) r=current; for ((i=1; i<=\$#; i++)); do [[ "\${!i}" == --revision ]] && { j=\$((i+1)); r="rev-\${!j}"; }; done
        cat "\$FIX/\$r.yaml";;
   upgrade|install|rollback|uninstall) printf 'WRITE helm %s\n' "\$*" >> "\$LOGF";;
@@ -103,7 +109,7 @@ expect_refusal() {
 }
 INSTALL="$REPO/tools/oke/install.sh"
 printf 'kind: Role\nmetadata: {name: HARDENED}\n' > "$FIX/template.yaml"
-cp "$FIX/template.yaml" "$FIX/current.yaml"
+cp "$FIX/template.yaml" "$FIX/current.yaml"; : > "$FIX/conflicts"
 
 fake_bundle good
 fake_bundle badchart chart=1.3.4
@@ -156,6 +162,20 @@ if envrun "$WORK/good.lock" "$WORK/good.tar.gz" bash -c "$LIB; APPLY=1; helm_sec
 if envrun "$WORK/good.lock" "$WORK/good.tar.gz" "$INSTALL" --step 7 \
    && grep -q 'security bundle 9.9.9 vérifié' "$WORK/out" && grep -qE '^\[dry-run\] helm upgrade --install openchoreo-data-plane .*--post-renderer fake-dp' "$WORK/out" && no_write; then
   ok "positif-install-dry-run[--step 7]"; else ko "positif-install-dry-run[--step 7]"; fi
+
+# Upgrade du CP (release existante) : seul le ConfigMap CA est en conflit => --force-conflicts, recopie de la CA
+# (CP et DP) puis redémarrage de controller-manager et openchoreo-api ; tout autre conflit => refus sans écriture.
+printf 'kind: ConfigMap\nmetadata: {name: cluster-gateway-ca}\n---\nkind: Role\nmetadata: {name: HARDENED}\n' > "$FIX/template.yaml"
+: > "$FIX/release-exists"; printf 'cluster-gateway-ca\n' > "$FIX/conflicts"
+CPUP="$LIB; APPLY=1; helm_secure cp openchoreo-control-plane \"\$(fetch_chart openchoreo-control-plane $OPENCHOREO_CP_CHART $OPENCHOREO_VERSION $OPENCHOREO_CP_TGZ_SHA256)\" openchoreo-control-plane --wait"
+if envrun "$WORK/good.lock" "$WORK/good.tar.gz" bash -c "$CPUP" \
+   && grep -nE '^WRITE helm upgrade --install openchoreo-control-plane .*--force-conflicts' "$LOGF" >/dev/null \
+   && [[ "$(awk '/^WRITE helm upgrade .*--force-conflicts/{print "U"} /^WRITE kubectl apply --server-side --force-conflicts --field-manager=openchoreo-lab -f -$/{print "CA"}
+              /^WRITE kubectl .*rollout restart deployment\/controller-manager/{print "RC"} /^WRITE kubectl .*rollout restart deployment\/openchoreo-api/{print "RA"}' "$LOGF" | tr '\n' ' ')" == "U CA CA RC RA " ]]; then
+  ok "upgrade-cp-conflit-ca-force-recopie-restart"; else ko "upgrade-cp-conflit-ca-force-recopie-restart"; fi
+printf 'cluster-gateway-ca\nHARDENED\n' > "$FIX/conflicts"
+expect_refusal "upgrade-cp-autre-conflit" "conflit" "$WORK/good.lock" "$WORK/good.tar.gz" bash -c "$CPUP"
+rm -f "$FIX/release-exists"; : > "$FIX/conflicts"
 
 printf '%s PASS=%d FAIL=%d\n' "$(date -u +%FT%TZ)" "$pass" "$fail"
 (( fail == 0 ))

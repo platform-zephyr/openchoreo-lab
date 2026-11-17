@@ -132,16 +132,14 @@ cp_upgrade() {
   run "${KA[@]}" -f "$M/03-idp-egress.yaml"
   # Security bundle : durcissement des droits de lecture rendus par le chart et image du contrôleur imposée par
   # digest (détails hors dépôt, docs/SECURITY-BUNDLE.md). Refus avant écriture si le bundle n'est pas valide.
+  # helm_secure recopie la CA et redémarre controller-manager et openchoreo-api juste après l'upgrade.
   helm_secure cp openchoreo-control-plane "$tgz" openchoreo-control-plane "${cpargs[@]}"
   wait_deploys openchoreo-control-plane
-  copy_gateway_ca
   # Redémarrage EN SÉRIE avec `rollout status` (revue m5) : un seul surge à la fois sous le quota de 640 Mi,
   # et l'attente porte sur les NOUVEAUX pods (wait Available passait sur les anciens).
-  local d
-  for d in controller-manager openchoreo-api cluster-gateway; do
-    run kubectl -n openchoreo-control-plane rollout restart "deployment/$d"
-    run kubectl -n openchoreo-control-plane rollout status "deployment/$d" --timeout=300s
-  done
+  # controller-manager et openchoreo-api : déjà redémarrés par helm_secure (recopie de la CA).
+  run kubectl -n openchoreo-control-plane rollout restart deployment/cluster-gateway
+  run kubectl -n openchoreo-control-plane rollout status deployment/cluster-gateway --timeout=300s
 }
 
 step_6() { # OpenChoreo control plane SANS portail (CRD du chart à la 1re installation)
