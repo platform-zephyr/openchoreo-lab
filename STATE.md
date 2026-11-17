@@ -45,7 +45,7 @@ kube-ops (brouillons, non mergés) : **#1629** correctif C1 (CCNP `allow-egress-
 | Portail, identité, authz/MCP | — | LIVRÉS (PR #6) ; portail/Authentik NON connectés (secrets clients = credentials de production) |
 
 ## Constats de sécurité ouverts (ne pas déclarer le modèle d'isolation sûr)
-- **Isolation des Secrets (CRITIQUE, en coordination privée avec l'amont)** : un point de sécurité amont est en cours de traitement ; les détails ne sont volontairement PAS publiés dans ce dépôt public. Règle : AUCUN credential de production (secret client Authentik, tokens) dans un environnement accessible à ces comptes tant que ce n'est pas prouvé corrigé.
+- **Isolation des Secrets (CRITIQUE, en coordination privée avec l'amont)** : un point de sécurité sur les droits de lecture des Secrets de composants OpenChoreo est en cours de traitement ; les détails ne sont volontairement PAS publiés dans ce dépôt (signalement privé en cours, dossier hors dépôt). Règle : AUCUN credential externe réel (secret client Authentik, tokens) dans un environnement accessible à ces composants tant que l'isolation n'est pas prouvée.
 - C1 : prouvé sur OKE pour les 7 namespaces d'essai ; `dp-*` pas encore labellisés `egress-isolated` (à corriger dans le CPT `cell-restricted` + tests de trafic).
 
 ## Stockage OKE (audit lecture seule 2026-11-17 19:35Z : docs/storage/OKE-AUDIT-2026-11-17.md)
