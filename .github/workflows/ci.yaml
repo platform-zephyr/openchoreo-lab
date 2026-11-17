@@ -211,10 +211,21 @@ jobs:
       - name: kubeconform -strict (platform/install/manifests et argocd)
         run: tools/oke/kubeconform-platform.sh
 
+  release-history:
+    # Les releases historiques (generated/**/releases) sont append-only : un revert ne doit pas les supprimer.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Aucune release historique supprimee
+        run: tests/release-history/check.sh
+
   ci-ok:
     # Check requis par la protection de branche : echoue si un job amont n'est pas en success.
     if: always()
-    needs: [yamllint, appgen, crd-schema, secrets, actionlint, charts, platform]
+    needs: [yamllint, appgen, crd-schema, secrets, actionlint, charts, platform, release-history]
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Agregation
