@@ -15,13 +15,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Versions et empreintes verifiees (gh release download + sha256sum). Ne pas modifier sans revoir les empreintes.
+  # Binaires linux-arm64 (runners ubuntu-24.04-arm). gitleaks/actionlint: empreintes = digests publies des releases GitHub ; kubeconform: empreinte calculee localement (pas de digest publie). Ne pas modifier sans revoir les empreintes.
   KUBECONFORM_VERSION: "0.7.0"
-  KUBECONFORM_SHA256: "c31518ddd122663b3f3aa874cfe8178cb0988de944f29c74a0b9260920d115d3"
+  KUBECONFORM_SHA256: "cc907ccf9e3c34523f0f32b69745265e0a6908ca85b92f41931d4537860eb83c"
   ACTIONLINT_VERSION: "1.7.12"
-  ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+  ACTIONLINT_SHA256: "325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6"
   GITLEAKS_VERSION: "8.30.1"
-  GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+  GITLEAKS_SHA256: "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080"
   # OpenChoreo v1.3.3 : tag v1.3.3 -> commit 5336791f421b3efb79603b09b8ce0c98e8ef077d (gh api, verifie).
   OPENCHOREO_COMMIT: "5336791f421b3efb79603b09b8ce0c98e8ef077d"
 
@@ -81,9 +81,9 @@ jobs:
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP"
-          curl -fsSLO "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
-          echo "${KUBECONFORM_SHA256}  kubeconform-linux-amd64.tar.gz" | sha256sum -c -
-          tar -xzf kubeconform-linux-amd64.tar.gz kubeconform
+          curl -fsSLO "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-arm64.tar.gz"
+          echo "${KUBECONFORM_SHA256}  kubeconform-linux-arm64.tar.gz" | sha256sum -c -
+          tar -xzf kubeconform-linux-arm64.tar.gz kubeconform
           sudo install -m 0755 kubeconform /usr/local/bin/kubeconform
       - name: Rendu puis validation kubeconform -strict contre les CRD v1.3.3
         run: |
@@ -104,9 +104,9 @@ jobs:
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP"
-          curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          echo "${GITLEAKS_SHA256}  gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | sha256sum -c -
-          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" gitleaks
+          curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" | sha256sum -c -
+          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" gitleaks
           sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
       - name: Detection de secrets (historique complet, valeurs masquees)
         run: gitleaks git --redact --no-banner --log-level warn .
@@ -121,9 +121,9 @@ jobs:
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP"
-          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
-          echo "${ACTIONLINT_SHA256}  actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" | sha256sum -c -
-          tar -xzf "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" actionlint
+          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_arm64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  actionlint_${ACTIONLINT_VERSION}_linux_arm64.tar.gz" | sha256sum -c -
+          tar -xzf "actionlint_${ACTIONLINT_VERSION}_linux_arm64.tar.gz" actionlint
           sudo install -m 0755 actionlint /usr/local/bin/actionlint
       - name: actionlint
         run: actionlint
