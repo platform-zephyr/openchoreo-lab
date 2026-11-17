@@ -9,7 +9,7 @@ spec:
     projectName: whoami
     componentName: whoami
   environment: production
-  releaseName: whoami-647fc6bfc1
+  releaseName: whoami-69a1749676
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1
