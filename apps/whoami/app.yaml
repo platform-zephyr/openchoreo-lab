@@ -17,6 +17,7 @@ spec:
     args: ["--port", "8080"]
     healthPath: /health
     size: small
+    env: {WHOAMI_NAME: "whoami-gitops-oke-v2"}
   exposure: {mode: private, auth: none}
   network: {egress: none}
   backup: {class: none}
