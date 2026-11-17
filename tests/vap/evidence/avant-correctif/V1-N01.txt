@@ -1,0 +1,6 @@
+# V1-N01 — agent CREATE dp-vap-ok conforme (restricted, latest, cell)
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:11Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated apply -f -
+namespace/dp-vap-ok created
+# rc=0 verdict=PASS

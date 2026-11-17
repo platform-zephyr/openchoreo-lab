@@ -1,0 +1,8 @@
+date: 2026-11-17T20:06:15Z
+cluster: k3d k3d-lab-sec-argo, v1.35.5+k3s1
+argocd: chart 10.3.3, quay.io/argoproj/argocd:v3.5.1@sha256:0deb1a1c917629b960ead995ae3b6069450a866992676599658687ef9a641ee8
+openchoreo-crd: 5336791f421b3efb79603b09b8ce0c98e8ef077d ; cnpg-crd: 0.29.1
+date: 2026-11-17T20:16:14Z
+cluster: k3d k3d-lab-sec-argo, v1.35.5+k3s1
+argocd: chart 10.3.3, quay.io/argoproj/argocd:v3.5.1@sha256:0deb1a1c917629b960ead995ae3b6069450a866992676599658687ef9a641ee8
+openchoreo-crd: 5336791f421b3efb79603b09b8ce0c98e8ef077d ; cnpg-crd: 0.29.1

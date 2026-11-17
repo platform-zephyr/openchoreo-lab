@@ -1,0 +1,25 @@
+2026-11-17T19:54:37Z	T-BOOT	PASS	Argo CD v3.5.1 (chart 10.3.3, sha256 vérifié) Running sous PSA restricted en 29s ; GitHub joignable depuis le repo-server (main=d4297af125aaf9cf441a68eac1f9576e96ca25b7)
+2026-11-17T19:55:04Z	T-PLAT	PASS	gl-platform (GitHub main d4297af125aaf9cf441a68eac1f9576e96ca25b7) Synced en 21s : CCT service-restricted, CPT cell-restricted, CRT, ClusterTrait PVC/health-probes, 2 VAP+bindings, Environment/DeploymentPipeline (gl-oc)
+2026-11-17T19:55:10Z	T-GH-SYNC	PASS	gl-apps (GitHub main, generated/ whoami, prune=false) Synced en 5s
+2026-11-17T19:55:10Z	T-GH-RENDER	FAIL	whoami de generated/ NON rendu tel quel : endpoint internal exige gateway.ingress.internal, absent de 40-openchoreo-env.yaml ET du ClusterDataPlane (k3d et gabarit OKE)
+2026-11-17T19:55:10Z	T-ARGO-HEALTH	FAIL	Argo affiche Healthy alors que le ReleaseBinding est Ready=False (RenderingFailed) : aucun health check Lua pour les CR OpenChoreo
+2026-11-17T19:55:36Z	T-SWITCH	PASS	source GitHub -> gl-repo (git:// dans le cluster, même sha) : aucune génération modifiée
+2026-11-17T19:58:01Z	T-DEPLOY	PASS	commit->pod Running 139s (Git->Argo 103s) ; PSA restricted ; default-deny (sonde externe BLOCKED) ; HTTP 200 via gateway-default
+2026-11-17T20:00:24Z	T-ANNOT	PASS	annotations Prune=false posées par Git, gl-apps prune=true Synced en 143s
+2026-11-17T20:00:32Z	T-MOD-REPLICAS	PASS	replicas 1->2 par commit ; même ComponentRelease (whoami-31985273d8 : replicas/size vivent dans le binding) ; commit->pods 5s (Git->Argo 2s)
+2026-11-17T20:00:40Z	T-MOD-VERSION	PASS	image v1.10.3 -> v1.11.0 : release whoami-31985273d8 -> whoami-024137137b, ancienne release conservée (Prune=false), HTTP 200 ; commit->pods 6s (Git->Argo 3s)
+2026-11-17T20:00:40Z	T-PRUNE-STATUS	FAIL	après une nouvelle release, gl-apps reste OutOfSync en permanence : whoami-31985273d8 absente de Git (appgen render la supprime) mais Prune=false (requiresPruning=true)
+2026-11-17T20:00:40Z	T-IMMUT	PASS	patch de whoami-31985273d8 refusé par l'API : The ComponentRelease "whoami-31985273d8" is invalid: spec.workload: Invalid value: spec.workload is immutable
+2026-11-17T20:00:46Z	T-DRIFT-ARGO	PASS	kubectl patch ReleaseBinding replicas=3 annulé par selfHeal Argo en 4s ; Deployment revenu à 2 (+2s)
+2026-11-17T20:00:47Z	T-DRIFT-OC	PASS	kubectl scale du Deployment rendu (dp-*) corrigé par OpenChoreo en 0s
+2026-11-17T20:00:50Z	T-DRIFT-OC-DEL	PASS	Service rendu supprimé à la main, recréé par OpenChoreo en 2s
+2026-11-17T20:00:52Z	T-DRIFT-PLAT	PASS	kubectl patch Environment annulé par selfHeal gl-platform en 2s
+2026-11-17T20:00:54Z	T-DRIFT-ORPHAN	PASS	objet créé hors Git (gl-oc) signalé OrphanedResourceWarning (1 -> 2) en 2s, non supprimé
+2026-11-17T20:01:00Z	T-ROLLBACK	PASS	git revert : binding whoami-024137137b -> whoami-31985273d8 (release d'origine intacte, réutilisée), image v1.10.3, HTTP 200 ; revert->pods 5s (Git->Argo 2s) ; whoami-024137137b conservée (orpheline)
+2026-11-17T20:02:12Z	T-RESTART	PASS	rollout restart controller-manager : pods identiques (UID, 0 redémarrage), Deployment non modifié, HTTP 200, binding Ready
+2026-11-17T20:03:18Z	T-PIN-STALE	FAIL	changement de paramètres du Project par app.yaml : latestRelease=whoami-7c4886dc7d mais PRB reste épinglé sur whoami-78b6fd459f (avant le commit : whoami-78b6fd459f) ; quota pvcs=0 (le nouveau quota n'est PAS appliqué)
+2026-11-17T20:03:21Z	T-PIN-PRB	PASS	2e commit (pin whoami-78b6fd459f -> whoami-7c4886dc7d, champ repris par Argo en SSA) : quota pvcs=1 appliqué en 0s
+2026-11-17T20:06:22Z	T-STRATEGY	FAIL	passage stateless -> stateful en place refusé par l'API : « spec.strategy.rollingUpdate: Forbidden: may not be specified when strategy `type` is 'Recreate' » ; ancienne version servie (HTTP 200), Argo Healthy
+2026-11-17T20:12:51Z	T-RETRAIT-1	FAIL	retrait de la dernière app de gl-apps NON appliqué : Argo « Skipping sync attempt: auto-sync will wipe out all resources » (garde allowEmpty=false) ; rien supprimé (Project, RB, namespace cellule intacts), Application OutOfSync
+2026-11-17T20:12:51Z	T-RETRAIT-PVC	NOT_TESTED	aucun PVC n'a pu être créé (T-STRATEGY) et le retrait n'est pas appliqué (T-RETRAIT-1) ; ré-ajout stateful non exécuté (k3d rendu au coordinateur)
+2026-11-17T20:14:15Z	T-FINALIZERS	PASS	suppression des objets OpenChoreo gl-oc (finalizers) en 75s

@@ -1,0 +1,92 @@
+V1-C01	PASS	DENY	lab-cluster-agent-scope	agent pods/exec kube-system/coredns (R2)
+V1-C02	PASS	DENY	lab-cluster-agent-scope	agent pods/attach lab-vap-test (R2)
+V1-C03	PASS	DENY	lab-cluster-agent-scope	agent pods/portforward lab-vap-test (R2)
+V1-C04	PASS	DENY	lab-cluster-agent-scope	agent pods/proxy lab-vap-test (R2)
+V1-C05	PASS	DENY	lab-cluster-agent-scope	agent services/proxy kube-system/kube-dns (R2)
+V1-C06	PASS	DENY	lab-cluster-agent-scope	agent nodes/proxy (R1, cluster-scoped)
+V1-C07	PASS	DENY	lab-cluster-agent-scope	agent serviceaccounts/token dans dp-vap-app (R5)
+V1-C08	PASS	DENY	lab-cluster-agent-scope	agent serviceaccounts/token kube-system (R2/R5)
+V1-C09	PASS	ALLOWC	lab-cluster-agent-scope	agent pods/exec dans dp-vap-app (témoin : admis)
+V1-C10	PASS	DENY	lab-cluster-agent-scope	agent pods/eviction kube-system/coredns (CREATE sous-ressource)
+V1-C11	PASS	DENY	lab-cluster-agent-scope	agent deployments/scale kube-system (UPDATE sous-ressource)
+V1-C12	PASS	DENY	lab-cluster-agent-scope	agent pods/ephemeralcontainers lab-vap-test (R2)
+V1-C13	PASS	ALLOWC	lab-cluster-agent-scope	admin pods/exec kube-system (hors matchConditions, témoin)
+V1-C14	PASS	ALLOWC	lab-cluster-agent-scope	SA d'un autre namespace (lab-vap-test:other) pods/exec kube-system : non visé
+V1-N01	PASS	ALLOW	lab-cluster-agent-scope	agent CREATE dp-vap-ok conforme (restricted, latest, cell)
+V1-N02	PASS	DENY	lab-cluster-agent-scope	agent CREATE dp-vap-bad sans labels (R3)
+V1-N03	PASS	DENY	lab-cluster-agent-scope	agent CREATE lab-evil (non dp-*, R1)
+V1-N04	PASS	DENY	lab-cluster-agent-scope	agent UPDATE dp-vap-ok restricted->baseline (R3, baisse)
+V1-N05	PASS	DENY	lab-cluster-agent-scope	agent UPDATE dp-vap-ok ->privileged (R3)
+V1-N06	PASS	DENY	lab-cluster-agent-scope	agent UPDATE dp-vap-ok retrait label cell (R3)
+V1-N07	PASS	ALLOW	lab-cluster-agent-scope	agent UPDATE dp-vap-ok annotation (oldObject présent, témoin)
+V1-N08	PASS	ALLOW	lab-cluster-agent-scope	agent CREATE dp-vap-base en baseline direct (exception appgen ; m1 connu)
+V1-N09	PASS	DENY	lab-cluster-agent-scope	agent DELETE ns lab-vap-test (R1)
+V1-N10	PASS	ALLOW	lab-cluster-agent-scope	agent DELETE ns dp-vap-ok (oldObject seul, témoin)
+V1-N11	PASS	DENY	lab-cluster-agent-scope	agent label PSA privileged sur kube-system (R1)
+V1-N12	PASS	DENY	lab-cluster-agent-scope	identité applicative dp-vap-app:app CREATE ns dp-x (R1)
+V1-N13	PASS	DENY	lab-cluster-agent-scope	agent PUT namespaces/dp-vap-ok/status avec PSA privileged (R3 sur sous-ressource)
+V1-N14	PASS	DENY	lab-cluster-agent-scope	agent PUT namespaces/dp-vap-ok/finalize avec PSA baseline, cell=y
+V1-W01	PASS	DENY	lab-cluster-agent-scope	agent ConfigMap kube-system (R2)
+V1-W02	PASS	ALLOW	lab-cluster-agent-scope	agent ConfigMap dp-vap-ok (témoin)
+V1-W03	PASS	ALLOW	lab-cluster-agent-scope	agent Event core kube-system (exception events)
+V1-W04	PASS	DENY	lab-cluster-agent-scope	agent DELETE secret lab-pg-superuser (R2)
+V1-W05	PASS	DENY	lab-cluster-agent-scope	agent ConfigMap lab-pg (R2, kind hors CRT)
+V1-W06	PASS	DENY	lab-cluster-agent-scope	agent Deployment dans son propre namespace openchoreo-data-plane (R2)
+V1-W07	PASS	DENY	lab-cluster-agent-scope	agent Password d'un groupe étranger (evil.lab-vap.test) dans lab-pg (R2 par groupe)
+V1-R01	PASS	ALLOW	lab-cluster-agent-scope	agent RoleBinding amorce conforme dans dp-vap-ok (R4 témoin)
+V1-R02	PASS	DENY	lab-cluster-agent-scope	agent RoleBinding -> ClusterRole admin (R4)
+V1-R03	PASS	DENY	lab-cluster-agent-scope	agent RoleBinding conforme + 2e sujet default/default (R4)
+V1-R04	PASS	DENY	lab-cluster-agent-scope	agent Role dans dp-vap-ok (R5)
+V1-R05	PASS	DENY	lab-cluster-agent-scope	agent ClusterRole (R1/R5)
+V1-R06	PASS	DENY	lab-cluster-agent-scope	agent ClusterRoleBinding cluster-admin (R1/R5)
+V1-R07	PASS	DENY	lab-cluster-agent-scope	agent CCNP cilium.io (R1/R5)
+V1-R08	PASS	ALLOW	lab-cluster-agent-scope	LIMITE : agent DELETE du binding lab-cluster-agent-scope (VAP/VAPB hors admission ; RBAC seul)
+V1-R09	PASS	DENY	lab-cluster-agent-scope	agent ValidatingWebhookConfiguration (R1)
+V1-R10	PASS	ALLOW	lab-cluster-agent-scope	agent TokenReview (cluster-scoped, reviewOnly)
+V1-P01	PASS	ALLOW	lab-cluster-agent-scope	agent ExternalSecret app-pg-role conforme (générateur Password)
+V1-P02	PASS	DENY	lab-cluster-agent-scope	agent ExternalSecret cible lab-pg-superuser (R6)
+V1-P03	PASS	DENY	lab-cluster-agent-scope	agent ExternalSecret app-pg-role qui extrait une clé du coffre (dataFrom.extract, R6)
+V1-P03b	PASS	DENY	lab-cluster-agent-scope	agent ExternalSecret app-pg-role avec target.template qui lit lab-pg-superuser (R6)
+V1-P04	PASS	ALLOW	lab-cluster-agent-scope	agent PushSecret app-pg-role -> lab-pg-roles/app (témoin)
+V1-P05	PASS	DENY	lab-cluster-agent-scope	agent PushSecret clé distante hors lab-pg-roles/ (R6)
+V1-P06	PASS	DENY	lab-cluster-agent-scope	agent PushSecret qui sélectionne lab-pg-superuser (R6)
+V1-P07	PASS	DENY	lab-cluster-agent-scope	agent PushSecret sans spec.data (R6)
+V1-P08	PASS	ALLOW	lab-cluster-agent-scope	agent Job app-pg-init conforme (témoin)
+V1-P09	PASS	DENY	lab-cluster-agent-scope	agent Job automountServiceAccountToken=true (R6)
+V1-P10	PASS	DENY	lab-cluster-agent-scope	agent Job image busybox (R6)
+V1-P11	PASS	DENY	lab-cluster-agent-scope	agent Job secretKeyRef vers un autre Secret (R6)
+V1-P12	PASS	DENY	lab-cluster-agent-scope	agent Job volume hostPath (R6)
+V1-P13	PASS	DENY	lab-cluster-agent-scope	agent Job nom hors -pg-init (R6)
+V1-P14	PASS	ALLOW	lab-cluster-agent-scope	agent Password (générateur ESO) app-pg (témoin)
+V1-A01	PASS	DENY	lab-cluster-agent-scope	app ClusterRole (R1)
+V1-A02	PASS	DENY	lab-cluster-agent-scope	app ConfigMap kube-system (hors de sa cellule)
+V1-A03	PASS	DENY	lab-cluster-agent-scope	app pods/exec kube-system (hors de sa cellule)
+V1-A04	PASS	ALLOW	lab-cluster-agent-scope	app ConfigMap dans sa cellule dp-vap-app (témoin)
+V2-01	PASS	DENY	lab-cell-pod-hardening	pod image sans digest dans dp-*
+V2-02	PASS	DENY	lab-cell-pod-hardening	pod privileged dans dp-*
+V2-03	PASS	DENY	lab-cell-pod-hardening	pod hostNetwork dans dp-*
+V2-04	PASS	DENY	lab-cell-pod-hardening	pod volume hostPath dans dp-*
+V2-05	PASS	DENY	lab-cell-pod-hardening	initContainer sans digest dans dp-*
+V2-06	PASS	ALLOW	lab-cell-pod-hardening	pod conforme dans dp-* (témoin)
+V2-07	PASS	DENY	lab-cell-pod-hardening	conteneur éphémère sans digest (pods/ephemeralcontainers) dans dp-*
+V2-07b	PASS	DENY	lab-cell-pod-hardening	conteneur éphémère privileged (digest) dans dp-*
+V2-08	PASS	DENY	lab-cell-pod-hardening	pod image sans digest dans lab-pg
+V2-09	PASS	ALLOW	lab-cell-pod-hardening	pod image sans digest hors dp-*/lab-pg (lab-vap-test, hors périmètre)
+V2-10	PASS	DENY	lab-cell-pod-hardening	image « digest » invalide (@sha256:court) dans dp-*
+B-01	PASS	DENY	baseline-pod-hardening	pod privileged dans vap-plain
+B-02	PASS	DENY	baseline-pod-hardening	pod hostNetwork
+B-03	PASS	DENY	baseline-pod-hardening	pod hostPID
+B-04	PASS	DENY	baseline-pod-hardening	pod hostIPC
+B-05	PASS	DENY	baseline-pod-hardening	pod hostPath
+B-06	PASS	ALLOW	baseline-pod-hardening	pod conforme (témoin)
+B-07	PASS	ALLOW	baseline-pod-hardening	pod privileged dans kube-system (exclu par le binding)
+B-08	PASS	DENY	baseline-pod-hardening	Deployment au gabarit privileged
+B-09	FAIL	DENY	baseline-pod-hardening	ÉCART kube-ops : conteneur éphémère privileged (pods/ephemeralcontainers non couvert) hors dp-*
+B-10	PASS	DENY	baseline-automount-token	auth : pod sans automountServiceAccountToken=false
+B-11	PASS	ALLOW	baseline-automount-token	auth : pod automount=false (témoin)
+B-12	PASS	ALLOW	baseline-automount-token	auth : pod avec annotation baseline.smadja.dev/automount-token=true
+B-13	PASS	WARN	baseline-image-digest	auth : image sans digest ADMISE avec avertissement (binding Warn,Audit)
+B-14	PASS	ALLOW	baseline-image-digest	vap-plain : image sans digest, binding non applicable (aucun avertissement)
+AUD-lab-cluster-agent-scope	PASS	ALLOW	lab-cluster-agent-scope	journal d'audit : 40 événement(s) annotés validation_failure pour lab-cluster-agent-scope
+AUD-lab-cell-pod-hardening	PASS	ALLOW	lab-cell-pod-hardening	journal d'audit : 9 événement(s) annotés validation_failure pour lab-cell-pod-hardening
+AUD-baseline-image-digest	PASS	ALLOW	baseline-image-digest	journal d'audit : 1 événement(s) annotés validation_failure pour baseline-image-digest

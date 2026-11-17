@@ -1,0 +1,3 @@
+### 2026-11-17T20:00:46Z $ k -n argocd get app gl-apps -o jsonpath={.status.sync.status} {.status.operationState.syncResult.revision} {.status.operationState.finishedAt}{"\n"}
+OutOfSync dd23e2e4b764c0c70d9eac35bc80194cd7c15479 2026-11-17T20:00:43Z
+

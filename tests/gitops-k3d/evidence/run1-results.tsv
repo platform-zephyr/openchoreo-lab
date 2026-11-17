@@ -1,0 +1,8 @@
+2026-11-17T18:55:42Z	T-BOOT	PASS	Argo CD v3.5.1 (chart 10.3.3, sha256 vérifié) Running sous PSA restricted en 27s ; GitHub joignable depuis le repo-server (main=41fb91667ffad2be16362d51f430c4a4795ff153)
+2026-11-17T18:55:55Z	T-PLAT	PASS	gl-platform (GitHub main 41fb91667ffad2be16362d51f430c4a4795ff153) Synced en 6s : CCT service-restricted, CPT cell-restricted, CRT, ClusterTrait PVC/health-probes, 2 VAP+bindings, Environment/DeploymentPipeline (gl-oc)
+2026-11-17T18:55:57Z	T-GH-SYNC	PASS	gl-apps (GitHub main, generated/ whoami, prune=false) Synced en 2s
+2026-11-17T18:55:57Z	T-GH-RENDER	FAIL	whoami de generated/ NON rendu tel quel : endpoint internal exige gateway.ingress.internal, absent de 40-openchoreo-env.yaml ET du ClusterDataPlane (k3d et gabarit OKE)
+2026-11-17T18:55:57Z	T-ARGO-HEALTH	FAIL	Argo affiche Healthy alors que le ReleaseBinding est Ready=False (RenderingFailed) : aucun health check Lua pour les CR OpenChoreo
+2026-11-17T18:56:00Z	T-SWITCH	PASS	source GitHub -> gl-repo (git:// dans le cluster, même sha) : aucune génération modifiée
+2026-11-17T19:01:30Z	T-DEPLOY	PASS	commit->pod Running 326s (Git->Argo 244s) ; PSA restricted ; default-deny (sonde externe BLOCKED) ; HTTP 200 via gateway-default
+2026-11-17T19:03:34Z	T-ANNOT	PASS	annotations Prune=false posées par Git, gl-apps prune=true Synced en 122s

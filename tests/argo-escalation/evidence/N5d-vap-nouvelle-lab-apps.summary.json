@@ -1,0 +1,24 @@
+{
+  "name": "lab-apps",
+  "project": "lab-apps",
+  "sync": "Synced",
+  "health": "Healthy",
+  "conditions": [],
+  "operation": {
+    "phase": "Failed",
+    "revision": "1132e060f749e595b97a4b07ffa534d5fc5fc36f",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "one or more synchronization tasks are not valid: resource admissionregistration.k8s.io:ValidatingAdmissionPolicy is not permitted in project lab-apps"
+  },
+  "refused": [
+    {
+      "kind": "ValidatingAdmissionPolicy",
+      "namespace": "default",
+      "name": "lab-n5-vap",
+      "status": "SyncFailed",
+      "message": "resource admissionregistration.k8s.io:ValidatingAdmissionPolicy is not permitted in project lab-apps"
+    }
+  ]
+}

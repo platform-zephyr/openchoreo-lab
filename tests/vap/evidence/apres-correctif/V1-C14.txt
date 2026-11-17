@@ -1,0 +1,6 @@
+# V1-C14 — SA d'un autre namespace (lab-vap-test:other) pods/exec kube-system : non visé
+# attendu : ALLOWC (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:17Z
+$ kubectl --as=system:serviceaccount:lab-vap-test:other --as-group=system:serviceaccounts --as-group=system:serviceaccounts:lab-vap-test --as-group=system:authenticated get --raw /api/v1/namespaces/kube-system/pods/coredns-8db54c48d-r48mr/exec?command=id&stdout=true
+Error from server (BadRequest): pod coredns-8db54c48d-r48mr does not have a host assigned
+# rc=1 verdict=PASS

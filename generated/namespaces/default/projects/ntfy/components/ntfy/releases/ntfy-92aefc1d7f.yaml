@@ -4,6 +4,8 @@ kind: ComponentRelease
 metadata:
   name: ntfy-92aefc1d7f
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
   owner:
     componentName: ntfy

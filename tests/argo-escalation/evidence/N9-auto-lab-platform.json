@@ -1,0 +1,432 @@
+{
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Application",
+    "metadata": {
+        "annotations": {
+            "argocd.argoproj.io/tracking-id": "lab-root:argoproj.io/Application:lab-argocd/lab-platform"
+        },
+        "creationTimestamp": "2026-11-17T20:06:11Z",
+        "generation": 20,
+        "labels": {
+            "app.kubernetes.io/part-of": "openchoreo-lab"
+        },
+        "name": "lab-platform",
+        "namespace": "lab-argocd",
+        "resourceVersion": "1015",
+        "uid": "9bcc503f-93ea-4b18-884b-27fd8675d4c8"
+    },
+    "spec": {
+        "destination": {
+            "namespace": "default",
+            "server": "https://kubernetes.default.svc"
+        },
+        "project": "lab-platform",
+        "source": {
+            "directory": {
+                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                "recurse": true
+            },
+            "path": "platform",
+            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+            "targetRevision": "main"
+        },
+        "syncPolicy": {
+            "syncOptions": [
+                "ServerSideApply=true",
+                "FailOnSharedResource=true"
+            ]
+        }
+    },
+    "status": {
+        "controllerNamespace": "lab-argocd",
+        "health": {
+            "lastTransitionTime": "2026-11-17T20:06:14Z",
+            "status": "Progressing"
+        },
+        "history": [
+            {
+                "deployStartedAt": "2026-11-17T20:06:12Z",
+                "deployedAt": "2026-11-17T20:06:13Z",
+                "id": 0,
+                "initiatedBy": {
+                    "username": "argo-escalation-test"
+                },
+                "revision": "dcd474e7f9956873dfbc1c64cb323efaa50a4d38",
+                "source": {
+                    "directory": {
+                        "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                        "recurse": true
+                    },
+                    "path": "platform",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            }
+        ],
+        "operationState": {
+            "finishedAt": "2026-11-17T20:06:13Z",
+            "message": "successfully synced (all tasks run)",
+            "operation": {
+                "initiatedBy": {
+                    "username": "argo-escalation-test"
+                },
+                "retry": {},
+                "sync": {
+                    "revision": "dcd474e7f9956873dfbc1c64cb323efaa50a4d38"
+                }
+            },
+            "phase": "Succeeded",
+            "startedAt": "2026-11-17T20:06:12Z",
+            "syncResult": {
+                "resources": [
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Namespace",
+                        "message": "namespace/lab-pg created",
+                        "name": "lab-pg",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/allow-pg-clients created",
+                        "name": "allow-pg-clients",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/default-deny created",
+                        "name": "default-deny",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/allow-intra-dns-operator created",
+                        "name": "allow-intra-dns-operator",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/allow-apiserver created",
+                        "name": "allow-apiserver",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterProjectType",
+                        "message": "clusterprojecttype.openchoreo.dev/cell-restricted created",
+                        "name": "cell-restricted",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterResourceType",
+                        "message": "clusterresourcetype.openchoreo.dev/cnpg-lab-db created",
+                        "name": "cnpg-lab-db",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterTrait",
+                        "message": "clustertrait.openchoreo.dev/health-probes created",
+                        "name": "health-probes",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "ValidatingAdmissionPolicyBinding",
+                        "message": "validatingadmissionpolicybinding.admissionregistration.k8s.io/lab-cell-pod-hardening created",
+                        "name": "lab-cell-pod-hardening",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "ValidatingAdmissionPolicy",
+                        "message": "validatingadmissionpolicy.admissionregistration.k8s.io/lab-cell-pod-hardening created",
+                        "name": "lab-cell-pod-hardening",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "ValidatingAdmissionPolicy",
+                        "message": "validatingadmissionpolicy.admissionregistration.k8s.io/lab-cluster-agent-scope created",
+                        "name": "lab-cluster-agent-scope",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "ValidatingAdmissionPolicyBinding",
+                        "message": "validatingadmissionpolicybinding.admissionregistration.k8s.io/lab-cluster-agent-scope created",
+                        "name": "lab-cluster-agent-scope",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "postgresql.cnpg.io",
+                        "hookPhase": "Running",
+                        "kind": "Cluster",
+                        "message": "cluster.postgresql.cnpg.io/lab-pg created",
+                        "name": "lab-pg",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterTrait",
+                        "message": "clustertrait.openchoreo.dev/persistent-volume-claim created",
+                        "name": "persistent-volume-claim",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "Environment",
+                        "message": "environment.openchoreo.dev/production created",
+                        "name": "production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterComponentType",
+                        "message": "clustercomponenttype.openchoreo.dev/service-restricted created",
+                        "name": "service-restricted",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "DeploymentPipeline",
+                        "message": "deploymentpipeline.openchoreo.dev/standard created",
+                        "name": "standard",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    }
+                ],
+                "revision": "dcd474e7f9956873dfbc1c64cb323efaa50a4d38",
+                "source": {
+                    "directory": {
+                        "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                        "recurse": true
+                    },
+                    "path": "platform",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            }
+        },
+        "reconciledAt": "2026-11-17T20:07:42Z",
+        "resourceHealthSource": "appTree",
+        "resources": [
+            {
+                "kind": "Namespace",
+                "name": "lab-pg",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "admissionregistration.k8s.io",
+                "kind": "ValidatingAdmissionPolicy",
+                "name": "lab-cell-pod-hardening",
+                "status": "OutOfSync",
+                "version": "v1"
+            },
+            {
+                "group": "admissionregistration.k8s.io",
+                "kind": "ValidatingAdmissionPolicy",
+                "name": "lab-cluster-agent-scope",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "admissionregistration.k8s.io",
+                "kind": "ValidatingAdmissionPolicyBinding",
+                "name": "lab-cell-pod-hardening",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "admissionregistration.k8s.io",
+                "kind": "ValidatingAdmissionPolicyBinding",
+                "name": "lab-cluster-agent-scope",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "allow-apiserver",
+                "namespace": "lab-pg",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "allow-intra-dns-operator",
+                "namespace": "lab-pg",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "allow-pg-clients",
+                "namespace": "lab-pg",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "default-deny",
+                "namespace": "lab-pg",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterComponentType",
+                "name": "service-restricted",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterProjectType",
+                "name": "cell-restricted",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterResourceType",
+                "name": "cnpg-lab-db",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterTrait",
+                "name": "health-probes",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterTrait",
+                "name": "persistent-volume-claim",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "DeploymentPipeline",
+                "name": "standard",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Environment",
+                "name": "production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "postgresql.cnpg.io",
+                "kind": "Cluster",
+                "name": "lab-pg",
+                "namespace": "lab-pg",
+                "status": "Synced",
+                "version": "v1"
+            }
+        ],
+        "sourceType": "Directory",
+        "sync": {
+            "comparedTo": {
+                "destination": {
+                    "namespace": "default",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "source": {
+                    "directory": {
+                        "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                        "recurse": true
+                    },
+                    "path": "platform",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            },
+            "revision": "9d771d588742aa6eec74852b103eec6a182628b2",
+            "status": "OutOfSync"
+        }
+    }
+}

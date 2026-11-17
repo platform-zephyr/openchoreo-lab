@@ -1,0 +1,6 @@
+# V2-07b — conteneur éphémère privileged (digest) dans dp-*
+# attendu : DENY (lab-cell-pod-hardening)
+# date : 2026-11-17T19:50:17Z
+$ kubectl -n dp-vap-nopsa patch pod target --subresource=ephemeralcontainers --type=strategic -p {"spec":{"ephemeralContainers":[{"name":"dbg","image":"docker.io/rancher/mirrored-library-busybox@sha256:101b4afd76732482eff9b95cae5f94bcf295e521fbec4e01b69c5421f3f3f3e5","stdin":true,"tty":true,"securityContext":{"privileged":true}}]}} --dry-run=server
+Error from server (Forbidden): pods "target" is forbidden: ValidatingAdmissionPolicy 'lab-cell-pod-hardening' with binding 'lab-cell-pod-hardening' denied request: lab-cell-pod-hardening: conteneur privileged interdit
+# rc=1 verdict=PASS

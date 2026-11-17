@@ -1,0 +1,6 @@
+# V2-01 — pod image sans digest dans dp-*
+# attendu : DENY (lab-cell-pod-hardening)
+# date : 2026-11-17T19:52:23Z
+$ kubectl -n dp-vap-nopsa create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": pods "p1" is forbidden: ValidatingAdmissionPolicy 'lab-cell-pod-hardening' with binding 'lab-cell-pod-hardening' denied request: lab-cell-pod-hardening: image épinglée par digest (@sha256:...) obligatoire
+# rc=1 verdict=PASS

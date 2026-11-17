@@ -1,0 +1,58 @@
+# Dépôt Git de test `gl-repo` servi par `git daemon` (git://, port 9418), image Argo CD déjà épinglée
+# (aucune image supplémentaire). Jetable : emptyDir, aucune authentification, accessible seulement dans le
+# cluster (ClusterIP) et par port-forward depuis run.sh pour les push. NE PAS reproduire sur OKE.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gl-git
+  namespace: gl-git
+  labels: {app: gl-git}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app: gl-git}}
+  template:
+    metadata:
+      labels: {app: gl-git}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: init-bare
+          image: quay.io/argoproj/argocd:v3.5.1@sha256:0deb1a1c917629b960ead995ae3b6069450a866992676599658687ef9a641ee8
+          command: [sh, -c, "git init --bare -b main /srv/git/gl-repo.git && git -C /srv/git/gl-repo.git config daemon.receivepack true"]
+          env: [{name: HOME, value: /tmp}]
+          securityContext: &sc
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts: [{name: repo, mountPath: /srv/git}, {name: tmp, mountPath: /tmp}]
+      containers:
+        - name: git-daemon
+          image: quay.io/argoproj/argocd:v3.5.1@sha256:0deb1a1c917629b960ead995ae3b6069450a866992676599658687ef9a641ee8
+          command: [git, daemon, --reuseaddr, --export-all, --enable=receive-pack, --base-path=/srv/git, --port=9418, --verbose, /srv/git]
+          env: [{name: HOME, value: /tmp}]
+          ports: [{name: git, containerPort: 9418}]
+          securityContext: *sc
+          resources:
+            requests: {cpu: 5m, memory: 16Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          volumeMounts: [{name: repo, mountPath: /srv/git}, {name: tmp, mountPath: /tmp}]
+      volumes:
+        - {name: repo, emptyDir: {sizeLimit: 512Mi}}
+        - {name: tmp, emptyDir: {sizeLimit: 64Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gl-git
+  namespace: gl-git
+spec:
+  type: ClusterIP
+  selector: {app: gl-git}
+  ports: [{name: git, port: 9418, targetPort: git}]

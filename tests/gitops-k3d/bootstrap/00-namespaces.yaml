@@ -1,0 +1,33 @@
+# Bootstrap k3d (seul `kubectl apply` admis) : namespaces de l'essai GitOps. Tous restricted.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    app.kubernetes.io/part-of: gl-gitops-k3d
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+# Namespace OpenChoreo (control plane) des objets de generated/ remappés (équivalent de `default` sur OKE).
+# Aucun pod. Les pods tournent dans dp-gl-oc-whoami-production-<hash>, créé par le CPT cell-restricted.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gl-oc
+  labels:
+    app.kubernetes.io/part-of: gl-gitops-k3d
+    openchoreo.dev/control-plane: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+# Serveur Git de test (gl-repo), lu par Argo en git:// dans le cluster.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gl-git
+  labels:
+    app.kubernetes.io/part-of: gl-gitops-k3d
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

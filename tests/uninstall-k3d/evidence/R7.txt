@@ -1,0 +1,10 @@
+# R7 — --step 7 --apply
+# date : 2026-11-17T20:30:39Z
+$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 7 --apply
+20:30:39Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:30:39Z release openchoreo-data-plane/openchoreo-data-plane absente
+20:30:39Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/12-gateway-parameters.yaml -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/11-gateway-tls.yaml
+20:30:39Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/cluster-agent/extra-rbac-quota.yaml
+20:30:39Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/policies/
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]])

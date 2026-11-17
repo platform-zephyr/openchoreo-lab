@@ -1,0 +1,6 @@
+# B-09 — ÉCART kube-ops : conteneur éphémère privileged (pods/ephemeralcontainers non couvert) hors dp-*
+# attendu : DENY (baseline-pod-hardening)
+# date : 2026-11-17T19:52:27Z
+$ kubectl -n vap-plain patch pod target --subresource=ephemeralcontainers --type=strategic -p {"spec":{"ephemeralContainers":[{"name":"dbg","image":"docker.io/rancher/mirrored-library-busybox@sha256:101b4afd76732482eff9b95cae5f94bcf295e521fbec4e01b69c5421f3f3f3e5","stdin":true,"tty":true,"securityContext":{"privileged":true}}]}} --dry-run=server
+pod/target patched
+# rc=0 verdict=FAIL

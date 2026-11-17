@@ -1,4 +1,4 @@
-# Store ESO du labo (étape 3) : ClusterSecretStore `lab-store`, provider kubernetes, coffre = namespace
+# Store ESO du labo (étape 4) : ClusterSecretStore `lab-store`, provider kubernetes, coffre = namespace
 # lab-secrets. Référencé par ClusterDataPlane.spec.secretStoreRef (30-clusterdataplane.yaml.tmpl), donc
 # par ${dataplane.secretStore} dans le CCT service-restricted et le CRT cnpg-lab-db.
 #

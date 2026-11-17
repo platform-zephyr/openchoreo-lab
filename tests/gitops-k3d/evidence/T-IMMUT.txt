@@ -1,0 +1,3 @@
+### 2026-11-17T20:00:40Z
+kubectl patch componentrelease whoami-31985273d8 (image) -> rc=1 : The ComponentRelease "whoami-31985273d8" is invalid: spec.workload: Invalid value: spec.workload is immutable
+

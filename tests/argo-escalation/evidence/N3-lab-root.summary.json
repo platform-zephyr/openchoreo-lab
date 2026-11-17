@@ -1,0 +1,29 @@
+{
+  "name": "lab-root",
+  "project": "lab-root",
+  "sync": "OutOfSync",
+  "health": "Healthy",
+  "conditions": [
+    {
+      "type": "OrphanedResourceWarning",
+      "message": "Application has 1 orphaned resources"
+    }
+  ],
+  "operation": {
+    "phase": "Running",
+    "revision": "bf6a65cf89bdf696b563f968c9b7434944137e16",
+    "initiatedBy": {
+      "automated": true
+    },
+    "message": "one or more synchronization tasks are not valid: namespace kube-system is not permitted in project 'lab-root'. Retrying attempt #5 at 8:20PM."
+  },
+  "refused": [
+    {
+      "kind": "Application",
+      "namespace": "kube-system",
+      "name": "n3-ks",
+      "status": "SyncFailed",
+      "message": "namespace kube-system is not permitted in project 'lab-root'"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+# verdict : PASS (! crd_has externalsecrets.external-secrets.io)

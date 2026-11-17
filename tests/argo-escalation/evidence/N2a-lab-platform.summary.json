@@ -1,0 +1,24 @@
+{
+  "name": "lab-platform",
+  "project": "lab-platform",
+  "sync": "OutOfSync",
+  "health": "Progressing",
+  "conditions": [],
+  "operation": {
+    "phase": "Failed",
+    "revision": "7aed67f558fc26d72dcf5f304d8b3854218d6bc8",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "one or more synchronization tasks are not valid: resource argoproj.io:Application is not permitted in project lab-platform"
+  },
+  "refused": [
+    {
+      "kind": "Application",
+      "namespace": "lab-argocd",
+      "name": "n2-sneaky",
+      "status": "SyncFailed",
+      "message": "resource argoproj.io:Application is not permitted in project lab-platform"
+    }
+  ]
+}

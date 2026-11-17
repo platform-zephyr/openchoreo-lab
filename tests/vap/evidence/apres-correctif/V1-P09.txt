@@ -1,0 +1,6 @@
+# V1-P09 — agent Job automountServiceAccountToken=true (R6)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:22Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n lab-pg create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": jobs.batch "app-pg-init" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: jobs/app-pg-init dans lab-pg hors du gabarit cnpg-lab-db (nom, secret sélectionné, clé distante, jeton SA, volumes ou image)
+# rc=1 verdict=PASS

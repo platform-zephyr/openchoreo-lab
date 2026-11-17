@@ -1,0 +1,3 @@
+### 2026-11-17T20:00:54Z $ k -n argocd get app gl-apps -o jsonpath={.status.conditions}{"\n"}
+[{"lastTransitionTime":"2026-11-17T20:00:52Z","message":"Application has 2 orphaned resources","type":"OrphanedResourceWarning"}]
+

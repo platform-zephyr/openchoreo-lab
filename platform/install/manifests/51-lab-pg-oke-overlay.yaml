@@ -1,10 +1,13 @@
-# Overlay OKE pour lab-pg (étape 12, APRÈS platform/data/lab-pg-namespace.yaml) :
+# Overlay OKE pour lab-pg (étape 10, APRÈS platform/data/lab-pg-namespace.yaml) :
 #  1. CiliumNetworkPolicy vers kube-apiserver : remplace, sur OKE, la NetworkPolicy `allow-apiserver` de
 #     platform/data (ipBlock 172.18.0.0/16 = réseau docker de k3d). Sous Cilium, un ipBlock ne
 #     sélectionne pas l'identité réservée kube-apiserver (endpoint privé 10.0.2.65:6443, hors nœuds) :
 #     toEntities est la forme correcte (même forme que kube-ops #1620, cilium-egress.yaml).
 #     La NP k3d reste en place, inoffensive (elle n'ouvre qu'un CIDR docker absent sur OKE).
 #  2. ResourceQuota + LimitRange du namespace lab-pg.
+#  3. NetworkPolicy opérateur CNPG (namespace lab-cnpg) -> instance manager :8000. La NP
+#     allow-intra-dns-operator de platform/data nomme encore `cnpg-system` (ancien nom, hors périmètre de
+#     ce pack) : à corriger par PR dans platform/data/lab-pg-namespace.yaml (l.37), puis retirer ce point 3.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -47,3 +50,17 @@ spec:
       defaultRequest: {cpu: 10m, memory: 32Mi}
       default: {cpu: 200m, memory: 128Mi}
       max: {cpu: "1", memory: 1Gi}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-from-cnpg-operator
+  namespace: lab-pg
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: lab-cnpg}}
+      ports: [{protocol: TCP, port: 8000}]

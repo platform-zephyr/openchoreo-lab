@@ -4,6 +4,8 @@ kind: ComponentRelease
 metadata:
   name: open-connector-d7cf33eec0
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
   owner:
     componentName: open-connector

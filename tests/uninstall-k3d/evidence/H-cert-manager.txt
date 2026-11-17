@@ -1,0 +1,11 @@
+# H-cert-manager — CRD vivantes du groupe *cert-manager.io : annotation keep et release propriétaire
+# date : 2026-11-17T20:29:32Z
+$ bash -c kubectl get crd -o json | jq -r '.items[] | select(.spec.group | endswith("cert-manager.io")) | [.metadata.name, (.metadata.annotations["helm.sh/resource-policy"] // "-"), (.metadata.annotations["meta.helm.sh/release-name"] // "-")] | @tsv'
+certificaterequests.cert-manager.io	keep	cert-manager
+certificates.cert-manager.io	keep	cert-manager
+challenges.acme.cert-manager.io	keep	cert-manager
+clusterissuers.cert-manager.io	keep	cert-manager
+issuers.cert-manager.io	keep	cert-manager
+orders.acme.cert-manager.io	keep	cert-manager
+# rc=0
+# verdict : PASS ([[ -n $LAST_OUT ]] && ! grep -q "$(printf "\t-\t")" <<<"$LAST_OUT")

@@ -1,39 +1,169 @@
-# AppProject `lab` (étape 10) : seul projet du labo. Restreint au dépôt public du labo, au cluster local,
-# aux namespaces `default` (objets OpenChoreo) et `lab-pg`, et à une liste FERMÉE de kinds.
-# Ce que l'AppProject n'autorise PAS (reste « bootstrap » piloté par tools/oke/install.sh) : CRD, RBAC
-# (dont platform/cluster-agent/*.yaml : une PR ne doit pas pouvoir créer de ClusterRoleBinding),
-# webhooks, Namespaces autres que ceux créés par Git (lab-pg), charts Helm, objets dp-* (OpenChoreo).
+# BOOTSTRAP PRIVILÉGIÉ (étape 11, tools/oke/install.sh ; jamais synchronisé par Argo, aucune Application
+# ne pointe sur platform/install/argocd/ hors apps/). Séparation PAR SOURCE (flux A2, docs/ARGO-ESCALATION.md) :
+#   - lab-root     : Application racine seulement ; kind Application dans lab-argocd, rien d'autre ;
+#   - lab-platform : platform/** (privilégié) ; kinds NOMMÉS quand ils sont cluster-scoped ; fenêtre `deny`
+#                    permanente (manualSync: true) : un merge sur platform/** ne s'applique JAMAIS seul,
+#                    seulement par une synchro manuelle de l'opérateur (docs/GITOPS-TRUST-BOUNDARY.md) ;
+#   - lab-apps     : generated/namespaces/default (sortie de tools/appgen, PR APPLICATIVES) ; kinds
+#                    OpenChoreo NAMESPACÉS applicatifs dans `default` ; AUCUN kind cluster-scoped, ni
+#                    Application, ni RBAC, ni Secret, ni NetworkPolicy ;
+#   - lab-authz    : platform/authz/ ; fenêtre `deny` permanente (manualSync: true) : AUCUNE synchro
+#                    automatique, même si l'Application déclare syncPolicy.automated ;
+#   - default      : verrouillé (project-default-locked.yaml).
+# Un AppProject ne restreint PAS un chemin source : le lien « chemin -> projet » est tenu par les
+# Application de apps/ (chemin privilégié, synchronisé par lab-root) et contrôlé en CI par
+# tools/oke/argo_guard.py (job `platform`, inclus dans `ci-ok`). Ce qu'Argo refuse seul (prouvé sur un
+# vrai Argo CD v3.5.1, tests/argo-escalation/RESULTS.md) : tout kind ou nom hors whitelist, toute
+# destination hors liste, tout projet `default`, toute synchro automatique de lab-authz.
+# Rappels Argo CD 3.5 : clusterResourceWhitelist vide = rien ; namespaceResourceWhitelist ABSENTE = tout
+# (d'où une liste explicite partout) ; `name` accepte un glob ; la blacklist s'applique après la whitelist.
 # Aucun identifiant : dépôt public lu en HTTPS anonyme.
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: lab
+  name: lab-platform
   namespace: lab-argocd
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
-  description: Essai OpenChoreo (jetable) - platform/ et, en Phase C, generated/namespaces/default
+  description: Objets plateforme du labo (platform/**) - changement PRIVILÉGIÉ, kinds nommés, synchro MANUELLE forcée
+  sourceRepos:
+    - https://github.com/platform-zephyr/openchoreo-lab
+    - https://github.com/platform-zephyr/openchoreo-lab.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: default
+    - server: https://kubernetes.default.svc
+      namespace: lab-pg
+  clusterResourceWhitelist:
+    # Types OpenChoreo du labo (platform/{component-types,traits,project-types,resource-types}, manifests/40).
+    - {group: openchoreo.dev, kind: ClusterComponentType, name: service-restricted}
+    - {group: openchoreo.dev, kind: ClusterProjectType, name: cell-restricted}
+    - {group: openchoreo.dev, kind: ClusterResourceType, name: cnpg-lab-db}
+    - {group: openchoreo.dev, kind: ClusterTrait, name: persistent-volume-claim}
+    - {group: openchoreo.dev, kind: ClusterTrait, name: health-probes}
+    # VAP du labo seulement (platform/policies) ; jamais baseline-* (kube-ops).
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cluster-agent-scope}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cell-pod-hardening}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cluster-agent-scope}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cell-pod-hardening}
+    # Un seul Namespace : lab-pg (platform/data/lab-pg-namespace.yaml).
+    - {group: "", kind: Namespace, name: lab-pg}
+  namespaceResourceWhitelist:
+    # Objets plateforme namespacés seulement (manifests/40, platform/data). Les kinds APPLICATIFS
+    # (Project, Component, Workload...) relèvent de lab-apps.
+    - {group: openchoreo.dev, kind: Environment}
+    - {group: openchoreo.dev, kind: DeploymentPipeline}
+    # NetworkPolicy : seulement celles de lab-pg, par nom (contrôle CI argo_guard S2, revue A1).
+    - {group: networking.k8s.io, kind: NetworkPolicy}
+    - {group: postgresql.cnpg.io, kind: Cluster}
+  namespaceResourceBlacklist:
+    # Droits MCP/API : seulement par le projet lab-authz (chemin dédié, revue B2).
+    - {group: openchoreo.dev, kind: AuthzRole}
+    - {group: openchoreo.dev, kind: AuthzRoleBinding}
+  clusterResourceBlacklist:
+    - {group: openchoreo.dev, kind: ClusterAuthzRole}
+    - {group: openchoreo.dev, kind: ClusterAuthzRoleBinding}
+    - {group: openchoreo.dev, kind: ClusterDataPlane}
+  # Frontière de confiance (décision de Paul, docs/GITOPS-TRUST-BOUNDARY.md) : la CI et le ruleset
+  # (`ci-ok`, 0 approbation) ne protègent pas platform/** d'une PR d'agent ; Argo n'applique donc AUCUN
+  # changement plateforme automatiquement (ni automated, ni selfHeal). Dérive = OutOfSync visible.
+  syncWindows:
+    - kind: deny
+      schedule: "* * * * *"
+      duration: 24h
+      timeZone: UTC
+      applications: ["*"]
+      manualSync: true
+  orphanedResources:
+    warn: true
+---
+# AppProject `lab-apps` : SEUL projet des PR APPLICATIVES (apps/<nom>/app.yaml -> tools/appgen ->
+# generated/namespaces/default). Namespace `default` seulement, kinds OpenChoreo applicatifs listés un par
+# un, AUCUN kind cluster-scoped (liste vide = rien). Donc ni Application, ni AppProject, ni RBAC, ni
+# Namespace, ni VAP, ni Secret, ni ConfigMap, ni NetworkPolicy, ni type OpenChoreo (ComponentType...).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lab-apps
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  description: Applications du labo (generated/namespaces/default) - kinds OpenChoreo namespacés, default seulement
+  sourceRepos:
+    - https://github.com/platform-zephyr/openchoreo-lab
+    - https://github.com/platform-zephyr/openchoreo-lab.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: default
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - {group: openchoreo.dev, kind: Project}
+    - {group: openchoreo.dev, kind: Component}
+    - {group: openchoreo.dev, kind: ComponentRelease}
+    - {group: openchoreo.dev, kind: Workload}
+    - {group: openchoreo.dev, kind: ReleaseBinding}
+    - {group: openchoreo.dev, kind: ProjectReleaseBinding}
+    - {group: openchoreo.dev, kind: Resource}
+    - {group: openchoreo.dev, kind: ResourceReleaseBinding}
+    - {group: openchoreo.dev, kind: SecretReference}
+  orphanedResources:
+    warn: true
+---
+# AppProject `lab-authz` (étape 11) : SEUL projet autorisé à porter l'authz OpenChoreo, depuis le chemin
+# dédié platform/authz/ (Application lab-authz). Rôles et liaisons cluster-scoped nommés `lab-*` ; aucun
+# objet namespacé. Fenêtre de synchro `deny` PERMANENTE avec manualSync: true : Argo refuse toute synchro
+# AUTOMATIQUE (automated/selfHeal) même si une PR ajoute syncPolicy.automated à l'Application ; seule la
+# synchro manuelle (geste opérateur après revue de la PR) passe. La CI refuse en plus `automated` (A4).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lab-authz
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  description: Authz OpenChoreo du labo (platform/authz) - roles et liaisons lab-*, synchro MANUELLE forcée
   sourceRepos:
     - https://github.com/platform-zephyr/openchoreo-lab
     - https://github.com/platform-zephyr/openchoreo-lab.git
   destinations:
     - server: https://kubernetes.default.svc
       namespace: lab-argocd
-    - server: https://kubernetes.default.svc
-      namespace: default
-    - server: https://kubernetes.default.svc
-      namespace: lab-pg
   clusterResourceWhitelist:
-    - {group: openchoreo.dev, kind: ClusterComponentType}
-    - {group: openchoreo.dev, kind: ClusterProjectType}
-    - {group: openchoreo.dev, kind: ClusterResourceType}
-    - {group: openchoreo.dev, kind: ClusterTrait}
-    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy}
-    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding}
-    - {group: "", kind: Namespace}
+    - {group: openchoreo.dev, kind: ClusterAuthzRole, name: "lab-*"}
+    - {group: openchoreo.dev, kind: ClusterAuthzRoleBinding, name: "lab-*"}
+  # Aucun namespacé (une whitelist namespacée vide vaudrait « tout » : d'où la blacklist */*).
+  namespaceResourceBlacklist:
+    - {group: "*", kind: "*"}
+  syncWindows:
+    - kind: deny
+      schedule: "* * * * *"
+      duration: 24h
+      timeZone: UTC
+      applications: ["*"]
+      manualSync: true
+  orphanedResources:
+    warn: true
+---
+# AppProject `lab-root` (étape 11) : RÉSERVÉ à l'Application racine lab-root (root-application.yaml), qui
+# synchronise platform/install/argocd/apps/. Un seul kind : Application, dans lab-argocd seulement. Aucun
+# kind cluster-scoped, aucun AppProject. Les Application enfants déclarent elles-mêmes leur projet : Argo
+# refuse `default` (verrouillé) ; la CI (argo_guard A2) impose le couple Application -> projet -> chemin.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lab-root
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  description: Application racine du labo - Application enfants de platform/install/argocd/apps seulement
+  sourceRepos:
+    - https://github.com/platform-zephyr/openchoreo-lab
+    - https://github.com/platform-zephyr/openchoreo-lab.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: lab-argocd
+  clusterResourceWhitelist: []
   namespaceResourceWhitelist:
-    - {group: openchoreo.dev, kind: "*"}
     - {group: argoproj.io, kind: Application}
-    - {group: networking.k8s.io, kind: NetworkPolicy}
-    - {group: postgresql.cnpg.io, kind: Cluster}
   orphanedResources:
     warn: true

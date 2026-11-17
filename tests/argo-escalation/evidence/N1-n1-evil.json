@@ -1,0 +1,54 @@
+{
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Application",
+    "metadata": {
+        "annotations": {
+            "argocd.argoproj.io/tracking-id": "lab-root:argoproj.io/Application:lab-argocd/n1-evil"
+        },
+        "creationTimestamp": "2026-11-17T20:08:06Z",
+        "generation": 4,
+        "name": "n1-evil",
+        "namespace": "lab-argocd",
+        "resourceVersion": "1098",
+        "uid": "c7d0c9f0-6341-4934-976c-252ce0d419ab"
+    },
+    "spec": {
+        "destination": {
+            "namespace": "default",
+            "server": "https://kubernetes.default.svc"
+        },
+        "project": "default",
+        "source": {
+            "path": "platform/evil-n1",
+            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+            "targetRevision": "main"
+        },
+        "syncPolicy": {
+            "automated": {
+                "prune": true,
+                "selfHeal": true
+            }
+        }
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastTransitionTime": "2026-11-17T20:08:06Z",
+                "message": "application destination server 'https://kubernetes.default.svc' and namespace 'default' do not match any of the allowed destinations in project 'default'",
+                "type": "InvalidSpecError"
+            },
+            {
+                "lastTransitionTime": "2026-11-17T20:08:54Z",
+                "message": "application repo git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git is not permitted in project 'default'",
+                "type": "InvalidSpecError"
+            }
+        ],
+        "health": {
+            "lastTransitionTime": "2026-11-17T20:08:06Z",
+            "status": "Unknown"
+        },
+        "sync": {
+            "status": "Unknown"
+        }
+    }
+}

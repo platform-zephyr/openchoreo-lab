@@ -1,0 +1,6 @@
+# V1-C07 — agent serviceaccounts/token dans dp-vap-app (R5)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:17Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n dp-vap-app create token app
+error: failed to create token: serviceaccounts "app" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: serviceaccounts/token interdit au cluster-agent
+# rc=1 verdict=PASS

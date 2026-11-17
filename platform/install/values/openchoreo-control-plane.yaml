@@ -1,15 +1,23 @@
-# OpenChoreo control plane 1.3.3, profil MINIMAL pour OKE oracle-a1 (Phase B, docs/PHASE-B.md).
+# OpenChoreo control plane 1.3.3, profil MINIMAL pour OKE oracle-a1 (Phase B, docs/PHASE-B.md),
+# portail Backstage compris (étape 6b, docs/PORTAL.md) et OIDC Authentik (docs/IDENTITY.md).
 # Chart : oci://ghcr.io/openchoreo/helm-charts/openchoreo-control-plane --version 1.3.3
 #         (digest OCI et sha256 du .tgz : platform/install/versions.env). Namespace : openchoreo-control-plane.
+# Sources fusionnées le 2026-11-17 : platform/identity/openchoreo-oidc-values.yaml (OIDC, sujets, liaisons)
+# et platform/portal/values-backstage.yaml (portail). Ces fichiers restent la trace de conception ; CE
+# fichier est le seul passé à Helm.
+#
+# Étapes : `install.sh --step 6` rend ce fichier avec `--set backstage.enabled=false` (CP sans portail) ;
+# `install.sh --step 6b` le rend tel quel (portail actif). Le Secret `backstage-secrets` doit exister avant 6b.
 #
 # Requests : basées sur l'usage mesuré sur k3d (tests/k3d/RESULTS.md, FOOTPRINT.txt, 2026-11-17) :
-# namespace CP = 19-51m et 447 Mi, dont Backstage 256 Mi et kgateway 85 Mi, soit ≈ 106 Mi pour
-# controller-manager + openchoreo-api + cluster-gateway + event-forwarder. Les requests ci-dessous
-# couvrent cet usage (aucune request mémoire sous l'usage mesuré) ; les limites donnent la marge du
-# démarrage (caches d'informers). À re-mesurer sur OKE (tools/oke/measure.sh) : si l'usage au repos
-# d'un pod dépasse sa request, remonter la request, jamais l'inverse.
+# namespace CP = 19-51m et 447 Mi, dont Backstage 259 Mi et kgateway 85 Mi, soit ≈ 106 Mi pour
+# controller-manager + openchoreo-api + cluster-gateway + event-forwarder. Aucune request mémoire sous
+# l'usage mesuré ; les limites donnent la marge du démarrage. À re-mesurer sur OKE (tools/oke/measure.sh) :
+# si l'usage au repos d'un pod dépasse sa request, remonter la request, jamais l'inverse.
+# Total requests du namespace (avec kgateway 10m/96Mi) : 50m / 552 Mi ; limites 2,2 CPU / 1792 Mi
+# (quota 01-quotas.yaml : 100m / 640 Mi requests, 2304 Mi limites).
 #
-# PSA : tous les pods de ce chart sont conformes à `restricted` avec ces values :
+# PSA : tous les pods de ce chart sont conformes à `restricted` avec ces values (tools/oke/render-check.sh) :
 #   - appArmorProfile: Unconfined (défaut du chart) est REFUSÉ par PSA baseline ET restricted : on
 #     le retire (null). L'OS des nœuds OKE (Oracle Linux, SELinux) n'a pas AppArmor de toute façon.
 #   - cluster-gateway : le chart n'a ni seccompProfile ni securityContext de conteneur : ajoutés.
@@ -47,9 +55,66 @@ openchoreoApi:
       # refusées par l'authz (APP-CONTRACT §5 : rôle agent en lecture seule, Git = source de vérité).
       toolsets: [namespace, project, component, deployment, resource]
     security:
+      authentication:
+        jwt:
+          clock_skew: "30s"
+          jwks:
+            refresh_interval: "1h"
+            skip_tls_verify: false
+      subjects:
+        user:
+          display_name: "User"
+          priority: 1
+          mechanisms:
+            jwt:
+              # `username` n'est émis que par un scope non demandé ; profile émet preferred_username.
+              readable_id_claim: "preferred_username"
+              entitlement:
+                claim: "groups"
+                display_name: "User Group"
+        service_account:
+          display_name: "Service Account"
+          priority: 2
+          mechanisms:
+            jwt:
+              readable_id_claim: "client_id"
+              entitlement:
+                claim: "client_id"
+                display_name: "Client ID"
       authorization:
         bootstrap:
           image: "registry.k8s.io/kubectl:v1.36.0@sha256:63e5e76b746bb8b891a94968d380736c035e768dab0d56ddad1f50c750a4be39"
+          # Remplace INTÉGRALEMENT la liste par défaut du chart (tableau Helm). Retirés volontairement :
+          #   - mcp-tryout-client-binding (admin pour client_id service_mcp_client : inacceptable) ;
+          #   - platform-engineer/sre (groupes ThunderID absents d'Authentik) ;
+          #   - rca/finops/workload-publisher/observer (composants non déployés : pas de clients).
+          # Le hook fait un upsert : il ne SUPPRIME pas une liaison créée par une installation antérieure
+          # avec les défauts (aucune sur OKE : étape 6 jamais appliquée au 2026-11-17). Contrôle : T-Z5
+          # (docs/IDENTITY.md §9). Rôles et liaisons propres au labo (viewer, agents) :
+          # platform/authz/ (Application lab-authz, sync manuelle ; hors de ce fichier).
+          mappings:
+            - name: admin-binding
+              kind: ClusterAuthzRoleBinding
+              roleMappings:
+                - roleRef: {name: admin, kind: ClusterAuthzRole}
+              entitlement: {claim: groups, value: authentik-admins}
+              effect: allow
+            - name: developer-binding
+              kind: ClusterAuthzRoleBinding
+              roleMappings:
+                - roleRef: {name: developer, kind: ClusterAuthzRole}
+                  scope: {namespace: default}
+                - roleRef: {name: cluster-reader, kind: ClusterAuthzRole}
+              entitlement: {claim: groups, value: openchoreo-developers}
+              effect: allow
+            - name: backstage-catalog-reader-binding
+              kind: ClusterAuthzRoleBinding
+              system: true
+              roleMappings:
+                - roleRef: {name: backstage-catalog-reader, kind: ClusterAuthzRole}
+              # Client de SERVICE du portail (client_credentials), distinct du client de login.
+              entitlement: {claim: client_id, value: openchoreo-backstage-service}
+              effect: allow
 
 clusterGateway:
   image:
@@ -71,30 +136,116 @@ clusterGateway:
   tlsRoute:
     enabled: false
 
-# Profil minimal : ni Backstage ni event-forwarder (sans Backstage il n'a pas de destinataire).
-# Le MCP et l'API restent servis par openchoreo-api (values.yaml l.~1883, D-gitops-empreinte §5.2).
+# Portail Backstage intégré (docs/PORTAL.md). Désactivé à l'étape 6 par --set, activé à l'étape 6b.
+# Mesure k3d (2026-11-17, 12 Components, 2 h, 0 redémarrage) : 4-9m CPU, 259 Mi working set. Requests du
+# chart 200m / 256 Mi (mémoire SOUS l'usage) : on remonte la mémoire, on baisse le CPU. k3d ≠ OKE.
+# Image ghcr.io/openchoreo/openchoreo-ui:v1.3.3, index sha256:997f6605… (linux/arm64 sha256:d8888561…).
+# Base SQLite sur emptyDir (aucun PVC) ; aucune exposition (pas de HTTPRoute) ; accès par
+# `kubectl port-forward svc/backstage 7007:7007`. Cloudflare Tunnel/Access : accord de Paul requis.
 backstage:
-  enabled: false
+  enabled: true
+  replicas: 1
+  # Secret créé HORS dépôt par l'opérateur (docs/PORTAL.md §4) : backend-secret, client-secret
+  # (openchoreo-backstage-client), service-client-secret (openchoreo-backstage-service), jenkins-api-key
+  # (factice, exigé par le template même si Jenkins est coupé).
+  secretName: backstage-secrets
+  image:
+    tag: "v1.3.3@sha256:997f6605c620514a34557f64716830c845830119625edd1e13669d2637d3f79c"
+    pullPolicy: IfNotPresent
+  baseUrl: "http://localhost:7007"
+  http:
+    enabled: false
+  resources:
+    requests: {cpu: 10m, memory: 320Mi}
+    # Limite CPU haute : le démarrage (migrations SQLite, 1re synchro) doit passer la liveness
+    # (initialDelay 30 s). LimitRange du namespace : max 1 CPU / 1 Gi par conteneur.
+    limits: {cpu: 1000m, memory: 768Mi}
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities: {drop: [ALL]}
+    # readOnlyRootFilesystem=true NON TESTÉ (Node/Backstage peuvent écrire hors de /app/.config) :
+    # défaut du chart conservé ; PSA restricted ne l'exige pas.
+    readOnlyRootFilesystem: false
+    seccompProfile: {type: RuntimeDefault}
+    appArmorProfile: null
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile: {type: RuntimeDefault}
+  database:
+    type: sqlite
+    sqlite:
+      persistence:
+        enabled: false
+  # Sans event-forwarder (1 pod de moins) : synchro par interrogation seule, toutes les 120 s.
+  catalogSync:
+    frequency: 120
+  features:
+    workflows: {enabled: false}       # pas de workflow plane
+    observability: {enabled: false}   # pas d'observability plane
+    deliveryInsights: {enabled: false}
+    assistant: {enabled: false}
+    auth:
+      redirectFlow: {enabled: true}
+  externalCI:
+    jenkins: {enabled: false}
+    githubActions: {enabled: false}
+  # Deux clients Authentik, même issuer global (docs/IDENTITY.md §1, §2.1) :
+  #   - openchoreo-backstage-client : login utilisateur (authorization_code + refresh) ;
+  #   - openchoreo-backstage-service : synchro du catalogue (client_credentials), rôle backstage-catalog-reader.
+  auth:
+    clientId: openchoreo-backstage-client
+    redirectUrls:
+      - "http://localhost:7007/api/auth/openchoreo-auth/handler/frame"
+    oidcScope: "openid profile email offline_access openchoreo"
+    serviceClientId: openchoreo-backstage-service
+    serviceClientSecretKey: service-client-secret
+    # Obligatoire avec Authentik : sans ce scope, le jeton client_credentials n'a pas de claim client_id.
+    scope: "openid openchoreo-client-id"
+  networkPolicy:
+    enabled: false   # celle du chart vise ingress-nginx ; voir manifests/03-idp-egress.yaml
+  metrics:
+    serviceMonitor: {enabled: false}
+
+# Profil minimal : pas d'event-forwarder (le portail synchronise par interrogation).
 eventForwarder:
   enabled: false
 portalAssistant:
   enabled: false
 
-# OIDC : l'issuer est celui prévu par APP-CONTRACT (ThunderID, exposé en Phase C). ThunderID n'est PAS
-# installé en Phase B (3 PVC obligatoires = 150 Go de block volume OCI, voir docs/PHASE-B.md §5).
-# Le cache JWKS de l'API est paresseux (internal/server/middleware/auth/jwt/middleware.go l.120-128) :
-# sans IdP, l'API démarre et refuse tout appel authentifié (401) : échec fermé, attendu en Phase B.
+# OIDC : Authentik du homelab (https://auth.smadja.dev), externe à OKE (docs/IDENTITY.md).
+# Issuer GLOBAL (issuer_mode: global, un provider Authentik par client) : un seul `iss` pour l'API et le
+# portail (le chart n'a qu'un jeu d'URL OIDC, partagé). Hypothèse [S] : iss = "https://auth.smadja.dev/"
+# (barre finale incluse, comparaison stricte, middleware.go l.226), à prouver par T-A1.
+# Le cache JWKS de l'API est paresseux (middleware.go l.120-128) : sans clients Authentik, l'API démarre
+# et refuse tout appel authentifié (401) : échec fermé (critère B6-mcp).
+# Egress API/portail -> auth.smadja.dev:443 : manifests/03-idp-egress.yaml (non prouvable avant C1).
 security:
   enabled: true
   oidc:
-    issuer: "https://thunder.lab.smadja.dev"
-    jwksUrl: "https://thunder.lab.smadja.dev/oauth2/jwks"
-    authorizationUrl: "https://thunder.lab.smadja.dev/oauth2/authorize"
-    tokenUrl: "https://thunder.lab.smadja.dev/oauth2/token"
+    issuer: "https://auth.smadja.dev/"
+    # Discovery d'un des providers OpenChoreo : en mode global elle porte l'issuer global.
+    wellKnownEndpoint: "https://auth.smadja.dev/application/o/openchoreo/.well-known/openid-configuration"
+    # Tous les providers OpenChoreo signent avec la même clé `openchoreo-oidc` : un seul JWKS suffit.
+    jwksUrl: "https://auth.smadja.dev/application/o/openchoreo/jwks/"
+    authorizationUrl: "https://auth.smadja.dev/application/o/authorize/"
+    tokenUrl: "https://auth.smadja.dev/application/o/token/"
+    jwksUrlTlsInsecureSkipVerify: false
+    externalClients:
+      - name: cli
+        client_id: openchoreo-cli
+        scopes: [openid, profile, email, offline_access, openchoreo]
+    mcpOAuthScopes: [openid, profile, email, openchoreo]
+  jwt:
+    # Vide : chaque provider Authentik émet aud = son client_id ; une audience unique rejetterait les
+    # autres clients. L'isolation repose sur iss global + clé de signature dédiée (docs/IDENTITY.md §2.2).
+    audience: ""
   authz:
     enabled: true
 
-# Pas de Gateway CP en Phase B : un seul Envoy (celui du data plane) ; API et MCP par port-forward.
+# Pas de Gateway CP en Phase B : un seul Envoy (celui du data plane) ; API, MCP et portail par port-forward.
 # À réactiver (avec GatewayParameters ClusterIP, voir manifests/12-gateway-parameters.yaml) quand une
 # exposition (Cloudflare Tunnel) aura l'accord de Paul.
 gateway:

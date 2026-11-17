@@ -1,0 +1,6 @@
+### 2026-11-17T20:00:29Z
+commit caf9bc8b0283b0ea3a73c44ecc0d369d7e2836ee « whoami: replicas 2 » ; Git -> Argo gl-apps Synced : 2s (webhook)
+
+### 2026-11-17T20:00:31Z $ k -n dp-gl-oc-whoami-production-925e72bb get deployment.apps/whoami-production-58d1cedc -o jsonpath={.spec.replicas} {.spec.template.spec.containers[0].resources}{"\n"}
+2 {"limits":{"cpu":"250m","memory":"256Mi"},"requests":{"cpu":"50m","memory":"128Mi"}}
+

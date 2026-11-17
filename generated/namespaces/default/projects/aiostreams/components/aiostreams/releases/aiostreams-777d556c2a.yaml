@@ -4,6 +4,8 @@ kind: ComponentRelease
 metadata:
   name: aiostreams-777d556c2a
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
   owner:
     componentName: aiostreams

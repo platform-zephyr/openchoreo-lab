@@ -1,0 +1,6 @@
+# V1-P13 — agent Job nom hors -pg-init (R6)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:16Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n lab-pg create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": jobs.batch "evil" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: jobs/evil dans lab-pg hors du gabarit cnpg-lab-db (nom, secret sélectionné, clé distante, jeton SA, volumes ou image)
+# rc=1 verdict=PASS

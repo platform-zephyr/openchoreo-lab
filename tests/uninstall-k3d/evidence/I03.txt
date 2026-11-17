@@ -1,0 +1,30 @@
+# I03 — Argo CD épinglé dans lab-argocd (--no-hooks)
+# date : 2026-11-17T20:29:30Z
+$ helm upgrade --install argocd /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/argo-cd-10.3.3.tgz -n lab-argocd -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/values/argocd.yaml --no-hooks
+Release "argocd" does not exist. Installing it now.
+NAME: argocd
+LAST DEPLOYED: Tue Nov 17 21:29:29 2026
+NAMESPACE: lab-argocd
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+In order to access the server UI you have the following options:
+
+1. kubectl port-forward service/argocd-server -n lab-argocd 8080:443
+
+    and then open the browser on http://localhost:8080 and accept the certificate
+
+2. enable ingress in the values file `server.ingress.enabled` and either
+      - Add the annotation for ssl passthrough: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-1-ssl-passthrough
+      - Set the `configs.params."server.insecure"` in the values file and terminate SSL at your ingress: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-2-multiple-ingress-objects-and-hosts
+
+
+After reaching the UI the first time you can login with username: admin and the random password generated during the installation. You can find the password by running:
+
+kubectl -n lab-argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+
+(You should delete the initial secret afterwards as suggested by the Getting Started Guide: https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli)
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && crd_has applications.argoproj.io)

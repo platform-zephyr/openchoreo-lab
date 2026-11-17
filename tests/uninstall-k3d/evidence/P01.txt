@@ -1,0 +1,1 @@
+# verdict : PASS ([[ "$STORE0" == "$STORE1" ]] && kubectl -n lab-pvc-witness get pvc witness >/dev/null)

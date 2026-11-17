@@ -1,6 +1,6 @@
 # cert-manager v1.19.4. Chart : oci://quay.io/jetstack/charts/cert-manager --version v1.19.4.
 # Namespace : openchoreo-cert-manager (non imposé par OpenChoreo : ses charts n'utilisent que des
-# Issuer namespacés ; la ClusterIssuer du labo garde sa CA dans ce namespace, clusterResourceNamespace).
+# Issuer namespacés ; aucune ClusterIssuer dans le labo (11-gateway-tls.yaml : Issuer namespacé).
 # Obligatoire : Certificates du cluster-gateway, du cluster-agent et des webhooks ; cainjector requis
 # (annotation cert-manager.io/inject-ca-from sur les webhooks du controller-manager).
 #
@@ -31,7 +31,7 @@ webhook:
   resources:
     requests: {cpu: 5m, memory: 48Mi}
     limits: {cpu: 200m, memory: 128Mi}
-# Job post-install (1 IP de pod VCN-native) remplacé par tools/oke/verify.sh --step 2.
+# Job post-install (1 IP de pod VCN-native) remplacé par tools/oke/verify.sh --step 3 (B3-webhook).
 startupapicheck:
   enabled: false
 prometheus:

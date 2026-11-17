@@ -1,0 +1,63 @@
+# Egress du control plane vers l'IdP Authentik externe (https://auth.smadja.dev:443, docs/IDENTITY.md).
+# Appliqué par tools/oke/install.sh --step 6 (AVANT le helm upgrade du CP), conservé par 6b.
+# Sources de conception : platform/identity/network-policy-api-idp.yaml (API) et
+# platform/portal/network-policies.yaml (portail) ; CE fichier est le seul appliqué.
+#  - openchoreo-api : JWKS seulement (paresseux, puis toutes les heures et sur kid inconnu) ;
+#  - backstage : échange du code OIDC et client_credentials de la synchro du catalogue (appels serveur à
+#    serveur ; la page de login est chargée par le navigateur, hors cluster).
+# Le reste (default-deny, DNS, kube-apiserver, intra-namespace dont backstage -> openchoreo-api:8080) est
+# fourni par 02-network-policies.yaml. Pas de GitHub (catalogue lu depuis l'API), pas de registre (pull
+# par le runtime du nœud), pas d'ingress (port-forward).
+# toFQDNs exige la visibilité DNS L7 (règle dns vers kube-dns), comme lab-allow-github (lab-argocd).
+# [S] Si Cloudflare Access protégeait auth.smadja.dev, les appels serveur échoueraient (critère P2).
+# CONFLIT C1 (docs/PHASE-B.md §6) : tant que la CCNP kube-ops allow-egress-unisolated s'applique à ce
+# namespace, l'egress est ouvert de toute façon ; ces règles ne sont prouvables qu'après C1.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-openchoreo-api-authentik
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/component: api-server
+      app.kubernetes.io/name: openchoreo-control-plane
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports: [{port: "53", protocol: ANY}]
+          rules:
+            dns: [{matchPattern: "*"}]
+    - toFQDNs:
+        - matchName: auth.smadja.dev
+      toPorts:
+        - ports: [{port: "443", protocol: TCP}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-allow-backstage-authentik
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/component: backstage
+      app.kubernetes.io/name: openchoreo-control-plane
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports: [{port: "53", protocol: ANY}]
+          rules:
+            dns: [{matchPattern: "*"}]
+    - toFQDNs:
+        - matchName: auth.smadja.dev
+      toPorts:
+        - ports: [{port: "443", protocol: TCP}]

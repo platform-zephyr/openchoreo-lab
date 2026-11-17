@@ -1,0 +1,6 @@
+# V2-02 — pod privileged dans dp-*
+# attendu : DENY (lab-cell-pod-hardening)
+# date : 2026-11-17T19:50:16Z
+$ kubectl -n dp-vap-nopsa create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": pods "p2" is forbidden: ValidatingAdmissionPolicy 'lab-cell-pod-hardening' with binding 'lab-cell-pod-hardening' denied request: lab-cell-pod-hardening: conteneur privileged interdit
+# rc=1 verdict=PASS

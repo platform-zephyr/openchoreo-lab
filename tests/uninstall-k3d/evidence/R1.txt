@@ -1,0 +1,22 @@
+# R1 — --step 1 --apply
+# date : 2026-11-17T20:31:24Z
+$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 1 --apply
+20:31:22Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:31:23Z + kubectl delete namespace openchoreo-control-plane --wait=false
+namespace "openchoreo-control-plane" deleted
+20:31:24Z + kubectl delete namespace openchoreo-data-plane --wait=false
+namespace "openchoreo-data-plane" deleted
+20:31:24Z + kubectl delete namespace openchoreo-cert-manager --wait=false
+namespace "openchoreo-cert-manager" deleted
+20:31:24Z + kubectl delete namespace openchoreo-external-secrets --wait=false
+namespace "openchoreo-external-secrets" deleted
+20:31:24Z + kubectl delete namespace lab-secrets --wait=false
+namespace "lab-secrets" deleted
+20:31:24Z + kubectl delete namespace lab-argocd --wait=false
+namespace "lab-argocd" deleted
+20:31:24Z + kubectl delete namespace lab-cnpg --wait=false
+namespace "lab-cnpg" deleted
+20:31:24Z cnpg-system absent : migration déjà faite
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && ns_has lab-pvc-witness && ns_has ext-user)
+R1 namespaces restants : namespace/default namespace/ext-user namespace/kube-node-lease namespace/kube-public namespace/kube-system namespace/lab-argocd namespace/lab-cnpg namespace/lab-pvc-witness namespace/lab-secrets namespace/openchoreo-cert-manager namespace/openchoreo-control-plane namespace/openchoreo-data-plane namespace/openchoreo-external-secrets 

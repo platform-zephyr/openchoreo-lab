@@ -4,6 +4,8 @@ kind: Component
 metadata:
   name: idp-e2e
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   owner:
     projectName: idp-e2e

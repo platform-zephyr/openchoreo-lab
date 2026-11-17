@@ -1,0 +1,10 @@
+# R5a — --step 5 --apply --delete-crds (TrafficPolicy hors essai dans ext-user)
+# date : 2026-11-17T20:30:43Z
+$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 5 --apply --delete-crds
+20:30:40Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:30:41Z + helm -n openchoreo-control-plane uninstall kgateway --wait
+release "kgateway" uninstalled
+20:30:43Z CRD trafficpolicies.gateway.kgateway.dev utilisée hors essai (objets namespacés) : conservée
+20:30:43Z release kgateway-crds conservée
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && ! helm -n openchoreo-control-plane status kgateway >/dev/null 2>&1 && helm -n openchoreo-control-plane status kgateway-crds >/dev/null && crd_has trafficpolicies.gateway.kgateway.dev && grep -q "utilisée hors essai" <<<"$LAST_OUT")

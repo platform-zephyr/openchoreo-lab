@@ -1,0 +1,14 @@
+{
+  "name": "lab-authz",
+  "project": "lab-authz",
+  "sync": "OutOfSync",
+  "health": "Missing",
+  "conditions": [],
+  "operation": {
+    "phase": null,
+    "revision": null,
+    "initiatedBy": null,
+    "message": null
+  },
+  "refused": []
+}

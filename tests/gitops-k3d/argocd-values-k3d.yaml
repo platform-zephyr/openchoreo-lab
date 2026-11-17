@@ -1,0 +1,58 @@
+# Surcouche k3d des values Argo CD (appliquée APRÈS platform/install/values/argocd.yaml).
+# Chart argo-cd 10.3.3 (Argo CD v3.5.1), sha256 du .tgz vérifié par run.sh (platform/install/versions.env).
+#
+# Écarts avec l'installation OKE (platform/install/values/argocd.yaml + project-lab.yaml), voir docs/GITOPS-PROOF.md :
+#   1. namespace `argocd` (OKE : `lab-argocd`) : imposé par le périmètre de l'essai k3d (gl-* + argocd).
+#   2. plugin CMP `gl-ns-remap` (sidecar du repo-server, MÊME image Argo épinglée par digest) : relit les
+#      fichiers de Git SANS les modifier et remplace seulement `metadata.namespace: default` par un namespace
+#      OpenChoreo `gl-*`. Raison : generated/ code en dur le namespace OpenChoreo `default`, déjà occupé sur ce
+#      k3d par les tests de la Phase A. Sur OKE : source `directory` simple, aucun plugin.
+#   3. aucun autre écart (TLS du serveur conservé, admin local, pas de dex, polling Git par défaut 120 s + gigue).
+configs:
+  cmp:
+    create: true
+    plugins:
+      gl-ns-remap:
+        # Paramètres (env de l'Application, préfixés ARGOCD_ENV_ par Argo) :
+        #   TARGET_NS : namespace OpenChoreo cible, préfixe gl- obligatoire ;
+        #   INCLUDE   : chemins relatifs (fichiers ou dossiers) séparés par des espaces.
+        generate:
+          command: [sh, -c]
+          args:
+            - |
+              set -eu
+              case "${ARGOCD_ENV_TARGET_NS:-}" in gl-[a-z0-9-]*) ;; *) echo "TARGET_NS doit commencer par gl-" >&2; exit 1;; esac
+              for p in ${ARGOCD_ENV_INCLUDE:-.}; do
+                case "$p" in /*|*..*) echo "INCLUDE invalide: $p" >&2; exit 1;; esac
+                [ -e "$p" ] || continue
+                find "$p" -type f -name '*.yaml'
+              done | LC_ALL=C sort -u | while read -r f; do
+                printf -- '---\n'
+                sed -E "s/^  namespace: default\$/  namespace: ${ARGOCD_ENV_TARGET_NS}/" "$f"
+                printf '\n'
+              done
+repoServer:
+  extraContainers:
+    - name: cmp-gl-ns-remap
+      image: quay.io/argoproj/argocd:v3.5.1@sha256:0deb1a1c917629b960ead995ae3b6069450a866992676599658687ef9a641ee8
+      command: [/var/run/argocd/argocd-cmp-server]
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities: {drop: [ALL]}
+        seccompProfile: {type: RuntimeDefault}
+      resources:
+        requests: {cpu: 5m, memory: 32Mi}
+        limits: {cpu: 200m, memory: 128Mi}
+      volumeMounts:
+        - {name: var-files, mountPath: /var/run/argocd}
+        - {name: plugins, mountPath: /home/argocd/cmp-server/plugins}
+        - {name: argocd-cmp-cm, mountPath: /home/argocd/cmp-server/config/plugin.yaml, subPath: gl-ns-remap.yaml}
+        - {name: cmp-tmp, mountPath: /tmp}
+  volumes:
+    - name: argocd-cmp-cm
+      configMap: {name: argocd-cmp-cm}
+    - name: cmp-tmp
+      emptyDir: {sizeLimit: 256Mi}

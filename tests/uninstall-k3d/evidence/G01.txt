@@ -1,0 +1,6 @@
+# G01 — LAB_TEST_CLUSTER=k3d-openchoreo refusé
+# date : 2026-11-17T20:29:20Z
+$ env LAB_TEST_CLUSTER=k3d-openchoreo /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 2
+20:29:20Z ABANDON : LAB_TEST_CLUSTER='k3d-openchoreo' refusé : seul 'k3d-lab-sec-vap' est un cluster de test accepté
+# rc=2
+# verdict : PASS ([[ $LAST_RC != 0 ]] && grep -q "refusé : seul" <<<"$LAST_OUT")

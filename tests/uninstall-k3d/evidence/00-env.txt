@@ -1,0 +1,3 @@
+serveur v1.35.5+k3s1
+nœud prêt : 0
+nœud k3d-lab-sec-vap-server-0 providerID=k3s://k3d-lab-sec-vap-server-0 labels={"lab-uninstall-test":"fake-node","node-role.kubernetes.io/control-plane":"true"}

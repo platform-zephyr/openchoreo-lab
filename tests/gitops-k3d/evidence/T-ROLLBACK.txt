@@ -1,0 +1,11 @@
+### 2026-11-17T20:00:59Z $ k -n gl-oc get componentrelease,releasebinding -o wide
+NAME                                                PROJECT   COMPONENT   AGE
+componentrelease.openchoreo.dev/whoami-024137137b   whoami    whoami      24s
+componentrelease.openchoreo.dev/whoami-31985273d8   whoami    whoami      5m53s
+
+NAME                                              PROJECT   COMPONENT   ENVIRONMENT   AGE
+releasebinding.openchoreo.dev/whoami-production   whoami    whoami      production    5m53s
+
+### 2026-11-17T20:00:59Z $ k -n argocd get app gl-apps -o jsonpath={.status.sync.status} {.status.conditions}{"\n"}
+OutOfSync [{"lastTransitionTime":"2026-11-17T20:00:54Z","message":"Application has 1 orphaned resources","type":"OrphanedResourceWarning"}]
+

@@ -1,0 +1,6 @@
+# B-02 — pod hostNetwork
+# attendu : DENY (baseline-pod-hardening)
+# date : 2026-11-17T19:50:17Z
+$ kubectl -n vap-plain create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": pods "b2" is forbidden: ValidatingAdmissionPolicy 'baseline-pod-hardening' with binding 'baseline-pod-hardening' denied request: hostNetwork is denied (baseline).
+# rc=1 verdict=PASS

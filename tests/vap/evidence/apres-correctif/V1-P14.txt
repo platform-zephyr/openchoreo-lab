@@ -1,0 +1,6 @@
+# V1-P14 — agent Password (générateur ESO) app-pg (témoin)
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:23Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n lab-pg create --dry-run=server -f -
+password.generators.external-secrets.io/app-pg created (server dry run)
+# rc=0 verdict=PASS

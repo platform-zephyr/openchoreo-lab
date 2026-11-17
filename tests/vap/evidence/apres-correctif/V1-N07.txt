@@ -1,0 +1,6 @@
+# V1-N07 — agent UPDATE dp-vap-ok annotation (oldObject présent, témoin)
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:17Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated annotate ns dp-vap-ok lab-vap-test/touch=1 --overwrite
+namespace/dp-vap-ok annotated
+# rc=0 verdict=PASS

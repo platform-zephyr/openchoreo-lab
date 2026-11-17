@@ -1,4 +1,4 @@
-# Enregistrement du data plane (single-cluster), étape 7. GABARIT : tools/oke/install.sh remplace
+# Enregistrement du data plane (single-cluster), étape 8. GABARIT : tools/oke/install.sh remplace
 # __AGENT_CA__ par `ca.crt` du Secret openchoreo-data-plane/cluster-agent-tls (CA auto-signée de
 # l'agent, clusterAgent.tls.generateCerts=true) : c'est la CA qui signe le certificat CLIENT de l'agent,
 # vérifié par le cluster-gateway en mTLS. Ne pas prendre tls.crt (=> « bad handshake »,
@@ -31,3 +31,15 @@ __AGENT_CA__
           host: lab.smadja.dev
           listenerName: https
           port: 19443
+      # Correction G1 (docs/GITOPS-PROOF.md §4) : le CCT service-restricted exige gateway.ingress.internal
+      # pour un endpoint `internal` (exposure.mode: private, défaut). Même Gateway et même listener que sur
+      # k3d (preuve T-DEPLOY). Hôte sous `.internal` (TLD réservé à l'usage privé) : jamais routé par le
+      # Cloudflare Tunnel public [S : à valider sur OKE avec la config du tunnel]. Identique à
+      # 40-openchoreo-env.yaml (test tests/appgen/test_gitops_fixes.py).
+      internal:
+        name: gateway-default
+        namespace: openchoreo-data-plane
+        http:
+          host: lab.internal
+          listenerName: http
+          port: 19080

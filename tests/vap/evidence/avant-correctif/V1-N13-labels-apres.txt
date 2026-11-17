@@ -1,0 +1,2 @@
+{"kubernetes.io/metadata.name":"dp-vap-ok","platform.smadja.dev/cell":"x","pod-security.kubernetes.io/enforce":"privileged","pod-security.kubernetes.io/enforce-version":"latest"}
+{"kubernetes.io/metadata.name":"dp-vap-ok","platform.smadja.dev/cell":"y","pod-security.kubernetes.io/enforce":"baseline","pod-security.kubernetes.io/enforce-version":"latest"}

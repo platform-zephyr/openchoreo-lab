@@ -1,0 +1,371 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "baseline-automount-token"
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "matchPolicy": "Equivalent",
+          "namespaceSelector": {},
+          "objectSelector": {},
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "pods"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "apps"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "deployments",
+                "statefulsets",
+                "daemonsets"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "batch"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "jobs"
+              ],
+              "scope": "*"
+            }
+          ]
+        },
+        "validations": [
+          {
+            "expression": "(has(variables.podSpec.automountServiceAccountToken) && !variables.podSpec.automountServiceAccountToken) || ('baseline.smadja.dev/automount-token' in variables.podAnnotations && variables.podAnnotations['baseline.smadja.dev/automount-token'] == 'true')",
+            "message": "automountServiceAccountToken must be false unless the baseline.smadja.dev/automount-token=true annotation is set.",
+            "reason": "Forbidden"
+          }
+        ],
+        "variables": [
+          {
+            "expression": "has(object.spec.template) ? object.spec.template.spec : object.spec",
+            "name": "podSpec"
+          },
+          {
+            "expression": "has(object.spec.template) ? (has(object.spec.template.metadata) && has(object.spec.template.metadata.annotations) ? object.spec.template.metadata.annotations : {}) : (has(object.metadata.annotations) ? object.metadata.annotations : {})",
+            "name": "podAnnotations"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "baseline-image-digest"
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "matchPolicy": "Equivalent",
+          "namespaceSelector": {},
+          "objectSelector": {},
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "pods"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "apps"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "deployments",
+                "statefulsets",
+                "daemonsets",
+                "replicasets"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "batch"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "jobs"
+              ],
+              "scope": "*"
+            }
+          ]
+        },
+        "validations": [
+          {
+            "expression": "variables.allContainers.all(c, c.image.contains('@sha256:'))",
+            "message": "container images must be pinned by digest (@sha256:) in this namespace (baseline).",
+            "reason": "Forbidden"
+          }
+        ],
+        "variables": [
+          {
+            "expression": "has(object.spec.template) ? object.spec.template.spec : object.spec",
+            "name": "podSpec"
+          },
+          {
+            "expression": "(has(variables.podSpec.containers) ? variables.podSpec.containers : []) + (has(variables.podSpec.initContainers) ? variables.podSpec.initContainers : [])",
+            "name": "allContainers"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "baseline-pod-hardening"
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "matchPolicy": "Equivalent",
+          "namespaceSelector": {},
+          "objectSelector": {},
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "pods"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "apps"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "deployments",
+                "statefulsets",
+                "daemonsets",
+                "replicasets"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "batch"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "jobs"
+              ],
+              "scope": "*"
+            }
+          ]
+        },
+        "validations": [
+          {
+            "expression": "variables.allContainers.all(c, !has(c.securityContext) || !has(c.securityContext.privileged) || !c.securityContext.privileged)",
+            "message": "privileged containers are denied (baseline, oke/homelab).",
+            "reason": "Forbidden"
+          },
+          {
+            "expression": "!has(variables.podSpec.hostNetwork) || !variables.podSpec.hostNetwork",
+            "message": "hostNetwork is denied (baseline).",
+            "reason": "Forbidden"
+          },
+          {
+            "expression": "!has(variables.podSpec.hostPID) || !variables.podSpec.hostPID",
+            "message": "hostPID is denied (baseline).",
+            "reason": "Forbidden"
+          },
+          {
+            "expression": "!has(variables.podSpec.hostIPC) || !variables.podSpec.hostIPC",
+            "message": "hostIPC is denied (baseline).",
+            "reason": "Forbidden"
+          },
+          {
+            "expression": "!has(variables.podSpec.volumes) || variables.podSpec.volumes.all(v, !has(v.hostPath))",
+            "message": "hostPath volumes are denied (baseline).",
+            "reason": "Forbidden"
+          }
+        ],
+        "variables": [
+          {
+            "expression": "has(object.spec.template) ? object.spec.template.spec : object.spec",
+            "name": "podSpec"
+          },
+          {
+            "expression": "(has(variables.podSpec.containers) ? variables.podSpec.containers : []) + (has(variables.podSpec.initContainers) ? variables.podSpec.initContainers : []) + (has(variables.podSpec.ephemeralContainers) ? variables.podSpec.ephemeralContainers : [])",
+            "name": "allContainers"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "baseline-automount-token"
+      },
+      "spec": {
+        "matchResources": {
+          "matchPolicy": "Equivalent",
+          "namespaceSelector": {
+            "matchExpressions": [
+              {
+                "key": "kubernetes.io/metadata.name",
+                "operator": "In",
+                "values": [
+                  "auth",
+                  "backstage",
+                  "hindsight",
+                  "databases"
+                ]
+              }
+            ]
+          },
+          "objectSelector": {}
+        },
+        "policyName": "baseline-automount-token",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "baseline-image-digest"
+      },
+      "spec": {
+        "matchResources": {
+          "matchPolicy": "Equivalent",
+          "namespaceSelector": {
+            "matchExpressions": [
+              {
+                "key": "kubernetes.io/metadata.name",
+                "operator": "In",
+                "values": [
+                  "auth",
+                  "backstage",
+                  "hindsight"
+                ]
+              }
+            ]
+          },
+          "objectSelector": {}
+        },
+        "policyName": "baseline-image-digest",
+        "validationActions": [
+          "Warn",
+          "Audit"
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "baseline-pod-hardening"
+      },
+      "spec": {
+        "matchResources": {
+          "matchPolicy": "Equivalent",
+          "namespaceSelector": {
+            "matchExpressions": [
+              {
+                "key": "kubernetes.io/metadata.name",
+                "operator": "NotIn",
+                "values": [
+                  "kube-system",
+                  "cloudflared"
+                ]
+              }
+            ]
+          },
+          "objectSelector": {}
+        },
+        "policyName": "baseline-pod-hardening",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    }
+  ]
+}

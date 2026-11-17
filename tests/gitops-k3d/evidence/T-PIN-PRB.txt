@@ -1,0 +1,13 @@
+### 2026-11-17T20:03:20Z
+commit 35a00bd18e2831c98d08930607776eff10404a30 « whoami: pin ProjectReleaseBinding -> whoami-7c4886dc7d (2e commit) » ; Git -> Argo gl-apps Synced : 2s (webhook)
+
+### 2026-11-17T20:03:21Z $ k -n gl-oc get projectreleasebinding whoami-production --show-managed-fields -o jsonpath={.spec.projectRelease}{"\n"}{range .metadata.managedFields[*]}{.manager} {.operation} {.fieldsV1.f:spec}{"\n"}{end}
+whoami-7c4886dc7d
+argocd-controller Apply {"f:environment":{},"f:owner":{"f:projectName":{}},"f:projectRelease":{}}
+manager Update 
+manager Update 
+
+### 2026-11-17T20:03:21Z $ k -n dp-gl-oc-whoami-production-925e72bb get resourcequota
+NAME         REQUEST                                                                                                                                    LIMIT   AGE
+cell-quota   persistentvolumeclaims: 0/1, requests.cpu: 100m/300m, requests.memory: 256Mi/512Mi, services.loadbalancers: 0/0, services.nodeports: 0/0           8m15s
+

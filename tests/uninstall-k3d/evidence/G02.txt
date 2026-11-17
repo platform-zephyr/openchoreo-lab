@@ -1,0 +1,6 @@
+# G02 — contexte renommé
+# date : 2026-11-17T20:29:20Z
+$ env KUBECONFIG=/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/kc/autre /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 2
+20:29:20Z ABANDON : mode test : contexte 'k3d-autre' != k3d-lab-sec-vap
+# rc=2
+# verdict : PASS ([[ $LAST_RC != 0 ]] && grep -q "contexte" <<<"$LAST_OUT")

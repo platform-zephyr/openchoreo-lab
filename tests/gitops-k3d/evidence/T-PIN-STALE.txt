@@ -1,0 +1,14 @@
+### 2026-11-17T20:02:17Z
+commit 863b8451b52fa69aa25936e3c9927c7dd3374764 « whoami: stateful (PVC 1Gi /data), size medium » ; Git -> Argo gl-apps Synced : 3s (webhook)
+
+### 2026-11-17T20:03:17Z $ k -n gl-oc get project whoami -o jsonpath=Project.spec.parameters={.spec.parameters}{"\n"}latestRelease={.status.latestRelease.name}{"\n"}
+Project.spec.parameters={"allowIdp":false,"database":false,"egress":"none","quota":{"cpu":"300m","memory":"512Mi","pvcs":"1"}}
+latestRelease=whoami-7c4886dc7d
+
+### 2026-11-17T20:03:17Z $ k -n gl-oc get projectreleasebinding whoami-production -o jsonpath=PRB.spec.projectRelease={.spec.projectRelease}{"\n"}
+PRB.spec.projectRelease=whoami-78b6fd459f
+
+### 2026-11-17T20:03:17Z $ k -n dp-gl-oc-whoami-production-925e72bb get resourcequota
+NAME         REQUEST                                                                                                                                    LIMIT   AGE
+cell-quota   persistentvolumeclaims: 0/0, requests.cpu: 100m/300m, requests.memory: 256Mi/512Mi, services.loadbalancers: 0/0, services.nodeports: 0/0           8m12s
+

@@ -1,0 +1,11 @@
+# F02 — état final après --all
+# date : 2026-11-17T20:33:28Z
+$ bash -c kubectl get clusterrole,clusterrolebinding,validatingwebhookconfiguration,mutatingwebhookconfiguration -o name | grep -E 'cert-manager|external-secrets|kgateway|argocd|openchoreo|lab-' ; kubectl get crd -o name | grep -v -e cattle.io -e cilium.io; kubectl get ns -o name; true
+namespace/default
+namespace/ext-user
+namespace/kube-node-lease
+namespace/kube-public
+namespace/kube-system
+namespace/lab-pvc-witness
+# rc=0
+# verdict : PASS (! grep -qE "clusterrole|webhook|customresourcedefinition|/(lab-cnpg|lab-argocd|lab-secrets|openchoreo-)" <<<"$LAST_OUT" && [[ "$(snap_storage)" == "$STORE0" ]])

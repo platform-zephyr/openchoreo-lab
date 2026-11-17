@@ -1,0 +1,7 @@
+# R4b — démonstration brute : delete CRD externalsecrets avec CR à finalizer
+# date : 2026-11-17T20:30:55Z
+$ kubectl delete crd externalsecrets.external-secrets.io --wait=false
+customresourcedefinition.apiextensions.k8s.io "externalsecrets.external-secrets.io" deleted
+# rc=0
+R4b état CRD : 2026-11-17T20:30:55Z CustomResource deletion is in progress
+# verdict : PASS (crd_has externalsecrets.external-secrets.io && [[ -n "$(kubectl get crd externalsecrets.external-secrets.io -o jsonpath="{.metadata.deletionTimestamp}")" ]])

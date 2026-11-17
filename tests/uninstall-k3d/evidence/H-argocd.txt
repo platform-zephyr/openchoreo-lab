@@ -1,0 +1,8 @@
+# H-argocd — CRD vivantes du groupe *argoproj.io : annotation keep et release propriétaire
+# date : 2026-11-17T20:29:34Z
+$ bash -c kubectl get crd -o json | jq -r '.items[] | select(.spec.group | endswith("argoproj.io")) | [.metadata.name, (.metadata.annotations["helm.sh/resource-policy"] // "-"), (.metadata.annotations["meta.helm.sh/release-name"] // "-")] | @tsv'
+applications.argoproj.io	keep	argocd
+applicationsets.argoproj.io	keep	argocd
+appprojects.argoproj.io	keep	argocd
+# rc=0
+# verdict : PASS ([[ -n $LAST_OUT ]] && ! grep -q "$(printf "\t-\t")" <<<"$LAST_OUT")

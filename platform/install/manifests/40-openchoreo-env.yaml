@@ -1,4 +1,4 @@
-# Objets OpenChoreo minimaux attendus par les apps générées (namespace `default`, étape 11) :
+# Objets OpenChoreo minimaux attendus par les apps générées (namespace `default`, étape 9) :
 #   - Environment `production` (seul environnement cité par generated/ : `environment: production`) ;
 #   - DeploymentPipeline `standard` (tools/appgen/appgen.py l.39 : PIPELINE = "standard"), sans
 #     promotion (un seul environnement dans l'essai) ;
@@ -21,6 +21,31 @@ spec:
     kind: ClusterDataPlane
     name: default
   isProduction: true
+  # Correction G1 (docs/GITOPS-PROOF.md §4, prouvée sur k3d par T-DEPLOY) : sans gateway.ingress.internal,
+  # toute app privée échoue au rendu (RenderingFailed). `external` recopie le ClusterDataPlane
+  # (30-clusterdataplane.yaml.tmpl) : si le gateway de l'Environment remplace celui du DataPlane au lieu de
+  # le compléter [S], les apps publiques ne perdent rien. Les deux fichiers sont comparés par
+  # tests/appgen/test_gitops_fixes.py. Hôte interne `lab.internal` [S : à valider sur OKE].
+  gateway:
+    ingress:
+      external:
+        name: gateway-default
+        namespace: openchoreo-data-plane
+        http:
+          host: lab.smadja.dev
+          listenerName: http
+          port: 19080
+        https:
+          host: lab.smadja.dev
+          listenerName: https
+          port: 19443
+      internal:
+        name: gateway-default
+        namespace: openchoreo-data-plane
+        http:
+          host: lab.internal
+          listenerName: http
+          port: 19080
 ---
 apiVersion: openchoreo.dev/v1alpha1
 kind: DeploymentPipeline

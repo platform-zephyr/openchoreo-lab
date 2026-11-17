@@ -4,6 +4,8 @@ kind: ComponentRelease
 metadata:
   name: mealie-95adb7ee06
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
   owner:
     componentName: mealie

@@ -1,0 +1,32 @@
+# Application `gl-platform` : calque de platform/install/argocd/apps/lab-platform.yaml.
+# __REPO__ / __REV__ remplacés par run.sh (GitHub main, puis gl-repo). Écarts avec lab-platform :
+#   - plugin gl-ns-remap (Environment/DeploymentPipeline de 40-openchoreo-env.yaml : default -> gl-oc) ;
+#   - destination.namespace explicite : sans elle, l'AppProject refuse l'Application (InvalidSpecError
+#     « namespace '' do not match any of the allowed destinations ») ; même défaut dans lab-platform (OKE) ;
+#   - data/lab-pg-* exclus (namespace lab-pg hors périmètre gl-* ; déjà présent sur ce k3d).
+# Pas de finalizer resources-finalizer : supprimer l'Application conserve les objets (CCT/CPT/VAP partagés).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gl-platform
+  namespace: argocd
+spec:
+  project: gl
+  source:
+    repoURL: __REPO__
+    targetRevision: __REV__
+    path: platform
+    plugin:
+      name: gl-ns-remap
+      env:
+        - {name: TARGET_NS, value: gl-oc}
+        - {name: INCLUDE, value: "component-types project-types traits resource-types policies install/manifests/40-openchoreo-env.yaml"}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gl-oc
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

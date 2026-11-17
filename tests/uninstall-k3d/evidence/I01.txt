@@ -1,0 +1,74 @@
+# I01 — install.sh --from 1 --to 2 --apply (mode test)
+# date : 2026-11-17T20:29:23Z
+$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/install.sh --from 1 --to 2 --apply
+20:29:21Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:29:21Z === étape 1 (APPLY=1)
+20:29:21Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/00-namespaces.yaml
+namespace/openchoreo-control-plane serverside-applied
+namespace/openchoreo-data-plane serverside-applied
+namespace/openchoreo-cert-manager serverside-applied
+namespace/openchoreo-external-secrets serverside-applied
+namespace/lab-secrets serverside-applied
+namespace/lab-argocd serverside-applied
+namespace/lab-cnpg serverside-applied
+20:29:21Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/01-quotas.yaml
+resourcequota/lab-quota serverside-applied
+limitrange/lab-defaults serverside-applied
+resourcequota/lab-quota serverside-applied
+limitrange/lab-defaults serverside-applied
+resourcequota/lab-quota serverside-applied
+limitrange/lab-defaults serverside-applied
+resourcequota/lab-quota serverside-applied
+limitrange/lab-defaults serverside-applied
+resourcequota/lab-quota serverside-applied
+resourcequota/lab-quota serverside-applied
+limitrange/lab-defaults serverside-applied
+resourcequota/lab-quota serverside-applied
+limitrange/lab-defaults serverside-applied
+20:29:21Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/02-network-policies.yaml
+networkpolicy.networking.k8s.io/lab-default-deny serverside-applied
+networkpolicy.networking.k8s.io/lab-default-deny serverside-applied
+networkpolicy.networking.k8s.io/lab-default-deny serverside-applied
+networkpolicy.networking.k8s.io/lab-default-deny serverside-applied
+networkpolicy.networking.k8s.io/lab-default-deny serverside-applied
+networkpolicy.networking.k8s.io/lab-default-deny serverside-applied
+networkpolicy.networking.k8s.io/lab-default-deny serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-dns serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-apiserver serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-dns serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-apiserver serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-dns serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-apiserver serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-dns serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-apiserver serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-dns serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-apiserver serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-dns serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-apiserver serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-intra serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-intra serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-webhook-from-apiserver serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-webhook-from-apiserver serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-webhook-from-apiserver serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-from-data-plane serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-to-control-plane-and-cells serverside-applied
+networkpolicy.networking.k8s.io/lab-allow-to-lab-pg serverside-applied
+ciliumnetworkpolicy.cilium.io/lab-allow-github serverside-applied
+20:29:22Z === étape 2 (APPLY=1)
+20:29:22Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/gateway-api-v1.5.1.yaml
+customresourcedefinition.apiextensions.k8s.io/backendtlspolicies.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/gatewayclasses.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/gateways.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/grpcroutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/httproutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/listenersets.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/referencegrants.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/tlsroutes.gateway.networking.k8s.io serverside-applied
+validatingadmissionpolicy.admissionregistration.k8s.io/safe-upgrades.gateway.networking.k8s.io serverside-applied
+validatingadmissionpolicybinding.admissionregistration.k8s.io/safe-upgrades.gateway.networking.k8s.io serverside-applied
+20:29:22Z + kubectl wait --for=condition=Established --timeout=120s crd/gateways.gateway.networking.k8s.io crd/httproutes.gateway.networking.k8s.io
+customresourcedefinition.apiextensions.k8s.io/gateways.gateway.networking.k8s.io condition met
+customresourcedefinition.apiextensions.k8s.io/httproutes.gateway.networking.k8s.io condition met
+20:29:23Z terminé (étapes 1..2). Suite : tools/oke/verify.sh --step 2
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && crd_has gateways.gateway.networking.k8s.io && ns_has lab-cnpg)

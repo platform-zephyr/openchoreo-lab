@@ -1,0 +1,6 @@
+# V1-P01 — agent ExternalSecret app-pg-role conforme (générateur Password)
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:14Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n lab-pg create --dry-run=server -f -
+externalsecret.external-secrets.io/app-pg-role created (server dry run)
+# rc=0 verdict=PASS

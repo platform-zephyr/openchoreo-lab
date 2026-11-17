@@ -1,0 +1,24 @@
+{
+  "name": "lab-apps",
+  "project": "lab-apps",
+  "sync": "OutOfSync",
+  "health": "Healthy",
+  "conditions": [],
+  "operation": {
+    "phase": "Failed",
+    "revision": "717f135d591d63f47866d5504866e1f1e9e02a1c",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "one or more synchronization tasks are not valid: resource :Namespace is not permitted in project lab-apps"
+  },
+  "refused": [
+    {
+      "kind": "Namespace",
+      "namespace": "default",
+      "name": "kube-system",
+      "status": "SyncFailed",
+      "message": "resource :Namespace is not permitted in project lab-apps"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+# V1-C09 — agent pods/exec dans dp-vap-app (témoin : admis)
+# attendu : ALLOWC (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:11Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated get --raw /api/v1/namespaces/dp-vap-app/pods/target/exec?command=id&stdout=true
+Error from server (BadRequest): pod target does not have a host assigned
+# rc=1 verdict=PASS

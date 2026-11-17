@@ -1,0 +1,229 @@
+{
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Application",
+    "metadata": {
+        "creationTimestamp": "2026-11-17T20:06:09Z",
+        "generation": 27,
+        "labels": {
+            "app.kubernetes.io/part-of": "openchoreo-lab"
+        },
+        "name": "lab-root",
+        "namespace": "lab-argocd",
+        "resourceVersion": "1099",
+        "uid": "0027ae42-c245-4cf7-9fe6-b79488763bb1"
+    },
+    "spec": {
+        "destination": {
+            "namespace": "lab-argocd",
+            "server": "https://kubernetes.default.svc"
+        },
+        "project": "lab-root",
+        "source": {
+            "path": "platform/install/argocd/apps",
+            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+            "targetRevision": "main"
+        },
+        "syncPolicy": {
+            "automated": {
+                "prune": false,
+                "selfHeal": true
+            },
+            "syncOptions": [
+                "ServerSideApply=true"
+            ]
+        }
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastTransitionTime": "2026-11-17T20:06:10Z",
+                "message": "Application has 1 orphaned resources",
+                "type": "OrphanedResourceWarning"
+            }
+        ],
+        "controllerNamespace": "lab-argocd",
+        "health": {
+            "lastTransitionTime": "2026-11-17T20:06:11Z",
+            "status": "Healthy"
+        },
+        "history": [
+            {
+                "deployStartedAt": "2026-11-17T20:06:10Z",
+                "deployedAt": "2026-11-17T20:06:11Z",
+                "id": 0,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "dcd474e7f9956873dfbc1c64cb323efaa50a4d38",
+                "source": {
+                    "path": "platform/install/argocd/apps",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            },
+            {
+                "deployStartedAt": "2026-11-17T20:08:02Z",
+                "deployedAt": "2026-11-17T20:08:02Z",
+                "id": 1,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "2f745f20420d399d45631280c6f37bfc2fbad97d",
+                "source": {
+                    "path": "platform/install/argocd/apps",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            },
+            {
+                "deployStartedAt": "2026-11-17T20:08:05Z",
+                "deployedAt": "2026-11-17T20:08:06Z",
+                "id": 2,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "0326fca8ecca53f887efacb52e7be2725c2ffaaa",
+                "source": {
+                    "path": "platform/install/argocd/apps",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            }
+        ],
+        "operationState": {
+            "finishedAt": "2026-11-17T20:08:06Z",
+            "message": "successfully synced (all tasks run)",
+            "operation": {
+                "initiatedBy": {
+                    "automated": true
+                },
+                "retry": {
+                    "limit": 5
+                },
+                "sync": {
+                    "revision": "0326fca8ecca53f887efacb52e7be2725c2ffaaa",
+                    "source": {
+                        "path": "platform/install/argocd/apps",
+                        "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                        "targetRevision": "main"
+                    },
+                    "syncOptions": [
+                        "ServerSideApply=true"
+                    ]
+                }
+            },
+            "phase": "Succeeded",
+            "startedAt": "2026-11-17T20:08:05Z",
+            "syncResult": {
+                "resources": [
+                    {
+                        "group": "argoproj.io",
+                        "hookPhase": "Running",
+                        "kind": "Application",
+                        "message": "application.argoproj.io/lab-authz serverside-applied",
+                        "name": "lab-authz",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "hookPhase": "Running",
+                        "kind": "Application",
+                        "message": "application.argoproj.io/n1-evil serverside-applied",
+                        "name": "n1-evil",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "hookPhase": "Running",
+                        "kind": "Application",
+                        "message": "application.argoproj.io/lab-platform serverside-applied",
+                        "name": "lab-platform",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "hookPhase": "Running",
+                        "kind": "Application",
+                        "message": "application.argoproj.io/lab-apps serverside-applied",
+                        "name": "lab-apps",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    }
+                ],
+                "revision": "0326fca8ecca53f887efacb52e7be2725c2ffaaa",
+                "source": {
+                    "path": "platform/install/argocd/apps",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            }
+        },
+        "reconciledAt": "2026-11-17T20:08:54Z",
+        "resourceHealthSource": "appTree",
+        "resources": [
+            {
+                "group": "argoproj.io",
+                "kind": "Application",
+                "name": "lab-apps",
+                "namespace": "lab-argocd",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "argoproj.io",
+                "kind": "Application",
+                "name": "lab-authz",
+                "namespace": "lab-argocd",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "argoproj.io",
+                "kind": "Application",
+                "name": "lab-platform",
+                "namespace": "lab-argocd",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "argoproj.io",
+                "kind": "Application",
+                "name": "n1-evil",
+                "namespace": "lab-argocd",
+                "status": "Synced",
+                "version": "v1alpha1"
+            }
+        ],
+        "sourceHydrator": {},
+        "sourceType": "Directory",
+        "summary": {
+            "isAppOfApps": true
+        },
+        "sync": {
+            "comparedTo": {
+                "destination": {
+                    "namespace": "lab-argocd",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "source": {
+                    "path": "platform/install/argocd/apps",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            },
+            "revision": "0326fca8ecca53f887efacb52e7be2725c2ffaaa",
+            "status": "Synced"
+        }
+    }
+}

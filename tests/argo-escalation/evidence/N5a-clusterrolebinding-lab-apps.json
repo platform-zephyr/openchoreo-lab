@@ -1,0 +1,642 @@
+{
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Application",
+    "metadata": {
+        "annotations": {
+            "argocd.argoproj.io/tracking-id": "lab-root:argoproj.io/Application:lab-argocd/lab-apps"
+        },
+        "creationTimestamp": "2026-11-17T20:06:11Z",
+        "generation": 50,
+        "labels": {
+            "app.kubernetes.io/part-of": "openchoreo-lab"
+        },
+        "name": "lab-apps",
+        "namespace": "lab-argocd",
+        "resourceVersion": "1207",
+        "uid": "0b9c545f-cc44-4ad5-a6a0-ea49419f625f"
+    },
+    "spec": {
+        "destination": {
+            "namespace": "default",
+            "server": "https://kubernetes.default.svc"
+        },
+        "project": "lab-apps",
+        "source": {
+            "directory": {
+                "include": "*.yaml",
+                "recurse": true
+            },
+            "path": "generated/namespaces/default",
+            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+            "targetRevision": "main"
+        },
+        "syncPolicy": {
+            "syncOptions": [
+                "ServerSideApply=true",
+                "FailOnSharedResource=true"
+            ]
+        }
+    },
+    "status": {
+        "controllerNamespace": "lab-argocd",
+        "health": {
+            "lastTransitionTime": "2026-11-17T20:06:18Z",
+            "status": "Healthy"
+        },
+        "history": [
+            {
+                "deployStartedAt": "2026-11-17T20:06:15Z",
+                "deployedAt": "2026-11-17T20:06:22Z",
+                "id": 0,
+                "initiatedBy": {
+                    "username": "argo-escalation-test"
+                },
+                "revision": "dcd474e7f9956873dfbc1c64cb323efaa50a4d38",
+                "source": {
+                    "directory": {
+                        "include": "*.yaml",
+                        "recurse": true
+                    },
+                    "path": "generated/namespaces/default",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            }
+        ],
+        "operationState": {
+            "finishedAt": "2026-11-17T20:09:32Z",
+            "message": "one or more synchronization tasks are not valid: resource rbac.authorization.k8s.io:ClusterRoleBinding is not permitted in project lab-apps",
+            "operation": {
+                "initiatedBy": {
+                    "username": "argo-escalation-test"
+                },
+                "retry": {},
+                "sync": {
+                    "revision": "d6fc27fdf4fbd2bcdbb341ef4563dc08801365a8"
+                }
+            },
+            "phase": "Failed",
+            "startedAt": "2026-11-17T20:09:31Z",
+            "syncResult": {
+                "resources": [
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "kind": "ClusterRoleBinding",
+                        "message": "resource rbac.authorization.k8s.io:ClusterRoleBinding is not permitted in project lab-apps",
+                        "name": "lab-n5-crb",
+                        "namespace": "default",
+                        "status": "SyncFailed",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    }
+                ],
+                "revision": "d6fc27fdf4fbd2bcdbb341ef4563dc08801365a8",
+                "source": {
+                    "directory": {
+                        "include": "*.yaml",
+                        "recurse": true
+                    },
+                    "path": "generated/namespaces/default",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            }
+        },
+        "reconciledAt": "2026-11-17T20:09:32Z",
+        "resourceHealthSource": "appTree",
+        "resources": [
+            {
+                "group": "openchoreo.dev",
+                "kind": "Component",
+                "name": "aiostreams",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Component",
+                "name": "idp-e2e",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Component",
+                "name": "mealie",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Component",
+                "name": "miniflux",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Component",
+                "name": "ntfy",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Component",
+                "name": "open-connector",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Component",
+                "name": "rustical-pilot",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Component",
+                "name": "searxng",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Component",
+                "name": "whoami",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ComponentRelease",
+                "name": "aiostreams-777d556c2a",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ComponentRelease",
+                "name": "idp-e2e-bd7910ec5e",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ComponentRelease",
+                "name": "mealie-95adb7ee06",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ComponentRelease",
+                "name": "miniflux-03808293e2",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ComponentRelease",
+                "name": "ntfy-92aefc1d7f",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ComponentRelease",
+                "name": "open-connector-d7cf33eec0",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ComponentRelease",
+                "name": "rustical-pilot-5cfb16559f",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ComponentRelease",
+                "name": "searxng-6be25526ed",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ComponentRelease",
+                "name": "whoami-31985273d8",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Project",
+                "name": "aiostreams",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Project",
+                "name": "idp-e2e",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Project",
+                "name": "mealie",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Project",
+                "name": "miniflux",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Project",
+                "name": "ntfy",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Project",
+                "name": "open-connector",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Project",
+                "name": "rustical-pilot",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Project",
+                "name": "searxng",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Project",
+                "name": "whoami",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ProjectReleaseBinding",
+                "name": "aiostreams-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ProjectReleaseBinding",
+                "name": "idp-e2e-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ProjectReleaseBinding",
+                "name": "mealie-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ProjectReleaseBinding",
+                "name": "miniflux-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ProjectReleaseBinding",
+                "name": "ntfy-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ProjectReleaseBinding",
+                "name": "open-connector-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ProjectReleaseBinding",
+                "name": "rustical-pilot-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ProjectReleaseBinding",
+                "name": "searxng-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ProjectReleaseBinding",
+                "name": "whoami-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ReleaseBinding",
+                "name": "aiostreams-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ReleaseBinding",
+                "name": "idp-e2e-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ReleaseBinding",
+                "name": "mealie-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ReleaseBinding",
+                "name": "miniflux-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ReleaseBinding",
+                "name": "ntfy-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ReleaseBinding",
+                "name": "open-connector-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ReleaseBinding",
+                "name": "rustical-pilot-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ReleaseBinding",
+                "name": "searxng-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ReleaseBinding",
+                "name": "whoami-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Resource",
+                "name": "miniflux-db",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ResourceReleaseBinding",
+                "name": "miniflux-db-production",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "SecretReference",
+                "name": "aiostreams-secrets",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "SecretReference",
+                "name": "mealie-secrets",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "SecretReference",
+                "name": "miniflux-secrets",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "SecretReference",
+                "name": "ntfy-secrets",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "SecretReference",
+                "name": "open-connector-secrets",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "SecretReference",
+                "name": "rustical-pilot-secrets",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "SecretReference",
+                "name": "searxng-secrets",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Workload",
+                "name": "aiostreams-workload",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Workload",
+                "name": "idp-e2e-workload",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Workload",
+                "name": "mealie-workload",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Workload",
+                "name": "miniflux-workload",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Workload",
+                "name": "ntfy-workload",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Workload",
+                "name": "open-connector-workload",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Workload",
+                "name": "rustical-pilot-workload",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Workload",
+                "name": "searxng-workload",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "Workload",
+                "name": "whoami-workload",
+                "namespace": "default",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "ClusterRoleBinding",
+                "name": "lab-n5-crb",
+                "status": "Unknown",
+                "version": "v1"
+            }
+        ],
+        "sourceType": "Directory",
+        "summary": {},
+        "sync": {
+            "comparedTo": {
+                "destination": {
+                    "namespace": "default",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "source": {
+                    "directory": {
+                        "include": "*.yaml",
+                        "recurse": true
+                    },
+                    "path": "generated/namespaces/default",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            },
+            "revision": "d6fc27fdf4fbd2bcdbb341ef4563dc08801365a8",
+            "status": "OutOfSync"
+        }
+    }
+}

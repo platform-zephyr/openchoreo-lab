@@ -1,0 +1,14 @@
+# R3b — --step 3 --apply --delete-crds (plus d'usage)
+# date : 2026-11-17T20:31:10Z
+$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 3 --apply --delete-crds
+20:31:07Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:31:07Z release openchoreo-cert-manager/cert-manager absente
+20:31:09Z + kubectl delete customresourcedefinition.apiextensions.k8s.io/challenges.acme.cert-manager.io customresourcedefinition.apiextensions.k8s.io/orders.acme.cert-manager.io customresourcedefinition.apiextensions.k8s.io/certificaterequests.cert-manager.io customresourcedefinition.apiextensions.k8s.io/certificates.cert-manager.io customresourcedefinition.apiextensions.k8s.io/clusterissuers.cert-manager.io customresourcedefinition.apiextensions.k8s.io/issuers.cert-manager.io
+customresourcedefinition.apiextensions.k8s.io "challenges.acme.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "orders.acme.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "certificaterequests.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "certificates.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "clusterissuers.cert-manager.io" deleted
+customresourcedefinition.apiextensions.k8s.io "issuers.cert-manager.io" deleted
+# rc=0
+# verdict : PASS ([[ $LAST_RC == 0 ]] && ! crd_has issuers.cert-manager.io && ! crd_has challenges.acme.cert-manager.io)
