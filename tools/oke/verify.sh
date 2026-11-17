@@ -334,10 +334,10 @@ v8() {
 
 v9() {
   expect_ok B9-types "CCT, CPT, CRT, ClusterTrait du labo présents" \
-    kubectl get clustercomponenttype service-restricted clusterprojecttype cell-restricted \
-      clusterresourcetype cnpg-lab-db clustertrait persistent-volume-claim clustertrait health-probes
+    kubectl get clustercomponenttype/service-restricted clusterprojecttype/cell-restricted \
+      clusterresourcetype/cnpg-lab-db clustertrait/persistent-volume-claim clustertrait/health-probes
   expect_ok B9-env "Environment production et DeploymentPipeline standard" \
-    kubectl -n default get environment production deploymentpipeline standard
+    kubectl -n default get environment/production deploymentpipeline/standard
   expect_ok B9-default "namespace default : label openchoreo.dev/control-plane=true" bash -c \
     "[[ \$(kubectl get ns default -o jsonpath='{.metadata.labels.openchoreo\.dev/control-plane}') == true ]]"
 }
