@@ -1,0 +1,10 @@
+# Configuration yamllint du depot (appelee explicitement par la CI : yamllint -c tools/appgen/yamllint.yaml).
+extends: default
+rules:
+  document-start: disable
+  line-length: {max: 160, level: warning}
+  truthy: {allowed-values: ["true", "false"], check-keys: false}
+  comments: {min-spaces-from-content: 1}
+  indentation: {spaces: 2, indent-sequences: consistent}
+ignore: |
+  generated/

@@ -1,0 +1,44 @@
+# FIXTURE DE TEST UNIQUEMENT (pas la CCT de production, qui vit dans platform/).
+# Sert a tester le rendu : workloadType, parametres declares (garde appgen _require_params) et resources.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterComponentType
+metadata:
+  name: service-restricted
+spec:
+  workloadType: deployment
+  allowedWorkflows: []
+  allowedTraits:
+    - {kind: ClusterTrait, name: persistent-volume-claim}
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        runAsUser: {type: integer, minimum: 1000, default: 65532}
+        strategy: {type: string, enum: [RollingUpdate, Recreate], default: RollingUpdate}
+        readOnlyRootFilesystem: {type: boolean, default: true}
+        publicAuth: {type: string, enum: [none, app-oidc, app-password, cloudflare-access], default: none}
+  environmentConfigs:
+    openAPIV3Schema: {type: object}
+  resources:
+    - id: deployment
+      template: {apiVersion: apps/v1, kind: Deployment, metadata: {name: "${metadata.name}"}}
+---
+# Trait upstream persistent-volume-claim (v1.3.3 samples/getting-started/component-traits/pvc-trait.yaml) :
+# seuls les parametres sont repris ici (containerName, mountPath, subPath, accessMode, readOnly).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterTrait
+metadata:
+  name: persistent-volume-claim
+spec:
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        containerName: {type: string, default: main}
+        mountPath: {type: string}
+        subPath: {type: string}
+        accessMode: {type: string, default: ReadWriteOnce, enum: [ReadWriteOnce, ReadOnlyMany, ReadWriteMany, ReadWriteOncePod]}
+        readOnly: {type: boolean, default: false}
+      required: [mountPath]
+  creates:
+    - template: {apiVersion: v1, kind: PersistentVolumeClaim, metadata: {name: "${metadata.name}-${trait.instanceName}"}}

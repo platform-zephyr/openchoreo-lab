@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:11Z k3d
+$ tcp dp-default-t-cell-b-development-f4914bac pod/t-probe-b-development-3abdc8b2-79cb86cf8d-md9qj example.com 443
+OPEN
+[rc=0]

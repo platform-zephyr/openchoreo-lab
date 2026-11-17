@@ -1,0 +1,213 @@
+# ClusterResourceType `cnpg-lab-db` : une base + un rôle dédiés par (Resource, environnement)
+# sur le CNPG éphémère `lab-pg` (APP-CONTRACT §7.3). Syntaxe des outputs et du générateur ESO
+# `Password` reprise de openchoreo/openchoreo@v1.3.3:samples/getting-started/cluster-resource-types/
+# postgres.yaml (Apache-2.0) ; aucune autre partie copiée.
+#
+# Écart avec APP-CONTRACT §7.3 (exigence Phase A) : le mot de passe applicatif n'est PAS une clé
+# Doppler posée à la main. Il est GÉNÉRÉ dans le cluster :
+#   1. generator Password (lab-pg) -> ExternalSecret refreshInterval "0" -> Secret <name>-pg-role
+#      (stable : le générateur n'est appelé qu'une fois) ;
+#   2. PushSecret (lab-pg) -> store ${dataplane.secretStore}, clé lab-pg-roles/<name> ;
+#   3. ExternalSecret (cellule dp-*) lit cette clé et compose l'URI ;
+#   4. Job psql idempotent (lab-pg) : rôle, base, REVOKE CONNECT FROM PUBLIC.
+# Le secret superuser `lab-pg-superuser` (généré par CNPG) ne quitte jamais lab-pg.
+# Prérequis : le store doit accepter l'écriture (PushSecret) ; OpenBao k3d : oui ; Doppler (OKE) : [S].
+#
+# Nom de base et de rôle = <parameters.database>_<environnement> : deux environnements d'une même
+# app n'ont jamais la même base sur l'instance partagée.
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterResourceType
+metadata:
+  name: cnpg-lab-db
+  annotations:
+    openchoreo.dev/description: >-
+      Base et rôle PostgreSQL dédiés sur le CNPG éphémère lab-pg ; mot de passe généré par ESO,
+      REVOKE CONNECT FROM PUBLIC.
+spec:
+  retainPolicy: Retain
+  parameters:
+    openAPIV3Schema:
+      type: object
+      required: [database]
+      properties:
+        database:
+          type: string
+          pattern: "^[a-z][a-z0-9_]{1,30}$"
+  outputs:
+    - name: host
+      value: "lab-pg-rw.lab-pg.svc.cluster.local"
+    - name: port
+      value: "5432"
+    - name: database
+      value: "${parameters.database}_${metadata.environmentName}"
+    - name: username
+      value: "${parameters.database}_${metadata.environmentName}"
+    - name: password
+      secretKeyRef:
+        name: "${metadata.name}-pg"
+        key: password
+    - name: url
+      secretKeyRef:
+        name: "${metadata.name}-pg"
+        key: uri
+  resources:
+    # 1. Mot de passe généré dans lab-pg (jamais dans Git, jamais au control plane).
+    - id: pwgen
+      template:
+        apiVersion: generators.external-secrets.io/v1alpha1
+        kind: Password
+        metadata:
+          name: ${metadata.name}-pg
+          namespace: lab-pg
+          labels: ${metadata.labels}
+        spec:
+          length: 32
+          digits: 8
+          symbols: 0
+          noUpper: false
+          allowRepeat: true
+
+    - id: rolesecret
+      template:
+        apiVersion: external-secrets.io/v1
+        kind: ExternalSecret
+        metadata:
+          name: ${metadata.name}-pg-role
+          namespace: lab-pg
+          labels: ${metadata.labels}
+        spec:
+          # "0" : synchronisé une seule fois ; le générateur est sans état.
+          refreshInterval: "0"
+          target:
+            name: ${metadata.name}-pg-role
+            creationPolicy: Owner
+          dataFrom:
+            - sourceRef:
+                generatorRef:
+                  apiVersion: generators.external-secrets.io/v1alpha1
+                  kind: Password
+                  name: ${metadata.name}-pg
+
+    # 2. Publication dans le store du data plane, pour la cellule.
+    - id: push
+      template:
+        apiVersion: external-secrets.io/v1alpha1
+        kind: PushSecret
+        metadata:
+          name: ${metadata.name}-pg-role
+          namespace: lab-pg
+          labels: ${metadata.labels}
+        spec:
+          refreshInterval: 1h
+          updatePolicy: Replace
+          deletionPolicy: Delete
+          secretStoreRefs:
+            - name: ${dataplane.secretStore}
+              kind: ClusterSecretStore
+          selector:
+            secret:
+              name: ${metadata.name}-pg-role
+          data:
+            - match:
+                secretKey: password
+                remoteRef:
+                  remoteKey: lab-pg-roles/${metadata.name}
+                  property: password
+
+    # 3. Rôle + base + REVOKE, idempotent, dans lab-pg (seul endroit où vit le superuser).
+    - id: init
+      readyWhen: "${has(applied.init.status.succeeded) && applied.init.status.succeeded > 0}"
+      template:
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: ${metadata.name}-pg-init
+          namespace: lab-pg
+          labels: ${metadata.labels}
+        spec:
+          backoffLimit: 10
+          template:
+            metadata:
+              labels:
+                app.kubernetes.io/name: cnpg-lab-db-init
+            spec:
+              restartPolicy: OnFailure
+              automountServiceAccountToken: false
+              enableServiceLinks: false
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 26
+                runAsGroup: 26
+                seccompProfile:
+                  type: RuntimeDefault
+              containers:
+                - name: psql
+                  image: ghcr.io/cloudnative-pg/postgresql:17.7-standard-trixie@sha256:e079dae5253fa6ed26fc65fda06d515af764dbec392dd4b46b17ab11eebd8131
+                  securityContext:
+                    allowPrivilegeEscalation: false
+                    readOnlyRootFilesystem: true
+                    capabilities:
+                      drop: [ALL]
+                  resources:
+                    requests: {cpu: 10m, memory: 32Mi}
+                    limits: {memory: 128Mi}
+                  env:
+                    - {name: HOME, value: /tmp}
+                    - {name: PGHOST, value: lab-pg-rw}
+                    - {name: PGSSLMODE, value: require}
+                    - {name: PGDATABASE, value: postgres}
+                    - name: PGUSER
+                      valueFrom: {secretKeyRef: {name: lab-pg-superuser, key: username}}
+                    - name: PGPASSWORD
+                      valueFrom: {secretKeyRef: {name: lab-pg-superuser, key: password}}
+                    - name: APP
+                      value: "${parameters.database}_${metadata.environmentName}"
+                    - name: APP_PASSWORD
+                      valueFrom: {secretKeyRef: {name: "${metadata.name}-pg-role", key: password}}
+                  command: [/bin/sh, -ec]
+                  # Pas de dollar-accolade shell : cette syntaxe est réservée au moteur OpenChoreo.
+                  args:
+                    - |
+                      psql -X -v ON_ERROR_STOP=1 -v app="$APP" -v pw="$APP_PASSWORD" <<'SQL'
+                      SELECT format('CREATE ROLE %I LOGIN', :'app') WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'app')\gexec
+                      ALTER ROLE :"app" WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD :'pw';
+                      SELECT format('CREATE DATABASE %I OWNER %I', :'app', :'app') WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'app')\gexec
+                      REVOKE CONNECT, TEMPORARY ON DATABASE :"app" FROM PUBLIC;
+                      GRANT CONNECT ON DATABASE :"app" TO :"app";
+                      SELECT 1/(CASE WHEN has_database_privilege('public', :'app', 'CONNECT') THEN 0 ELSE 1 END) AS revoke_ok;
+                      SQL
+                      echo "cnpg-lab-db: role+database $APP ready (REVOKE CONNECT FROM PUBLIC verified)"
+                  volumeMounts:
+                    - {name: tmp, mountPath: /tmp}
+              volumes:
+                - name: tmp
+                  emptyDir: {sizeLimit: 16Mi}
+
+    # 4. Identifiants dans la cellule, consommés par Workload.dependencies.resources[].envBindings.
+    - id: appcreds
+      readyWhen: "${has(applied.appcreds.status.conditions) && applied.appcreds.status.conditions.exists(c, c.type == 'Ready' && c.status == 'True')}"
+      template:
+        apiVersion: external-secrets.io/v1
+        kind: ExternalSecret
+        metadata:
+          name: ${metadata.name}-pg
+          namespace: ${metadata.namespace}
+          labels: ${metadata.labels}
+        spec:
+          refreshInterval: 1h
+          secretStoreRef:
+            name: ${dataplane.secretStore}
+            kind: ClusterSecretStore
+          target:
+            name: ${metadata.name}-pg
+            creationPolicy: Owner
+            template:
+              type: Opaque
+              data:
+                password: "{{ .password }}"
+                uri: "postgresql://${parameters.database}_${metadata.environmentName}:{{ .password | urlquery }}@lab-pg-rw.lab-pg.svc.cluster.local:5432/${parameters.database}_${metadata.environmentName}?sslmode=require"
+          data:
+            - secretKey: password
+              remoteRef:
+                key: lab-pg-roles/${metadata.name}
+                property: password

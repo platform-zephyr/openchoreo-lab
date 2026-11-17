@@ -1,0 +1,33 @@
+# 2026-11-17T17:00:15Z k3d
+$ bash -c 
+kubectl top pods -A --no-headers | awk "{c[\$1]+=\$3; m[\$1]+=\$4} END {for (n in c) printf \"%-40s %6dm %6dMi\n\", n, c[n], m[n]}" | sort
+echo "-- requests déclarées (cpu m / mem Mi) par namespace"
+kubectl get pods -A -o json | jq -r ".items[] | select(.status.phase==\"Running\") | .metadata.namespace as \$n | .spec.containers[] | [\$n, (.resources.requests.cpu // \"0\"), (.resources.requests.memory // \"0\")] | @tsv" \
+ | awk -F"\t" "function cpu(v){ if (v ~ /m\$/) return v+0; return v*1000 } function mem(v){ if (v ~ /Mi\$/) return v+0; if (v ~ /Gi\$/) return v*1024; if (v ~ /Ki\$/) return v/1024; if (v ~ /M\$/) return v+0; return v/1048576 } {c[\$1]+=cpu(\$2); m[\$1]+=mem(\$3)} END {for (n in c) printf \"%-40s %6dm %6dMi\n\", n, c[n], m[n]}" | sort
+kubectl top nodes
+cert-manager                                  3m    192Mi
+cnpg-system                                   4m     25Mi
+dp-default-t-cell-a-development-8fec71a2      3m      7Mi
+dp-default-t-cell-b-development-f4914bac      1m      2Mi
+external-secrets                              5m    109Mi
+kube-system                                   8m    120Mi
+lab-pg                                        7m     59Mi
+openbao                                      25m     32Mi
+openchoreo-control-plane                     19m    448Mi
+openchoreo-data-plane                         8m     33Mi
+thunder                                       1m     11Mi
+-- requests déclarées (cpu m / mem Mi) par namespace
+cert-manager                                  0m      0Mi
+cnpg-system                                  20m     64Mi
+dp-default-t-cell-a-development-8fec71a2    100m    256Mi
+dp-default-t-cell-b-development-f4914bac    150m    384Mi
+external-secrets                              0m      0Mi
+kube-system                                 200m    140Mi
+lab-pg                                       50m    128Mi
+openbao                                       0m      0Mi
+openchoreo-control-plane                    750m    896Mi
+openchoreo-data-plane                       100m    192Mi
+thunder                                     100m     50Mi
+NAME                      CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+k3d-openchoreo-server-0   309m         7%       2605Mi          32%         
+[rc=0]

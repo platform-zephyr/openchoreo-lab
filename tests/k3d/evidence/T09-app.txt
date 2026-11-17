@@ -1,0 +1,6 @@
+# 2026-11-17T17:00:13Z k3d
+$ kubectl -n dp-default-t-cell-a-development-8fec71a2 exec pod/t-pgclient-a-development-a588893c-6bf9db4456-r5c9t -- bash -c u="${DATABASE_URL%%\?*}"; psql "${u%/*}/app?sslmode=require" -XAtc 'select 1'
+psql: error: connection to server at "lab-pg-rw.lab-pg.svc.cluster.local" (10.43.41.121), port 5432 failed: FATAL:  permission denied for database "app"
+DETAIL:  User does not have CONNECT privilege.
+command terminated with exit code 2
+[rc=2]

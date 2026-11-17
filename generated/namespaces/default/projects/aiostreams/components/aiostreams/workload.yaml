@@ -1,0 +1,33 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: aiostreams-workload
+  namespace: default
+spec:
+  owner:
+    projectName: aiostreams
+    componentName: aiostreams
+  container:
+    image: ghcr.io/viren070/aiostreams:v2.38.1@sha256:1b90bc2fda70f365dff2ce98fc311a24708cca9841efe09aefe309cd4da1fb2c
+    env:
+    - key: DATABASE_URI
+      value: sqlite://./data/db.sqlite
+    - key: BASE_URL
+      value: https://aiostreams.lab.smadja.dev
+    - key: SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: aiostreams-secrets
+          key: SECRET_KEY
+    - key: CONFIG_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: aiostreams-secrets
+          key: CONFIG_ACCESS_KEY
+  endpoints:
+    http:
+      type: HTTP
+      port: 3000
+      visibility:
+      - external

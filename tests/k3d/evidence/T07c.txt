@@ -1,0 +1,6 @@
+# 2026-11-17T17:00:09Z k3d
+$ tcp dp-default-t-cell-a-development-8fec71a2 pod/t-pgclient-a-development-a588893c-6bf9db4456-r5c9t t-whoami-b.dp-default-t-cell-b-development-f4914bac.svc.cluster.local 8080
+bash: connect: Connection refused
+bash: line 1: /dev/tcp/t-whoami-b.dp-default-t-cell-b-development-f4914bac.svc.cluster.local/8080: Connection refused
+BLOCKED
+[rc=0]

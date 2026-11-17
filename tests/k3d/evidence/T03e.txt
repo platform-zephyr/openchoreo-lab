@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:08Z k3d
+$ as_agent create namespace t-evil-ns --dry-run=server
+Error from server (Forbidden): namespaces "t-evil-ns" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: objet cluster-scoped interdit pour system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane (namespaces/t-evil-ns)
+[rc=1]

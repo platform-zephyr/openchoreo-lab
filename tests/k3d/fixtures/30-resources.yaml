@@ -1,0 +1,17 @@
+# Deux bases sur lab-pg via le CRT cnpg-lab-db. Les ResourceReleaseBinding sont créées par
+# run.sh APRÈS lecture de Resource.status (pin manuel, APP-CONTRACT §0.6).
+apiVersion: openchoreo.dev/v1alpha1
+kind: Resource
+metadata: {name: t-alpha-db, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  type: {kind: ClusterResourceType, name: cnpg-lab-db}
+  parameters: {database: alpha}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Resource
+metadata: {name: t-beta-db, namespace: default}
+spec:
+  owner: {projectName: t-cell-a}
+  type: {kind: ClusterResourceType, name: cnpg-lab-db}
+  parameters: {database: beta}

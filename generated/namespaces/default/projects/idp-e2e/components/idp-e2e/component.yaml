@@ -1,0 +1,17 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: idp-e2e
+  namespace: default
+spec:
+  owner:
+    projectName: idp-e2e
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service-restricted
+  autoDeploy: false
+  parameters:
+    runAsUser: 65532
+    strategy: RollingUpdate
+    publicAuth: none

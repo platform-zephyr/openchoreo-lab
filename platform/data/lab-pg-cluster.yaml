@@ -1,0 +1,48 @@
+# CNPG Cluster `lab-pg` : 1 instance, éphémère (aucune sauvegarde), APP-CONTRACT §7.3.
+# Prérequis : opérateur CNPG (platform/data/cnpg-operator-values.yaml) et lab-pg-namespace.yaml.
+# Argo : Prune=false,Delete=false sur cet objet.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: lab-pg
+  namespace: lab-pg
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  instances: 1
+  # Image épinglée par digest (même digest que pg-shared OKE ; index multi-arch).
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.7-standard-trixie@sha256:e079dae5253fa6ed26fc65fda06d515af764dbec392dd4b46b17ab11eebd8131
+  # Secret `lab-pg-superuser` GÉNÉRÉ par l'opérateur ; il ne quitte jamais ce namespace.
+  # Seul le Job psql du CRT cnpg-lab-db le lit.
+  enableSuperuserAccess: true
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+      # Aucune base existante n'est joignable par un rôle applicatif : le CRT fait
+      # le même REVOKE sur chaque base qu'il crée. (postInitSQL s'exécute avant la
+      # création de `app` : il faut postInitApplicationSQL.)
+      postInitApplicationSQL:
+        - REVOKE CONNECT ON DATABASE postgres FROM PUBLIC
+        - REVOKE CONNECT ON DATABASE app FROM PUBLIC
+  postgresql:
+    parameters:
+      max_connections: "40"
+      shared_buffers: 32MB
+      password_encryption: scram-sha-256
+    pg_hba:
+      # Les règles CNPG par défaut acceptent déjà « hostssl all all all scram-sha-256 » ;
+      # on interdit explicitement le non-TLS.
+      - hostnossl all all all reject
+  storage:
+    size: 1Gi
+    # k3d : local-path (défaut). OKE : overlay `oci-bv` (50 Gi facturés minimum).
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  # Pas de backup, pas de PodMonitor : labo éphémère.
+  monitoring:
+    enablePodMonitor: false

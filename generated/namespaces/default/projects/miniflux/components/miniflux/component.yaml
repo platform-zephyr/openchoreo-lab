@@ -1,0 +1,17 @@
+# Genere par tools/appgen (ne pas editer a la main). Source : apps/*/app.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: miniflux
+  namespace: default
+spec:
+  owner:
+    projectName: miniflux
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service-restricted
+  autoDeploy: false
+  parameters:
+    runAsUser: 65534
+    strategy: RollingUpdate
+    publicAuth: app-oidc

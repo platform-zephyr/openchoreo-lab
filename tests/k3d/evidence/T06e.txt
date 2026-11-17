@@ -1,0 +1,9 @@
+# 2026-11-17T17:00:06Z k3d
+$ bash -c kubectl apply -n dp-default-t-cell-b-development-f4914bac -f - <<'EOF'
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: t-second-pvc}
+spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 1Gi}}}
+EOF
+Error from server (Forbidden): error when creating "STDIN": persistentvolumeclaims "t-second-pvc" is forbidden: exceeded quota: cell-quota, requested: persistentvolumeclaims=1, used: persistentvolumeclaims=1, limited: persistentvolumeclaims=1
+[rc=1]

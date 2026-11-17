@@ -1,0 +1,44 @@
+# Deux cellules de test (k3d) sur le CPT cell-restricted.
+#   t-cell-a : egress none, database true  (whoami + client PG + 2 bases)
+#   t-cell-b : egress public-internet, database false, 1 PVC (whoami + sonde réseau + app PVC)
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: t-cell-a
+  namespace: default
+spec:
+  deploymentPipelineRef: {kind: DeploymentPipeline, name: default}
+  type: {kind: ClusterProjectType, name: cell-restricted}
+  parameters: {egress: none, database: true}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ProjectReleaseBinding
+metadata:
+  name: t-cell-a-development
+  namespace: default
+spec:
+  owner: {projectName: t-cell-a}
+  environment: development
+  # Tentative d'écrasement du label PSA : la constante du CPT doit gagner (test T01c).
+  environmentConfigs:
+    namespaceLabels:
+      pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: t-cell-b
+  namespace: default
+spec:
+  deploymentPipelineRef: {kind: DeploymentPipeline, name: default}
+  type: {kind: ClusterProjectType, name: cell-restricted}
+  parameters: {egress: public-internet, database: false, quota: {pvcs: "1"}}
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ProjectReleaseBinding
+metadata:
+  name: t-cell-b-development
+  namespace: default
+spec:
+  owner: {projectName: t-cell-b}
+  environment: development

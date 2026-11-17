@@ -1,0 +1,14 @@
+# 2026-11-17T17:00:14Z k3d
+$ kubectl logs -n lab-pg job/r-t-alpha-db-development-bc318b89-pg-init
+CREATE ROLE
+ALTER ROLE
+CREATE DATABASE
+REVOKE
+GRANT
+ revoke_ok 
+-----------
+         1
+(1 row)
+
+cnpg-lab-db: role+database alpha_development ready (REVOKE CONNECT FROM PUBLIC verified)
+[rc=0]

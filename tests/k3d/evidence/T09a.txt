@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:12Z k3d
+$ kubectl -n dp-default-t-cell-a-development-8fec71a2 exec pod/t-pgclient-a-development-a588893c-6bf9db4456-r5c9t -- bash -c psql "$DATABASE_URL" -XAtc "select current_user, current_database(), ssl from pg_stat_ssl where pid = pg_backend_pid()"
+alpha_development|alpha_development|t
+[rc=0]

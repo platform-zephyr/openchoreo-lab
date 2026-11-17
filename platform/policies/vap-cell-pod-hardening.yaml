@@ -1,0 +1,60 @@
+# VAP-2 `lab-cell-pod-hardening` (APP-CONTRACT §7.4 « digest-only », élargie à la demande Phase A).
+# Pods des namespaces de cellule (dp-*) et de lab-pg :
+#   - chaque image (containers, initContainers, ephemeralContainers) contient @sha256:<64 hex> ;
+#   - ni privileged, ni hostPath, ni hostNetwork/hostPID/hostIPC.
+# Redondant avec PSA restricted pour privileged/hostPath/host* : c'est voulu (une cellule créée avec
+# le CPT `default` n'a pas les labels PSA ; cette VAP s'applique par NOM de namespace).
+# La sélection se fait par nom (matchCondition), pas par label : un label se retire, un nom non.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: lab-cell-pod-hardening
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: [CREATE, UPDATE]
+        resources: ["pods", "pods/ephemeralcontainers"]
+  matchConditions:
+    - name: cell-or-lab-pg
+      expression: "request.namespace.startsWith('dp-') || request.namespace == 'lab-pg'"
+  variables:
+    - name: digestRe
+      expression: "'^[^@]+@sha256:[a-f0-9]{64}$'"
+    - name: initCs
+      expression: "has(object.spec.initContainers) ? object.spec.initContainers : []"
+    - name: ephCs
+      expression: "has(object.spec.ephemeralContainers) ? object.spec.ephemeralContainers : []"
+  validations:
+    - expression: >-
+        object.spec.containers.all(c, c.image.matches(variables.digestRe)) &&
+        variables.initCs.all(c, c.image.matches(variables.digestRe)) &&
+        variables.ephCs.all(c, c.image.matches(variables.digestRe))
+      message: "lab-cell-pod-hardening: image épinglée par digest (@sha256:...) obligatoire"
+      reason: Forbidden
+    - expression: >-
+        object.spec.containers.all(c, !has(c.securityContext) || !has(c.securityContext.privileged) || !c.securityContext.privileged) &&
+        variables.initCs.all(c, !has(c.securityContext) || !has(c.securityContext.privileged) || !c.securityContext.privileged) &&
+        variables.ephCs.all(c, !has(c.securityContext) || !has(c.securityContext.privileged) || !c.securityContext.privileged)
+      message: "lab-cell-pod-hardening: conteneur privileged interdit"
+      reason: Forbidden
+    - expression: >-
+        !has(object.spec.volumes) || object.spec.volumes.all(v, !has(v.hostPath))
+      message: "lab-cell-pod-hardening: volume hostPath interdit"
+      reason: Forbidden
+    - expression: >-
+        !(has(object.spec.hostNetwork) && object.spec.hostNetwork) &&
+        !(has(object.spec.hostPID) && object.spec.hostPID) &&
+        !(has(object.spec.hostIPC) && object.spec.hostIPC)
+      message: "lab-cell-pod-hardening: hostNetwork, hostPID et hostIPC interdits"
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: lab-cell-pod-hardening
+spec:
+  policyName: lab-cell-pod-hardening
+  validationActions: [Deny]

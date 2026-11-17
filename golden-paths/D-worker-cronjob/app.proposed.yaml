@@ -1,0 +1,28 @@
+# Golden path D : worker sans HTTP / tâche planifiée (CronJob).
+# ÉTAT : NON DISPONIBLE. Ce fichier est une PROPOSITION ; il est REFUSÉ par le schéma v2alpha1
+# (champs spec.kind et spec.schedule inconnus, runtime.port/healthPath obligatoires) et par la CCT
+# service-restricted (« au moins un endpoint »). Voir golden-paths/SCHEMA-GAPS.md G1.
+# Ne jamais le copier sous apps/. Un agent qui reçoit ce besoin répond : archétype D non disponible,
+# propose une issue « plateforme » et, en attendant, ne contourne PAS par un Deployment HTTP factice.
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: mon-job
+  owner: user:default/paul
+  description: Tâche planifiée (proposition, non supportée)
+spec:
+  kind: cronjob                      # PROPOSÉ : service (défaut) | worker | cronjob
+  schedule: "17 3 * * *"             # PROPOSÉ : cron UTC ; concurrencyPolicy Forbid imposée par la plateforme
+  source:
+    image: ghcr.io/exemple/mon-job:1.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000
+  cluster: k3d
+  environments: [production]
+  profile: stateless
+  runtime:
+    size: small                      # port et healthPath sans objet pour worker/cronjob (PROPOSÉ)
+    command: ["/app/job"]
+    args: ["--once"]
+  exposure: {mode: private, auth: none}   # PROPOSÉ : sans objet (aucun endpoint), forcé à private
+  network: {egress: none}
+  backup: {class: none}
+  observability: {metrics: {enabled: false}}

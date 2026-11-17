@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:14Z k3d
+$ kubectl get secret lab-pg-superuser -n dp-default-t-cell-a-development-8fec71a2
+Error from server (NotFound): secrets "lab-pg-superuser" not found
+[rc=1]

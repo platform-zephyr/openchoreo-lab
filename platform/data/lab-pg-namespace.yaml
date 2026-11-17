@@ -1,0 +1,75 @@
+# Namespace d'essai `lab-pg` : PostgreSQL CNPG éphémère du labo (APP-CONTRACT §7.3).
+# Propriétaire : Argo `lab-platform`. Aucune sauvegarde : données `regenerable` au mieux.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-pg
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+# Default-deny ingress + egress sur tout le namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: lab-pg
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# Intra-namespace (Job psql -> lab-pg-rw, réplication future), DNS, opérateur CNPG.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-intra-dns-operator
+  namespace: lab-pg
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {}}]
+    - from:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: cnpg-system}}
+      ports: [{protocol: TCP, port: 8000}]
+  egress:
+    - to: [{podSelector: {}}]
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+# Ingress 5432 seulement depuis les cellules marquées pg-client par le CPT cell-restricted
+# (paramètre `database: true`).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-pg-clients
+  namespace: lab-pg
+spec:
+  podSelector:
+    matchLabels: {cnpg.io/cluster: lab-pg}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector: {matchLabels: {platform.smadja.dev/pg-client: "true"}}
+      ports: [{protocol: TCP, port: 5432}]
+---
+# Egress vers kube-apiserver (instance manager CNPG). Après DNAT, la destination est
+# l'IP du nœud:6443. OVERLAY PAR CLUSTER : k3d = réseau docker 172.18.0.0/16.
+# OKE : remplacer par le CIDR de l'endpoint API privé.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-apiserver
+  namespace: lab-pg
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{ipBlock: {cidr: 172.18.0.0/16}}]
+      ports: [{protocol: TCP, port: 6443}]
+    - to: [{ipBlock: {cidr: 10.43.0.1/32}}]
+      ports: [{protocol: TCP, port: 443}]

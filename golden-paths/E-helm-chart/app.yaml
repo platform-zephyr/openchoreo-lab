@@ -1,0 +1,26 @@
+# Golden path E : chart Helm officiel, synchronisé par Argo CD (ApplicationSet lab-helm), hors OpenChoreo.
+# ÉTAT : ILLUSTRATIF, NON ACTIVÉ dans le pilote. Tant que lab-helm n'existe pas, ne PAS placer ce fichier
+# sous apps/<nom>/ : utiliser apps/_examples/<nom>/ (ignoré par render). Exemple : apps/_examples/podinfo-helm/.
+# Interdits dans ce parcours (schéma) : runtime, database. Tout réglage passe par values.yaml (à côté).
+apiVersion: platform.smadja.dev/v2alpha1
+kind: App
+metadata:
+  name: mon-chart                    # À REMPLIR
+  owner: user:default/paul
+  description: Application tierce packagée en chart officiel (à décrire)
+  lifecycle: experimental
+spec:
+  source:
+    chart:
+      repo: oci://ghcr.io/exemple/charts   # oci:// ou https://
+      name: mon-chart
+      version: 1.4.2                       # version exacte, jamais de plage
+      # Digest obligatoire si oci:// : docker buildx imagetools inspect ghcr.io/exemple/charts/mon-chart:1.4.2
+      digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"   # À REMPLIR
+  cluster: k3d
+  environments: [production]
+  profile: stateless                 # documentaire en Helm ; stateful => Argo prune:false et classe PROTÉGÉE
+  exposure: {mode: private, auth: none}
+  network: {egress: none}            # rendu en NetworkPolicy à côté du chart [S : générateur à écrire, SCHEMA-GAPS G7]
+  backup: {class: none}
+  observability: {metrics: {enabled: false}}

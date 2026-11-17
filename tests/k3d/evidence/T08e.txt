@@ -1,0 +1,5 @@
+# 2026-11-17T17:00:12Z k3d
+$ tcp lab-pg pod/lab-pg-1 10.43.0.1 443
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+OPEN
+[rc=0]

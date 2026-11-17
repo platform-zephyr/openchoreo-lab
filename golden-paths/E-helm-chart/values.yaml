@@ -1,0 +1,27 @@
+# values.yaml du golden path E : réglages minimaux imposés à tout chart tiers.
+# Les clés exactes dépendent du chart : vérifier avec `helm show values <repo>/<chart> --version <v>`
+# et adapter les noms, sans jamais retirer une de ces protections.
+replicaCount: 1
+image:
+  # Épingler l'image du chart par digest si le chart le permet (clé souvent image.digest).
+  digest: ""                         # À REMPLIR : sha256:...
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: [ALL]}
+serviceAccount:
+  create: true
+  automount: false                   # pas de jeton d'API dans le pod
+rbac:
+  create: false                      # aucun RBAC applicatif (sinon archétype F)
+service:
+  type: ClusterIP                    # LoadBalancer et NodePort interdits (quota et VAP)
+ingress:
+  enabled: false                     # exposition publique : MANDAT Paul, via Gateway/Cloudflare Tunnel
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: 250m, memory: 256Mi}
+# Aucun secret ici : référencer un Secret matérialisé par ExternalSecret (existingSecret: <nom>).

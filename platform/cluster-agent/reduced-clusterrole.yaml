@@ -1,0 +1,82 @@
+# PROPOSITION (non appliquée sur k3d, voir tests/k3d/RESULTS.md) : RBAC réduit du cluster-agent.
+# À utiliser avec les values du chart openchoreo-data-plane v1.3.3 :
+#
+#   clusterAgent:
+#     rbac:
+#       create: false     # seule clé exposée par le chart (values.yaml l.600-606) : pas de
+#                         # clusterAgent.rbac.rules ; le ClusterRole + Binding du chart disparaissent.
+#
+# Le chart ne rend alors plus templates/cluster-agent/clusterrole.yaml ni clusterrolebinding.yaml ;
+# ce fichier les remplace (propriétaire : Argo lab-platform). Différences avec le ClusterRole du chart :
+#   RETIRÉ : rbac.authorization.k8s.io (roles, rolebindings, clusterroles, clusterrolebindings),
+#            cilium.io ciliumclusterwidenetworkpolicies, external-secrets.io clustersecretstores et
+#            secretstores, apps daemonsets, pods/exec (pas d'`occ component exec` dans le labo).
+#   AJOUTÉ : resourcequotas, limitranges (requis par le CPT cell-restricted).
+# VAP lab-cluster-agent-scope reste en place : elle borne les namespaces, ce que RBAC ne sait pas
+# faire (namespaces dp-* créés dynamiquement).
+# [S] non prouvé : que la réconciliation, les logs Backstage et la suppression d'une app passent
+# avec ce rôle. Test à faire sur un k3d dédié (E-revue rang 5) avant d'adopter.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: lab-cluster-agent-reduced
+rules:
+  - apiGroups: ["apps"]
+    resources: [deployments, statefulsets, replicasets]
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: [deployments/scale, statefulsets/scale, replicasets/scale]
+    verbs: [get, update, patch]
+  - apiGroups: [""]
+    resources: [pods, services, configmaps, secrets, persistentvolumeclaims, serviceaccounts,
+                namespaces, endpoints, resourcequotas, limitranges]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: [pods/log, pods/status, events]
+    verbs: [get, list]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create]
+  - apiGroups: ["batch"]
+    resources: [jobs, cronjobs]
+    verbs: ["*"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: [ingresses, networkpolicies]
+    verbs: ["*"]
+  - apiGroups: ["autoscaling"]
+    resources: [horizontalpodautoscalers]
+    verbs: ["*"]
+  - apiGroups: ["autoscaling.k8s.io"]
+    resources: [verticalpodautoscalers]
+    verbs: ["*"]
+  - apiGroups: ["policy"]
+    resources: [poddisruptionbudgets]
+    verbs: ["*"]
+  - apiGroups: ["cilium.io"]
+    resources: [ciliumnetworkpolicies]
+    verbs: ["*"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: [gateways, httproutes, tcproutes, grpcroutes, tlsroutes, referencegrants]
+    verbs: ["*"]
+  - apiGroups: ["external-secrets.io"]
+    resources: [externalsecrets, pushsecrets]
+    verbs: ["*"]
+  - apiGroups: ["generators.external-secrets.io"]
+    resources: [passwords]
+    verbs: ["*"]
+  - apiGroups: ["gateway.kgateway.dev"]
+    resources: [backends, gatewayparameters, trafficpolicies]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lab-cluster-agent-reduced
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: lab-cluster-agent-reduced
+subjects:
+  - kind: ServiceAccount
+    name: cluster-agent-dataplane
+    namespace: openchoreo-data-plane

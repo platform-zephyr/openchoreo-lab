@@ -1,0 +1,4 @@
+# 2026-11-17T17:00:06Z k3d
+$ bash -c echo $(( $(kubectl get pods -n dp-default-t-cell-a-development-8fec71a2 --field-selector=status.phase=Running -o name | wc -l) + $(kubectl get pods -n dp-default-t-cell-b-development-f4914bac --field-selector=status.phase=Running -o name | wc -l) ))
+5
+[rc=0]

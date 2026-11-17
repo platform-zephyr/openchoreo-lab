@@ -1,0 +1,14 @@
+# Valeurs Helm par app (parcours helm uniquement). Securite restreinte, sans secret.
+replicaCount: 1
+securityContext:
+  runAsNonRoot: true
+  seccompProfile: {type: RuntimeDefault}
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: [ALL]}
+service:
+  type: ClusterIP
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: 250m, memory: 128Mi}
