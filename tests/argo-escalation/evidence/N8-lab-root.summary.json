@@ -1,0 +1,21 @@
+{
+  "name": "lab-root",
+  "project": "lab-root",
+  "sync": "Synced",
+  "health": "Healthy",
+  "conditions": [
+    {
+      "type": "OrphanedResourceWarning",
+      "message": "Application has 1 orphaned resources"
+    }
+  ],
+  "operation": {
+    "phase": "Succeeded",
+    "revision": "7394388f8331a880490ff1ca7934600f0da0306c",
+    "initiatedBy": {
+      "automated": true
+    },
+    "message": "successfully synced (all tasks run)"
+  },
+  "refused": []
+}

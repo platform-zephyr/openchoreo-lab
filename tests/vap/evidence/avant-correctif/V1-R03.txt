@@ -1,0 +1,6 @@
+# V1-R03 — agent RoleBinding conforme + 2e sujet default/default (R4)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:13Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n dp-vap-ok create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": rolebindings.rbac.authorization.k8s.io "two" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: RoleBinding two : seul roleRef ClusterRole/lab-cluster-agent-cell avec pour unique sujet le SA du cluster-agent est permis
+# rc=1 verdict=PASS

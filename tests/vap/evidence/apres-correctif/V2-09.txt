@@ -1,0 +1,6 @@
+# V2-09 — pod image sans digest hors dp-*/lab-pg (lab-vap-test, hors périmètre)
+# attendu : ALLOW (lab-cell-pod-hardening)
+# date : 2026-11-17T19:52:24Z
+$ kubectl -n lab-vap-test create --dry-run=server -f -
+pod/p9 created (server dry run)
+# rc=0 verdict=PASS

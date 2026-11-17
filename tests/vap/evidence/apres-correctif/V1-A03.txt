@@ -1,0 +1,6 @@
+# V1-A03 — app pods/exec kube-system (hors de sa cellule)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:23Z
+$ kubectl --as=system:serviceaccount:dp-vap-app:app --as-group=system:serviceaccounts --as-group=system:serviceaccounts:dp-vap-app --as-group=system:authenticated get --raw /api/v1/namespaces/kube-system/pods/coredns-8db54c48d-r48mr/exec?command=id&stdout=true
+Error from server (Forbidden): pods "coredns-8db54c48d-r48mr" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: system:serviceaccount:dp-vap-app:app ne peut écrire que dans son namespace (reçu pods/exec CONNECT dans kube-system)
+# rc=1 verdict=PASS

@@ -57,4 +57,5 @@ metadata:
   name: lab-cell-pod-hardening
 spec:
   policyName: lab-cell-pod-hardening
-  validationActions: [Deny]
+  # Audit : refus annotés dans le journal d'audit de l'API server (preuve tests/vap AUD-*).
+  validationActions: [Deny, Audit]

@@ -1,0 +1,1832 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "Application",
+            "metadata": {
+                "annotations": {
+                    "argocd.argoproj.io/tracking-id": "lab-root:argoproj.io/Application:lab-argocd/lab-apps"
+                },
+                "creationTimestamp": "2026-11-17T20:06:11Z",
+                "generation": 102,
+                "labels": {
+                    "app.kubernetes.io/part-of": "openchoreo-lab"
+                },
+                "name": "lab-apps",
+                "namespace": "lab-argocd",
+                "resourceVersion": "2080",
+                "uid": "0b9c545f-cc44-4ad5-a6a0-ea49419f625f"
+            },
+            "spec": {
+                "destination": {
+                    "namespace": "default",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "project": "lab-apps",
+                "source": {
+                    "directory": {
+                        "include": "*.yaml",
+                        "recurse": true
+                    },
+                    "path": "generated/namespaces/default",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                },
+                "syncPolicy": {
+                    "syncOptions": [
+                        "ServerSideApply=true",
+                        "FailOnSharedResource=true"
+                    ]
+                }
+            },
+            "status": {
+                "controllerNamespace": "lab-argocd",
+                "health": {
+                    "lastTransitionTime": "2026-11-17T20:06:18Z",
+                    "status": "Healthy"
+                },
+                "history": [
+                    {
+                        "deployStartedAt": "2026-11-17T20:06:15Z",
+                        "deployedAt": "2026-11-17T20:06:22Z",
+                        "id": 0,
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "revision": "dcd474e7f9956873dfbc1c64cb323efaa50a4d38",
+                        "source": {
+                            "directory": {
+                                "include": "*.yaml",
+                                "recurse": true
+                            },
+                            "path": "generated/namespaces/default",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    }
+                ],
+                "operationState": {
+                    "finishedAt": "2026-11-17T20:10:07Z",
+                    "message": "one or more synchronization tasks are not valid: namespace kube-system is not permitted in project 'lab-apps'",
+                    "operation": {
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "retry": {},
+                        "sync": {
+                            "revision": "755a3e131e3be358d54c643aaae0c1713917a588"
+                        }
+                    },
+                    "phase": "Failed",
+                    "startedAt": "2026-11-17T20:10:06Z",
+                    "syncResult": {
+                        "resources": [
+                            {
+                                "group": "openchoreo.dev",
+                                "kind": "Project",
+                                "message": "namespace kube-system is not permitted in project 'lab-apps'",
+                                "name": "n5-ks",
+                                "namespace": "kube-system",
+                                "status": "SyncFailed",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            }
+                        ],
+                        "revision": "755a3e131e3be358d54c643aaae0c1713917a588",
+                        "source": {
+                            "directory": {
+                                "include": "*.yaml",
+                                "recurse": true
+                            },
+                            "path": "generated/namespaces/default",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    }
+                },
+                "reconciledAt": "2026-11-17T20:30:50Z",
+                "resourceHealthSource": "appTree",
+                "resources": [
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component",
+                        "name": "aiostreams",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component",
+                        "name": "idp-e2e",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component",
+                        "name": "mealie",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component",
+                        "name": "miniflux",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component",
+                        "name": "ntfy",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component",
+                        "name": "open-connector",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component",
+                        "name": "rustical-pilot",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component",
+                        "name": "searxng",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Component",
+                        "name": "whoami",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease",
+                        "name": "aiostreams-777d556c2a",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease",
+                        "name": "idp-e2e-bd7910ec5e",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease",
+                        "name": "mealie-95adb7ee06",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease",
+                        "name": "miniflux-03808293e2",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease",
+                        "name": "ntfy-92aefc1d7f",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease",
+                        "name": "open-connector-d7cf33eec0",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease",
+                        "name": "rustical-pilot-5cfb16559f",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease",
+                        "name": "searxng-6be25526ed",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ComponentRelease",
+                        "name": "whoami-31985273d8",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project",
+                        "name": "aiostreams",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project",
+                        "name": "idp-e2e",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project",
+                        "name": "mealie",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project",
+                        "name": "miniflux",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project",
+                        "name": "ntfy",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project",
+                        "name": "open-connector",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project",
+                        "name": "rustical-pilot",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project",
+                        "name": "searxng",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Project",
+                        "name": "whoami",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding",
+                        "name": "aiostreams-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding",
+                        "name": "idp-e2e-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding",
+                        "name": "mealie-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding",
+                        "name": "miniflux-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding",
+                        "name": "ntfy-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding",
+                        "name": "open-connector-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding",
+                        "name": "rustical-pilot-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding",
+                        "name": "searxng-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ProjectReleaseBinding",
+                        "name": "whoami-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding",
+                        "name": "aiostreams-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding",
+                        "name": "idp-e2e-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding",
+                        "name": "mealie-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding",
+                        "name": "miniflux-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding",
+                        "name": "ntfy-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding",
+                        "name": "open-connector-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding",
+                        "name": "rustical-pilot-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding",
+                        "name": "searxng-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ReleaseBinding",
+                        "name": "whoami-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Resource",
+                        "name": "miniflux-db",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ResourceReleaseBinding",
+                        "name": "miniflux-db-production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "SecretReference",
+                        "name": "aiostreams-secrets",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "SecretReference",
+                        "name": "mealie-secrets",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "SecretReference",
+                        "name": "miniflux-secrets",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "SecretReference",
+                        "name": "ntfy-secrets",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "SecretReference",
+                        "name": "open-connector-secrets",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "SecretReference",
+                        "name": "rustical-pilot-secrets",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "SecretReference",
+                        "name": "searxng-secrets",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload",
+                        "name": "aiostreams-workload",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload",
+                        "name": "idp-e2e-workload",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload",
+                        "name": "mealie-workload",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload",
+                        "name": "miniflux-workload",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload",
+                        "name": "ntfy-workload",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload",
+                        "name": "open-connector-workload",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload",
+                        "name": "rustical-pilot-workload",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload",
+                        "name": "searxng-workload",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Workload",
+                        "name": "whoami-workload",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    }
+                ],
+                "sourceType": "Directory",
+                "summary": {},
+                "sync": {
+                    "comparedTo": {
+                        "destination": {
+                            "namespace": "default",
+                            "server": "https://kubernetes.default.svc"
+                        },
+                        "source": {
+                            "directory": {
+                                "include": "*.yaml",
+                                "recurse": true
+                            },
+                            "path": "generated/namespaces/default",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    "revision": "51c387326b18195dd918a2296fe40bed82eb9b70",
+                    "status": "Synced"
+                }
+            }
+        },
+        {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "Application",
+            "metadata": {
+                "annotations": {
+                    "argocd.argoproj.io/tracking-id": "lab-root:argoproj.io/Application:lab-argocd/lab-authz"
+                },
+                "creationTimestamp": "2026-11-17T20:06:11Z",
+                "generation": 64,
+                "labels": {
+                    "app.kubernetes.io/part-of": "openchoreo-lab"
+                },
+                "name": "lab-authz",
+                "namespace": "lab-argocd",
+                "resourceVersion": "2079",
+                "uid": "e1f3df73-8035-46d8-a3ef-59cf82a6f646"
+            },
+            "spec": {
+                "destination": {
+                    "namespace": "lab-argocd",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "project": "lab-authz",
+                "source": {
+                    "directory": {
+                        "include": "*.yaml",
+                        "recurse": false
+                    },
+                    "path": "platform/authz",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                },
+                "syncPolicy": {
+                    "syncOptions": [
+                        "ServerSideApply=true",
+                        "FailOnSharedResource=true"
+                    ]
+                }
+            },
+            "status": {
+                "controllerNamespace": "lab-argocd",
+                "health": {
+                    "lastTransitionTime": "2026-11-17T20:24:03Z",
+                    "status": "Healthy"
+                },
+                "history": [
+                    {
+                        "deployStartedAt": "2026-11-17T20:24:02Z",
+                        "deployedAt": "2026-11-17T20:24:04Z",
+                        "id": 0,
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "revision": "edfb619bc1a1f886f5d800299edbe9722af59234",
+                        "source": {
+                            "directory": {
+                                "include": "*.yaml"
+                            },
+                            "path": "platform/authz",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    }
+                ],
+                "operationState": {
+                    "finishedAt": "2026-11-17T20:24:04Z",
+                    "message": "successfully synced (all tasks run)",
+                    "operation": {
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "retry": {},
+                        "sync": {
+                            "revision": "edfb619bc1a1f886f5d800299edbe9722af59234"
+                        }
+                    },
+                    "phase": "Succeeded",
+                    "startedAt": "2026-11-17T20:24:02Z",
+                    "syncResult": {
+                        "resources": [
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRole",
+                                "message": "clusterauthzrole.openchoreo.dev/lab-agent-operator created",
+                                "name": "lab-agent-operator",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRole",
+                                "message": "clusterauthzrole.openchoreo.dev/lab-agent-forbidden created",
+                                "name": "lab-agent-forbidden",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRoleBinding",
+                                "message": "clusterauthzrolebinding.openchoreo.dev/lab-agent-operator-deny created",
+                                "name": "lab-agent-operator-deny",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRoleBinding",
+                                "message": "clusterauthzrolebinding.openchoreo.dev/lab-agent-operator-binding created",
+                                "name": "lab-agent-operator-binding",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRole",
+                                "message": "clusterauthzrole.openchoreo.dev/lab-agent-reader created",
+                                "name": "lab-agent-reader",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRoleBinding",
+                                "message": "clusterauthzrolebinding.openchoreo.dev/lab-agent-reader-binding created",
+                                "name": "lab-agent-reader-binding",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRoleBinding",
+                                "message": "clusterauthzrolebinding.openchoreo.dev/lab-developers-binding created",
+                                "name": "lab-developers-binding",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRoleBinding",
+                                "message": "clusterauthzrolebinding.openchoreo.dev/lab-agent-reader-deny created",
+                                "name": "lab-agent-reader-deny",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRole",
+                                "message": "clusterauthzrole.openchoreo.dev/lab-n4-escalade created",
+                                "name": "lab-n4-escalade",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRole",
+                                "message": "clusterauthzrole.openchoreo.dev/lab-platform-admin created",
+                                "name": "lab-platform-admin",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRoleBinding",
+                                "message": "clusterauthzrolebinding.openchoreo.dev/lab-platform-admins-binding created",
+                                "name": "lab-platform-admins-binding",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRole",
+                                "message": "clusterauthzrole.openchoreo.dev/lab-viewer created",
+                                "name": "lab-viewer",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterAuthzRoleBinding",
+                                "message": "clusterauthzrolebinding.openchoreo.dev/lab-viewers-binding created",
+                                "name": "lab-viewers-binding",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            }
+                        ],
+                        "revision": "edfb619bc1a1f886f5d800299edbe9722af59234",
+                        "source": {
+                            "directory": {
+                                "include": "*.yaml"
+                            },
+                            "path": "platform/authz",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    }
+                },
+                "reconciledAt": "2026-11-17T20:30:49Z",
+                "resourceHealthSource": "appTree",
+                "resources": [
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRole",
+                        "name": "lab-agent-forbidden",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRole",
+                        "name": "lab-agent-operator",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRole",
+                        "name": "lab-agent-reader",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRole",
+                        "name": "lab-platform-admin",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRole",
+                        "name": "lab-viewer",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "name": "lab-agent-operator-binding",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "name": "lab-agent-operator-deny",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "name": "lab-agent-reader-binding",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "name": "lab-agent-reader-deny",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "name": "lab-developers-binding",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "name": "lab-platform-admins-binding",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "name": "lab-viewers-binding",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    }
+                ],
+                "sourceType": "Directory",
+                "sync": {
+                    "comparedTo": {
+                        "destination": {
+                            "namespace": "lab-argocd",
+                            "server": "https://kubernetes.default.svc"
+                        },
+                        "source": {
+                            "directory": {
+                                "include": "*.yaml"
+                            },
+                            "path": "platform/authz",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    "revision": "51c387326b18195dd918a2296fe40bed82eb9b70",
+                    "status": "Synced"
+                }
+            }
+        },
+        {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "Application",
+            "metadata": {
+                "annotations": {
+                    "argocd.argoproj.io/tracking-id": "lab-root:argoproj.io/Application:lab-argocd/lab-platform"
+                },
+                "creationTimestamp": "2026-11-17T20:06:11Z",
+                "generation": 97,
+                "labels": {
+                    "app.kubernetes.io/part-of": "openchoreo-lab"
+                },
+                "name": "lab-platform",
+                "namespace": "lab-argocd",
+                "resourceVersion": "2022",
+                "uid": "9bcc503f-93ea-4b18-884b-27fd8675d4c8"
+            },
+            "spec": {
+                "destination": {
+                    "namespace": "default",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "project": "lab-platform",
+                "source": {
+                    "directory": {
+                        "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                        "recurse": true
+                    },
+                    "path": "platform",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                },
+                "syncPolicy": {
+                    "syncOptions": [
+                        "ServerSideApply=true",
+                        "FailOnSharedResource=true"
+                    ]
+                }
+            },
+            "status": {
+                "controllerNamespace": "lab-argocd",
+                "health": {
+                    "lastTransitionTime": "2026-11-17T20:06:14Z",
+                    "status": "Progressing"
+                },
+                "history": [
+                    {
+                        "deployStartedAt": "2026-11-17T20:06:12Z",
+                        "deployedAt": "2026-11-17T20:06:13Z",
+                        "id": 0,
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "revision": "dcd474e7f9956873dfbc1c64cb323efaa50a4d38",
+                        "source": {
+                            "directory": {
+                                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                                "recurse": true
+                            },
+                            "path": "platform",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:07:58Z",
+                        "deployedAt": "2026-11-17T20:07:59Z",
+                        "id": 1,
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "revision": "9d771d588742aa6eec74852b103eec6a182628b2",
+                        "source": {
+                            "directory": {
+                                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                                "recurse": true
+                            },
+                            "path": "platform",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:08:02Z",
+                        "deployedAt": "2026-11-17T20:08:04Z",
+                        "id": 2,
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "revision": "2f745f20420d399d45631280c6f37bfc2fbad97d",
+                        "source": {
+                            "directory": {
+                                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                                "recurse": true
+                            },
+                            "path": "platform",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:09:23Z",
+                        "deployedAt": "2026-11-17T20:09:25Z",
+                        "id": 3,
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "revision": "89796d370fe3a34148a05e05f55f98d68d39d405",
+                        "source": {
+                            "directory": {
+                                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                                "recurse": true
+                            },
+                            "path": "platform",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:24:14Z",
+                        "deployedAt": "2026-11-17T20:24:16Z",
+                        "id": 4,
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "revision": "9f623498c77ef9bf139d943ed81ba1f1714d59c8",
+                        "source": {
+                            "directory": {
+                                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                                "recurse": true
+                            },
+                            "path": "platform",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:25:18Z",
+                        "deployedAt": "2026-11-17T20:25:20Z",
+                        "id": 5,
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "revision": "b081281c24d9b61f0f87188b4294d9a4c39ff300",
+                        "source": {
+                            "directory": {
+                                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                                "recurse": true
+                            },
+                            "path": "platform",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:25:23Z",
+                        "deployedAt": "2026-11-17T20:25:24Z",
+                        "id": 6,
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "revision": "0658e9b7e39f460ef1802da29ae2ee67c33fae3d",
+                        "source": {
+                            "directory": {
+                                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                                "recurse": true
+                            },
+                            "path": "platform",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    }
+                ],
+                "operationState": {
+                    "finishedAt": "2026-11-17T20:25:24Z",
+                    "message": "successfully synced (all tasks run)",
+                    "operation": {
+                        "initiatedBy": {
+                            "username": "argo-escalation-test"
+                        },
+                        "retry": {},
+                        "sync": {
+                            "revision": "0658e9b7e39f460ef1802da29ae2ee67c33fae3d"
+                        }
+                    },
+                    "phase": "Succeeded",
+                    "startedAt": "2026-11-17T20:25:23Z",
+                    "syncResult": {
+                        "resources": [
+                            {
+                                "group": "",
+                                "hookPhase": "Running",
+                                "kind": "Namespace",
+                                "message": "namespace/lab-pg configured",
+                                "name": "lab-pg",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "networking.k8s.io",
+                                "hookPhase": "Running",
+                                "kind": "NetworkPolicy",
+                                "message": "networkpolicy.networking.k8s.io/allow-pg-clients unchanged",
+                                "name": "allow-pg-clients",
+                                "namespace": "lab-pg",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "networking.k8s.io",
+                                "hookPhase": "Running",
+                                "kind": "NetworkPolicy",
+                                "message": "networkpolicy.networking.k8s.io/default-deny unchanged",
+                                "name": "default-deny",
+                                "namespace": "lab-pg",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "networking.k8s.io",
+                                "hookPhase": "Running",
+                                "kind": "NetworkPolicy",
+                                "message": "networkpolicy.networking.k8s.io/allow-apiserver unchanged",
+                                "name": "allow-apiserver",
+                                "namespace": "lab-pg",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "networking.k8s.io",
+                                "hookPhase": "Running",
+                                "kind": "NetworkPolicy",
+                                "message": "networkpolicy.networking.k8s.io/allow-intra-dns-operator unchanged",
+                                "name": "allow-intra-dns-operator",
+                                "namespace": "lab-pg",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterProjectType",
+                                "message": "clusterprojecttype.openchoreo.dev/cell-restricted configured",
+                                "name": "cell-restricted",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterResourceType",
+                                "message": "clusterresourcetype.openchoreo.dev/cnpg-lab-db unchanged",
+                                "name": "cnpg-lab-db",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterTrait",
+                                "message": "clustertrait.openchoreo.dev/health-probes configured",
+                                "name": "health-probes",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "admissionregistration.k8s.io",
+                                "hookPhase": "Running",
+                                "kind": "ValidatingAdmissionPolicyBinding",
+                                "message": "validatingadmissionpolicybinding.admissionregistration.k8s.io/lab-cell-pod-hardening unchanged",
+                                "name": "lab-cell-pod-hardening",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "admissionregistration.k8s.io",
+                                "hookPhase": "Running",
+                                "kind": "ValidatingAdmissionPolicy",
+                                "message": "validatingadmissionpolicy.admissionregistration.k8s.io/lab-cluster-agent-scope unchanged",
+                                "name": "lab-cluster-agent-scope",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "admissionregistration.k8s.io",
+                                "hookPhase": "Running",
+                                "kind": "ValidatingAdmissionPolicy",
+                                "message": "validatingadmissionpolicy.admissionregistration.k8s.io/lab-cell-pod-hardening configured",
+                                "name": "lab-cell-pod-hardening",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "admissionregistration.k8s.io",
+                                "hookPhase": "Running",
+                                "kind": "ValidatingAdmissionPolicyBinding",
+                                "message": "validatingadmissionpolicybinding.admissionregistration.k8s.io/lab-cluster-agent-scope unchanged",
+                                "name": "lab-cluster-agent-scope",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "postgresql.cnpg.io",
+                                "hookPhase": "Running",
+                                "kind": "Cluster",
+                                "message": "cluster.postgresql.cnpg.io/lab-pg unchanged",
+                                "name": "lab-pg",
+                                "namespace": "lab-pg",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterTrait",
+                                "message": "clustertrait.openchoreo.dev/persistent-volume-claim configured",
+                                "name": "persistent-volume-claim",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "Environment",
+                                "message": "environment.openchoreo.dev/production unchanged",
+                                "name": "production",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "ClusterComponentType",
+                                "message": "clustercomponenttype.openchoreo.dev/service-restricted configured",
+                                "name": "service-restricted",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            },
+                            {
+                                "group": "openchoreo.dev",
+                                "hookPhase": "Running",
+                                "kind": "DeploymentPipeline",
+                                "message": "deploymentpipeline.openchoreo.dev/standard unchanged",
+                                "name": "standard",
+                                "namespace": "default",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            }
+                        ],
+                        "revision": "0658e9b7e39f460ef1802da29ae2ee67c33fae3d",
+                        "source": {
+                            "directory": {
+                                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                                "recurse": true
+                            },
+                            "path": "platform",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    }
+                },
+                "reconciledAt": "2026-11-17T20:28:31Z",
+                "resourceHealthSource": "appTree",
+                "resources": [
+                    {
+                        "kind": "Namespace",
+                        "name": "lab-pg",
+                        "status": "Synced",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "kind": "ValidatingAdmissionPolicy",
+                        "name": "lab-cell-pod-hardening",
+                        "status": "Synced",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "kind": "ValidatingAdmissionPolicy",
+                        "name": "lab-cluster-agent-scope",
+                        "status": "Synced",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "kind": "ValidatingAdmissionPolicyBinding",
+                        "name": "lab-cell-pod-hardening",
+                        "status": "Synced",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "admissionregistration.k8s.io",
+                        "kind": "ValidatingAdmissionPolicyBinding",
+                        "name": "lab-cluster-agent-scope",
+                        "status": "Synced",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "kind": "NetworkPolicy",
+                        "name": "allow-apiserver",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "kind": "NetworkPolicy",
+                        "name": "allow-intra-dns-operator",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "kind": "NetworkPolicy",
+                        "name": "allow-pg-clients",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "kind": "NetworkPolicy",
+                        "name": "default-deny",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterComponentType",
+                        "name": "service-restricted",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterProjectType",
+                        "name": "cell-restricted",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterResourceType",
+                        "name": "cnpg-lab-db",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterTrait",
+                        "name": "health-probes",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "ClusterTrait",
+                        "name": "persistent-volume-claim",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "DeploymentPipeline",
+                        "name": "standard",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "kind": "Environment",
+                        "name": "production",
+                        "namespace": "default",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "postgresql.cnpg.io",
+                        "kind": "Cluster",
+                        "name": "lab-pg",
+                        "namespace": "lab-pg",
+                        "status": "Synced",
+                        "version": "v1"
+                    }
+                ],
+                "sourceType": "Directory",
+                "summary": {},
+                "sync": {
+                    "comparedTo": {
+                        "destination": {
+                            "namespace": "default",
+                            "server": "https://kubernetes.default.svc"
+                        },
+                        "source": {
+                            "directory": {
+                                "include": "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}",
+                                "recurse": true
+                            },
+                            "path": "platform",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    "revision": "51c387326b18195dd918a2296fe40bed82eb9b70",
+                    "status": "Synced"
+                }
+            }
+        },
+        {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "Application",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T20:06:09Z",
+                "generation": 152,
+                "labels": {
+                    "app.kubernetes.io/part-of": "openchoreo-lab"
+                },
+                "name": "lab-root",
+                "namespace": "lab-argocd",
+                "resourceVersion": "2019",
+                "uid": "0027ae42-c245-4cf7-9fe6-b79488763bb1"
+            },
+            "spec": {
+                "destination": {
+                    "namespace": "lab-argocd",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "project": "lab-root",
+                "source": {
+                    "path": "platform/install/argocd/apps",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                },
+                "syncPolicy": {
+                    "automated": {
+                        "prune": false,
+                        "selfHeal": true
+                    },
+                    "syncOptions": [
+                        "ServerSideApply=true"
+                    ]
+                }
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-11-17T20:06:10Z",
+                        "message": "Application has 1 orphaned resources",
+                        "type": "OrphanedResourceWarning"
+                    }
+                ],
+                "controllerNamespace": "lab-argocd",
+                "health": {
+                    "lastTransitionTime": "2026-11-17T20:06:11Z",
+                    "status": "Healthy"
+                },
+                "history": [
+                    {
+                        "deployStartedAt": "2026-11-17T20:08:05Z",
+                        "deployedAt": "2026-11-17T20:08:06Z",
+                        "id": 2,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "0326fca8ecca53f887efacb52e7be2725c2ffaaa",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:09:15Z",
+                        "deployedAt": "2026-11-17T20:09:15Z",
+                        "id": 3,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "2b3d1f844cf50f8e8430f354a719f9927e86bc50",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:09:19Z",
+                        "deployedAt": "2026-11-17T20:09:19Z",
+                        "id": 4,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "7aed67f558fc26d72dcf5f304d8b3854218d6bc8",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:09:55Z",
+                        "deployedAt": "2026-11-17T20:09:56Z",
+                        "id": 5,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "c0e3de408b57ebeb267ef23c92b685f84459bb24",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:10:00Z",
+                        "deployedAt": "2026-11-17T20:10:00Z",
+                        "id": 6,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "778a7ecb708e6a9ca26ea205405deaf9aa616641",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:22:18Z",
+                        "deployedAt": "2026-11-17T20:22:18Z",
+                        "id": 7,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "edfb619bc1a1f886f5d800299edbe9722af59234",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:24:07Z",
+                        "deployedAt": "2026-11-17T20:24:07Z",
+                        "id": 8,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "9577fee9ff4eb936cef89bfb3aebd597c0c12c64",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:24:10Z",
+                        "deployedAt": "2026-11-17T20:24:11Z",
+                        "id": 9,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "a1c2d24972f4bed635edef8cd1aef150a738fd08",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:25:22Z",
+                        "deployedAt": "2026-11-17T20:25:23Z",
+                        "id": 10,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "0658e9b7e39f460ef1802da29ae2ee67c33fae3d",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    {
+                        "deployStartedAt": "2026-11-17T20:25:27Z",
+                        "deployedAt": "2026-11-17T20:25:27Z",
+                        "id": 11,
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "revision": "7394388f8331a880490ff1ca7934600f0da0306c",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    }
+                ],
+                "operationState": {
+                    "finishedAt": "2026-11-17T20:25:27Z",
+                    "message": "successfully synced (all tasks run)",
+                    "operation": {
+                        "initiatedBy": {
+                            "automated": true
+                        },
+                        "retry": {
+                            "limit": 5
+                        },
+                        "sync": {
+                            "autoHealAttemptsCount": 1,
+                            "resources": [
+                                {
+                                    "group": "argoproj.io",
+                                    "kind": "Application",
+                                    "name": "n8-projects"
+                                }
+                            ],
+                            "revision": "7394388f8331a880490ff1ca7934600f0da0306c",
+                            "source": {
+                                "path": "platform/install/argocd/apps",
+                                "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                                "targetRevision": "main"
+                            },
+                            "syncOptions": [
+                                "ServerSideApply=true"
+                            ]
+                        }
+                    },
+                    "phase": "Succeeded",
+                    "startedAt": "2026-11-17T20:25:27Z",
+                    "syncResult": {
+                        "resources": [
+                            {
+                                "group": "argoproj.io",
+                                "hookPhase": "Running",
+                                "kind": "Application",
+                                "message": "application.argoproj.io/n8-projects serverside-applied",
+                                "name": "n8-projects",
+                                "namespace": "lab-argocd",
+                                "status": "Synced",
+                                "syncPhase": "Sync",
+                                "version": "v1alpha1"
+                            }
+                        ],
+                        "revision": "7394388f8331a880490ff1ca7934600f0da0306c",
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    }
+                },
+                "reconciledAt": "2026-11-17T20:28:31Z",
+                "resourceHealthSource": "appTree",
+                "resources": [
+                    {
+                        "group": "argoproj.io",
+                        "kind": "Application",
+                        "name": "lab-apps",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "kind": "Application",
+                        "name": "lab-authz",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "kind": "Application",
+                        "name": "lab-platform",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "kind": "Application",
+                        "name": "n8-projects",
+                        "namespace": "lab-argocd",
+                        "requiresPruning": true,
+                        "status": "OutOfSync",
+                        "version": "v1alpha1"
+                    }
+                ],
+                "sourceHydrator": {},
+                "sourceType": "Directory",
+                "summary": {
+                    "isAppOfApps": true
+                },
+                "sync": {
+                    "comparedTo": {
+                        "destination": {
+                            "namespace": "lab-argocd",
+                            "server": "https://kubernetes.default.svc"
+                        },
+                        "source": {
+                            "path": "platform/install/argocd/apps",
+                            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                            "targetRevision": "main"
+                        }
+                    },
+                    "revision": "51c387326b18195dd918a2296fe40bed82eb9b70",
+                    "status": "OutOfSync"
+                }
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

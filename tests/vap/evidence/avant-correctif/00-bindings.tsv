@@ -1,0 +1,5 @@
+baseline-automount-token	Deny	aucun
+baseline-image-digest	Warn,Audit	aucun
+baseline-pod-hardening	Deny	aucun
+lab-cell-pod-hardening	Deny	aucun
+lab-cluster-agent-scope	Deny	aucun

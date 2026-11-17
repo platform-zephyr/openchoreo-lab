@@ -1,0 +1,6 @@
+# AUD-lab-cell-pod-hardening — journal d'audit : 9 événement(s) annotés validation_failure pour lab-cell-pod-hardening
+# attendu : ALLOW (lab-cell-pod-hardening)
+# date : 2026-11-17T19:52:30Z
+$ test 9 -gt 0
+
+# rc=0 verdict=PASS

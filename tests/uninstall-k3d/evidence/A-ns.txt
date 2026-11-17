@@ -1,0 +1,1 @@
+# verdict : PASS (ns_has lab-cnpg && ns_has openchoreo-cert-manager && ns_has lab-argocd && kubectl get validatingadmissionpolicy baseline-pod-hardening >/dev/null)

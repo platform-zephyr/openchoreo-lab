@@ -1,0 +1,32 @@
+# K01 — helm upgrade ESO sans annotation keep
+# date : 2026-11-17T20:29:38Z
+$ helm upgrade external-secrets /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/external-secrets-2.0.1.tgz -n openchoreo-external-secrets -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/values/external-secrets.yaml --set-json crds.annotations={}
+Release "external-secrets" has been upgraded. Happy Helming!
+NAME: external-secrets
+LAST DEPLOYED: Tue Nov 17 21:29:36 2026
+NAMESPACE: openchoreo-external-secrets
+STATUS: deployed
+REVISION: 2
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+NOTES:
+external-secrets has been deployed successfully in namespace openchoreo-external-secrets!
+
+In order to begin using ExternalSecrets, you will need to set up a SecretStore
+or ClusterSecretStore resource (for example, by creating a 'vault' SecretStore).
+
+More information on the different types of SecretStores and how to configure them
+can be found in our Github: https://github.com/external-secrets/external-secrets
+# rc=0
+# K01 — uninstall --step 4 --apply
+# date : 2026-11-17T20:29:39Z
+$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 4 --apply
+20:29:38Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
+20:29:38Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/20-eso-lab-store.yaml
+serviceaccount "eso-lab-store" deleted from lab-secrets namespace
+role.rbac.authorization.k8s.io "eso-lab-store" deleted from lab-secrets namespace
+rolebinding.rbac.authorization.k8s.io "eso-lab-store" deleted from lab-secrets namespace
+clustersecretstore.external-secrets.io "lab-store" deleted
+20:29:39Z ABANDON : release openchoreo-external-secrets/external-secrets : CRD sans helm.sh/resource-policy=keep ; relancer install.sh --step correspondante --apply avant tout uninstall
+# rc=2
+# verdict : PASS ([[ $LAST_RC != 0 ]] && grep -q "CRD sans helm.sh/resource-policy=keep" <<<"$LAST_OUT" && helm -n openchoreo-external-secrets status external-secrets >/dev/null)

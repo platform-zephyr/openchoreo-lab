@@ -1,0 +1,355 @@
+{
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Application",
+    "metadata": {
+        "annotations": {
+            "argocd.argoproj.io/tracking-id": "lab-root:argoproj.io/Application:lab-argocd/lab-authz"
+        },
+        "creationTimestamp": "2026-11-17T20:06:11Z",
+        "generation": 54,
+        "labels": {
+            "app.kubernetes.io/part-of": "openchoreo-lab"
+        },
+        "name": "lab-authz",
+        "namespace": "lab-argocd",
+        "resourceVersion": "1769",
+        "uid": "e1f3df73-8035-46d8-a3ef-59cf82a6f646"
+    },
+    "spec": {
+        "destination": {
+            "namespace": "lab-argocd",
+            "server": "https://kubernetes.default.svc"
+        },
+        "project": "lab-authz",
+        "source": {
+            "directory": {
+                "include": "*.yaml",
+                "recurse": false
+            },
+            "path": "platform/authz",
+            "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+            "targetRevision": "main"
+        },
+        "syncPolicy": {
+            "automated": {
+                "prune": false,
+                "selfHeal": true
+            },
+            "syncOptions": [
+                "ServerSideApply=true",
+                "FailOnSharedResource=true"
+            ]
+        }
+    },
+    "status": {
+        "controllerNamespace": "lab-argocd",
+        "health": {
+            "lastTransitionTime": "2026-11-17T20:24:03Z",
+            "status": "Healthy"
+        },
+        "history": [
+            {
+                "deployStartedAt": "2026-11-17T20:24:02Z",
+                "deployedAt": "2026-11-17T20:24:04Z",
+                "id": 0,
+                "initiatedBy": {
+                    "username": "argo-escalation-test"
+                },
+                "revision": "edfb619bc1a1f886f5d800299edbe9722af59234",
+                "source": {
+                    "directory": {
+                        "include": "*.yaml"
+                    },
+                    "path": "platform/authz",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            }
+        ],
+        "operationState": {
+            "finishedAt": "2026-11-17T20:24:04Z",
+            "message": "successfully synced (all tasks run)",
+            "operation": {
+                "initiatedBy": {
+                    "username": "argo-escalation-test"
+                },
+                "retry": {},
+                "sync": {
+                    "revision": "edfb619bc1a1f886f5d800299edbe9722af59234"
+                }
+            },
+            "phase": "Succeeded",
+            "startedAt": "2026-11-17T20:24:02Z",
+            "syncResult": {
+                "resources": [
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRole",
+                        "message": "clusterauthzrole.openchoreo.dev/lab-agent-operator created",
+                        "name": "lab-agent-operator",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRole",
+                        "message": "clusterauthzrole.openchoreo.dev/lab-agent-forbidden created",
+                        "name": "lab-agent-forbidden",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "message": "clusterauthzrolebinding.openchoreo.dev/lab-agent-operator-deny created",
+                        "name": "lab-agent-operator-deny",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "message": "clusterauthzrolebinding.openchoreo.dev/lab-agent-operator-binding created",
+                        "name": "lab-agent-operator-binding",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRole",
+                        "message": "clusterauthzrole.openchoreo.dev/lab-agent-reader created",
+                        "name": "lab-agent-reader",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "message": "clusterauthzrolebinding.openchoreo.dev/lab-agent-reader-binding created",
+                        "name": "lab-agent-reader-binding",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "message": "clusterauthzrolebinding.openchoreo.dev/lab-developers-binding created",
+                        "name": "lab-developers-binding",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "message": "clusterauthzrolebinding.openchoreo.dev/lab-agent-reader-deny created",
+                        "name": "lab-agent-reader-deny",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRole",
+                        "message": "clusterauthzrole.openchoreo.dev/lab-n4-escalade created",
+                        "name": "lab-n4-escalade",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRole",
+                        "message": "clusterauthzrole.openchoreo.dev/lab-platform-admin created",
+                        "name": "lab-platform-admin",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "message": "clusterauthzrolebinding.openchoreo.dev/lab-platform-admins-binding created",
+                        "name": "lab-platform-admins-binding",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRole",
+                        "message": "clusterauthzrole.openchoreo.dev/lab-viewer created",
+                        "name": "lab-viewer",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "openchoreo.dev",
+                        "hookPhase": "Running",
+                        "kind": "ClusterAuthzRoleBinding",
+                        "message": "clusterauthzrolebinding.openchoreo.dev/lab-viewers-binding created",
+                        "name": "lab-viewers-binding",
+                        "namespace": "lab-argocd",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    }
+                ],
+                "revision": "edfb619bc1a1f886f5d800299edbe9722af59234",
+                "source": {
+                    "directory": {
+                        "include": "*.yaml"
+                    },
+                    "path": "platform/authz",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            }
+        },
+        "reconciledAt": "2026-11-17T20:24:04Z",
+        "resourceHealthSource": "appTree",
+        "resources": [
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRole",
+                "name": "lab-agent-forbidden",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRole",
+                "name": "lab-agent-operator",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRole",
+                "name": "lab-agent-reader",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRole",
+                "name": "lab-n4-escalade",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRole",
+                "name": "lab-platform-admin",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRole",
+                "name": "lab-viewer",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRoleBinding",
+                "name": "lab-agent-operator-binding",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRoleBinding",
+                "name": "lab-agent-operator-deny",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRoleBinding",
+                "name": "lab-agent-reader-binding",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRoleBinding",
+                "name": "lab-agent-reader-deny",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRoleBinding",
+                "name": "lab-developers-binding",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRoleBinding",
+                "name": "lab-platform-admins-binding",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "openchoreo.dev",
+                "kind": "ClusterAuthzRoleBinding",
+                "name": "lab-viewers-binding",
+                "status": "Synced",
+                "version": "v1alpha1"
+            }
+        ],
+        "sourceType": "Directory",
+        "sync": {
+            "comparedTo": {
+                "destination": {
+                    "namespace": "lab-argocd",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "source": {
+                    "directory": {
+                        "include": "*.yaml"
+                    },
+                    "path": "platform/authz",
+                    "repoURL": "git://lab-gitsrv.lab-gitsrv.svc.cluster.local:9418/repo.git",
+                    "targetRevision": "main"
+                }
+            },
+            "revision": "edfb619bc1a1f886f5d800299edbe9722af59234",
+            "status": "Synced"
+        }
+    }
+}

@@ -1,0 +1,6 @@
+# V1-N08 — agent CREATE dp-vap-base en baseline direct (exception appgen ; m1 connu)
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:17Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated create --dry-run=server -f -
+namespace/dp-vap-base created (server dry run)
+# rc=0 verdict=PASS

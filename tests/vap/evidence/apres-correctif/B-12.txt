@@ -1,0 +1,6 @@
+# B-12 — auth : pod avec annotation baseline.smadja.dev/automount-token=true
+# attendu : ALLOW (baseline-automount-token)
+# date : 2026-11-17T19:52:27Z
+$ kubectl -n auth create --dry-run=server -f -
+pod/b12 created (server dry run)
+# rc=0 verdict=PASS

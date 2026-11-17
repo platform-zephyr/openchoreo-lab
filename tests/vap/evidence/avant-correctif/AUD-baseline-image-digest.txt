@@ -1,0 +1,6 @@
+# AUD-baseline-image-digest — journal d'audit : 3 événement(s) annotés validation_failure pour baseline-image-digest
+# attendu : ALLOW (baseline-image-digest)
+# date : 2026-11-17T19:50:21Z
+$ test 3 -gt 0
+
+# rc=0 verdict=PASS

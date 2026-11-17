@@ -1,0 +1,24 @@
+{
+  "name": "lab-apps",
+  "project": "lab-apps",
+  "sync": "OutOfSync",
+  "health": "Healthy",
+  "conditions": [],
+  "operation": {
+    "phase": "Failed",
+    "revision": "c47a8ac00cb6336d2bf79fd481f7d6e58ec72539",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "one or more synchronization tasks are not valid: resource argoproj.io:Application is not permitted in project lab-apps"
+  },
+  "refused": [
+    {
+      "kind": "Application",
+      "namespace": "lab-argocd",
+      "name": "n2b-gen",
+      "status": "SyncFailed",
+      "message": "resource argoproj.io:Application is not permitted in project lab-apps"
+    }
+  ]
+}

@@ -61,9 +61,40 @@ run() {
   fi
 }
 
-# Garde de contexte : refuse tout ce qui n'est pas le kubeconfig temporaire OKE oracle-a1.
+# MODE TEST k3d (tests/uninstall-k3d, flux sécurité A3) : actif SEULEMENT si LAB_TEST_CLUSTER est exporté et
+# vaut exactement k3d-lab-sec-vap (nom en constante, jamais un motif). Toute autre valeur non vide : refus.
+# Ne remplace pas la garde OKE : il exige en plus un kubeconfig hors OKE_ACCESS_DIR, le contexte
+# k3d-lab-sec-vap, un serveur local, un nœud unique k3d-lab-sec-vap-server-0 au providerID k3s:// et un
+# STATE_DIR dédié (OKE_PHASEB_STATE ≠ défaut), pour ne jamais lire ni écrire l'état réel de l'essai OKE.
+LAB_TEST_CONTEXT=k3d-lab-sec-vap
+guard_test_context() {
+  [[ "$LAB_TEST_CLUSTER" == "$LAB_TEST_CONTEXT" ]] \
+    || die "LAB_TEST_CLUSTER='$LAB_TEST_CLUSTER' refusé : seul '$LAB_TEST_CONTEXT' est un cluster de test accepté"
+  [[ -n "${KUBECONFIG:-}" && "$KUBECONFIG" != *:* ]] || die "mode test : KUBECONFIG doit désigner un seul fichier"
+  [[ "$KUBECONFIG" != "$EXPECTED_KUBECONFIG" && "$KUBECONFIG" != "$OKE_ACCESS_DIR"/* && "$KUBECONFIG" != *oke-access* ]] \
+    || die "mode test : KUBECONFIG=$KUBECONFIG est le kubeconfig OKE"
+  [[ -f "$KUBECONFIG" ]] || die "mode test : kubeconfig absent : $KUBECONFIG"
+  [[ -n "${OKE_PHASEB_STATE:-}" && "$STATE_DIR" != "$HOME/.cache/openchoreo-lab-phaseb" ]] \
+    || die "mode test : OKE_PHASEB_STATE dédié requis (jamais l'état réel $HOME/.cache/openchoreo-lab-phaseb)"
+  local ctx server nodes
+  ctx="$(kubectl config current-context)"
+  [[ "$ctx" == "$LAB_TEST_CONTEXT" ]] || die "mode test : contexte '$ctx' != $LAB_TEST_CONTEXT"
+  [[ ! "$ctx" =~ $OKE_CONTEXT_RE ]] || die "mode test : contexte OKE refusé"
+  server="$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')"
+  [[ "$server" =~ ^https://(0\.0\.0\.0|127\.0\.0\.1|localhost):[0-9]+$ && "$server" != "https://127.0.0.1:$OKE_LOCAL_PORT" ]] \
+    || die "mode test : serveur API inattendu : $server"
+  nodes="$(kubectl get nodes -o json)" || die "mode test : nœuds illisibles"
+  [[ "$(jq '.items | length' <<<"$nodes")" == 1 ]] || die "mode test : nombre de nœuds != 1"
+  [[ "$(jq -r '.items[0].metadata.name' <<<"$nodes")" == "$LAB_TEST_CONTEXT-server-0" ]] || die "mode test : nœud inattendu"
+  [[ "$(jq -r '.items[0].spec.providerID // ""' <<<"$nodes")" == k3s://* ]] || die "mode test : nœud non k3s"
+  log "MODE TEST k3d : contexte $ctx ($server), état $STATE_DIR"
+}
+
+# Garde de contexte : refuse tout ce qui n'est pas le kubeconfig temporaire OKE oracle-a1 (ou, en mode
+# test explicite, le seul k3d jetable k3d-lab-sec-vap : guard_test_context ci-dessus).
 guard_context() {
   need kubectl jq
+  if [[ -n "${LAB_TEST_CLUSTER:-}" ]]; then guard_test_context; return; fi
   [[ -n "${KUBECONFIG:-}" ]] || die "KUBECONFIG non défini (attendu : $EXPECTED_KUBECONFIG)"
   [[ "$KUBECONFIG" == "$EXPECTED_KUBECONFIG" ]] \
     || die "KUBECONFIG=$KUBECONFIG ne pointe pas sur le kubeconfig temporaire $EXPECTED_KUBECONFIG"

@@ -1,0 +1,6 @@
+# V1-N10 — agent DELETE ns dp-vap-ok (oldObject seul, témoin)
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:18Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated delete ns dp-vap-ok --dry-run=server
+namespace "dp-vap-ok" deleted (server dry run)
+# rc=0 verdict=PASS

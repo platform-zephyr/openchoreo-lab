@@ -1,0 +1,13 @@
+# H-kgateway-crds — CRD vivantes du groupe *gateway.kgateway.dev : annotation keep et release propriétaire
+# date : 2026-11-17T20:29:33Z
+$ bash -c kubectl get crd -o json | jq -r '.items[] | select(.spec.group | endswith("gateway.kgateway.dev")) | [.metadata.name, (.metadata.annotations["helm.sh/resource-policy"] // "-"), (.metadata.annotations["meta.helm.sh/release-name"] // "-")] | @tsv'
+backendconfigpolicies.gateway.kgateway.dev	-	kgateway-crds
+backends.gateway.kgateway.dev	-	kgateway-crds
+directresponses.gateway.kgateway.dev	-	kgateway-crds
+gatewayextensions.gateway.kgateway.dev	-	kgateway-crds
+gatewayparameters.gateway.kgateway.dev	-	kgateway-crds
+httplistenerpolicies.gateway.kgateway.dev	-	kgateway-crds
+listenerpolicies.gateway.kgateway.dev	-	kgateway-crds
+trafficpolicies.gateway.kgateway.dev	-	kgateway-crds
+# rc=0
+# verdict : PASS ([[ -n $LAST_OUT ]] && ! grep -q keep <<<"$LAST_OUT")

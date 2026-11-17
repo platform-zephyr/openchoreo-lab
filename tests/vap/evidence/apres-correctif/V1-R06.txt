@@ -1,0 +1,6 @@
+# V1-R06 — agent ClusterRoleBinding cluster-admin (R1/R5)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:19Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated create clusterrolebinding lab-vap-x --clusterrole=cluster-admin --user=x --dry-run=server
+error: failed to create clusterrolebinding: clusterrolebindings.rbac.authorization.k8s.io "lab-vap-x" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: objet cluster-scoped interdit pour system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane (clusterrolebindings/lab-vap-x)
+# rc=1 verdict=PASS

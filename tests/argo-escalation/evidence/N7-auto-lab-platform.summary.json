@@ -1,0 +1,16 @@
+{
+  "name": "lab-platform",
+  "project": "lab-platform",
+  "sync": "OutOfSync",
+  "health": "Progressing",
+  "conditions": [],
+  "operation": {
+    "phase": "Succeeded",
+    "revision": "9f623498c77ef9bf139d943ed81ba1f1714d59c8",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "successfully synced (all tasks run)"
+  },
+  "refused": []
+}

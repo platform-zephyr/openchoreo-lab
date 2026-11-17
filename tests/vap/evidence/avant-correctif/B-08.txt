@@ -1,0 +1,6 @@
+# B-08 — Deployment au gabarit privileged
+# attendu : DENY (baseline-pod-hardening)
+# date : 2026-11-17T19:50:18Z
+$ kubectl -n vap-plain create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": deployments.apps "d" is forbidden: ValidatingAdmissionPolicy 'baseline-pod-hardening' with binding 'baseline-pod-hardening' denied request: privileged containers are denied (baseline, oke/homelab).
+# rc=1 verdict=PASS

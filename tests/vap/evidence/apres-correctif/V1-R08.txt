@@ -1,0 +1,6 @@
+# V1-R08 — LIMITE : agent DELETE du binding lab-cluster-agent-scope (VAP/VAPB hors admission ; RBAC seul)
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:19Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated delete validatingadmissionpolicybinding lab-cluster-agent-scope --dry-run=server
+validatingadmissionpolicybinding.admissionregistration.k8s.io "lab-cluster-agent-scope" deleted (server dry run)
+# rc=0 verdict=PASS

@@ -1,0 +1,59 @@
+G01	PASS	LAB_TEST_CLUSTER autre que k3d-lab-sec-vap : refus
+G02	PASS	contexte != k3d-lab-sec-vap : refus
+G03	PASS	serveur sur le port du tunnel OKE : refus
+G04	PASS	état réel de l'essai OKE : refus
+G05	PASS	kubeconfig sous un chemin oke-access : refus
+G06	PASS	sans mode test, la garde OKE refuse le k3d
+G07	PASS	mode test sur k3d-lab-sec-vap : accepté (dry-run)
+I01	PASS	étapes 1-2 (namespaces, quotas, NP, Gateway API) appliquées
+I02	PASS	étapes 3-5 installées (cert-manager, ESO, kgateway-crds, kgateway)
+I03	PASS	Argo CD 10.3.3 installé (lab-argocd)
+H-cert-manager	PASS	CRD vivantes cert-manager.io : keep présent sur l'objet
+H-external-secrets	PASS	CRD vivantes external-secrets.io : keep présent sur l'objet
+H-kgateway-crds	PASS	CRD vivantes gateway.kgateway.dev : keep ABSENT sur l'objet
+H-argocd	PASS	CRD vivantes argoproj.io : keep présent sur l'objet
+A-1	PASS	uninstall --step 1 refusé (Application Argo dans lab-argocd)
+A-7	PASS	uninstall --step 7 refusé (Application Argo dans lab-argocd)
+A-9	PASS	uninstall --step 9 refusé (Application Argo dans lab-argocd)
+A-10	PASS	uninstall --step 10 refusé (Application Argo dans lab-argocd)
+A-ns	PASS	aucun namespace supprimé par les refus
+K01	PASS	release ESO sans keep : uninstall refusé, release intacte
+K02	PASS	keep de retour sur l'objet vivant après upgrade
+M01	PASS	ConfigMap étranger : refus, namespace conservé
+M02	PASS	objet étiqueté mais d'un kind que l'étape 1 n'y pose pas : refus
+M03	PASS	PVC présent : refus, PVC intact
+M04	PASS	sans label part-of : refus
+M05	PASS	vide (hors objets de l'étape 1) et étiqueté : supprimé
+M07	PASS	release Helm présente : refus (helm_releases compatible Helm 4)
+M08	PASS	plus de release : supprimé
+M06	PASS	idempotent
+R12	PASS	étape 12 (RBAC réduit absent) : rien à annuler
+R11	PASS	étape 11 : release argocd supprimée, CRD argoproj.io conservées (keep)
+R11b	PASS	Application non nommée par undo_11 (lab-probe-finalizer) : garde Argo toujours active
+R11c	PASS	Application à resources-finalizer bloquée (Terminating) sans contrôleur Argo
+R11d	PASS	Application libérée après retrait manuel du finalizer
+R1g	PASS	étape 1 refusée tant qu'une release reste (sinon objets cluster-scoped orphelins)
+R10	PASS	étape 10 annulée sans erreur (objets absents : rien à faire)
+R9	PASS	étape 9 annulée sans erreur (objets absents : rien à faire)
+R8	PASS	étape 8 annulée sans erreur (objets absents : rien à faire)
+R7	PASS	étape 7 annulée sans erreur (objets absents : rien à faire)
+R6b	PASS	étape 6b annulée sans erreur (objets absents : rien à faire)
+R6	PASS	étape 6 annulée sans erreur (objets absents : rien à faire)
+R5a	PASS	kgateway désinstallé ; kgateway-crds CONSERVÉ (CRD gateway.kgateway.dev utilisée hors essai : P2 corrigé)
+R5b	PASS	kgateway-crds désinstallé : 8 CRD (templates/, sans keep) SUPPRIMÉES avec leurs CR d'essai
+R4a	PASS	ESO désinstallé ; 23 CRD CONSERVÉES (keep + usage hors essai)
+R4b	PASS	CRD bloquée en Terminating tant que la CR à finalizer existe
+R4c	PASS	CRD supprimée une fois le finalizer retiré
+R3a	PASS	cert-manager désinstallé ; CRD conservées (keep + Issuer hors essai intact)
+R3b	PASS	6 CRD cert-manager supprimées (dont acme.cert-manager.io) par nom de rendu
+R2a	PASS	CRD Gateway API conservées (objet cluster-scoped hors essai)
+R4d	PASS	CRD ESO restantes supprimées une fois inutilisées
+P01	PASS	PVC témoin et PV : identiques avant/après (aucune création/suppression)
+R1	PASS	étape 1 : seuls les namespaces d'essai étiquetés sont supprimés ; témoins intacts
+P02	PASS	PVC/PV identiques après l'étape 1
+F01	PASS	après rollback complet : 0 objet cluster-scoped orphelin ; seules restent les 3 CRD argoproj.io (keep, sans --delete-crds) et les 8 CRD Gateway API (utilisées)
+I01-all	PASS	étapes 1-2 (namespaces, quotas, NP, Gateway API) appliquées
+I02-all	PASS	étapes 3-5 installées (cert-manager, ESO, kgateway-crds, kgateway)
+I03-all	PASS	Argo CD 10.3.3 installé (lab-argocd)
+ALL	PASS	--all de bout en bout sans erreur (étapes 6-12 jamais installées : kinds absents tolérés)
+F02	PASS	après --all : aucun namespace, CRD ni objet cluster-scoped d'essai ; PVC/PV inchangés

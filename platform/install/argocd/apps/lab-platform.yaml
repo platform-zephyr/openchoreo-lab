@@ -1,17 +1,18 @@
 # Objets plateforme du labo, Git -> Argo (APP-CONTRACT §5). Ils ont été appliqués une première fois par
 # tools/oke/install.sh (étapes 7, 9 et 10, dans l'ordre exigé) ; Argo les ADOPTE (ServerSideApply, tracking
 # par annotation) puis en devient l'unique écrivain.
-# Prune=false pour TOUTE l'Application (automated.prune: false) : couvre les kinds OpenChoreo (CCT, CPT,
-# CRT, ClusterTrait) dont la suppression casserait les releases, les VAP (une PR de suppression ne doit
+# Prune jamais demandé (synchro manuelle sans prune) : couvre les kinds OpenChoreo (CCT, CPT, CRT,
+# ClusterTrait) dont la suppression casserait les releases, les VAP (une PR de suppression ne doit
 # pas lever une barrière d'admission) et le Cluster CNPG lab-pg. Un objet retiré de Git devient orphelin
 # signalé (orphanedResources.warn) et se supprime à la main, par PR + geste opérateur.
 # Exclus volontairement : platform/data/cnpg-operator-values.yaml (values Helm, pas un manifest),
 # platform/cluster-agent/*.yaml (RBAC cluster : bootstrap), platform/install/** (bootstrap) SAUF
 # install/manifests/40-openchoreo-env.yaml (Environment, DeploymentPipeline, ClusterTrait health-probes),
-# et platform/authz/ (projet dédié lab-authz : le projet `lab` bloque tout kind Authz*).
-# Les kinds cluster-scoped synchronisés sont NOMMÉS dans l'AppProject lab (revue B2) : un fichier ajouté
-# sous policies/ ou data/ avec un autre nom (ex. VAP baseline-* de kube-ops, Namespace kube-system) est
-# refusé par Argo à la synchronisation.
+# et platform/authz/ (projet dédié lab-authz : le projet lab-platform bloque tout kind Authz*).
+# Projet lab-platform (changement PRIVILÉGIÉ). Les kinds cluster-scoped sont NOMMÉS dans l'AppProject
+# (revue B2) : un fichier ajouté sous policies/ ou data/ avec un autre nom (ex. VAP baseline-* de kube-ops,
+# Namespace kube-system) est refusé par Argo à la synchronisation. Les kinds APPLICATIFS (Component...)
+# relèvent du projet lab-apps (generated/), pas de celui-ci.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -19,7 +20,7 @@ metadata:
   namespace: lab-argocd
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
-  project: lab
+  project: lab-platform
   source:
     repoURL: https://github.com/platform-zephyr/openchoreo-lab
     targetRevision: main
@@ -29,12 +30,10 @@ spec:
       include: "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}"
   destination:
     server: https://kubernetes.default.svc
-    # Destination explicite (le projet lab n'a plus lab-argocd) ; chaque objet porte son namespace.
+    # Destination explicite (le projet lab-platform n'a pas lab-argocd) ; chaque objet porte son namespace.
     namespace: default
+  # Synchro MANUELLE (fenêtre deny du projet lab-platform + CI A4) : geste opérateur après revue.
   syncPolicy:
-    automated:
-      prune: false
-      selfHeal: true
     syncOptions:
       - ServerSideApply=true
       - FailOnSharedResource=true

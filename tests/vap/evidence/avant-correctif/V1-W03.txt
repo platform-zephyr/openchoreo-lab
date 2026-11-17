@@ -1,0 +1,6 @@
+# V1-W03 — agent Event core kube-system (exception events)
+# attendu : ALLOW (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:12Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n kube-system create --dry-run=server -f -
+event/lab-vap-ev created (server dry run)
+# rc=0 verdict=PASS

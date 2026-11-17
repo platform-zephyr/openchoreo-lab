@@ -1,0 +1,24 @@
+{
+  "name": "lab-apps",
+  "project": "lab-apps",
+  "sync": "OutOfSync",
+  "health": "Healthy",
+  "conditions": [],
+  "operation": {
+    "phase": "Failed",
+    "revision": "e3cd6525fb5b57c61ef55047e3164966cc678688",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "one or more synchronization tasks are not valid: resource admissionregistration.k8s.io:ValidatingAdmissionPolicy is not permitted in project lab-apps"
+  },
+  "refused": [
+    {
+      "kind": "ValidatingAdmissionPolicy",
+      "namespace": "default",
+      "name": "lab-cell-pod-hardening",
+      "status": "SyncFailed",
+      "message": "resource admissionregistration.k8s.io:ValidatingAdmissionPolicy is not permitted in project lab-apps"
+    }
+  ]
+}

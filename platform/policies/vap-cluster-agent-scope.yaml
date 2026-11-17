@@ -19,7 +19,10 @@
 #   R5 jamais de roles, clusterroles, clusterrolebindings, admissionregistration.*, CCNP, serviceaccounts/token
 #      (double du RBAC : rien de tout cela n'est accordé) ;
 #   R6 lab-pg : contenu borné des kinds du CRT cnpg-lab-db (PushSecret ne publie que <x>-pg-role vers
-#      lab-pg-roles/*, Job sans jeton SA, volumes emptyDir seulement, image postgresql, secretKeyRef limités).
+#      lab-pg-roles/*, ExternalSecret alimenté par le SEUL générateur Password <x>-pg, sans template ni
+#      extraction du coffre, Job sans jeton SA, volumes emptyDir seulement, image postgresql, secretKeyRef limités).
+#   R2b (2026-11-17, preuve runtime k3d) une identité applicative n'écrit que dans son propre namespace dp-X.
+# Preuves runtime (vrai API server k3d, CEL évalué) : tests/vap/run.sh, tests/vap/RESULTS.md.
 # Ce qu'une VAP NE couvre PAS : GET/LIST/WATCH (lecture) ; les objets ValidatingAdmissionPolicy/Binding
 # eux-mêmes (exclus de l'admission) ; le contenu SQL du Job (superuser par construction). Lecture et
 # politiques : RBAC seul (platform/cluster-agent/reduced-clusterrole.yaml, docs/CLUSTER-AGENT-RBAC.md).
@@ -94,21 +97,36 @@ spec:
         'lab-cluster-agent-scope: objet cluster-scoped interdit pour ' + request.userInfo.username +
         ' (' + request.resource.resource + '/' + request.name + ')'
       reason: Forbidden
+    # R2 : kinds de lab-pg et Events identifiés par GROUPE ET ressource (un CRD homonyme d'un autre groupe,
+    # ex. passwords.evil.example, passait avant : preuve tests/vap V1-W07, 2026-11-17).
     - expression: >-
         !variables.isAgent || variables.clusterScoped ||
         variables.ns.startsWith('dp-') ||
-        request.resource.resource == 'events' ||
+        (variables.res == 'events' && variables.grp in ['', 'events.k8s.io']) ||
         (variables.ns == 'lab-pg' && !variables.isSubresource &&
-          request.resource.resource in ['externalsecrets', 'pushsecrets', 'passwords', 'jobs'])
+          variables.grp + '/' + variables.res in ['external-secrets.io/externalsecrets',
+            'external-secrets.io/pushsecrets', 'generators.external-secrets.io/passwords', 'batch/jobs'])
       messageExpression: >-
         'lab-cluster-agent-scope: le cluster-agent ne peut pas écrire ' + request.resource.resource +
         (variables.isSubresource ? '/' + request.subResource : '') + ' (' + request.operation + ')' +
         ' dans le namespace ' + variables.ns
       reason: Forbidden
-    # R3 : verrou PSA et labels des cellules (CREATE/UPDATE de l'objet Namespace lui-même).
+    # R2b : une identité applicative (SA de dp-X) n'écrit d'objets namespacés que dans SON namespace dp-X
+    # (avant : RBAC seul ; un SA d'app lié par erreur à un rôle large écrivait/exécutait dans kube-system,
+    # preuves tests/vap V1-A02, V1-A03, 2026-11-17). Le cluster-scoped reste régi par R1.
     - expression: >-
-        !(variables.isAgent && variables.isNamespace && !variables.isSubresource &&
-          request.operation in ['CREATE', 'UPDATE']) ||
+        variables.isAgent || variables.clusterScoped ||
+        request.userInfo.username.startsWith('system:serviceaccount:' + variables.ns + ':')
+      messageExpression: >-
+        'lab-cluster-agent-scope: ' + request.userInfo.username + ' ne peut écrire que dans son namespace (reçu ' +
+        request.resource.resource + (variables.isSubresource ? '/' + request.subResource : '') + ' ' +
+        request.operation + ' dans ' + variables.ns + ')'
+      reason: Forbidden
+    # R3 : verrou PSA et labels des cellules, sur l'objet Namespace ET ses sous-ressources status/finalize :
+    # un PUT namespaces/<dp-x>/status conserve les labels du corps (k3s v1.35.5, preuve tests/vap V1-N13 :
+    # PSA passée à privileged par l'agent malgré R3, 2026-11-17). Pour ces sous-ressources, object est le Namespace.
+    - expression: >-
+        !(variables.isAgent && variables.isNamespace && request.operation in ['CREATE', 'UPDATE']) ||
         (variables.psaEnforce in ['restricted', 'baseline'] &&
           'pod-security.kubernetes.io/enforce-version' in variables.nsLabels &&
           variables.nsLabels['pod-security.kubernetes.io/enforce-version'] == 'latest' &&
@@ -160,7 +178,15 @@ spec:
          variables.res == 'externalsecrets' ?
           (object.metadata.name.endsWith('-pg-role') &&
            has(object.spec.target) && has(object.spec.target.name) &&
-           object.spec.target.name == object.metadata.name) :
+           object.spec.target.name == object.metadata.name &&
+           !has(object.spec.target.template) &&
+           (!has(object.spec.data) || size(object.spec.data) == 0) &&
+           has(object.spec.dataFrom) && size(object.spec.dataFrom) == 1 &&
+           !has(object.spec.dataFrom[0].extract) && !has(object.spec.dataFrom[0].find) &&
+           has(object.spec.dataFrom[0].sourceRef) && has(object.spec.dataFrom[0].sourceRef.generatorRef) &&
+           !has(object.spec.dataFrom[0].sourceRef.storeRef) &&
+           object.spec.dataFrom[0].sourceRef.generatorRef.kind == 'Password' &&
+           object.spec.dataFrom[0].sourceRef.generatorRef.name + '-role' == object.metadata.name) :
          variables.res == 'jobs' ?
           (object.metadata.name.endsWith('-pg-init') &&
            has(variables.jobPod.automountServiceAccountToken) &&
@@ -185,4 +211,6 @@ metadata:
   name: lab-cluster-agent-scope
 spec:
   policyName: lab-cluster-agent-scope
-  validationActions: [Deny]
+  # Audit : chaque refus est aussi annoté dans le journal d'audit de l'API server
+  # (validation.policy.admission.k8s.io/validation_failure), preuve tests/vap AUD-*.
+  validationActions: [Deny, Audit]

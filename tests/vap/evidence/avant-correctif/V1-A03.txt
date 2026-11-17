@@ -1,0 +1,6 @@
+# V1-A03 — app pods/exec kube-system (hors de sa cellule)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:50:16Z
+$ kubectl --as=system:serviceaccount:dp-vap-app:app --as-group=system:serviceaccounts --as-group=system:serviceaccounts:dp-vap-app --as-group=system:authenticated get --raw /api/v1/namespaces/kube-system/pods/coredns-8db54c48d-r48mr/exec?command=id&stdout=true
+Error from server (BadRequest): pod coredns-8db54c48d-r48mr does not have a host assigned
+# rc=1 verdict=FAIL

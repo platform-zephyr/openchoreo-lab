@@ -152,7 +152,8 @@ jobs:
           fi
 
   platform:
-    # Garde-fous de platform/** et tools/oke/** (revue PR #8, P1) : regles Argo (argo_guard + cas negatifs),
+    # Garde-fous de platform/** et tools/oke/** (revue PR #8, P1 ; flux A2, docs/ARGO-ESCALATION.md) : regles Argo
+    # (argo_guard + cas negatifs, dont la separation par source lab-apps/lab-platform/lab-authz/lab-root),
     # gardes de uninstall.sh (kubectl/helm factices), rendus Helm epingles (PSA, 0 PVC/LB, images par digest),
     # kubeconform -strict, yamllint, shellcheck. Aucun secret, aucun cluster. docs/CI-PLATFORM-CHECKS.md.
     runs-on: ubuntu-24.04-arm
@@ -188,15 +189,17 @@ jobs:
         run: |
           yamllint -c tools/appgen/yamllint.yaml platform/install platform/authz platform/policies platform/data \
             platform/traits platform/project-types platform/resource-types platform/cluster-agent \
-            platform/identity platform/portal tools/oke tests/argo-guard
+            platform/identity platform/portal tools/oke tests/argo-guard tests/argo-escalation
       - name: shellcheck et bash -n
         run: |
-          shellcheck -x -P SCRIPTDIR tools/oke/*.sh tests/argo-guard/*.sh
-          for f in tools/oke/*.sh tests/argo-guard/*.sh; do bash -n "$f"; done
+          shellcheck -x -P SCRIPTDIR tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh
+          for f in tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh; do bash -n "$f"; done
       - name: Regles Argo (projets, chemins, whitelists nommees)
         run: python3 -I tools/oke/argo_guard.py .
-      - name: Cas negatifs argo_guard (pieges hors depot, chacun refuse)
+      - name: Cas negatifs argo_guard (pieges hors depot, chacun refuse ; A2 lab-apps/lab-authz inclus)
         run: tests/argo-guard/run.sh
+      # Les tests sur VRAI Argo (tests/argo-escalation/run.sh) exigent un cluster jetable : hors CI, preuve
+      # archivee dans tests/argo-escalation/RESULTS.md (docs/ARGO-ESCALATION.md).
       - name: Rendus Helm epingles + psa_check + 0 PVC/LB/image sans digest
         run: tools/oke/render-check.sh
       - name: Gardes uninstall.sh (kubectl et helm factices, CRD rendues)

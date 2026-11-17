@@ -1,0 +1,6 @@
+# B-06 — pod conforme (témoin)
+# attendu : ALLOW (baseline-pod-hardening)
+# date : 2026-11-17T19:50:18Z
+$ kubectl -n vap-plain create --dry-run=server -f -
+pod/b6 created (server dry run)
+# rc=0 verdict=PASS

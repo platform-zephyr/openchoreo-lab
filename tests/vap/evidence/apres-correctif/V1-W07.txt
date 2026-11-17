@@ -1,0 +1,6 @@
+# V1-W07 — agent Password d'un groupe étranger (evil.lab-vap.test) dans lab-pg (R2 par groupe)
+# attendu : DENY (lab-cluster-agent-scope)
+# date : 2026-11-17T19:52:18Z
+$ kubectl --as=system:serviceaccount:openchoreo-data-plane:cluster-agent-dataplane --as-group=system:serviceaccounts --as-group=system:serviceaccounts:openchoreo-data-plane --as-group=system:authenticated -n lab-pg create --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": passwords.evil.lab-vap.test "x-pg" is forbidden: ValidatingAdmissionPolicy 'lab-cluster-agent-scope' with binding 'lab-cluster-agent-scope' denied request: lab-cluster-agent-scope: le cluster-agent ne peut pas écrire passwords (CREATE) dans le namespace lab-pg
+# rc=1 verdict=PASS

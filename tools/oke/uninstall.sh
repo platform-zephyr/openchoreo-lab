@@ -41,15 +41,38 @@ export APPLY
 need kubectl helm jq yq
 guard_context
 M="$INSTALL_DIR/manifests"
-KD=(kubectl delete --ignore-not-found)
 TRIAL_NS_RE="^($(IFS='|'; echo "${TRIAL_NS[*]}"))$"
 
 in_trial_ns() { [[ "$1" =~ $TRIAL_NS_RE ]]; }
 
+# helm_releases NS : toutes les releases, tous statuts. `helm list -a` n'existe plus en Helm 4 (l'erreur
+# « unknown shorthand flag: 'a' » était lue comme « aucune release » dans migrate_cnpg_system : échec
+# OUVERT, preuve k3d tests/uninstall-k3d, 2026-11-17). Ces filtres combinés valent -a en Helm 3 et 4.
+helm_releases() {
+  helm -n "$1" list -q --deployed --failed --pending --superseded --uninstalling --uninstalled
+}
+
+# kd ARGS… : kubectl delete --ignore-not-found, en tolérant SEULEMENT un kind non servi (CRD absente :
+# étape jamais installée, ex. --all sur un OKE où seules les étapes 1-5 ont été jouées). Toute autre erreur
+# => abandon. Sans cette tolérance, `--all` s'arrêtait à undo_10 (« no matches for kind Cluster »).
+kd() {
+  if [[ "$APPLY" != 1 ]]; then printf '[dry-run] kubectl delete --ignore-not-found %s\n' "$*"; return; fi
+  local out rc=0
+  log "+ kubectl delete --ignore-not-found $*"
+  out="$(kubectl delete --ignore-not-found "$@" 2>&1)" || rc=$?
+  [[ -z "$out" ]] || printf '%s\n' "$out" >&2
+  (( rc == 0 )) && return 0
+  if grep -v -e '^ensure CRDs are installed first$' -e 'resource mapping not found for name' \
+       -e "the server doesn't have a resource type" -e ' deleted' <<<"$out" | grep -q .; then
+    die "kubectl delete en erreur (autre qu'un kind non servi)"
+  fi
+  log "kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets"
+}
+
 helm_rm() { # NS RELEASE : seulement dans un namespace d'essai ; lecture en erreur => abandon
   in_trial_ns "$1" || die "helm_rm : namespace $1 hors essai"
   local rels
-  rels="$(helm -n "$1" list -a -q)" || die "helm list -n $1 en erreur"
+  rels="$(helm_releases "$1")" || die "helm list -n $1 en erreur"
   if grep -qx "$2" <<<"$rels"; then run helm -n "$1" uninstall "$2" --wait; else log "release $1/$2 absente"; fi
 }
 
@@ -181,12 +204,12 @@ undo_12() {
   local tgz; tgz="$(fetch_chart openchoreo-data-plane "$OPENCHOREO_DP_CHART" "$OPENCHOREO_VERSION" "$OPENCHOREO_DP_TGZ_SHA256")"
   run helm upgrade openchoreo-data-plane "$tgz" -n openchoreo-data-plane -f "$INSTALL_DIR/values/openchoreo-data-plane.yaml" \
     --set clusterAgent.rbac.create=true --wait --timeout 10m
-  run "${KD[@]}" -f "$ROOT/platform/cluster-agent/reduced-clusterrole.yaml"
+  kd -f "$ROOT/platform/cluster-agent/reduced-clusterrole.yaml"
 }
 undo_11() {
   # Pas de finalizer resources-finalizer : supprimer les Application conserve les objets (CLEANUP.md 1).
-  run "${KD[@]}" -n lab-argocd applications.argoproj.io lab-root lab-platform lab-authz
-  run "${KD[@]}" -f "$INSTALL_DIR/argocd/project-lab.yaml"
+  kd -n lab-argocd applications.argoproj.io lab-root lab-platform lab-authz
+  kd -f "$INSTALL_DIR/argocd/project-lab.yaml"
   helm_rm lab-argocd argocd
   local ns
   ns="$(kubectl get ns argocd --ignore-not-found -o name)" || die "lecture du namespace argocd en erreur"
@@ -196,42 +219,42 @@ undo_10() {
   refuse_if_argo 10
   # Le PVC lab-pg (block volume OCI de l'essai, reclaim Delete) disparaît avec le Cluster : seul volume
   # OCI que l'essai supprime. Les volumes d'origine d'OKE ne sont liés à aucun PVC d'essai.
-  run "${KD[@]}" -f "$ROOT/platform/data/lab-pg-cluster.yaml" --wait=true
-  run "${KD[@]}" -f "$M/51-lab-pg-oke-overlay.yaml"
+  kd -f "$ROOT/platform/data/lab-pg-cluster.yaml" --wait=true
+  kd -f "$M/51-lab-pg-oke-overlay.yaml"
   helm_rm lab-cnpg cnpg
 }
 undo_9() {
   refuse_if_argo 9
   # Les Components (Phase C) doivent être supprimés AVANT (CLEANUP.md 2 : leurs finalizers nettoient dp-*).
   refuse_if_components 9
-  run "${KD[@]}" -f "$ROOT/platform/resource-types/" -f "$ROOT/platform/project-types/" \
+  kd -f "$ROOT/platform/resource-types/" -f "$ROOT/platform/project-types/" \
     -f "$ROOT/platform/traits/" -f "$ROOT/platform/component-types/"
-  run "${KD[@]}" -f "$M/40-openchoreo-env.yaml"
+  kd -f "$M/40-openchoreo-env.yaml"
   run kubectl label namespace default openchoreo.dev/control-plane-
 }
-undo_8() { run "${KD[@]}" clusterdataplanes.openchoreo.dev default; }
+undo_8() { kd clusterdataplanes.openchoreo.dev default; }
 undo_7() {
   refuse_if_argo 7
   helm_rm openchoreo-data-plane openchoreo-data-plane
-  run "${KD[@]}" -f "$M/12-gateway-parameters.yaml" -f "$M/11-gateway-tls.yaml"
-  run "${KD[@]}" -f "$ROOT/platform/cluster-agent/extra-rbac-quota.yaml"
-  run "${KD[@]}" -f "$ROOT/platform/policies/"
+  kd -f "$M/12-gateway-parameters.yaml" -f "$M/11-gateway-tls.yaml"
+  kd -f "$ROOT/platform/cluster-agent/extra-rbac-quota.yaml"
+  kd -f "$ROOT/platform/policies/"
 }
 undo_6b() { # Portail seul : CP réinstallé sans Backstage ; Secret et CNP du portail supprimés.
   local tgz; tgz="$(fetch_chart openchoreo-control-plane "$OPENCHOREO_CP_CHART" "$OPENCHOREO_VERSION" "$OPENCHOREO_CP_TGZ_SHA256")"
   local rel
-  rel="$(helm -n openchoreo-control-plane list -a -q)" || die "helm list en erreur"
+  rel="$(helm_releases openchoreo-control-plane)" || die "helm list en erreur"
   if grep -qx openchoreo-control-plane <<<"$rel"; then
     run helm upgrade openchoreo-control-plane "$tgz" -n openchoreo-control-plane \
       -f "$INSTALL_DIR/values/openchoreo-control-plane.yaml" --set backstage.enabled=false --wait --timeout 10m
   fi
-  run "${KD[@]}" -n openchoreo-control-plane secret backstage-secrets
-  run "${KD[@]}" -n openchoreo-control-plane ciliumnetworkpolicies.cilium.io lab-allow-backstage-authentik
+  kd -n openchoreo-control-plane secret backstage-secrets
+  kd -n openchoreo-control-plane ciliumnetworkpolicies.cilium.io lab-allow-backstage-authentik
 }
 undo_6() {
   helm_rm openchoreo-control-plane openchoreo-control-plane
-  run "${KD[@]}" -f "$M/03-idp-egress.yaml"
-  run "${KD[@]}" -n openchoreo-control-plane secret backstage-secrets
+  kd -f "$M/03-idp-egress.yaml"
+  kd -n openchoreo-control-plane secret backstage-secrets
   rm_crds openchoreo-control-plane
 }
 undo_5() {
@@ -247,10 +270,18 @@ undo_5() {
     if grep -qx "$CRD_PREFIX/$name" "$before"; then log "CRD $name préexistante : release kgateway-crds conservée"; return; fi
   done <<<"$rendered"
   if crd_in_use_outside "$(cut -f2 <<<"$rendered" | sort -u)"; then log "release kgateway-crds conservée"; return; fi
-  helm_rm openchoreo-control-plane kgateway-crds
+  # Sans --wait : la suppression d'une CRD qui contient encore des CR d'essai passe par Terminating, que
+  # `helm uninstall --wait` (Helm 4) rapporte comme une ERREUR alors que la release est bien supprimée (k3d,
+  # tests/uninstall-k3d R5b, 2026-11-17). On attend ensuite la disparition des CRD NOMMÉES par le rendu.
+  local rels names=()
+  rels="$(helm_releases openchoreo-control-plane)" || die "helm list -n openchoreo-control-plane en erreur"
+  grep -qx kgateway-crds <<<"$rels" || { log "release openchoreo-control-plane/kgateway-crds absente"; return; }
+  run helm -n openchoreo-control-plane uninstall kgateway-crds
+  while IFS=$'\t' read -r name _; do names+=("crd/$name"); done <<<"$rendered"
+  run kubectl wait --for=delete "${names[@]}" --timeout=180s
 }
 undo_4() {
-  run "${KD[@]}" -f "$M/20-eso-lab-store.yaml"
+  kd -f "$M/20-eso-lab-store.yaml"
   release_keeps_crds openchoreo-external-secrets external-secrets
   helm_rm openchoreo-external-secrets external-secrets
   rm_crds external-secrets
@@ -264,22 +295,28 @@ undo_2() { rm_crds gateway-api; }
 
 # migrate_cnpg_system : suppression de l'ancien namespace vide (revue B3). Conditions, toutes vérifiées
 # en lecture, échec fermé : label part-of=openchoreo-lab ; aucune release Helm ; aucun objet namespacé
-# hors ceux que l'étape 1 y a posés (quota, LimitRange, NP/CNP marqués part-of) et ceux que Kubernetes
-# crée seul (ConfigMap kube-root-ca.crt, ServiceAccount default, Events).
+# hors ceux que l'étape 1 y a posés (ResourceQuota, LimitRange, NP/CNP marqués part-of : ces kinds-là
+# seulement) et ceux que Kubernetes crée seul (ConfigMap kube-root-ca.crt, ServiceAccount default, Events).
 migrate_cnpg_system() {
   local ns="$LEGACY_CNPG_NS" out part types objs foreign
   out="$(kubectl get namespace "$ns" --ignore-not-found -o name)" || die "lecture du namespace $ns en erreur"
   [[ -n "$out" ]] || { log "$ns absent : migration déjà faite"; return; }
   part="$(kubectl get namespace "$ns" -o jsonpath='{.metadata.labels.app\.kubernetes\.io/part-of}')" || die "labels de $ns illisibles"
   [[ "$part" == openchoreo-lab ]] || die "$ns sans label part-of=openchoreo-lab : n'appartient pas à l'essai, NON supprimé"
-  [[ -z "$(helm -n "$ns" list -a -q)" ]] || die "$ns contient une release Helm : NON supprimé"
+  local rels
+  rels="$(helm_releases "$ns")" || die "helm list -n $ns en erreur : NON supprimé"
+  [[ -z "$rels" ]] || die "$ns contient une release Helm : NON supprimé"
   types="$(kubectl api-resources --namespaced=true --verbs=list -o name)" || die "api-resources en erreur"
   objs="$(kubectl -n "$ns" get "$(paste -sd, - <<<"$types")" -o json)" || die "inventaire de $ns en erreur : NON supprimé"
+  # Objets tolérés : ceux que Kubernetes crée seul, et SEULEMENT les kinds que l'étape 1 posait (quota,
+  # LimitRange, NetworkPolicy, CiliumNetworkPolicy) avec part-of. Tout autre objet, même étiqueté (ex. un
+  # ConfigMap part-of=openchoreo-lab), fait refuser (preuve k3d tests/uninstall-k3d M02, 2026-11-17).
   foreign="$(jq -r '.items[]
     | select(.kind != "Event")
     | select(.kind != "ConfigMap" or .metadata.name != "kube-root-ca.crt")
     | select(.kind != "ServiceAccount" or .metadata.name != "default")
-    | select((.metadata.labels["app.kubernetes.io/part-of"] // "") != "openchoreo-lab")
+    | select(((.kind | IN("ResourceQuota", "LimitRange", "NetworkPolicy", "CiliumNetworkPolicy"))
+              and (.metadata.labels["app.kubernetes.io/part-of"] // "") == "openchoreo-lab") | not)
     | "\(.kind)/\(.metadata.name)"' <<<"$objs")"
   [[ -z "$foreign" ]] || die "$ns contient des objets hors essai : $(tr '\n' ' ' <<<"$foreign") ; NON supprimé"
   [[ "$(jq '[.items[] | select(.kind == "Pod" or .kind == "PersistentVolumeClaim")] | length' <<<"$objs")" == 0 ]] \
@@ -289,12 +326,23 @@ migrate_cnpg_system() {
 }
 
 undo_1() {
-  local ns cells part out
+  local ns cells part out rels
   # Revue PR #8, P3 : lab-pg (Namespace + Cluster CNPG) est synchronisé par Argo avec selfHeal ; le
   # supprimer sous Argo recréerait un block volume de 50 Go. Et dp-* ne se suppriment qu'une fois les
   # Components partis (sinon le contrôleur OpenChoreo les recrée). Gardes AVANT toute écriture.
   refuse_if_argo 1
   refuse_if_components 1
+  # Aucune release Helm ne doit rester dans un namespace d'essai : supprimer le namespace effacerait la
+  # release (Secret) et ORPHELINERAIT ses objets cluster-scoped (ClusterRole, webhooks cert-manager à
+  # failurePolicy Fail, CRD). Constaté sur k3d (tests/uninstall-k3d/evidence/R1-orphelins-avant-garde.log).
+  if [[ "$APPLY" == 1 || "$MODE" != all ]]; then
+    for ns in "${TRIAL_NS[@]}"; do
+      out="$(kubectl get ns "$ns" --ignore-not-found -o name)" || die "lecture du namespace $ns en erreur"
+      [[ -n "$out" ]] || continue
+      rels="$(helm_releases "$ns")" || die "helm list -n $ns en erreur"
+      [[ -z "$rels" ]] || die "étape 1 : release(s) Helm encore présente(s) dans $ns ($(tr '\n' ' ' <<<"$rels")) : annuler d'abord les étapes 3 à 11"
+    done
+  fi
   # dp-* : uniquement ceux créés par le CPT du labo (label en constante platform.smadja.dev/cell).
   cells="$(kubectl get ns -l platform.smadja.dev/cell=restricted -o name)" || die "liste des namespaces de cellule en erreur"
   for ns in ${cells//namespace\//}; do

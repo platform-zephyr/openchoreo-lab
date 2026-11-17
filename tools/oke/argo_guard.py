@@ -3,24 +3,34 @@
 
 Usage : python3 -I tools/oke/argo_guard.py [racine du dépôt]
 Arbre contrôlé : platform/, generated/, apps/ (tout chemin qu'une Application du dépôt peut synchroniser ;
-les fichiers de tests/ ne sont jamais une source Argo, ce que la règle A3 impose). Sans cluster. Refuse :
+les fichiers de tests/ ne sont jamais une source Argo, ce que la règle A3 impose). Sans cluster.
+Séparation PAR SOURCE (flux A2, docs/ARGO-ESCALATION.md) : lab-root (Application), lab-platform
+(platform/**), lab-apps (generated/namespaces/default), lab-authz (platform/authz), default verrouillé.
+Refuse :
   A1. une Application hors platform/install/argocd/apps/ (seule exception : l'Application racine
       platform/install/argocd/root-application.yaml, nom lab-root, projet lab-root, chemin apps/) ;
-  A2. une Application dont spec.project ∉ {lab, lab-authz, lab-root} (donc jamais `default`) ; dans apps/,
-      seulement lab ou lab-authz ; lab-authz réservé à l'Application lab-authz (chemin platform/authz) ;
-  A3. une Application `lab` dont le chemin n'est pas sous platform/ ou generated/, ou vise
+  A2. une Application dont spec.project ∉ {lab-platform, lab-apps, lab-authz, lab-root} (donc jamais
+      `default`) ; dans apps/, jamais lab-root ; lab-authz réservé à l'Application lab-authz (chemin
+      platform/authz), lab-apps à l'Application lab-apps (chemin generated/namespaces/default) ;
+  A3. une Application `lab-platform` dont le chemin n'est pas sous platform/, ou vise
       platform/install/argocd/ ou platform/authz/ ; toute source multiple, Helm, plugin ou kustomize ;
-  A4. une synchro `automated` sur un projet lab-authz ;
-  P1. un AppProject hors des fichiers de bootstrap (project-lab.yaml : lab, lab-authz, lab-root ;
-      project-default-locked.yaml : default) ; le projet `default` non verrouillé (listes vides,
-      blacklist */*) ;
+  A4. une synchro `automated` sur un projet lab-authz ou lab-platform (synchro MANUELLE, flux A2) ;
+  P1. un AppProject hors des fichiers de bootstrap (project-lab.yaml : lab-platform, lab-apps, lab-authz,
+      lab-root ; project-default-locked.yaml : default) ; le projet `default` non verrouillé (listes
+      vides, blacklist */*) ;
   P2. une whitelist `*` (group, kind ou name), un dépôt source ou une destination `*`, une entrée
       cluster-scoped sans `name` ; lab-root autre que « Application dans lab-argocd » ; Application ou
-      AppProject dans les whitelists de lab ;
+      AppProject dans les whitelists hors lab-root ; lab-apps avec un kind cluster-scoped, une destination
+      autre que `default` ou un kind namespacé hors des kinds OpenChoreo applicatifs ;
+  P3. lab-authz ou lab-platform sans sa fenêtre `deny` permanente (schedule `* * * * *`, 24h,
+      applications `*`, manualSync: true), ou avec une fenêtre `allow` ;
+  G1. sous generated/namespaces/ un kind hors des kinds applicatifs de lab-apps ; sous generated/catalog/
+      un kind hors backstage.io ; ailleurs sous generated/, tout fichier YAML ;
   Z1. un kind authz OpenChoreo (AuthzRole, AuthzRoleBinding, ClusterAuthzRole*) hors platform/authz/, et
       dans platform/authz/ tout autre kind ou un nom hors `lab-*` ;
-  S1. dans les fichiers qu'une Application `lab` synchronise : un objet cluster-scoped absent (kind ET nom)
-      de clusterResourceWhitelist du projet lab, ou un kind namespacé hors whitelist / en blacklist ;
+  S1. dans les fichiers qu'une Application lab-platform ou lab-apps synchronise : un objet cluster-scoped
+      absent (kind ET nom) de clusterResourceWhitelist de SON projet, ou un kind namespacé hors whitelist /
+      en blacklist ;
   S2. une NetworkPolicy synchronisée hors de la liste nommée de lab-pg, ou avec une règle « tout ouvrir »
       (règle sans from/to, namespaceSelector vide, 0.0.0.0/0) (revue A1) ;
   S3. le Namespace lab-pg sans ses labels PSA restricted / part-of / egress-isolated (revue A2) ;
@@ -37,10 +47,19 @@ import yaml
 SCAN = ("platform", "generated", "apps")
 ARGO = "platform/install/argocd"
 ROOT_APP = f"{ARGO}/root-application.yaml"
-PROJECT_FILES = {f"{ARGO}/project-lab.yaml": {"lab", "lab-authz", "lab-root"},
+LAB_PROJECTS = ("lab-platform", "lab-apps", "lab-authz", "lab-root")
+PROJECT_FILES = {f"{ARGO}/project-lab.yaml": set(LAB_PROJECTS),
                  f"{ARGO}/project-default-locked.yaml": {"default"}}
-ALLOWED_PROJECTS = {"lab", "lab-authz", "lab-root"}
-CHILD_PROJECTS = {"lab", "lab-authz"}
+ALLOWED_PROJECTS = set(LAB_PROJECTS)
+CHILD_PROJECTS = {"lab-platform", "lab-apps", "lab-authz"}
+SYNC_PROJECTS = ("lab-platform", "lab-apps")  # projets dont les objets synchronisés sont contrôlés (S1)
+APPS_PATH = "generated/namespaces/default"
+# Kinds OpenChoreo applicatifs (sortie de tools/appgen) : seuls admis par lab-apps et sous generated/namespaces.
+APP_KINDS = {"Project", "Component", "ComponentRelease", "Workload", "ReleaseBinding", "ProjectReleaseBinding",
+             "Resource", "ResourceReleaseBinding", "SecretReference"}
+MANUAL_PROJECTS = ("lab-platform", "lab-authz")  # projets PRIVILÉGIÉS : synchro manuelle forcée (P3, A4)
+DENY_WINDOW = {"kind": "deny", "schedule": "* * * * *", "duration": "24h", "applications": ["*"],
+                "manualSync": True}
 AUTHZ_KINDS = {"AuthzRole", "AuthzRoleBinding", "ClusterAuthzRole", "ClusterAuthzRoleBinding"}
 # Kinds cluster-scoped connus. Un kind inconnu est traité comme namespacé : il doit alors figurer
 # explicitement dans namespaceResourceWhitelist (aucun `*`), donc il est refusé par défaut.
@@ -124,7 +143,7 @@ class Guard:
             if name in projs:
                 self.err(rel, f"P1 AppProject '{name}' déclaré deux fois")
             projs[name] = d.get("spec") or {}
-        for name in ("lab", "lab-authz", "lab-root", "default"):
+        for name in (*LAB_PROJECTS, "default"):
             if name not in projs:
                 self.err(ARGO, f"P1 AppProject '{name}' absent")
         return projs
@@ -140,7 +159,7 @@ class Guard:
             if not locked:
                 self.err(f"{ARGO}/project-default-locked.yaml", "P1 projet default non verrouillé "
                          "(sourceRepos/destinations/whitelists vides et blacklists */* exigés)")
-        for name in ("lab", "lab-authz", "lab-root"):
+        for name in LAB_PROJECTS:
             s = projs.get(name)
             if s is None:
                 continue
@@ -172,8 +191,25 @@ class Guard:
             for r in authz.get("clusterResourceWhitelist") or []:
                 if r.get("kind") not in AUTHZ_KINDS or not str(r.get("name", "")).startswith("lab-"):
                     self.err(rel, f"P2 lab-authz : whitelist hors authz lab-* {r}")
-            if authz.get("namespaceResourceWhitelist"):
-                self.err(rel, "P2 lab-authz : aucun kind namespacé admis")
+            if authz.get("namespaceResourceWhitelist") or not match(authz.get("namespaceResourceBlacklist") or [],
+                                                                    "x", "y"):
+                self.err(rel, "P2 lab-authz : aucun kind namespacé admis (blacklist */* exigée)")
+        for name in MANUAL_PROJECTS:
+            wins = (projs.get(name) or {}).get("syncWindows") or []
+            if any(w.get("kind") == "allow" for w in wins) or not any(
+                    all(w.get(k) == v for k, v in DENY_WINDOW.items()) for w in wins):
+                self.err(rel, f"P3 {name} : fenêtre deny permanente exigée {DENY_WINDOW} (aucune allow)")
+        apps_p = projs.get("lab-apps")
+        if apps_p is not None:
+            if apps_p.get("clusterResourceWhitelist") or apps_p.get("clusterResourceWhitelist") is None:
+                self.err(rel, "P2 lab-apps : clusterResourceWhitelist doit être POSÉE vide (aucun kind cluster-scoped)")
+            nw = apps_p.get("namespaceResourceWhitelist") or []
+            if not nw or any(r.get("group") != "openchoreo.dev" or r.get("kind") not in APP_KINDS or "name" in r
+                             for r in nw):
+                self.err(rel, f"P2 lab-apps : namespaceResourceWhitelist limitée aux kinds {sorted(APP_KINDS)}")
+            if [(x.get("server"), x.get("namespace")) for x in apps_p.get("destinations") or []] != \
+                    [("https://kubernetes.default.svc", "default")]:
+                self.err(rel, "P2 lab-apps : seule destination admise : namespace default du cluster local")
 
     # --- Application ----------------------------------------------------------------------------------
     def check_apps(self):
@@ -197,7 +233,8 @@ class Guard:
             if proj not in ALLOWED_PROJECTS:
                 self.err(rel, f"A2 Application '{name}' : projet '{proj}' interdit (admis : {sorted(ALLOWED_PROJECTS)})")
             if in_apps and proj not in CHILD_PROJECTS:
-                self.err(rel, f"A2 Application '{name}' : projet '{proj}' interdit dans apps/ (lab ou lab-authz)")
+                self.err(rel, f"A2 Application '{name}' : projet '{proj}' interdit dans apps/ "
+                              f"({', '.join(sorted(CHILD_PROJECTS))})")
             if rel != ROOT_APP and proj == "lab-root":
                 self.err(rel, f"A2 Application '{name}' : projet lab-root réservé à {ROOT_APP}")
             if "sources" in spec:
@@ -210,23 +247,24 @@ class Guard:
             if proj == "lab-authz":
                 if name != "lab-authz" or path != "platform/authz" or (src.get("directory") or {}).get("recurse"):
                     self.err(rel, "A2 projet lab-authz réservé à l'Application lab-authz (chemin platform/authz)")
-                if (spec.get("syncPolicy") or {}).get("automated") is not None:
-                    self.err(rel, f"A4 Application '{name}' (lab-authz) : synchro automated interdite (sync MANUELLE)")
-            if proj == "lab":
+            if proj in MANUAL_PROJECTS and (spec.get("syncPolicy") or {}).get("automated") is not None:
+                self.err(rel, f"A4 Application '{name}' ({proj}) : synchro automated interdite (sync MANUELLE)")
+            if proj == "lab-apps" and (name != "lab-apps" or path != APPS_PATH):
+                self.err(rel, f"A2 projet lab-apps réservé à l'Application lab-apps (chemin {APPS_PATH})")
+            if proj == "lab-platform":
                 norm = pathlib.PurePosixPath(path)
-                if ".." in norm.parts or not (path == "platform" or path.startswith(("platform/", "generated/"))
-                                              or path == "generated") \
+                if ".." in norm.parts or not (path == "platform" or path.startswith("platform/")) \
                         or path.startswith((ARGO, "platform/authz")):
-                    self.err(rel, f"A3 Application '{name}' : chemin '{path}' interdit au projet lab")
+                    self.err(rel, f"A3 Application '{name}' : chemin '{path}' interdit au projet lab-platform")
             apps.append((rel, d))
         return apps
 
     def synced(self, apps):
-        out = set()
+        out = {p: set() for p in SYNC_PROJECTS}
         for _rel, a in apps:
             spec = a.get("spec") or {}
             src = spec.get("source") or {}
-            if spec.get("project") != "lab" or "path" not in src:
+            if spec.get("project") not in SYNC_PROJECTS or "path" not in src:
                 continue
             base = str(src["path"]).rstrip("/")
             dr = src.get("directory") or {}
@@ -238,7 +276,7 @@ class Guard:
                 if not dr.get("recurse") and "/" in sub:
                     continue
                 if any(fnmatch.fnmatch(sub, p) for p in pats):
-                    out.add(rel)
+                    out[spec["project"]].add(rel)
         return out
 
     # --- Authz ----------------------------------------------------------------------------------------
@@ -251,8 +289,24 @@ class Guard:
             elif d["kind"] in AUTHZ_KINDS:
                 self.err(rel, f"Z1 {d['kind']}/{name} hors platform/authz/")
 
-    # --- Objets synchronisés par le projet lab --------------------------------------------------------
-    def check_synced(self, synced, lab):
+    # --- generated/ : sortie de tools/appgen seulement --------------------------------------------------
+    def check_generated(self):
+        for rel, d in self.objects():
+            if not rel.startswith("generated/"):
+                continue
+            g, k = group_of(d.get("apiVersion", "")), d["kind"]
+            n = (d.get("metadata") or {}).get("name")
+            if rel.startswith("generated/namespaces/"):
+                if g != "openchoreo.dev" or k not in APP_KINDS:
+                    self.err(rel, f"G1 {k}/{n} : generated/namespaces/ n'admet que les kinds {sorted(APP_KINDS)}")
+            elif rel.startswith("generated/catalog/"):
+                if g != "backstage.io":
+                    self.err(rel, f"G1 {k}/{n} : generated/catalog/ n'admet que backstage.io")
+            else:
+                self.err(rel, f"G1 {k}/{n} : chemin generated/ inconnu (namespaces/ ou catalog/)")
+
+    # --- Objets synchronisés par lab-platform / lab-apps ----------------------------------------------
+    def check_synced(self, synced, proj_name, lab):
         cw = lab.get("clusterResourceWhitelist") or []
         nw = lab.get("namespaceResourceWhitelist") or []
         nb = lab.get("namespaceResourceBlacklist") or []
@@ -264,9 +318,9 @@ class Guard:
                 n, ns = str(md.get("name", "")), md.get("namespace")
                 if k in CLUSTER_KINDS:
                     if not match(cw, g, k, n) or match(cb, g, k, n):
-                        self.err(rel, f"S1 {k}/{n} cluster-scoped absent de clusterResourceWhitelist (lab)")
-                elif not match(nw, g, k) or match(nb, g, k):
-                    self.err(rel, f"S1 {k}/{n} namespacé non autorisé par l'AppProject lab")
+                        self.err(rel, f"S1 {k}/{n} cluster-scoped absent de clusterResourceWhitelist ({proj_name})")
+                elif not nw or not match(nw, g, k) or match(nb, g, k):
+                    self.err(rel, f"S1 {k}/{n} namespacé non autorisé par l'AppProject {proj_name}")
                 if k == "NetworkPolicy":
                     self.check_np(rel, ns, n, d.get("spec") or {})
                 if k == "Namespace" and n == "lab-pg":
@@ -326,12 +380,15 @@ def main():
     g.check_projects(projs)
     apps = g.check_apps()
     g.check_authz()
+    g.check_generated()
     synced = g.synced(apps)
-    g.check_synced(synced, projs.get("lab") or {})
+    for p in SYNC_PROJECTS:
+        g.check_synced(synced[p], p, projs.get(p) or {})
     for e in g.errs:
         print("ÉCART", e)
-    print(f"argo_guard : {len(g.files)} fichier(s) lus, {len(apps)} Application(s), {len(synced)} fichier(s) "
-          f"synchronisé(s) par le projet lab, {len(g.errs)} écart(s)")
+    counts = ", ".join(f"{len(synced[p])} par {p}" for p in SYNC_PROJECTS)
+    print(f"argo_guard : {len(g.files)} fichier(s) lus, {len(apps)} Application(s), fichier(s) synchronisé(s) : "
+          f"{counts}, {len(g.errs)} écart(s)")
     return 1 if g.errs else 0
 
 

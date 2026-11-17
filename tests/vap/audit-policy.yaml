@@ -1,0 +1,9 @@
+# Politique d'audit du k3d jetable lab-sec-vap (tests/vap/run.sh) : écritures et CONNECT au niveau
+# Metadata, ce qui suffit à porter les annotations validation.policy.admission.k8s.io/* de l'action Audit.
+apiVersion: audit.k8s.io/v1
+kind: Policy
+omitStages: [RequestReceived]
+rules:
+  - level: None
+    verbs: [get, list, watch]
+  - level: Metadata

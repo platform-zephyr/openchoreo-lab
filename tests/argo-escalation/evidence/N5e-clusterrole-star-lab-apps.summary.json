@@ -1,0 +1,24 @@
+{
+  "name": "lab-apps",
+  "project": "lab-apps",
+  "sync": "OutOfSync",
+  "health": "Healthy",
+  "conditions": [],
+  "operation": {
+    "phase": "Failed",
+    "revision": "c146f37126b9bdd683fe41085df2d31eab8d778d",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "one or more synchronization tasks are not valid: resource rbac.authorization.k8s.io:ClusterRole is not permitted in project lab-apps"
+  },
+  "refused": [
+    {
+      "kind": "ClusterRole",
+      "namespace": "default",
+      "name": "lab-n5-star",
+      "status": "SyncFailed",
+      "message": "resource rbac.authorization.k8s.io:ClusterRole is not permitted in project lab-apps"
+    }
+  ]
+}

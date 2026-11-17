@@ -1,0 +1,16 @@
+{
+  "name": "lab-authz",
+  "project": "lab-authz",
+  "sync": "Synced",
+  "health": "Healthy",
+  "conditions": [],
+  "operation": {
+    "phase": "Succeeded",
+    "revision": "edfb619bc1a1f886f5d800299edbe9722af59234",
+    "initiatedBy": {
+      "username": "argo-escalation-test"
+    },
+    "message": "successfully synced (all tasks run)"
+  },
+  "refused": []
+}

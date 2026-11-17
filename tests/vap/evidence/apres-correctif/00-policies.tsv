@@ -1,0 +1,5 @@
+baseline-automount-token	Fail	aucun	{}
+baseline-image-digest	Fail	aucun	{}
+baseline-pod-hardening	Fail	aucun	{}
+lab-cell-pod-hardening	Fail	aucun	{}
+lab-cluster-agent-scope	Fail	aucun	{}
