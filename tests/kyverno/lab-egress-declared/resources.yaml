@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Namespace
+metadata: {name: lab-pg, labels: {platform.smadja.dev/egress-isolated: "true"}}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: openchoreo-control-plane, labels: {platform.smadja.dev/egress-isolated: "true"}}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: lab-netcontrol}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: openchoreo-bad, labels: {platform.smadja.dev/egress-isolated: "false"}}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: dp-cell-not-yet}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: monitoring}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: lab-unlabelled}

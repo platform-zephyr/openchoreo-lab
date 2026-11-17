@@ -1,0 +1,11 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-service-exposure}
+policies: [../../../platform/kyverno/policies/lab-service-exposure.yaml]
+resources: [resources.yaml]
+exceptions: [exceptions.yaml]
+results:
+  - {policy: lab-service-exposure, isValidatingPolicy: true, kind: Service, result: pass, resources: [ok-clusterip, ok-default-type]}
+  - {policy: lab-service-exposure, isValidatingPolicy: true, kind: Service, result: fail,
+     resources: [bad-loadbalancer, bad-nodeport, bad-externalips]}
+  - {policy: lab-service-exposure, isValidatingPolicy: true, kind: Service, result: skip, resources: [excepted-lb, skip-kube-ops-lb]}

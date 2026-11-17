@@ -1,0 +1,73 @@
+# K-02 `lab-host-isolation-report` — privileged, hostNetwork/PID/IPC, hostPath, hostPort : RAPPORT SEULEMENT.
+# Propriétaires du refus (sans webhook, effectifs Kyverno arrêté) :
+#   - Pods : PSA restricted|baseline des namespaces du lab + VAP lab-cell-pod-hardening (dp-*, lab-pg) ;
+#   - contrôleurs sur OKE : VAP kube-ops baseline-pod-hardening (Deny, tous namespaces sauf kube-system,
+#     cloudflared ; tests/vap/fixtures/baseline-oke-export.json). Sur Talos : la même VAP doit être portée.
+# Kyverno n'est donc PAS un second propriétaire du refus : validationActions [Audit] uniquement, pour que
+# la conformité apparaisse dans les PolicyReport (requête jq, docs/KYVERNO-POLICY-CONTRACT.md §5).
+# Tests : tests/kyverno/lab-host-isolation-report/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-host-isolation-report
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: report
+  annotations:
+    platform.smadja.dev/ownership: "K-02 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-host-isolation-report
+    platform.smadja.dev/exceptionable: "false"
+spec:
+  validationActions: [Audit]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: true
+  autogen:
+    podControllers:
+      controllers: []
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [apps]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [deployments, statefulsets, daemonsets]
+      - apiGroups: [batch]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [jobs, cronjobs]
+  matchConditions:
+    - name: lab-perimeter
+      expression: >-
+        request.namespace.startsWith('dp-') || request.namespace.startsWith('lab-') ||
+        request.namespace.startsWith('openchoreo-')
+  variables:
+    - name: podSpec
+      expression: >-
+        object.kind == 'CronJob' ? object.spec.jobTemplate.spec.template.spec : object.spec.template.spec
+    - name: containers
+      expression: >-
+        variables.podSpec.containers +
+        (has(variables.podSpec.initContainers) ? variables.podSpec.initContainers : [])
+  validations:
+    - expression: >-
+        variables.containers.all(c, !has(c.securityContext) || !has(c.securityContext.privileged) ||
+          c.securityContext.privileged == false)
+      message: "lab-host-isolation-report: conteneur privileged (refus porté par PSA/VAP)"
+      reason: Forbidden
+    - expression: >-
+        !(has(variables.podSpec.hostNetwork) && variables.podSpec.hostNetwork) &&
+        !(has(variables.podSpec.hostPID) && variables.podSpec.hostPID) &&
+        !(has(variables.podSpec.hostIPC) && variables.podSpec.hostIPC)
+      message: "lab-host-isolation-report: hostNetwork/hostPID/hostIPC (refus porté par PSA/VAP)"
+      reason: Forbidden
+    - expression: >-
+        !has(variables.podSpec.volumes) || variables.podSpec.volumes.all(v, !has(v.hostPath))
+      message: "lab-host-isolation-report: volume hostPath (refus porté par PSA/VAP)"
+      reason: Forbidden
+    - expression: >-
+        variables.containers.all(c, !has(c.ports) || c.ports.all(p, !has(p.hostPort) || p.hostPort == 0))
+      message: "lab-host-isolation-report: hostPort (refus porté par PSA)"
+      reason: Forbidden

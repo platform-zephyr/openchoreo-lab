@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ok-isolated, namespace: dp-demo}
+spec:
+  selector: {matchLabels: {app: ok}}
+  template:
+    metadata: {labels: {app: ok}}
+    spec:
+      containers:
+        - name: app
+          image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"
+          ports: [{containerPort: 8080}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: bad-privileged, namespace: lab-demo}
+spec:
+  selector: {matchLabels: {app: p}}
+  template:
+    metadata: {labels: {app: p}}
+    spec:
+      containers:
+        - name: app
+          image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"
+          securityContext: {privileged: true}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata: {name: bad-hostnetwork, namespace: openchoreo-data-plane}
+spec:
+  selector: {matchLabels: {app: n}}
+  template:
+    metadata: {labels: {app: n}}
+    spec:
+      hostNetwork: true
+      containers: [{name: app, image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"}]
+---
+apiVersion: batch/v1
+kind: Job
+metadata: {name: bad-hostpath, namespace: dp-demo}
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers: [{name: job, image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"}]
+      volumes: [{name: h, hostPath: {path: /etc}}]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: bad-hostport, namespace: lab-demo}
+spec:
+  serviceName: s
+  selector: {matchLabels: {app: hp}}
+  template:
+    metadata: {labels: {app: hp}}
+    spec:
+      containers:
+        - name: app
+          image: "ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001"
+          ports: [{containerPort: 80, hostPort: 80}]

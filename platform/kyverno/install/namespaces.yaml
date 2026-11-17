@@ -1,0 +1,24 @@
+# Namespaces Kyverno (périmètre privilégié platform/kyverno, appliqués AVANT le chart).
+# lab-kyverno : contrôleurs Kyverno, exclu des webhooks Kyverno (config.webhooks) ; PSA restricted
+#   (les pods du chart 3.9.2 sont conformes restricted : securityContext rendu, vérifié par helm template).
+# lab-policy-exceptions : SEUL namespace d'où Kyverno lit les PolicyException (--exceptionNamespace).
+#   Écriture réservée aux identités plateforme (RBAC) ; contenu gouverné par K-11.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-kyverno
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-policy-exceptions
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

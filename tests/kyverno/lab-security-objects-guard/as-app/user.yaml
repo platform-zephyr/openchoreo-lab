@@ -1,0 +1,6 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: UserInfo
+metadata: {name: app-sa}
+userInfo:
+  username: system:serviceaccount:dp-demo:default
+  groups: [system:serviceaccounts, system:serviceaccounts:dp-demo, system:authenticated]

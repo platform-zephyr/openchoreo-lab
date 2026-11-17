@@ -1,0 +1,80 @@
+# K-06 `lab-cluster-scoped-provenance` — aucune ressource cluster-scoped issue d'une APPLICATION.
+# Propriétaires existants, par IDENTITÉ : VAP lab-cluster-agent-scope R1 (SA dp-* et cluster-agent) — inchangée.
+# Kyverno ajoute le critère de PROVENANCE, que l'identité ne voit pas : Argo CD applique tout avec un seul
+# SA (ClusterRole */*/*, REVIEW-PR8 P1), Helm avec l'identité de l'opérateur. Un objet cluster-scoped est
+# refusé s'il porte une marque applicative :
+#   - annotation de suivi Argo `argocd.argoproj.io/tracking-id` (resourceTrackingMethod: annotation,
+#     values/argocd.yaml) d'une Application hors plateforme (≠ lab-root, lab-platform, lab-authz, lab-kyverno) ;
+#   - label `openchoreo.dev/component` (objet rendu pour un composant) ;
+#   - annotation Helm `meta.helm.sh/release-namespace` = namespace de cellule dp-*.
+# [S] Argo réécrit l'annotation de suivi à l'apply (une app ne peut pas se faire passer pour lab-platform) :
+# à prouver au rejeu API server avec Argo (non disponible : pas de cluster libre).
+# Ce que la règle NE couvre PAS : un objet cluster-scoped sans aucune marque (Helm hors dp-*, kubectl
+# direct) — RBAC et argo_guard.py (AppProject lab-apps sans clusterResourceWhitelist) restent propriétaires.
+# failurePolicy Ignore : Kyverno arrêté, AppProject + RBAC + VAP-1 restent en place.
+# Tests : tests/kyverno/lab-cluster-scoped-provenance/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-cluster-scoped-provenance
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: guardrail
+  annotations:
+    platform.smadja.dev/ownership: "K-06 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-cluster-scoped-provenance
+    platform.smadja.dev/exceptionable: "true"
+spec:
+  validationActions: [Deny]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["*"]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE]
+        resources: ["*"]
+        scope: Cluster
+  matchConditions:
+    # Filtre bon marché : seuls les objets portant une marque de provenance sont évalués.
+    - name: has-provenance-marker
+      expression: >-
+        (has(object.metadata.annotations) &&
+          ('argocd.argoproj.io/tracking-id' in object.metadata.annotations ||
+           'meta.helm.sh/release-namespace' in object.metadata.annotations)) ||
+        (has(object.metadata.labels) && 'openchoreo.dev/component' in object.metadata.labels)
+    - name: not-terminating
+      expression: "!has(object.metadata.deletionTimestamp)"
+  variables:
+    - name: ann
+      expression: "has(object.metadata.annotations) ? object.metadata.annotations : {}"
+    - name: labels
+      expression: "has(object.metadata.labels) ? object.metadata.labels : {}"
+    - name: argoApp
+      expression: >-
+        'argocd.argoproj.io/tracking-id' in variables.ann ?
+          variables.ann['argocd.argoproj.io/tracking-id'].split(':')[0] : ''
+    - name: platformApps
+      expression: "['lab-root', 'lab-platform', 'lab-authz', 'lab-kyverno']"
+  validations:
+    - expression: "variables.argoApp == '' || variables.argoApp in variables.platformApps"
+      messageExpression: >-
+        'lab-cluster-scoped-provenance: ' + object.kind + '/' + object.metadata.name +
+        ' cluster-scoped synchronisé par l Application applicative ' + variables.argoApp + ' : interdit'
+      reason: Forbidden
+    - expression: "!('openchoreo.dev/component' in variables.labels)"
+      messageExpression: >-
+        'lab-cluster-scoped-provenance: ' + object.kind + '/' + object.metadata.name +
+        ' cluster-scoped rendu pour le composant ' + variables.labels['openchoreo.dev/component'] + ' : interdit'
+      reason: Forbidden
+    - expression: >-
+        !('meta.helm.sh/release-namespace' in variables.ann) ||
+        !variables.ann['meta.helm.sh/release-namespace'].startsWith('dp-')
+      messageExpression: >-
+        'lab-cluster-scoped-provenance: ' + object.kind + '/' + object.metadata.name +
+        ' cluster-scoped d une release Helm de cellule (' + variables.ann['meta.helm.sh/release-namespace'] + ') : interdit'
+      reason: Forbidden

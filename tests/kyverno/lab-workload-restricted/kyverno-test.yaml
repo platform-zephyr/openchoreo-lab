@@ -1,0 +1,33 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: lab-workload-restricted}
+policies: [../../../platform/kyverno/policies/lab-workload-restricted.yaml]
+resources: [resources.yaml]
+values:
+  namespaces:
+    - metadata: {name: dp-demo, labels: {pod-security.kubernetes.io/enforce: restricted}}
+    - metadata: {name: lab-demo, labels: {pod-security.kubernetes.io/enforce: restricted}}
+    - metadata: {name: openchoreo-control-plane, labels: {pod-security.kubernetes.io/enforce: restricted}}
+    - metadata: {name: openchoreo-data-plane, labels: {pod-security.kubernetes.io/enforce: baseline}}
+    - metadata: {name: monitoring}
+results:
+  - policy: lab-workload-restricted
+    isValidatingPolicy: true
+    resources: [ok-restricted, ok-cronjob]
+    kind: Deployment
+    result: pass
+  - policy: lab-workload-restricted
+    isValidatingPolicy: true
+    resources: [bad-root, bad-escalation, bad-caps, bad-seccomp, bad-hostpath-volume]
+    kind: Deployment
+    result: fail
+  - policy: lab-workload-restricted
+    isValidatingPolicy: true
+    resources: [ok-baseline-ns]
+    kind: Deployment
+    result: pass
+  - policy: lab-workload-restricted
+    isValidatingPolicy: true
+    resources: [skip-out-of-perimeter]
+    kind: Deployment
+    result: skip

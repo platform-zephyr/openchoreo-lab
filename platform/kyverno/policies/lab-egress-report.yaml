@@ -1,0 +1,69 @@
+# K-09 `lab-egress-report` — egress déclaré, en RAPPORT (validationActions [Audit]) :
+#   a) cellules dp-* : label platform.smadja.dev/egress-isolated=true (bascule en Deny dans K-08 dès que
+#      le CPT cell-restricted le pose en constante) ;
+#   b) toute charge (contrôleur) du périmètre : son namespace contient une NetworkPolicy de type Egress
+#      qui sélectionne tous les pods (podSelector vide) — le default-deny, l'egress n'est alors ouvert que
+#      par des règles déclarées (CPT egress-*, CiliumNetworkPolicy egress-fqdn, 02-network-policies.yaml).
+# Pourquoi pas Deny pour (b) : ordre d'application non garanti (Argo sync, rendu OpenChoreo) — la NP peut
+# arriver après le Deployment ; un refus transitoire casserait un premier déploiement. Critère de bascule :
+# 0 violation dans les PolicyReport sur 7 jours (requête §5 du contrat).
+# Propriétaire de l'isolation réseau effective : NetworkPolicy/CCNP (Cilium). Kyverno ne fait que constater.
+# Tests : tests/kyverno/lab-egress-report/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-egress-report
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: report
+  annotations:
+    platform.smadja.dev/ownership: "K-09 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-egress-report
+    platform.smadja.dev/exceptionable: "false"
+spec:
+  validationActions: [Audit]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [namespaces]
+      - apiGroups: [apps]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [deployments, statefulsets, daemonsets]
+      - apiGroups: [batch]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [jobs, cronjobs]
+  matchConditions:
+    - name: lab-perimeter
+      expression: >-
+        (object.kind == 'Namespace' ? object.metadata.name.startsWith('dp-') :
+          request.namespace.matches('^(dp-|lab-|openchoreo-)'))
+  variables:
+    - name: isNs
+      expression: "object.kind == 'Namespace'"
+  validations:
+    - expression: >-
+        !variables.isNs || (has(object.metadata.labels) &&
+          'platform.smadja.dev/egress-isolated' in object.metadata.labels &&
+          object.metadata.labels['platform.smadja.dev/egress-isolated'] == 'true')
+      messageExpression: >-
+        'lab-egress-report: cellule ' + object.metadata.name + ' sans label platform.smadja.dev/egress-isolated=true'
+      reason: Forbidden
+    - expression: >-
+        variables.isNs ||
+        dyn(resource.List('networking.k8s.io/v1', 'networkpolicies', request.namespace).items).exists(np,
+          has(np.spec.policyTypes) && 'Egress' in np.spec.policyTypes &&
+          (!has(np.spec.podSelector) || size(np.spec.podSelector) == 0))
+      messageExpression: >-
+        'lab-egress-report: ' + object.kind + '/' + object.metadata.name + ' : namespace ' + request.namespace +
+        ' sans NetworkPolicy Egress par défaut (podSelector vide) : egress non déclaré'
+      reason: Forbidden

@@ -1,0 +1,53 @@
+# K-04 `lab-service-exposure` — pas de Service LoadBalancer ni NodePort, pas d'externalIPs, dans le périmètre.
+# Exposition autorisée du golden path : ClusterIP derrière kgateway + Cloudflare Tunnel (APP-CONTRACT §1).
+# Propriétaire de la RÈGLE : Kyverno (message explicite, exception gouvernée et expirable, rapport).
+# Filet natif conservé, raison explicite : quota `services.loadbalancers=0` / `services.nodeports=0`
+# (01-quotas.yaml, CPT cell-restricted) — un LB OCI est FACTURÉ, le filet doit tenir Kyverno arrêté.
+# Le quota n'est pas une règle de sécurité (message « exceeded quota », pas d'exception) : pas un second
+# propriétaire au sens du contrat, mais une borne de coût. externalIPs (CVE-2020-8554) : Kyverno seul.
+# failurePolicy Ignore : Kyverno arrêté, LB/NodePort restent refusés par quota ; externalIPs non contrôlé.
+# Tests : tests/kyverno/lab-service-exposure/
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: lab-service-exposure
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/policy-tier: guardrail
+  annotations:
+    platform.smadja.dev/ownership: "K-04 (docs/KYVERNO-POLICY-CONTRACT.md §1)"
+    platform.smadja.dev/tests: tests/kyverno/lab-service-exposure
+    platform.smadja.dev/exceptionable: "true"
+spec:
+  validationActions: [Deny]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 5
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [services]
+  matchConditions:
+    - name: lab-perimeter
+      expression: >-
+        request.namespace.startsWith('dp-') || request.namespace.startsWith('lab-') ||
+        request.namespace.startsWith('openchoreo-')
+    - name: not-terminating
+      expression: "!has(object.metadata.deletionTimestamp)"
+  validations:
+    - expression: >-
+        !has(object.spec.type) || !(object.spec.type in ['LoadBalancer', 'NodePort'])
+      messageExpression: >-
+        'lab-service-exposure: Service ' + request.namespace + '/' + object.metadata.name + ' de type ' +
+        object.spec.type + ' interdit (ClusterIP derrière la Gateway ; exception : PolicyException gouvernée)'
+      reason: Forbidden
+    - expression: "!has(object.spec.externalIPs) || size(object.spec.externalIPs) == 0"
+      messageExpression: >-
+        'lab-service-exposure: Service ' + request.namespace + '/' + object.metadata.name +
+        ' : externalIPs interdit (CVE-2020-8554)'
+      reason: Forbidden
