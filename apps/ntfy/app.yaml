@@ -1,18 +1,21 @@
-# Notifications push. Image verifiee [C] : binwiederhier/ntfy:v2.28.0, index multi-arch (linux/arm64 present), 2026-11-17.
-# Source kube-ops [C] : k8s/applications/catalog/ntfy/{app.yaml,externalsecret.yaml}@ef50472. Ecarts : voir NOTES.md.
+# Notifications push (serveur ntfy de TEST interne, golden path n°2 : stateless sur OKE).
+# Image verifiee [C] : binwiederhier/ntfy:v2.28.0, index multi-arch 6ef4b819... (HEAD registre 2026-11-18 : 200,
+# docker-content-digest identique). Source kube-ops d'origine : k8s/applications/catalog/ntfy (PVC, route publique)
+# NON reprise : voir NOTES.md. Ce service ne remplace AUCUNE alerte ntfy.sh existante de Paul.
+# Stateless STRICT : pas de PVC, pas de base, pas de secret. Cache et auth en MEMOIRE (variables non posees,
+# donc aucun chemin inscriptible requis : readOnlyRootFilesystem reste vrai, sans emptyDir).
 apiVersion: platform.smadja.dev/v2alpha1
 kind: App
 metadata:
   name: ntfy
   owner: user:default/paul
-  description: Serveur de notifications push
-  docs: https://docs.ntfy.sh/
+  description: Serveur de notifications push (test interne, stateless)
 spec:
   source:
-    image: binwiederhier/ntfy:v2.28.0@sha256:6ef4b819f722fccdc036af611c4774cfdc2de821ab74fdd48bbf4c9d6f8973da
-  cluster: k3d
+    image: docker.io/binwiederhier/ntfy:v2.28.0@sha256:6ef4b819f722fccdc036af611c4774cfdc2de821ab74fdd48bbf4c9d6f8973da
+  cluster: oke
   environments: [production]
-  profile: stateful
+  profile: stateless
   runtime:
     port: 8080
     healthPath: /v1/health
@@ -21,15 +24,7 @@ spec:
     args: ["serve"]
     env:
       NTFY_LISTEN_HTTP: ":8080"
-      NTFY_BASE_URL: https://ntfy.lab.smadja.dev
-      NTFY_CACHE_FILE: /var/lib/ntfy/cache.db
-      NTFY_AUTH_FILE: /var/lib/ntfy/auth.db
-      NTFY_AUTH_DEFAULT_ACCESS: deny-all
-  storage: {profile: block-rwo, mountPath: /var/lib/ntfy, size: 1Gi}
-  secrets:
-    - {env: NTFY_AUTH_USERS, key: NTFY_AUTH_USERS}
-  exposure: {mode: public, host: ntfy.lab.smadja.dev, auth: app-password}
+  exposure: {mode: private, auth: none}
   network: {egress: none}
-  backup: {class: regenerable}
+  backup: {class: none}
   observability: {metrics: {enabled: false}}
-  update: {strategy: Recreate}

@@ -268,5 +268,92 @@ open(p, "w").write(s[:j] + "    - kind: allow\n" + s[j + len("    - kind: deny\n
 PY
 check lab-platform-sans-fenetre-deny refus "P3 lab-platform : fenêtre deny permanente exigée" "$d"
 
+# --- Flux lab-apps en sources[] (une source par app OKE stateless, refus des autres) ---
+R=https://github.com/platform-zephyr/openchoreo-lab
+GW=generated/namespaces/default/projects/whoami
+GK=generated/namespaces/default/projects/miniflux
+lab_apps() { # CORPS_SOURCES : Application lab-apps avec le bloc sources donné
+  cat <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: lab-apps, namespace: lab-argocd}
+spec:
+  project: lab-apps
+  sources:
+$1
+  destination: {server: https://kubernetes.default.svc, namespace: default}
+  syncPolicy: {automated: {prune: false, selfHeal: true}}
+EOF
+}
+src() { # DEPOT REVISION CHEMIN RECURSE INCLUDE : une entrée de sources[]
+  printf '    - {repoURL: %s, targetRevision: %s, path: %s, directory: {recurse: %s, include: "%s"}}\n' "$@"
+}
+
+# Positif : sources[] actuelles (whoami + ntfy) déjà couvertes par « positif-arbre-actuel ».
+
+# 26. Source vers une app k3d (volume interdit sur OKE) : miniflux.
+d="$(fresh src-k3d)"; lab_apps "$(src $R main $GK true '*.yaml')
+$(src $R main $GW true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
+check src-app-k3d refus "A2 lab-apps : sources\[0\]\.path .generated/namespaces/default/projects/miniflux. : app .miniflux. non OKE" "$d"
+
+# 27. Source = dossier parent (generated/ entier) ou sous-dossier d'une app.
+d="$(fresh src-racine)"; lab_apps "$(src $R main generated/namespaces/default true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
+check src-racine-generated refus "A2 lab-apps : sources\[0\]\.path .generated/namespaces/default. : seul" "$d"
+d="$(fresh src-sous-dossier)"; lab_apps "$(src $R main $GW/components true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
+check src-sous-dossier refus "A2 lab-apps : sources\[0\]\.path .generated/namespaces/default/projects/whoami/components. : seul" "$d"
+
+# 28. Récursion ou include différent de celui prévu.
+d="$(fresh src-norecurse)"; lab_apps "$(src $R main $GW false '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
+check src-sans-recurse refus "A3 lab-apps : sources\[0\]\.directory\.recurse" "$d"
+d="$(fresh src-include)"; lab_apps "$(src $R main $GW true '*')" > "$d/$A/apps/lab-apps.yaml"
+check src-include-large refus "A3 lab-apps : sources\[0\]\.directory\.include" "$d"
+
+# 29. Dépôt étranger, autre révision.
+d="$(fresh src-depot)"; lab_apps "$(src https://example.org/evil main $GW true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
+check src-depot-etranger refus "A3 lab-apps : sources\[0\]\.repoURL .https://example.org/evil. hors" "$d"
+d="$(fresh src-rev)"; lab_apps "$(src $R dev $GW true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
+check src-revision-dev refus "A3 lab-apps : sources\[0\]\.targetRevision doit être main" "$d"
+
+# 30. Helm/kustomize dans une source ; même dossier deux fois.
+d="$(fresh src-chart)"; lab_apps "    - {repoURL: $R, targetRevision: main, path: $GW, directory: {recurse: true, include: \"*.yaml\"}, chart: {name: x}}" > "$d/$A/apps/lab-apps.yaml"
+check src-chart refus "A3 lab-apps : sources\[0\]\.chart interdit" "$d"
+d="$(fresh src-doublon)"; lab_apps "$(src $R main $GW true '*.yaml')
+$(src $R main $GW true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
+check src-doublon refus "A3 lab-apps : sources\[1\]\.path .generated/namespaces/default/projects/whoami. en double" "$d"
+
+# 31. `source` unique à la place de sources[] pour lab-apps.
+d="$(fresh src-unique)"
+cat > "$d/$A/apps/lab-apps.yaml" <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: lab-apps, namespace: lab-argocd}
+spec:
+  project: lab-apps
+  source: {repoURL: $R, targetRevision: main, path: $GW, directory: {recurse: true, include: "*.yaml"}}
+  destination: {server: https://kubernetes.default.svc, namespace: default}
+EOF
+check source-unique-lab-apps refus 'A3 lab-apps : .source. unique interdit' "$d"
+
+# 32. sources[] hors lab-apps (lab-platform) : interdit.
+d="$(fresh src-platform)"
+cat > "$d/$A/apps/x.yaml" <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: x, namespace: lab-argocd}
+spec:
+  project: lab-platform
+  sources: [{repoURL: $R, targetRevision: main, path: platform/policies}]
+  destination: {server: https://kubernetes.default.svc, namespace: default}
+EOF
+check sources-hors-lab-apps refus "A3 Application 'x' : sources multiples interdites hors lab-apps" "$d"
+
+# 33. Flip de politique sur l'app elle-même : ntfy repasse en k3d, puis en stateful (volume), refus côté Argo.
+d="$(fresh ntfy-k3d)"; python3 -I -c 'import sys,pathlib
+p=pathlib.Path(sys.argv[1]); s=p.read_text(); assert "cluster: oke" in s; p.write_text(s.replace("cluster: oke","cluster: k3d",1))' "$d/apps/ntfy/app.yaml"
+check ntfy-passe-k3d refus "A2 lab-apps : sources\[1\]\.path .generated/namespaces/default/projects/ntfy. : app .ntfy. non OKE" "$d"
+d="$(fresh ntfy-stateful)"; python3 -I -c 'import sys,pathlib
+p=pathlib.Path(sys.argv[1]); s=p.read_text(); assert "profile: stateless" in s; p.write_text(s.replace("profile: stateless","profile: stateful",1))' "$d/apps/ntfy/app.yaml"
+check ntfy-passe-stateful refus "A2 lab-apps : sources\[1\]\.path .generated/namespaces/default/projects/ntfy. : app .ntfy. non OKE" "$d"
+
 echo "argo-guard : $pass PASS, $fail FAIL"
 (( fail == 0 ))

@@ -3,11 +3,9 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ntfy
-  description: Serveur de notifications push
+  description: Serveur de notifications push (test interne, stateless)
   annotations:
     openchoreo.dev/managed: 'true'
-  links:
-  - url: https://docs.ntfy.sh/
 spec:
   type: service
   lifecycle: experimental
