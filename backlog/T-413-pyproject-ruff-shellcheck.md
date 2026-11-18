@@ -1,7 +1,7 @@
 ---
 id: T-413
 title: "`pyproject.toml` (ruff, mypy, pytest, coverage), 13 bogues ruff à 0 et shellcheck sur les 59 scripts"
-status: todo
+status: in-progress
 phase: P0
 adr: [0024]
 depends_on: [T-008]
@@ -23,10 +23,10 @@ Une seule configuration. Jeu ruff E,F,W,I,B,UP,SIM,C90,RUF (hors E501, complexit
 pyproject.toml, tools/, tests/, .github/workflows/ci.yaml
 
 ## Critères de fin
-- [ ] `ruff check --select F,B,E9 tools tests` : 0 erreur ; le reste du jeu en avertissement, compté dans la ligne de base de QA-4
-- [ ] job CI shellcheck sur tous les scripts versionnés, `-S warning` : 0
-- [ ] aucune modification de comportement : `appgen render` ne change pas `generated/` et pytest reste vert (131 passés)
-- [ ] les corrections automatiques sont dans un commit séparé des corrections manuelles
+- [x] `ruff check --select F,B,E9 tools tests` : 0 erreur (13 -> 0, 2026-11-18) ; le reste du jeu en avertissement : 215 trouvailles (233 avant correctifs ; E701 95, E702 48, UP031 24, C901 13), ligne de base de QA-4
+- [ ] job CI (`lint-code`, ajouté ; shellcheck 0.11.0 en local : 65 scripts, 0 trouvaille, 2026-11-18 ; reste : première exécution verte en CI) shellcheck sur tous les scripts versionnés, `-S warning` : 0
+- [x] aucune modification de comportement : `appgen check` OK sans dérive (82 fichiers) et pytest vert (170 passés, 8 ignorés, 2026-11-18) ; `roadmap.py` régénère ROADMAP.md à l'identique
+- [x] les corrections automatiques sont dans un commit séparé des corrections manuelles
 
 ## Notes
 Proposition QA-3 (backlog/proposals/quality.yaml), intégrée (intégration 5, 2026-11-18). Mesures du rapport §B1. E501 ignoré : 1 332 lignes trop longues, sans valeur.
