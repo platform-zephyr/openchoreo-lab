@@ -3,14 +3,15 @@
 
 Usage : patch_env.py <40-openchoreo-env.yaml>   (le fichier est modifié en place ; verdict sur stdout)
 
-Contexte (T-458) : la correction G1 (`gateway.ingress.internal`) est dans `main`. L'ancienne version du patch
-cherchait la chaîne `  isProduction: true\\n---` et échouait (assert) dès que G1 était présente. Règle actuelle,
+Contexte (T-458) : la correction G1 (`gateway.ingress.internal`, hôte `lab.internal`) est dans `main`. L'ancienne
+version cherchait la chaîne `  isProduction: true\n---` et échouait (assert) dès que G1 était présente. Règle actuelle,
 sans ancre de texte à deviner :
-  - `internal` absent             -> ajouté avec l'hôte k3d ;
-  - `internal.http.host` différent -> remplacé par l'hôte k3d (route attendue par HOST_HDR de run.sh) ;
-  - déjà conforme                  -> aucun changement (verdict `noop`).
-Sortie : `added`, `updated` ou `noop`. Code 1 si le document Environment est introuvable ou si le résultat
-ne contient pas l'hôte k3d (jamais de succès silencieux).
+  - `internal` absent  -> ajouté avec l'hôte k3d (verdict `added`) ;
+  - `internal` présent -> inchangé (verdict `noop`). Le run 44313410652 (2026-11-18) a prouvé qu'un changement
+    d'hôte sur un Environment déjà rendu n'est pas re-rendu (route restée sur `lab.internal` 5 min) : run.sh lit
+    donc l'hôte réel de la HTTPRoute au lieu de forcer un hôte.
+Sortie : `added` ou `noop`. Code 1 si le document Environment est introuvable ou si le résultat ne contient pas
+de `gateway.ingress.internal.http.host` (jamais de succès silencieux).
 """
 from __future__ import annotations
 
@@ -49,15 +50,9 @@ def patch(text: str) -> tuple[str, str]:
     i = _env_doc(docs)
     d = docs[i]
     host = _internal_host(d)
-    if host == K3D_HOST:
-        return text, "noop"
     if host is not None:
-        # remplace uniquement la valeur `host:` du bloc internal.http (commentaires et reste intacts)
-        new, n = re.subn(r"(?ms)(^      internal:\n.*?^          host: )\S+", rf"\g<1>{K3D_HOST}", d, count=1)
-        if n != 1:
-            raise ValueError("bloc gateway.ingress.internal.http.host non modifiable par texte")
-        verdict = "updated"
-    elif re.search(r"^    ingress:\n", d, re.M):
+        return text, "noop"
+    if re.search(r"^    ingress:\n", d, re.M):
         new = re.sub(r"(?m)^(    ingress:\n)", lambda m: m.group(1) + INTERNAL_BLOCK, d, count=1)
         verdict = "added"
     elif re.search(r"^  gateway:\n", d, re.M):
@@ -66,8 +61,8 @@ def patch(text: str) -> tuple[str, str]:
     else:
         new = d.rstrip("\n") + "\n  gateway:\n    ingress:\n" + INTERNAL_BLOCK
         verdict = "added"
-    if _internal_host(new) != K3D_HOST:
-        raise ValueError("résultat sans gateway.ingress.internal.http.host conforme")
+    if _internal_host(new) is None:
+        raise ValueError("résultat sans gateway.ingress.internal.http.host")
     docs[i] = new if new.endswith("\n") else new + "\n"
     return "---\n".join(docs), verdict
 

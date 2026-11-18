@@ -48,14 +48,22 @@ def internal(text: str) -> dict:
 
 
 class PatchEnv(unittest.TestCase):
-    def test_main_manifest_is_patched_without_anchor(self):
-        # Régression T-458 : G1 présent dans main, l'ancienne ancre n'existe plus.
+    def test_main_manifest_is_noop_without_anchor(self):
+        # Régression T-458 : G1 présent dans main, l'ancienne ancre n'existe plus ; l'hôte de main est conservé
+        # (un changement d'hôte n'est pas re-rendu : run 44313410652).
         text = MANIFEST.read_text(encoding="utf-8")
         self.assertNotIn("  isProduction: true\n---", text)
         out, verdict = patch_env.patch(text)
-        self.assertEqual(verdict, "updated")
-        self.assertEqual(internal(out)["http"]["host"], patch_env.K3D_HOST)
-        self.assertEqual(internal(out)["http"]["port"], patch_env.K3D_PORT)
+        self.assertEqual(verdict, "noop")
+        self.assertEqual(out, text)
+        self.assertEqual(internal(out)["http"]["host"], internal(text)["http"]["host"])
+
+    def test_existing_internal_host_is_never_replaced(self):
+        text = PRE_G1.replace("  isProduction: true\n", "  isProduction: true\n  gateway:\n    ingress:\n      internal:\n"
+            "        name: gateway-default\n        namespace: openchoreo-data-plane\n"
+            "        http: {host: autre.example, listenerName: http, port: 19080}\n")
+        out, verdict = patch_env.patch(text)
+        self.assertEqual((verdict, out), ("noop", text))
 
     def test_external_and_other_documents_untouched(self):
         text = MANIFEST.read_text(encoding="utf-8")
@@ -72,9 +80,9 @@ class PatchEnv(unittest.TestCase):
         self.assertIn("Correction G1", out)
 
     def test_idempotent(self):
-        once, v1 = patch_env.patch(MANIFEST.read_text(encoding="utf-8"))
+        once, v1 = patch_env.patch(PRE_G1)
         twice, v2 = patch_env.patch(once)
-        self.assertEqual((v1, v2), ("updated", "noop"))
+        self.assertEqual((v1, v2), ("added", "noop"))
         self.assertEqual(once, twice)
 
     def test_pre_g1_manifest_gets_internal_block(self):
@@ -119,6 +127,25 @@ class RunShWiring(unittest.TestCase):
         self.assertNotIn('old = "  isProduction: true', run)
         self.assertNotIn("assert old in s", run)
 
+    def test_http_host_follows_the_rendered_route(self):
+        # T-458 : l'hôte du curl vient de la HTTPRoute rendue, pas d'une constante.
+        run = (HERE / "run.sh").read_text(encoding="utf-8")
+        self.assertIn("route_host()", run)
+        self.assertIn("spec.hostnames[0]", run)
+
+    def test_argocd_health_values_are_wired(self):
+        run = (HERE / "run.sh").read_text(encoding="utf-8")
+        self.assertIn("argocd/health/values-openchoreo-health.yaml", run)
+        self.assertTrue((ROOT / "platform/install/argocd/health/values-openchoreo-health.yaml").is_file())
+
+    def test_stateful_steps_target_the_k3d_policy(self):
+        # OKE n'admet aucun volume (clusters/oke/capabilities.yaml) : les étapes PVC ciblent la politique k3d.
+        run = (HERE / "run.sh").read_text(encoding="utf-8")
+        self.assertIn("cluster: oke", run)
+        self.assertIn("cluster: k3d", run)
+        caps = yaml.safe_load((ROOT / "clusters/k3d/capabilities.yaml").read_text(encoding="utf-8"))
+        self.assertIn("block-rwo", caps["spec"]["storageClasses"])
+
 
 class Cli(unittest.TestCase):
     def run_cli(self, text: str):
@@ -128,9 +155,9 @@ class Cli(unittest.TestCase):
             r = subprocess.run([sys.executable, "-I", str(HERE / "patch_env.py"), str(p)], capture_output=True, text=True)
             return r, p.read_text(encoding="utf-8")
 
-    def test_cli_updates_then_noop(self):
-        r, out = self.run_cli(MANIFEST.read_text(encoding="utf-8"))
-        self.assertEqual((r.returncode, r.stdout.strip()), (0, "updated"))
+    def test_cli_adds_then_noop(self):
+        r, out = self.run_cli(PRE_G1)
+        self.assertEqual((r.returncode, r.stdout.strip()), (0, "added"))
         r2, _ = self.run_cli(out)
         self.assertEqual((r2.returncode, r2.stdout.strip()), (0, "noop"))
 

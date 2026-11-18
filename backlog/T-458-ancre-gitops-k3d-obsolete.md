@@ -40,3 +40,8 @@ Issu de l'étude T-452 (`docs/research/K3D-REACTIVATION.md` §2) et de la décis
   - brancher `tests/gitops-k3d` dans la CI unitaire (`ci.yaml`, autre agent) : non fait.
 
 Preuve runtime partielle (2026-11-18, run 44313410652 sur main) : la suite `gitops-k3d` dépasse désormais l'ancre mais rend encore `RESULTAT: KNOWN_FAIL` (job vert car la suite est classée `known_fail`). Reste : lire `results.tsv` de l'artefact, classer chaque FAIL (corrigé ou KNOWN_FAIL motivé), puis cocher les trois cases.
+
+## Avancement 2 (2026-11-18, branche claude/t-458-reste)
+- Lu : `results.tsv` du run 44313410652 (artefact `k3d-gitops-k3d`). La suite dépasse T-DEPLOY mais échoue sur 3 cas (T-ARGO-HEALTH, T-DEPLOY `http=404`, T-ANNOT) puis s'arrête après T-RESTART (`appgen validate` refuse `block-rwo` sur `cluster: oke`).
+- Corrigé (STATIC, 17 tests ; runtime **NOT_TESTED**, aucun k3d dans la session) : A5 câblé dans le helm du banc ; hôte de la route lu sur la HTTPRoute (`lab.internal` de G1) et `patch_env.py` en `noop` ; T-ANNOT attend un état stable ; étapes stateful sur `cluster: k3d` ; T-STRATEGY statique (refus appgen A4) ; T-PIN-STALE/T-PIN-PRB réécrits (règle des 2 PR, `pin-project`) ; `allowEmpty: true` sur `gl-apps` du banc (A6). Détail et classement : `tests/gitops-k3d/RESULTS.md`.
+- Reste : dispatch `k3d-integration` (suite `gitops-k3d`) sur la branche, lecture de `results.tsv`, puis cocher les cases ; retrait de `known_fail` (workflow et `docs/CI-K3D.md`, hors périmètre ; `docs/CI-K3D.md` est touché par la PR #95) ; branchement `ci.yaml`. Aucune case n'est cochée : preuve runtime absente.
