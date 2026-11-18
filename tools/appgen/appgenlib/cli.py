@@ -1,10 +1,11 @@
-"""Interface en ligne de commande d'appgen : validate, render, check, pin-resource, pin-project.
+"""Interface en ligne de commande d'appgen : validate, render, check, pin-resource, pin-project, promote, rollback.
 
 Role : analyser les arguments, appeler validation, rendu et controles GitOps sur le depot (config.ROOT), afficher
 le verdict et rendre un code de sortie (0 = OK, 1 = echec ou derive).
 Entrees : argv ; arbre du depot ; revision git de base pour `check --base`.
 Sorties : code de sortie, messages sur stdout/stderr ; `render` reecrit le dossier cible ; `pin-*` reecrit
-config.PINS_PATH ou config.PROJECT_PINS_PATH (lus via le module config a chaque appel).
+config.PINS_PATH ou config.PROJECT_PINS_PATH ; `promote` et `rollback` reecrivent config.RELEASE_PINS_PATH (chemins
+et config.ROOT lus via le module config a chaque appel).
 """
 from __future__ import annotations
 
@@ -22,6 +23,7 @@ from appgenlib import config
 from appgenlib.config import ALLOWED_ENVIRONMENTS
 from appgenlib.gitops import base_state, binding_errors, diff_trees, project_pin_warnings, release_deletions
 from appgenlib.model import AppError, app_dirs, load_yaml
+from appgenlib.promotion import promotion_pins, rollback_pins
 from appgenlib.render import load_pins, render_all, write_tree
 from appgenlib.validate import validate_all_full
 
@@ -98,10 +100,15 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def _write_pin(path: Path, header: str, key: str, release: str) -> None:
     """Ajoute ou remplace un pin, cles triees, avec un commentaire d'en-tete fixe."""
+    _write_pins(path, header, {key: release})
+
+
+def _write_pins(path: Path, header: str, new: dict[str, str]) -> None:
+    """Ajoute ou remplace des pins, cles triees, avec un commentaire d'en-tete fixe."""
     path.parent.mkdir(parents=True, exist_ok=True)
     data = load_yaml(path) if path.exists() else None
     pins = dict((data or {}).get("pins") or {})
-    pins[key] = release
+    pins.update(new)
     path.write_text(header + yaml.safe_dump({"pins": dict(sorted(pins.items()))}, sort_keys=False), encoding="utf-8")
 
 
@@ -131,6 +138,33 @@ def cmd_pin_project(args: argparse.Namespace) -> int:
     return 0
 
 
+RELEASE_PINS_HEADER = ("# Pins ComponentRelease par environnement (T-003). Ecrit par tools/appgen promote / rollback ;\n"
+                       "# production suit ce pin, development la release courante.\n")
+
+
+def _release_pin_command(label: str, compute) -> int:
+    try:
+        pins = compute(config.ROOT / "generated")
+    except AppError as exc:
+        print(f"{label} : ECHEC\n{exc}", file=sys.stderr)
+        return 1
+    _write_pins(config.RELEASE_PINS_PATH, RELEASE_PINS_HEADER, pins)
+    for key, rel in sorted(pins.items()):
+        print(f"{label} : {key} -> {rel}")
+    print(f"{label} : relancer render puis committer (une PR ; retour arriere = git revert de cette PR)")
+    return 0
+
+
+def cmd_promote(args: argparse.Namespace) -> int:
+    """Production epingle la release development de chaque composant (lue dans generated/, donc mergee)."""
+    return _release_pin_command("promote", lambda gen: promotion_pins(gen, args.app))
+
+
+def cmd_rollback(args: argparse.Namespace) -> int:
+    """Production repointe une release conservee (generated/, ajout seul) ; development n'est pas touche."""
+    return _release_pin_command("rollback", lambda gen: rollback_pins(gen, args.app, args.release))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="appgen", description=DESCRIPTION)
     parser.add_argument("--platform-dir", default=str(config.ROOT / "platform"),
@@ -155,6 +189,13 @@ def build_parser() -> argparse.ArgumentParser:
         p_pin.add_argument("env", choices=sorted(ALLOWED_ENVIRONMENTS))
         p_pin.add_argument("release")
         p_pin.set_defaults(func=func)
+    p_promote = sub.add_parser("promote", help="pin production <- release development de chaque composant (T-003)")
+    p_promote.add_argument("app")
+    p_promote.set_defaults(func=cmd_promote)
+    p_rollback = sub.add_parser("rollback", help="pin production <- release conservee d'un composant (T-003)")
+    p_rollback.add_argument("app")
+    p_rollback.add_argument("release", nargs="+")
+    p_rollback.set_defaults(func=cmd_rollback)
     return parser
 
 

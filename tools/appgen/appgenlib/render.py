@@ -1,7 +1,7 @@
 """Rendu de tout le depot et ecriture deterministe de l'arbre genere.
 
 Role : valider (refus si une erreur), charger plateforme, pins et releases conservees, rendre chaque app par son
-parcours (natif ou helm), appliquer le controle G1, puis ecrire l'arbre trie avec un en-tete fixe.
+parcours (natif ou helm ; pins de release par environnement, T-003), appliquer le controle G1, puis ecrire l'arbre trie avec un en-tete fixe.
 Entrees : racine du depot, dossier platform/, gate OKE, tolerance FQDN, date du jour, dossier d'historique.
 Sorties : {chemin relatif: objet} (render_all) ; fichiers YAML sous le dossier cible (write_tree) ; pins lus.
 """
@@ -12,6 +12,7 @@ from pathlib import Path
 
 import yaml
 
+from appgenlib.config import RELEASE_PINS_FILE
 from appgenlib.gateway import gateway_errors
 from appgenlib.model import AppError, app_dirs, clusters_dir_for, compute_delivery, load_capabilities, load_yaml
 from appgenlib.platform_index import load_platform
@@ -40,6 +41,7 @@ def render_all(root: Path, platform_dir: Path, cluster_gate_open: bool = True,
     platform = load_platform(platform_dir)
     pins = load_pins(root)
     project_pins = load_pins(root, "project-releases.yaml")
+    release_pins = load_pins(root, RELEASE_PINS_FILE)
     history = load_release_history(history_dir if history_dir is not None else root / "generated")
     cdir = clusters_dir_for(root)
     docs = [load_yaml(d / "app.yaml") for d in app_dirs(root)]
@@ -50,7 +52,8 @@ def render_all(root: Path, platform_dir: Path, cluster_gate_open: bool = True,
         if compute_delivery(doc["spec"]) == "helm":
             files.update(render_helm(doc, caps))
         else:
-            files.update(render_native(doc, platform, doc["spec"]["cluster"], pins, caps, index, history, project_pins))
+            files.update(render_native(doc, platform, doc["spec"]["cluster"], pins, caps, index, history, project_pins,
+                                       release_pins))
     errs = gateway_errors(files, platform)
     if errs:
         raise AppError("\n".join(errs))

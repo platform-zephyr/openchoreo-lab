@@ -10,6 +10,10 @@ Commandes :
                            suppression d'une release d'un composant conserve, signale la 2e PR pin-project (A3)
   pin-resource APP ENV RELEASE  pin ResourceRelease d'une base -> pins/resource-releases.yaml
   pin-project APP ENV RELEASE   pin ProjectRelease d'une cellule -> pins/project-releases.yaml (2e PR, A3)
+  promote APP              pin production <- release du ReleaseBinding development de chaque composant
+                           (generated/) -> pins/component-releases.yaml (T-003, G3) ; development suit la
+                           release courante, production son pin
+  rollback APP RELEASE...  pin production <- release conservee (generated/) d'un composant de l'app
 
 Politique par cluster : clusters/<cluster>/capabilities.yaml (docs/schema/capabilities.schema.json).
 Aucun secret n'est lu ni ecrit : seules des references (SecretReference, ExternalSecret) sont generees.

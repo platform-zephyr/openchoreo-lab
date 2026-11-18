@@ -19,7 +19,7 @@ export OKE_PHASEB_STATE="${OKE_PHASEB_STATE:-$(mktemp -d)}"
 APPLY=1
 export APPLY
 
-need kubectl helm shasum curl jq yq
+need kubectl helm shasum curl jq
 ctx="$(kubectl config current-context)"
 [[ "$ctx" == "k3d-$CLUSTER" ]] || die "contexte '$ctx' != k3d-$CLUSTER (ce bootstrap ne tourne que sur k3d jetable)"
 nodes="$(kubectl get nodes -o json)"
@@ -98,23 +98,8 @@ CA_INDENTED="        ${ca//$'\n'/$'\n'        }" awk '
 log "9. types, environnement, traits du labo"
 kubectl label namespace default openchoreo.dev/control-plane=true --overwrite
 "${KA[@]}" -f "$M/40-openchoreo-env.yaml"
-# Environnement `development` : attendu par tests/k3d/fixtures. On n'invente rien si platform/ le fournit : on le
-# cherche (Environment nommé development) dans le manifeste d'install et sous platform/. Seulement s'il est absent,
-# contournement TEMPORAIRE et bruyant : dérivé du manifeste `production`, non production (issue #49 l'ajoutera à
-# platform/install/manifests/40-openchoreo-env.yaml ; alors ce bloc ne s'exécute plus, puis le retirer).
-has_dev="$(find "$M" "$ROOT/platform" -name '*.yaml' -print0 \
-  | xargs -0 yq -N 'select(.kind == "Environment" and .metadata.name == "development") | .metadata.name' 2>/dev/null \
-  | grep -c '^development$' || true)"
-if [[ "$has_dev" -gt 0 ]]; then
-  log "Environment development fourni par platform/ : aucun contournement"
-else
-  log "CONTOURNEMENT CI : Environment development ABSENT de platform/, dérivé de production (la CI teste une plateforme différente d'OKE)"
-  if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
-    echo "contournement CI actif : Environment development derive de production (absent de platform/, issue #49)" >> "$GITHUB_STEP_SUMMARY"
-  fi
-  yq 'select(documentIndex == 0) | .metadata.name = "development" | .metadata.labels."openchoreo.dev/name" = "development" | .spec.isProduction = false' \
-    "$M/40-openchoreo-env.yaml" | kubectl apply --server-side --field-manager=openchoreo-lab -f - >/dev/null
-fi
+# Environments `production` et `development` et pipeline `standard` : tous fournis par 40-openchoreo-env.yaml
+# (T-003). Plus aucun Environment dérivé ici : la CI applique le même manifeste qu'OKE.
 "${KA[@]}" -f "$ROOT/platform/component-types/" -f "$ROOT/platform/traits/" \
   -f "$ROOT/platform/project-types/" -f "$ROOT/platform/resource-types/"
 
