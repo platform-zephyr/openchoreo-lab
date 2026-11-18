@@ -6,10 +6,12 @@ Sorties : objet `backstage.io/v1alpha1 Component` (dictionnaire) ecrit sous gene
 """
 from __future__ import annotations
 
+from typing import Any
+
 from appgenlib.model import compute_delivery
 
 
-def catalog_entity(doc: dict, extra: dict | None = None) -> dict:
+def catalog_entity(doc: dict[str, Any], extra: dict[str, Any] | None = None) -> dict[str, Any]:
     meta, spec = doc["metadata"], doc["spec"]
     native = compute_delivery(spec) == "native"
     annotations = {"openchoreo.dev/managed": "true" if native else "false"}

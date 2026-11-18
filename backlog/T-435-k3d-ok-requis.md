@@ -23,7 +23,7 @@ Une PR qui touche platform/ doit avoir la CI k3d verte (ADR-0002 §4). Ajouter m
 .github/workflows/k3d-integration.yml, .github/rulesets/, docs/CI-K3D.md
 
 ## Critères de fin
-- [ ] k3d-integration.yml déclenché par merge_group ; k3d-ok vert quand la porte (gate) dit « non lancé »
+- [x] k3d-integration.yml déclenché par merge_group ; k3d-ok vert quand la porte (gate) dit « non lancé »
 - [ ] ruleset : k3d-ok requis, ci-ok inchangé
 - [ ] essai daté : une PR platform/ rouge est retirée de la file ; une PR apps/ passe sans suite k3d
 

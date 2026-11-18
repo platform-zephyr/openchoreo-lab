@@ -27,9 +27,12 @@ tools/oke/install.sh, tools/oke/verify.sh, platform/install/argocd/project-lab.y
 - [ ] installation depuis Git sur OKE vierge, `verify.sh` PASS par étape (0 à 11), durée totale mesurée (preuve datée)
 - [ ] un seul Argo CD dans le cluster ; test de refus d'une destination hors périmètre (preuve datée)
 - [ ] mesure datée : requests CPU et RAM, pods ; FAIL si > 70 % ou > 33 pods avec un bras actif
+- [ ] Cilium en chaining et la règle `deny-imds` réinstallés AVANT toute charge du POC (le cluster recréé par T-490 ne les a plus) ; `verify.sh` le contrôle (preuve datée)
 - [ ] `lab-pg` Ready sur un volume de bloc ≤ 50 Go ; bloc OCI total ≤ 200 Go
 
 ## Notes
 Exécutant unique sur OKE : la session locale, par session bastion ouverte par Paul. Aucune écriture hors `openchoreo-*` et `lab-*`. Coût attendu : 0 € ; tout dépassement est un MANDAT (ADR-0017).
+
+Décision de Paul (2026-11-18) : T-487 réinstalle Cilium et `deny-imds` ; aucun risque accepté sans cela. Les volumes orphelins du drill du 17/11 (100 Go) sont libérés avant l'installation (MANDAT côté homelab-infra), pour que `lab-pg` tienne dans le quota.
 
 Accéléré (arbitrages de Paul n°3, 2026-11-18) : plus de gel de 3 semaines ni d'inventaire préalable ; OKE n'a aucune donnée importante et est recréé vierge par homelab-infra (T-490).

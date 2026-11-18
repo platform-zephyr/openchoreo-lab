@@ -13,7 +13,7 @@ Règles :
 - code neuf (absent de la ligne de base) : complexité > 15, fonction > 80 lignes, fichier > 600 lignes : échec ;
 - code gelé (présent dans la ligne de base, car il dépassait déjà un seuil) : aucune valeur ne peut monter ;
 - erreurs ruff et mypy : par fichier, aucune hausse (fichier absent de la ligne de base = 0) ;
-- couverture (avec `--coverage-json`) : plancher de 85 % sur `tools/appgen/appgen.py`, 80 % des lignes exécutables
+- couverture (avec `--coverage-json`) : plancher de 85 % sur le paquet `tools/appgen/appgenlib/` (agrégat des instructions), 80 % des lignes exécutables
   modifiées (`--base`).
 Une valeur qui baisse passe sans toucher la ligne de base ; `--write-baseline` la régénère (PR dédiée, noyau).
 Python standard seulement ; ruff, radon et mypy sont lancés en sous-processus (versions épinglées dans la CI).
@@ -37,7 +37,7 @@ MAX_CC = 15
 MAX_FUNC_LINES = 80
 MAX_FILE_LINES = 600
 REPORT_FILE_LINES = 400
-APPGEN = "tools/appgen/appgen.py"
+APPGEN = "tools/appgen/appgenlib/"
 APPGEN_FLOOR = 85.0
 DIFF_FLOOR = 80.0
 SCAN_DIRS = ("tools", "tests")
@@ -196,11 +196,21 @@ def check_files(baseline: dict[str, Any], current: dict[str, Any]) -> list[str]:
     return errors
 
 
+def package_percent(cov: dict[str, Any], prefix: str = APPGEN) -> float | None:
+    """Couverture agrégée (instructions) des fichiers sous `prefix` ; None si aucun fichier n'est mesuré."""
+    covered = total = 0
+    for rel, entry in cov.get("files", {}).items():
+        if rel.startswith(prefix):
+            summary = entry["summary"]
+            covered += int(summary["covered_lines"])
+            total += int(summary["num_statements"])
+    return covered * 100 / total if total else None
+
+
 def check_coverage(cov: dict[str, Any]) -> list[str]:
-    entry = cov.get("files", {}).get(APPGEN)
-    if entry is None:
+    pct = package_percent(cov)
+    if pct is None:
         return [f"couverture : {APPGEN} absent de coverage.json"]
-    pct = float(entry["summary"]["percent_covered"])
     if pct < APPGEN_FLOOR:
         return [f"couverture {APPGEN} : {pct:.1f} % < {APPGEN_FLOOR:.0f} %"]
     return []
@@ -258,9 +268,9 @@ def build_report(current: dict[str, Any], cov: dict[str, Any] | None, commit: st
     ccs = [m["cc"] for m in current["functions"].values()]
     coverage = None
     if cov is not None:
-        appgen = cov.get("files", {}).get(APPGEN)
+        appgen = package_percent(cov)
         coverage = {
-            "appgen_percent": round(float(appgen["summary"]["percent_covered"]), 1) if appgen else None,
+            "appgen_percent": round(appgen, 1) if appgen is not None else None,
             "total_percent": round(float(cov.get("totals", {}).get("percent_covered", 0.0)), 1),
         }
     return {
