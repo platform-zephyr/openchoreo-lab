@@ -12,7 +12,7 @@ stage: S2
 model: claude-sonnet-5-5
 effort: high
 routing: R3-defaut
-github_issue: null
+github_issue: 67
 ---
 
 # T-462 — Devcontainer multi-architecture et mesure de check --static sous 1 vCPU (SL-8)
