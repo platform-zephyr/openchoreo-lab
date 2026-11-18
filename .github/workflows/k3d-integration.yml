@@ -15,14 +15,9 @@
 name: k3d-integration
 
 on:
+  # DÉSACTIVÉ (décision de Paul, 2026-11-18) : en phase de développement, les suites k3d ne bloquent ni ne ralentissent
+  # les itérations des agents. Lancement manuel seulement. Réactivation : étude T-452 (quand et sous quelle forme).
   workflow_dispatch:
-  pull_request:
-    types: [opened, reopened, synchronize, labeled, unlabeled]
-  push:
-    branches: [main]
-  schedule:
-    # Chaque nuit (UTC), hors heure pleine : dérive des charts, images et dépendances amont sans nouveau commit.
-    - cron: "17 3 * * *"
 
 permissions:
   contents: read
