@@ -1,7 +1,7 @@
 ---
 id: T-311
 title: "Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 réelle (max-parallel ou groupes par couloir)"
-status: in-progress
+status: todo
 phase: P0
 adr: [0017, 0021]
 depends_on: []
@@ -23,10 +23,9 @@ Le minimum pour lancer le pilote sans dérive : `factory/PAUSE` arrête tout lan
 factory/config.yaml, factory/PAUSE, .github/workflows/claude-agent.yml (matrice `max-parallel` ou groupes par couloir), docs/AGENT-PR-MODEL.md
 
 ## Critères de fin
-- [ ] factory/PAUSE présent = aucun lancement, aucun merge automatique (test) — STATIC PASS : tests/factory/pause-test.sh (lancement) ; NOT_TESTED : run réel, désarmement d'un auto-merge déjà armé
+- [ ] factory/PAUSE présent = aucun lancement, aucun merge automatique (test)
 - [ ] concurrence 3 par matrice `max-parallel: 3` ou par groupes de concurrence par couloir ; test : 5 dispatchs → 5 runs terminés, aucun annulé
-  STATIC PASS : actionlint 1.7.12, `max-parallel: 3` = config ; NOT_TESTED : run réel de 5 dispatchs (T-304, pilote)
-- [x] règle écrite : une clé API facturée au token exige un plafond mensuel Console (MANDAT) ; aucun euro par agent promis
+- [ ] règle écrite : une clé API facturée au token exige un plafond mensuel Console (MANDAT) ; aucun euro par agent promis
 
 ## Notes
 Les valeurs sont des estimations côté client (docs headless), pas la facture. Pas d'API de solde d'abonnement lue : NOT_PROVEN, ne pas gratter claude.ai. Fichiers du noyau (factory/) : REVUE.

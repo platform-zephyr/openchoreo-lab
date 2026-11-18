@@ -1,7 +1,7 @@
 ---
 id: T-008
 title: "Check CI des tickets `backlog/` : en-tête, graphe, étapes, champs `model` et `effort`"
-status: done
+status: todo
 phase: P0
 adr: [0012]
 depends_on: []
@@ -23,15 +23,13 @@ Valider l'en-tête des tickets : id unique, statut connu, dépendances existante
 tools/backlog/check.py, tests/backlog/, backlog/README.md, backlog/proposals/FORMAT.md, .github/workflows/ci.yaml (REVUE)
 
 ## Critères de fin
-- [x] script + tests
-- [x] job ajouté à la CI (PR REVUE pour `.github/`)
-- [x] (repris de FAC-15) check.py refuse un modèle inconnu ; un ticket REVUE sur le noyau sans model opus déclenche un avertissement
-- [x] (repris de FAC-15) backlog/README.md décrit le champ
-- [x] (repris de MOD-2) backlog/README.md documente les deux champs ; FORMAT.md reste compatible
-- [x] (repris de MOD-2) test : `model: claude-unknown` → check.py rouge ; effort `max` sur Sonnet → avertissement (plafond xhigh)
-- [x] (repris de HAR-5) T-008 refuse un ticket sans globs exploitables
+- [ ] script + tests
+- [ ] job ajouté à la CI (PR REVUE pour `.github/`)
+- [ ] (repris de FAC-15) check.py refuse un modèle inconnu ; un ticket REVUE sur le noyau sans model opus déclenche un avertissement
+- [ ] (repris de FAC-15) backlog/README.md décrit le champ
+- [ ] (repris de MOD-2) backlog/README.md documente les deux champs ; FORMAT.md reste compatible
+- [ ] (repris de MOD-2) test : `model: claude-unknown` → check.py rouge ; effort `max` sur Sonnet → avertissement (plafond xhigh)
+- [ ] (repris de HAR-5) T-008 refuse un ticket sans globs exploitables
 
 ## Notes
 Intégration 2 : la présence de `model`/`effort` est déjà vérifiée par tools/backlog/check.py (2026-11-18) ; restent les tests, le job CI requis et le refus des valeurs inconnues en CI.
-
-Preuves (2026-11-18, STATIC) : `python3 -m unittest discover -s tests/backlog` = 24 tests OK ; `python3 tools/backlog/check.py` = 0 erreur ; job CI `backlog` ajouté à `ci-ok` (PR REVUE, non exécuté en CI à ce stade : NOT_TESTED en runner).
