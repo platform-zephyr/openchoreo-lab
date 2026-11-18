@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "factory"))
-import ledger  # noqa: E402
+import ledger
 
 
 def weekly_by_agent(directory: Path) -> list[dict]:

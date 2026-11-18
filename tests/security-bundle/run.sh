@@ -5,6 +5,8 @@
 # Usage : tests/security-bundle/run.sh   (bash, python3, jq, shasum, helm ; réseau au 1er téléchargement des charts
 # sauf si SECURITY_BUNDLE_CHART_CACHE désigne un dossier contenant les .tgz OpenChoreo déjà vérifiés)
 set -euo pipefail
+# Plage documentaire RFC 5737 pour les fixtures (la regex réelle reste le défaut de tools/oke/lib.sh).
+export OKE_TLS_SERVER_RE='^203\.0\.113\.[0-9]+$'
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/sb-tests.XXXXXX")"
 trap '[[ -n "${KEEP:-}" ]] || rm -rf "$WORK"' EXIT

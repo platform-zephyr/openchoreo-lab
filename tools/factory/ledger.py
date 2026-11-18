@@ -22,7 +22,7 @@ import argparse
 import json
 import re
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 WINDOW = timedelta(hours=5)
@@ -34,11 +34,11 @@ RESET_RE = re.compile(r"resets?\s+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", 
 
 def parse_ts(value: str) -> datetime:
     dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 def now_utc(arg: str | None) -> datetime:
-    return parse_ts(arg) if arg else datetime.now(timezone.utc)
+    return parse_ts(arg) if arg else datetime.now(UTC)
 
 
 def load_results(directory: Path) -> list[dict]:
@@ -52,7 +52,7 @@ def load_results(directory: Path) -> list[dict]:
         if not isinstance(data, dict) or data.get("schema") != "mission-result.v1":
             continue
         ts = data.get("finished_at")
-        data["_ts"] = parse_ts(ts) if ts else datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+        data["_ts"] = parse_ts(ts) if ts else datetime.fromtimestamp(path.stat().st_mtime, UTC)
         data["_agent"] = data.get("agent") or "inconnu"
         out.append(data)
     return sorted(out, key=lambda r: r["_ts"])

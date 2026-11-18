@@ -7,6 +7,8 @@
 # Usage : tests/argo-guard/uninstall-guards.sh   (helm, jq, yq, python3 ; réseau au 1er téléchargement des
 # charts, sauf si ARGO_GUARD_CHART_CACHE désigne un dossier de .tgz déjà vérifiés)
 set -euo pipefail
+# Plage documentaire RFC 5737 pour les fixtures (la regex réelle reste le défaut de tools/oke/lib.sh).
+export OKE_TLS_SERVER_RE='^203\.0\.113\.[0-9]+$'
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/uninstall-guards.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT

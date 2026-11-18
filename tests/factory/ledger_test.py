@@ -3,7 +3,7 @@ import json
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -66,7 +66,7 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(got, {"a": (2, 4.0), "b": (1, 2.0)})
 
     def test_disjoncteur_limit_arrete_sans_relance(self):
-        now = datetime(2026, 11, 18, 10, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 11, 18, 10, 0, tzinfo=UTC)
         write(self.d, result(1, "2026-11-18T09:00:00Z"),
               result(2, "2026-11-18T09:30:00Z", status="FAIL",
                      limit={"message": "5-hour session limit reached - resets 3pm (UTC)"}))
@@ -82,7 +82,7 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(ledger.check(self.state), 0)
 
     def test_reset_iso_et_sans_limit(self):
-        now = datetime(2026, 11, 18, 10, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 11, 18, 10, 0, tzinfo=UTC)
         write(self.d, result(1, "2026-11-18T09:00:00Z"))
         self.assertEqual(ledger.trip(ledger.load_results(self.d), self.state, now), 0)
         self.assertFalse(self.state.exists())
@@ -93,7 +93,7 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(json.loads(self.state.read_text())["resume_at"], "2026-11-18T14:00:00+00:00")
 
     def test_message_et_reset_du_lendemain(self):
-        now = datetime(2026, 11, 18, 16, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 11, 18, 16, 0, tzinfo=UTC)
         self.assertTrue(ledger.classify_message("Claude usage limit reached"))
         self.assertFalse(ledger.classify_message("tests passed"))
         r = {"limit": {"message": "weekly limit reached, resets 9am"}}
