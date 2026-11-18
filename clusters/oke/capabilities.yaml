@@ -5,6 +5,10 @@ kind: ClusterCapabilities
 metadata:
   name: oke
 spec:
+  arch: [arm64]           # A1 Ampere arm64
+  availability: always
+  gvisor: absent          # aucune preuve datee d'un pod sous runsc sur ce cluster
+  admission: [psa, vap]   # pas de Kyverno
   # Cible du gate : Cilium en chaining (aujourd'hui FLANNEL_OVERLAY, qui n'applique pas les NetworkPolicy [C]).
   cilium: true
   privateEgressCIDRs: []

@@ -1,0 +1,25 @@
+# Politique du cluster homelab (VM Talos « lab » sur Proxmox, x86_64). Cluster par defaut des apps (ADR-0003 §4).
+# Lue par tools/appgen (schema : docs/schema/capabilities.schema.json).
+# Modifier ce fichier = decision plateforme, en PR revue. Ce qui n'est pas liste est refuse.
+# Aucune de ces valeurs n'est encore prouvee au runtime (NOT_TESTED) : elles declarent la cible de HOME-3/HOME-4 et
+# se corrigent par PR si la preuve datee les dement. Aucun hote, aucune IP dans ce fichier (depot public).
+apiVersion: platform.smadja.dev/v1alpha1
+kind: ClusterCapabilities
+metadata:
+  name: homelab
+spec:
+  arch: [amd64]            # homelab x86_64 : une image arm64 seule n'y tourne pas (garde multi-arch : T-402)
+  availability: always     # allume 24 h/24 ; 'scheduled' retire du contrat
+  gvisor: absent           # passe a proven apres la preuve datee d'un pod runtimeClassName gvisor sous runsc
+  admission: [psa, vap, kyverno]
+  cilium: true             # Cilium du homelab [a verifier sur la VM lab]
+  privateEgressCIDRs: []
+  databaseInstances:
+    lab-pg: {resourceType: cnpg-lab-db, namespace: lab-pg, cluster: lab-pg, backup: none}
+  identityProviders: [authentik]
+  storageClasses:
+    # OpenEBS LocalPV-LVM, VG « fast » (docs/storage/STORAGE-RECOMMENDATION.md). Nom de la StorageClass [S] : a
+    # confirmer par la preuve de HOME-3. Pas de RWX : rwx-shared refuse.
+    block-rwo: openebs-lvm-fast
+  backupMechanisms: [none] # CNPG Barman et Velero a admettre ici apres une restauration prouvee
+  secretStore: lab-store   # store propre au cluster, jamais doppler-cluster
