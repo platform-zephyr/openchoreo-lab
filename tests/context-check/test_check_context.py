@@ -97,7 +97,16 @@ class TestFreshness(Base):
 
     def test_stale(self):
         self.w("STATE.md", HDR.format(d="2026-11-01") + "ok\n")
-        self.assertIn(("ERREUR", "fraicheur-perime"), self.codes(cfg(freshness_required=self.req)))
+        self.assertEqual(self.codes(cfg(freshness_required=self.req)), [("AVERTISSEMENT", "fraicheur-perime")])
+
+    def test_stale_400_days_warns_and_exits_0(self):
+        self.w("STATE.md", HDR.format(d="2025-10-14") + "ok\n")  # 400 jours avant TODAY
+        self.w("missions/MISSION.md", HDR.format(d="2025-10-14") + "ok\n")
+        found = cc.run(self.root, cfg(freshness_required=self.req), TODAY)
+        self.assertEqual([(i[0], i[1]) for i in found], [("AVERTISSEMENT", "fraicheur-perime")] * 2)
+        self.assertTrue(all("updated 2025-10-14" in i[4] and "âge 400 j" in i[4] for i in found))
+        argv = ["--root", str(self.root), "--config", "/nonexistent", "--today", TODAY.isoformat()]
+        self.assertEqual(cc.main(argv), 0)
 
     def test_missing_header_and_file(self):
         self.assertIn(("ERREUR", "fraicheur-absent"), self.codes(cfg(freshness_required=self.req)))

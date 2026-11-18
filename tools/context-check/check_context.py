@@ -6,7 +6,8 @@ Trois contrôles, configurés par context-check.json (voisin du script) :
   1. taille : lignes/octets max par fichier « toujours chargé » et pour leur somme ;
   2. liens : tout lien Markdown relatif et tout `@import` doit pointer un fichier existant ;
   3. fraîcheur : en-tête `---` avec owner / updated / review_days ; obligatoire pour les
-     fichiers listés dans `freshness_required`, validé s'il est présent ailleurs.
+     fichiers listés dans `freshness_required`, validé s'il est présent ailleurs. Un en-tête périmé est un
+     avertissement daté, jamais bloquant (décision du coordinateur, T-041).
 Option : `deny` (motifs interdits dans des fichiers donnés) pour attraper une contradiction connue.
 Option : `pending` {fichier: raison} : les erreurs de ce fichier (et des totaux « toujours chargé » s'il y compte)
 deviennent des avertissements motivés, le temps qu'un rédacteur autorisé le mette en conformité.
@@ -165,7 +166,8 @@ def _freshness_issues(rel: str, fm: dict, default_days: object, today: dt.date) 
     if updated > today:
         out.append(("ERREUR", "fraicheur-futur", rel, 1, f"updated {updated} est dans le futur"))
     elif (today - updated).days > days:
-        out.append(("ERREUR", "fraicheur-perime", rel, 1,
+        # Avertissement, jamais bloquant : une date dépassée ne doit pas rougir ci-ok sur toutes les PR (T-041).
+        out.append(("AVERTISSEMENT", "fraicheur-perime", rel, 1,
                     f"périmé : updated {updated}, review_days {days}, âge {(today - updated).days} j"))
     return out
 
