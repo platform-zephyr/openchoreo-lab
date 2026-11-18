@@ -18,6 +18,13 @@ Budget : OpenChoreo ≤ 1,5 GiB et ≤ 0,3 vCPU au repos = OBJECTIF d'optimisati
 - Dev et prod sur le **même** OKE (un nœud, pas de HA) : Environments OpenChoreo `development` et `production`. Le dev doit rester frugal (`docs/CLOUD-AGENTS.md` §2).
 - **Exception d'exposition** : le MCP OpenChoreo, et lui seul, peut être publié par Cloudflare Tunnel **derrière Cloudflare Access** (service token dédié, aucun accès anonyme, aucun bypass), en plus de l'authz OpenChoreo. La configuration Cloudflare et Authentik reste un geste de Paul (MANDAT) ; l'agent prépare la PR `platform/` (NetworkPolicy) et la documentation.
 
+## Décisions de Paul du 2026-11-18 (suite)
+- Placement : homelab par défaut ; OKE seulement sur demande explicite de Paul (ADR-0003).
+- IdP : Authentik en GitOps ; arrivée et départ d'un utilisateur = golden paths (ADR-0007).
+- Secrets : OpenBao pour tout secret interne (clés d'API LLM comprises), Doppler pour les primitives externes ; tâche d'init depuis Doppler puis nettoyage et réduction des ~50 jetons Doppler (ADR-0014).
+- Atlas est le point d'arrivée ; les agents cloud ont accès aux dépôts (ADR-0012).
+- Chantiers ajoutés : observabilité (Grafana Cloud) et alerting, exploitation, montées de version automatisées, agent de remédiation déclenché sur échec avec escalade ntfy, coût dans le free tier, services IA en sandbox derrière un gateway (agentgateway), data platform légère sur le homelab pour mesurer la plateforme (DORA, maturité sécurité et cloud native). Vitesse maximale : un maximum d'agents en parallèle, les tickets qui accélèrent les suivants d'abord.
+
 ## Toujours INTERDIT (sans nouvelle autorisation écrite de Paul)
 Création du volume PostgreSQL OCI de 50 Go (`--confirm-storage`) ; toute exposition publique (Tunnel, Ingress, LoadBalancer) hors l'exception MCP ci-dessus ; LoadBalancer OCI facturable ; migration Talos ; modification de `kube-system`, de ressources de production ou de politiques cluster-wide non vérifiées ; `tofu apply`, Doppler, Cloudflare ; migration Authentik ; création par un agent d'une identité/clé/token d'accès ; secret affiché ou committé ; TLS désactivé ; contournement d'admission ; suppression de ressources hors du labo ; nouvelle étude comparative.
 Périmètre cluster : écriture dans `openchoreo-*`, `lab-*` (+ les namespaces de prérequis que l'installation crée et marque `part-of=openchoreo-lab`) et `dp-*` ; lecture seule ailleurs. Les noms imposés par OpenChoreo (`dp-*`, label sur `default`) sont des exceptions acquittées ci-dessus.
