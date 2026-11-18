@@ -7,8 +7,8 @@
 #   cleanup : supprime Applications, objets gl-oc, dp-gl-oc-*, gl-git, gl-oc, Argo CD (namespace argocd, CRD).
 # Prérequis : KUBECONFIG d'un cluster k3d jetable (contexte k3d-*), OpenChoreo 1.3.3 + DataPlane `default`,
 # helm, git, python3 (PyYAML, jsonschema), accès Internet (GitHub, quay.io, docker.io).
-# Limite connue (run 4) : T-RETRAIT-1 échoue tant que whoami est la seule app de gl-apps (garde Argo
-# allowEmpty=false) ; T-READD/T-RETRAIT-PVC n'ont donc pas été exécutés jusqu'au bout. Voir RESULTS.md.
+# T-458 : gl-apps porte allowEmpty=true (A6) pour que T-RETRAIT-1 aille au bout ; T-STRATEGY est statique (A4).
+# Résultats et classement des FAIL : RESULTS.md.
 # Seuls écrits par kubectl hors Git : bootstrap (namespaces, Argo, serveur Git, AppProject, Applications),
 # perturbations VOLONTAIRES de dérive (T-DRIFT-*), redémarrage du contrôleur, nettoyage.
 set -euo pipefail
@@ -22,7 +22,7 @@ GH_REPO="https://github.com/platform-zephyr/openchoreo-lab"
 IN_REPO="git://gl-git.gl-git.svc.cluster.local:9418/gl-repo.git"
 GIT_PF=19418
 GW_PF=29080
-HOST_HDR="production-gl-oc.internal.localhost"
+HOST_HDR="production-gl-oc.internal.localhost"   # repli seulement (voir route_host)
 IMG_NEW="traefik/whoami:v1.11.0@sha256:200689790a0a0ea48ca45992e0450bc26ccab5307375b41c84dfc4f2475937ab"
 ARGO_IMG="quay.io/argoproj/argocd:v3.5.1@sha256:0deb1a1c917629b960ead995ae3b6069450a866992676599658687ef9a641ee8"
 # shellcheck source=../../platform/install/versions.env
@@ -72,6 +72,13 @@ ok = op.get("phase") == "Succeeded" and op.get("syncResult", {}).get("revision")
 bad = [r for r in a.get("resources", []) if r.get("status") != "Synced" and not r.get("requiresPruning")]
 sys.exit(0 if ok and not bad else 1)' "$2"
 }
+app_settled() { # Application Synced, opération terminée, aucune ressource hors Synced (état stable sans nouveau commit)
+  k -n argocd get app "$1" -o json | python3 -c '
+import json, sys
+a = json.load(sys.stdin)["status"]
+bad = [r for r in a.get("resources", []) if r.get("status") != "Synced"]
+sys.exit(0 if a.get("sync", {}).get("status") == "Synced" and a.get("operationState", {}).get("phase") == "Succeeded" and not bad else 1)'
+}
 dpns() { k get ns -o name | sed -n 's#^namespace/\(dp-gl-oc-whoami-production-.*\)#\1#p' | head -1; }
 rb_ready() { [[ "$(k -n gl-oc get releasebinding whoami-production -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')" == True ]]; }
 rb_reason() { k -n gl-oc get releasebinding whoami-production -o jsonpath='{.status.conditions[?(@.type=="Ready")].reason}' 2>/dev/null; }
@@ -84,7 +91,9 @@ dep_ok() { # replicas image
     && [[ "$(k -n "$(dpns)" get "$d" -o jsonpath='{.spec.template.spec.containers[0].image}')" == "$2" ]] \
     && [[ "$(k -n "$(dpns)" get pods -l openchoreo.dev/component=whoami --no-headers 2>/dev/null | wc -l | tr -d ' ')" == "$1" ]]
 }
-http_code() { curl -s -m 5 -o /dev/null -w '%{http_code}' -H "Host: $HOST_HDR" "http://127.0.0.1:$GW_PF/whoami-http/" || true; }
+route_host() { k -n "$(dpns)" get httproute -o jsonpath='{.items[0].spec.hostnames[0]}' 2>/dev/null || true; }
+# T-458 : l'hôte vient de la HTTPRoute rendue (Environment de main : `lab.internal`), HOST_HDR n'est qu'un repli.
+http_code() { local h; h="$(route_host)"; curl -s -m 5 -o /dev/null -w '%{http_code}' -H "Host: ${h:-$HOST_HDR}" "http://127.0.0.1:$GW_PF/whoami-http/" || true; }
 pvc_bound() { [[ "$(k -n "$(dpns)" get pvc -o jsonpath='{.items[0].status.phase}' 2>/dev/null)" == Bound ]]; }
 http_ok() { [[ "$(http_code)" == 200 ]]; }
 
@@ -97,7 +106,8 @@ trap cleanup_pf EXIT
 # --- dépôt de test ----------------------------------------------------------------------------------
 gcommit() { # gcommit "message" ; commit + push, imprime le sha
   git -C "$W" add -A
-  git -C "$W" -c user.name=gl-test -c user.email=gl-test@invalid commit -q -m "$1"
+  git -C "$W" diff --cached --quiet && echo "gcommit : rien à committer ($1)" >&2
+  git -C "$W" -c user.name=gl-test -c user.email=gl-test@invalid commit -q -m "$1" || true
   git -C "$W" push -q "git://127.0.0.1:$GIT_PF/gl-repo.git" main
   git -C "$W" rev-parse HEAD
 }
@@ -140,7 +150,7 @@ bootstrap() {
     helm pull "$ARGOCD_CHART" --repo "$ARGOCD_REPO" --version "$ARGOCD_VERSION" -d "$WORK" >/dev/null
   echo "$ARGOCD_TGZ_SHA256  $chart" | shasum -a 256 -c - >/dev/null || { rec T-BOOT FAIL "sha256 du chart Argo"; exit 1; }
   helm upgrade --install argocd "$chart" -n argocd \
-    -f "$ROOT/platform/install/values/argocd.yaml" -f "$HERE/argocd-values-k3d.yaml" --wait --timeout 8m >/dev/null
+    -f "$ROOT/platform/install/values/argocd.yaml" -f "$ROOT/platform/install/argocd/health/values-openchoreo-health.yaml" -f "$HERE/argocd-values-k3d.yaml" --wait --timeout 8m >/dev/null
   k apply -f "$HERE/bootstrap/01-git-server.yaml" -f "$HERE/bootstrap/02-appproject.yaml" >/dev/null
   k -n gl-git rollout status deploy/gl-git --timeout=180s >/dev/null
   ev T-BOOT k -n argocd get pods -o wide
@@ -194,10 +204,10 @@ cycle() {
                               || rec T-SWITCH FAIL "générations modifiées par la bascule"
 
   # --- T-DEPLOY : correction par Git de l'Environment, puis déploiement complet ---------------------
-  # T-458 : patch idempotent (plus d'ancre de texte) ; verdict added|updated|noop dans les preuves.
+  # T-458 : patch idempotent (plus d'ancre de texte) ; verdict added|noop dans les preuves (main porte G1 : noop).
   local envpatch sha t0 ta td
   envpatch=$(python3 "$HERE/patch_env.py" "$W/platform/install/manifests/40-openchoreo-env.yaml") || envpatch=ECHEC
-  evs T-DEPLOY "patch_env.py : $envpatch (gateway.ingress.internal.http.host = internal.localhost)"
+  evs T-DEPLOY "patch_env.py : $envpatch ; hôte de la route rendue : $(route_host)"
   if [[ "$envpatch" == noop ]]; then sha=$(git -C "$W" rev-parse HEAD)   # déjà conforme : rien à committer
   else sha=$(gcommit "k3d: gateway.ingress.internal sur Environment production") || sha=$(git -C "$W" rev-parse HEAD); fi
   t0=$(date +%s)
@@ -225,12 +235,25 @@ cycle() {
   RECON+=("env-fix:git->argo=${ta}s,commit->pod=${tot}s")
 
   # --- T-ANNOT : annotations Prune=false (correction appgen proposée) + prune=true -----------------
-  python3 "$HERE/annotate_syncopts.py" "$W/generated" >/dev/null
-  sha=$(gcommit "gl: annotations sync-options APP-CONTRACT §5 (correction appgen proposée)")
-  apply_app gl-apps "$IN_REPO" true
-  t=$(wait_until 420 app_synced_at gl-apps "$sha") || true
+  # T-458 : appgen émet désormais les annotations dans generated/ (main) : annotate_syncopts n'a plus rien à
+  # committer. Sans nouveau commit, Argo ne relance pas d'opération de sync : attendre operationState.revision == sha
+  # ne finit jamais (run 44313410652 : « non Synced » après 420 s). On attend alors l'état stable de l'Application.
+  local ann; ann=$(python3 "$HERE/annotate_syncopts.py" "$W/generated")
+  evs T-ANNOT "$ann"
+  if [[ "$ann" == *": 0 fichier"* ]]; then
+    sha=$(git -C "$W" rev-parse HEAD); apply_app gl-apps "$IN_REPO" true
+    t=$(wait_until 420 app_settled gl-apps) || true
+  else
+    sha=$(gcommit "gl: annotations sync-options APP-CONTRACT §5 (correction appgen proposée)")
+    apply_app gl-apps "$IN_REPO" true
+    t=$(wait_until 420 app_synced_at gl-apps "$sha") || true
+  fi
   ev T-ANNOT k -n gl-oc get component,componentrelease -o jsonpath='{range .items[*]}{.kind}/{.metadata.name} {.metadata.annotations.argocd\.argoproj\.io/sync-options}{"\n"}{end}'
-  [[ "$t" != timeout ]] && rec T-ANNOT PASS "annotations Prune=false posées par Git, gl-apps prune=true Synced en ${t}s" || rec T-ANNOT FAIL "non Synced"
+  if [[ "$t" != timeout ]]; then rec T-ANNOT PASS "annotations Prune=false posées par Git ($ann), gl-apps prune=true Synced en ${t}s"
+  else
+    ev T-ANNOT k -n argocd get app gl-apps -o jsonpath='{.status.sync.status} {.status.health.status} op={.status.operationState.phase} rev={.status.operationState.syncResult.revision} sync={.status.sync.revision} {.status.operationState.message}{"\n"}{range .status.resources[*]}{.kind}/{.name} {.status} requiresPruning={.requiresPruning}{"\n"}{end}'
+    rec T-ANNOT FAIL "non Synced après 420 s (état de l'Application dans T-ANNOT.txt)"
+  fi
 
   RECON_MODE=webhook
   # --- T-MOD-REPLICAS : replicas 2 par app.yaml (configs d'environnement du binding) -------------
@@ -338,54 +361,59 @@ EOF
     rec T-RESTART PASS "rollout restart controller-manager : pods identiques (UID, 0 redémarrage), Deployment non modifié, HTTP 200, binding Ready"
   else rec T-RESTART FAIL "pods $before -> $after ; gen $dgen0 -> $dgen1"; fi
 
-  # --- T-PIN-STALE : passage stateless -> stateful (PVC) + medium sur l'app EN PLACE -------------------
-  local prb_pin0 sf_yaml; prb_pin0=$(k -n gl-oc get projectreleasebinding whoami-production -o jsonpath='{.spec.projectRelease}')
-  edit_app 's = s.replace("  profile: stateless\n", "  profile: stateful\n").replace("    size: small\n    replicas: 2\n", "    size: medium\n").replace("  backup: {class: none}\n", "  storage: {profile: block-rwo, mountPath: /data, size: 1Gi}\n  update: {strategy: Recreate}\n  backup: {class: regenerable}\n")'
-  sf_yaml="$WORK/whoami-stateful.yaml"; cp "$W/apps/whoami/app.yaml" "$sf_yaml"
-  render; t0=$(date +%s)
-  ta=$(step T-PIN-STALE "whoami: stateful (PVC 1Gi /data), size medium")
-  sleep 60
-  local latest pin1 hard
+  # --- T-STRATEGY (T-458, statique) : stateless -> stateful EN PLACE refusé par appgen avant toute PR (A4) ------
+  # Le 422 runtime « spec.strategy.rollingUpdate: Forbidden » n'est plus atteignable par Git : `appgen render` refuse
+  # RollingUpdate -> Recreate dès qu'une release RollingUpdate existe. Chemin : retrait (T-RETRAIT-1) puis ré-ajout
+  # (T-READD). Le clone n'est pas modifié (checkout après le refus) ; le YAML stateful sert à T-READD.
+  # clusters/oke/capabilities.yaml n'admet aucun volume (storageClasses: {}) : `appgen validate` y refuse block-rwo
+  # (run 44313410652 : arrêt ici, set -e). Le banc est un k3d : l'app du dépôt de test cible clusters/k3d
+  # (block-rwo -> local-path). Aucune garde n'est contournée ; la politique OKE reste inchangée.
+  local sf_yaml="$WORK/whoami-stateful.yaml" rr rc=0
+  edit_app 's = s.replace("cluster: oke\n", "cluster: k3d\n").replace("  profile: stateless\n", "  profile: stateful\n").replace("    size: small\n    replicas: 2\n", "    size: medium\n").replace("  backup: {class: none}\n", "  storage: {profile: block-rwo, mountPath: /data, size: 1Gi}\n  update: {strategy: Recreate}\n  backup: {class: regenerable}\n")'
+  cp "$W/apps/whoami/app.yaml" "$sf_yaml"
+  rr=$(cd "$W" && python3 tools/appgen/appgen.py validate 2>&1 && python3 tools/appgen/appgen.py render 2>&1) || rc=$?
+  evs T-STRATEGY "appgen validate+render (stateful en place) : rc=$rc"$'\n'"$rr"
+  if (( rc != 0 )) && [[ "$rr" == *"RollingUpdate -> Recreate"* ]]; then
+    rec T-STRATEGY PASS "refus statique par appgen avant la PR (A4) : le 422 runtime n'est plus atteignable ; chemin retrait + ré-ajout (T-READD)"
+  else rec T-STRATEGY FAIL "appgen n'a pas refusé le passage stateful en place (rc=$rc) : $(echo "$rr" | tail -1 | cut -c1-200)"; fi
+  git -C "$W" checkout -q -- apps generated; git -C "$W" clean -fdq generated
+
+  # --- T-PIN-STALE / T-PIN-PRB (A3) : changement des paramètres du Project, règle des 2 PR -------------------------
+  # Commit 1 : size medium (quota du Project modifié) ; appgen `check --base` doit annoncer la 2e PR (pin-project).
+  # Commit 2 : `appgen pin-project` avec la ProjectRelease lue sur le cluster ; le quota de la cellule suit.
+  local prb_pin0 q0 q1 latest pin1 warn
+  prb_pin0=$(k -n gl-oc get projectreleasebinding whoami-production -o jsonpath='{.spec.projectRelease}')
+  q0=$(k -n "$(dpns)" get resourcequota cell-quota -o jsonpath='{.spec.hard.requests\.cpu}')
+  edit_app 's = s.replace("    size: small\n    replicas: 2\n", "    size: medium\n")'
+  render
+  warn=$(cd "$W" && python3 tools/appgen/appgen.py check --base HEAD 2>&1 >/dev/null | grep "2e PR requise" || true)
+  ta=$(step T-PIN-STALE "whoami: size medium (paramètres du Project modifiés)")
+  sleep 30
   latest=$(k -n gl-oc get project whoami -o jsonpath='{.status.latestRelease.name}')
   pin1=$(k -n gl-oc get projectreleasebinding whoami-production -o jsonpath='{.spec.projectRelease}')
-  hard=$(k -n "$(dpns)" get resourcequota cell-quota -o jsonpath='{.spec.hard.persistentvolumeclaims}')
+  q1=$(k -n "$(dpns)" get resourcequota cell-quota -o jsonpath='{.spec.hard.requests\.cpu}')
   ev T-PIN-STALE k -n gl-oc get project whoami -o jsonpath='Project.spec.parameters={.spec.parameters}{"\n"}latestRelease={.status.latestRelease.name}{"\n"}'
   ev T-PIN-STALE k -n gl-oc get projectreleasebinding whoami-production -o jsonpath='PRB.spec.projectRelease={.spec.projectRelease}{"\n"}'
-  ev T-PIN-STALE k -n "$(dpns)" get resourcequota
-  if [[ "$pin1" == "$latest" ]]; then
-    rec T-PIN-STALE PASS "PRB suit la nouvelle ProjectRelease $latest sans geste"
-  else
-    rec T-PIN-STALE FAIL "changement de paramètres du Project par app.yaml : latestRelease=$latest mais PRB reste épinglé sur $pin1 (avant le commit : $prb_pin0) ; quota pvcs=$hard (le nouveau quota n'est PAS appliqué)"
-  fi
+  evs T-PIN-STALE "check --base : ${warn:-aucun avertissement} ; pin avant=$prb_pin0 après commit 1=$pin1 ; latestRelease=$latest ; quota cpu $q0 -> $q1"
+  if [[ -n "$warn" && -n "$latest" ]]; then
+    rec T-PIN-STALE PASS "appgen annonce la 2e PR (check --base) ; ProjectRelease $latest créée ; pin du PRB : '$pin1' (avant : '$prb_pin0') ; quota cpu $q0 -> $q1"
+  else rec T-PIN-STALE FAIL "avertissement 2e PR='${warn:-absent}' latestRelease='${latest:-absente}'"; fi
 
-  # --- T-PIN-PRB : 2e commit qui avance la pin (lecture du cluster, comme pin-resource) ------------
-  local prbf="$W/generated/namespaces/default/projects/whoami/project-bindings/whoami-production.yaml"
-  python3 - "$prbf" "$latest" <<'PY'
-import sys
-p, rel = sys.argv[1], sys.argv[2]; s = open(p).read()
-assert "projectRelease" not in s
-s = s.replace("  environment: production\n", f"  environment: production\n  projectRelease: {rel}\n", 1)
-open(p, "w").write(s)
-PY
-  ta=$(step T-PIN-PRB "whoami: pin ProjectReleaseBinding -> $latest (2e commit)")
-  t=$(wait_until 120 bash -c "[[ \$(kubectl -n $(dpns) get resourcequota cell-quota -o jsonpath='{.spec.hard.persistentvolumeclaims}') == 1 ]]") || true
+  (cd "$W" && python3 tools/appgen/appgen.py pin-project whoami production "$latest" >/dev/null)
+  render
+  ta=$(step T-PIN-PRB "whoami: pin ProjectReleaseBinding -> $latest (2e commit, appgen pin-project)")
+  t=$(wait_until 180 bash -c "[[ \$(kubectl -n gl-oc get projectreleasebinding whoami-production -o jsonpath='{.spec.projectRelease}') == '$latest' ]]") || true
+  q1=$(k -n "$(dpns)" get resourcequota cell-quota -o jsonpath='{.spec.hard.requests\.cpu}')
   ev T-PIN-PRB k -n gl-oc get projectreleasebinding whoami-production --show-managed-fields -o jsonpath='{.spec.projectRelease}{"\n"}{range .metadata.managedFields[*]}{.manager} {.operation} {.fieldsV1.f:spec}{"\n"}{end}'
   ev T-PIN-PRB k -n "$(dpns)" get resourcequota
-  [[ "$t" != timeout ]] && rec T-PIN-PRB PASS "2e commit (pin $pin1 -> $latest, champ repris par Argo en SSA) : quota pvcs=1 appliqué en ${t}s" \
-                        || rec T-PIN-PRB FAIL "quota non mis à jour après la pin"
-
-  # --- T-STRATEGY : RollingUpdate -> Recreate sur le Deployment existant ---------------------------
-  t=$(wait_until 180 pvc_bound) || true
-  ev T-STRATEGY k -n gl-oc get releasebinding whoami-production -o jsonpath='{range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{"\n"}{end}'
-  ev T-STRATEGY k -n "$(dpns)" get deploy,pvc,pod -o wide
-  ev T-STRATEGY k -n argocd get app gl-apps -o jsonpath='Argo: {.status.sync.status} {.status.health.status}{"\n"}'
-  if [[ "$t" != timeout ]]; then rec T-STRATEGY PASS "passage stateful en place : PVC Bound"
-  else
-    rec T-STRATEGY FAIL "passage stateless -> stateful en place refusé par l'API : « $(k -n gl-oc get releasebinding whoami-production -o jsonpath='{.status.conditions[?(@.type=="Ready")].message}' | grep -o 'spec.strategy.rollingUpdate: Forbidden[^;]*' | head -1 | cut -c1-110) » ; ancienne version servie (HTTP $(http_code)), Argo $(k -n argocd get app gl-apps -o jsonpath='{.status.health.status}')"
-  fi
+  [[ "$t" != timeout && "$q1" != "$q0" ]] && rec T-PIN-PRB PASS "2e commit (pin $pin1 -> $latest, champ repris par Argo en SSA) : quota cpu $q0 -> $q1 en ${t}s" \
+                        || rec T-PIN-PRB FAIL "pin=$(k -n gl-oc get projectreleasebinding whoami-production -o jsonpath='{.spec.projectRelease}') attendu $latest ; quota cpu $q0 -> $q1"
 
   # --- T-RETRAIT-1 : retrait de l'app (stateless de fait) ------------------------------------------
   local ns3; ns3=$(dpns)
+  # T-458 : le pin du PRB (T-PIN-PRB) désigne une ProjectRelease du Project retiré : le retirer, sinon le ré-ajout
+  # (T-READD) épinglerait un nom qui n'existe plus.
+  rm -f "$W/pins/project-releases.yaml"
   git -C "$W" rm -q -r apps/whoami; render
   sha=$(gcommit "whoami: retrait"); kick gl-apps; t0=$(date +%s)
   ta=$(wait_until 300 app_synced_at gl-apps "$sha") || true

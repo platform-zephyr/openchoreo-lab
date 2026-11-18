@@ -28,6 +28,9 @@ spec:
   syncPolicy:
     automated:
       prune: __PRUNE__
+      # A6 (docs/GITOPS-PROOF.md §4) : sans allowEmpty, Argo refuse de retirer la dernière app (T-RETRAIT-1,
+      # « auto-sync will wipe out all resources »). Correction documentée, à poser sur lab-apps ; testée ici.
+      allowEmpty: true
       selfHeal: true
     syncOptions:
       - ServerSideApply=true

@@ -63,8 +63,40 @@ tests/gitops-k3d/run.sh all       # ~25 min ; écrit evidence/ et evidence/resul
 tests/gitops-k3d/run.sh cleanup   # supprime Applications, gl-oc, dp-gl-oc-*, gl-git, argocd, CRD argoproj
 ```
 
-## T-458 : ancre T-DEPLOY réparée (2026-11-18)
+## T-458 : ancre réparée, FAIL classés (2026-11-18)
 
-- Cause : le patch de T-DEPLOY cherchait `  isProduction: true\n---` dans `40-openchoreo-env.yaml`. La correction G1 est dans `main` : l'ancre n'existe plus, l'`assert` échouait, la suite s'arrêtait après T-SWITCH.
-- Correctif : `patch_env.py` (idempotent : `added`, `updated` ou `noop`), testé par `test_patch_env.py` (STATIC, 13 cas dont 5 négatifs, contre le vrai manifeste de `main`).
-- Statut runtime : **NOT_TESTED**. Aucun cluster k3d dans la session de correction. Les cas T-ARGO-HEALTH, T-PRUNE-STATUS, T-PIN-STALE, T-STRATEGY et T-RETRAIT-1 (FAIL au run 4, « corrigés statiquement » depuis) restent NOT_TESTED ; leur classement attend le dispatch manuel de `k3d-integration` (suite `gitops-k3d`) sur la branche.
+### Preuve runtime lue (CI, niveau CI, k3d)
+
+Run 44313410652 (dispatch sur `main` `de4f079`, 2026-11-18, artefact `k3d-gitops-k3d`, `results.tsv` lu). La suite dépasse l'ancre T-DEPLOY (étape exécutée, 13:32:50Z) puis **s'arrête après T-RESTART** : 18 lignes, 14 PASS, 3 FAIL (T-ARGO-HEALTH, T-DEPLOY, T-ANNOT), 0 NOT_TESTED enregistré. Job vert uniquement parce que la suite est classée `known_fail`.
+
+### Cause des 3 FAIL et de l'arrêt
+
+| ID | Résultat au run 44313410652 | Cause | Traitement dans cette branche | État |
+|---|---|---|---|---|
+| T-ARGO-HEALTH | FAIL | le banc installait Argo sans le fragment de health checks A5 (`platform/install/argocd/health/values-openchoreo-health.yaml`, déjà dans main et testé hors cluster) | le helm du banc reçoit ce fragment | corrigé, **NOT_TESTED** (runtime) |
+| T-DEPLOY | FAIL (`http=404`) | `main` porte G1 : la route est rendue d'emblée avec l'hôte `lab.internal` (pod Ready dès `td=1`) ; le patch d'hôte `internal.localhost` n'est jamais re-rendu (route restée sur `lab.internal` 5 min) et le curl visait `internal.localhost` | `patch_env.py` ne remplace plus un hôte existant (`noop`) ; `run.sh` lit l'hôte de la HTTPRoute rendue (`route_host`) | corrigé, **NOT_TESTED** (runtime) |
+| T-ANNOT | FAIL (`non Synced`, 420 s) | appgen émet déjà les annotations (A1) : `annotate_syncopts.py` n'a rien à committer, aucun nouveau sync Argo, et `app_synced_at` attend une opération sur un sha qui n'arrive pas. Cause **probable**, non prouvée : l'état de l'Application n'était pas dans l'artefact | attente d'un état stable (`app_settled`) quand rien n'est à committer ; l'état Application est enregistré en cas d'échec | corrigé sur hypothèse, **NOT_TESTED** (runtime) |
+| (arrêt après T-RESTART) | suite interrompue | `render` de l'étape stateful : `appgen validate` refuse `block-rwo` sur `cluster: oke` (`clusters/oke/capabilities.yaml` : `storageClasses: {}`, voulu) ; `set -e` | l'étape cible `cluster: k3d` (politique k3d, `block-rwo -> local-path`) ; aucune garde contournée | corrigé, validé statiquement (`appgen validate` OK sur l'app modifiée), **NOT_TESTED** (runtime) |
+
+### Classement des 5 FAIL historiques du run 4
+
+Aucun de ces cas n'a été exécuté au run 44313410652 (arrêt avant eux) : aucun résultat runtime daté, donc aucun `PASS`.
+
+| ID | Classement | Motif |
+|---|---|---|
+| T-ARGO-HEALTH | corrigé (A5 câblé dans le banc) ; **NOT_TESTED** | voir ci-dessus ; FAIL réel au run 44313410652 avant câblage |
+| T-PRUNE-STATUS | **PASS** (run 44313410652, 13:40:07Z) | « gl-apps Synced après nouvelle release » : A1/A2 corrigés dans appgen |
+| T-PIN-STALE | étape réécrite pour la règle des 2 PR (A3) ; **NOT_TESTED** | commit 1 (size medium), `appgen check --base` annonce la 2e PR |
+| T-PIN-PRB | étape réécrite (`appgen pin-project`) ; **NOT_TESTED** | commit 2 : PRB sur la ProjectRelease, quota cpu mis à jour |
+| T-STRATEGY | **PASS statique attendu** : `appgen render` refuse RollingUpdate -> Recreate (A4) ; vérifié à la main hors cluster (refus « passage RollingUpdate -> Recreate refuse ») ; la ligne `PASS` du banc reste **NOT_TESTED** tant que `run.sh` ne l'a pas écrite | le 422 runtime n'est plus atteignable par Git |
+| T-RETRAIT-1 | `allowEmpty: true` ajouté à `gl-apps` du banc (A6, correction documentée non appliquée à `lab-apps`) ; **NOT_TESTED** | le pin du PRB est retiré au retrait pour que T-READD n'épingle pas une ProjectRelease disparue |
+
+Aucun `KNOWN_FAIL` n'est conservé : chaque FAIL a une cause et un correctif, aucun n'a de preuve runtime après correctif.
+
+### Reste (dispatch)
+
+`gh workflow run k3d-integration.yml --ref claude/t-458-reste` (suite `gitops-k3d`) puis lecture de `results.tsv` ; retirer `known_fail` de la matrice (`.github/workflows/k3d-integration.yml`, hors périmètre) et la ligne de `docs/CI-K3D.md` (PR #95 / T-469) seulement si la suite passe ; brancher `tests/gitops-k3d` dans la CI unitaire (`ci.yaml`).
+
+### Tests statiques (STATIC)
+
+`python3 -m unittest discover -s tests/gitops-k3d` : 17 tests (cas négatifs inclus : ancre absente, YAML invalide, Environment absent, hôte existant jamais remplacé ; câblage de `run.sh`).
