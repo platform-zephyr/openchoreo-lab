@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Classement KNOWN_FAIL au niveau du cas (T-457). Source par tests/vap/run.sh et tests/vap/known-fail.test.sh.
 # Un cas listé reste EXÉCUTÉ et son verdict reste visible ; seule sa contribution au code de sortie change.
 # Aucune politique n'est désactivée. Retirer l'entrée quand l'écart est corrigé à la source.
