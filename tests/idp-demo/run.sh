@@ -144,7 +144,7 @@ cmd_pr() {
   [[ "$br" == idp-demo/$NAME-* ]] || die "branche courante '$br' : attendu idp-demo/$NAME-*"
   set_evid
   scope_guard
-  git add "apps/$NAME" generated
+  git add "apps/$NAME" generated platform/install/argocd/apps/lab-apps.yaml
   git commit -q -m "$NAME: $msg" -m "Co-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>"
   wet git push -q -u origin HEAD
   printf '%s\n' "Démonstration tests/idp-demo (intention $NAME, preuves dans $EVID)." \
