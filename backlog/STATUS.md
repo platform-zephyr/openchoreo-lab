@@ -6,8 +6,8 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 25 |
-| `todo` | 128 |
+| `in-progress` | 26 |
+| `todo` | 127 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 28 |
@@ -20,6 +20,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 |---|---|---|---|---|
 | [T-002](T-002-ci-k3d.md) | CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue | 3/4 | Reste : critère 4 exige un run GitHub réel (NOT_TESTED, aucun run possible depuis cette session). `development` : le bootstrap ne l'invente plus si `platform/` le fournit (STATIC, yq 4.54.3 testé avec un faux manifeste). `docs/research/GITHUB-CONFIG.md` est a… | — |
 | [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 3/9 | Reste : (a) `lint_runbooks.py` et `tests/observe` ne sont pas appelés par `tools/dev/check` ni `ci.yaml` (fichiers chauds, hors périmètre) ; (b) `golden-paths/_checks/status_json.py` n'émet pas encore `cause.nature` ; (c) la planification OpenTofu (homelab-in… | — |
+| [T-201](T-201-data-2.md) | Ingestion GitHub vers Parquet et métriques DORA par agent | 7/7 | (ligne « Reste » absente) | — |
 | [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | 5/7 | Reste à faire : (1) rapport de recoupement (`next.py --overlap-report <ids>`) : sur la liste figée de 20 tickets, 28 paires se recoupent et 21 ne sont pas sérialisées par une dépendance (surtout `tests/` et `docs/` trop larges : T-072, T-050, T-216) ; les sér… | — |
 | [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md) | Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes) | 4/5 | Premier critère ouvert : (repris de HAR-6) même script en local, en CI et dans le hook Stop (T-331) ; seuls fichier et ligne sont affichés, jamais la valeur | — |
 | [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 3/3 | Reste (2026-11-18) : le ticket reste `in-progress` car le tag précède la fin de S0 (T-303, T-306… encore ouverts à sa pose) et n'est pas signé. Geste de Paul : soit accepter explicitement ce tag comme référence (les PR du noyau d'agents viennent après lui), s… | — |
@@ -63,7 +64,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-001](T-001-integrer-pr8-security-bundle.md) | 86 | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0/3 | — |
 | [T-214](T-214-appgen-modulaire.md) | 72 | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 0/4 | — |
 | [T-041](T-041-context-engineering.md) | 8 | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
-| [T-201](T-201-data-2.md) | 4 | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
 | [T-050](T-050-verdicts-kube-ops.md) | 3 | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
 | [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
@@ -150,8 +150,8 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-131](T-131-upg-12.md) | 0 | Montées stateful : précondition de sauvegarde fraîche et restauration prouvée | T-026 (todo), T-027 (todo), T-122 (todo) | — |
 | [T-168](T-168-ai-9.md) | 0 | Bac d'exécution éphémère (agent-sandbox) pour le code lancé par les agents | T-160 (todo), T-163 (todo) | — |
 | [T-167](T-167-ai-8.md) | 0 | Règles et banc d'injection de prompt : skills et contexte externes | T-044 (todo), T-166 (todo) | — |
-| [T-203](T-203-data-4.md) | 0 | Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets) | T-020 (todo), T-201 (todo) | — |
-| [T-204](T-204-data-5.md) | 0 | Grille de maturité cloud native CNCF automatisée (niveaux 1-5) | T-201 (todo) | — |
+| [T-203](T-203-data-4.md) | 0 | Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets) | T-020 (todo), T-201 (in-progress) | — |
+| [T-204](T-204-data-5.md) | 0 | Grille de maturité cloud native CNCF automatisée (niveaux 1-5) | T-201 (in-progress) | — |
 | [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md) | 69 | VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops) | T-360 (todo) | — |
 | [T-362](T-362-isolation-reseau-de-la-vm-lab.md) | 68 | Isolation réseau de la VM lab (UniFi, pare-feu) | T-361 (todo) | — |
 | [T-363](T-363-socle-de-la-plateforme-sur-la.md) | 67 | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stocka… | T-001 (todo), T-361 (todo), T-362 (todo) | — |
@@ -234,5 +234,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 
 ## Anomalies de lecture
 
+- T-201 : `in-progress` sans ligne « Reste » dans les notes
 - T-331 : `in-progress` sans ligne « Reste » dans les notes
 - T-466 : `in-progress` sans ligne « Reste » dans les notes
