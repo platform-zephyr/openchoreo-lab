@@ -26,7 +26,7 @@ MANDAT = geste de Paul (accès, identité, dépense, VM) ; REVUE = approbation d
 | Étape | Gestes (MANDAT) | Approbations (REVUE) |
 |---|---|---|
 | S0 | [T-301](T-301-reecriture-de-l-historique-et-purge.md), [T-304](T-304-essai-reel-executant.md), [T-431](T-431-reglages-depot-actions-securite.md), [T-433](T-433-protection-tags.md), [T-434](T-434-gestes-organisation-paul.md) | [T-414](T-414-cliquet-maintenabilite.md), [T-451](T-451-ci-speed-csafeloader-alerte-post-merge.md) |
-| S1 | [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-435](T-435-k3d-ok-requis.md), [T-450](T-450-nettoyage-gitleaksignore.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-436](T-436-labels-formulaires-issues.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
+| S1 | [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-435](T-435-k3d-ok-requis.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-436](T-436-labels-formulaires-issues.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
 | S2 |  | [T-423](T-423-reduire-complexite-argo-guard.md), [T-062](T-062-lab-platform-auto.md), [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) |
 | S3 | [T-140](T-140-cost-1.md), [T-031](T-031-placement-coupure.md) | [T-070](T-070-garde-contrat.md), [T-439](T-439-essai-dependency-review.md), [T-368](T-368-garde-fous-de-capacite-du-homelab.md) |
 | PORTE | [T-211](T-211-porte-openchoreo.md) |  |
@@ -91,7 +91,7 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | Étape | haiku | sonnet | opus | humain |
 |---|---|---|---|---|
 | S0 | 2 | 5 | 0 | 1 |
-| S1 | 0 | 34 | 3 | 0 |
+| S1 | 0 | 33 | 3 | 0 |
 | S2 | 1 | 4 | 3 | 0 |
 | S3 | 0 | 13 | 0 | 0 |
 | PORTE | 0 | 0 | 1 | 0 |
@@ -120,7 +120,7 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | [T-434](T-434-gestes-organisation-paul.md) | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | 0 | gouvernance | MANDAT | haiku/medium |  | 0 |
 | [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | 1 | gouvernance | AUTONOME | haiku/medium |  | 0 |
 
-## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (37 tickets)
+## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (36 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
@@ -138,7 +138,6 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenChoreo) | 0 | tests-fixtures | AUTONOME | sonnet/high | oui | 0 |
 | [T-435](T-435-k3d-ok-requis.md) | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | 0 | ci | REVUE | sonnet/high |  | 37 |
 | [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | 0 | securite | REVUE | opus/high |  | 0 |
-| [T-450](T-450-nettoyage-gitleaksignore.md) | Nettoyer la dette de .gitleaksignore (129 emplacements) et le vider | 0 | ci | REVUE | sonnet/high |  | 0 |
 | [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 53 |
 | [T-366](T-366-bundle-multi-arch-installateur-lab.md) | Bundle de sécurité multi-arch et installateur pour le cluster lab | 1 | socle-lab | REVUE + MANDAT | opus/high | oui | 40 |
 | [T-003](T-003-env-development-promotion.md) | Environment `development`, promotion vers `production`, pins de release par environnement | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 31 |
