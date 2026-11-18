@@ -32,3 +32,5 @@ security/bundle.lock, tools/oke/security-bundle.sh, tools/lab/install.sh, docs/S
 Décision 4 (consensus n°2 et arbitrages de Paul, 2026-11-18). MANDAT : publication dans le dépôt privé du bundle et lecture du package. Aucun détail de la faille dans ce dépôt public.
 
 Retardé par ADR-0025 (2026-11-18) : dépend de la porte 1 (T-488) ; le bundle arm64 suffit au banc sur OKE et sur un MacBook Apple Silicon.
+
+Hors chemin critique jusqu'à la porte 2 (arbitrages de Paul n°3, 2026-11-18) : Mac Apple Silicon M1 et OKE sont arm64.

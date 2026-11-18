@@ -4,7 +4,7 @@ title: "Bras K du banc A/B : chemin kube-ops reproduit dans un dépôt bac à sa
 status: todo
 phase: P1
 adr: [0001, 0020, 0025]
-depends_on: [T-061, T-061b, T-214, T-485]
+depends_on: [T-061, T-061b, T-214]
 class: AUTONOME + MANDAT
 velocity: true
 lane: moteur-plain
@@ -25,11 +25,14 @@ tests/bench-ab/arm-k/, dépôt bac à sable du bras K (hors de ce dépôt)
 ## Critères de fin
 - [ ] MANDAT Paul : dépôt privé du bac à sable créé, accès donné à l'App de l'usine
 - [ ] bac à sable = kube-ops au SHA noté, réduit aux apps du banc (`it-tools`, `vikunja`, `ntfy`), `AGENTS.md`, skills et chart `platform-app` inchangés ; licence MIT et `NOTICE` vérifiés ; aucun nom d'hôte ni IP
-- [ ] seules différences avec kube-ops listées dans `tests/bench-ab/arm-k/DIFF.md` (cible `lab-k-*`, observation par statut publié, pas de `kubectl-rw`)
+- [ ] livraison = copie de l'ApplicationSet `apps-generated` et de son AppProject de kube-ops, à 3 champs près (dépôt, projet `lab-k`, préfixe `lab-k-`) ; `helm template` du chart `platform-app` OK en CI pour les 3 apps
+- [ ] seules différences avec kube-ops listées dans `tests/bench-ab/arm-k/DIFF.md` (cible `lab-k-*`, observation par check run publié, pas de `kubectl-rw`, base de M2 sur `lab-pg`)
 - [ ] Applications du bras K rattachées à l'AppProject `lab-k` (créé par T-487, frontière Argo)
-- [ ] une app A du bras K Ready avec `app-status.v1` PASS sur k3d (T-486), preuve datée
+- [ ] contenu poussé dans le bac à sable par l'App de l'usine, SHA noté dans `DIFF.md`
 
 ## Notes
 Échec = pas d'app A Ready avec PASS après 3 jours d'agent (ADR-0020 §3). Recadré par ADR-0025 (2026-11-18) : le C5 de la porte compare OpenChoreo au chemin kube-ops reproduit ; plus de backend dans `tools/appgen/`.
 
 Intégration 2 : cible = cluster lab (T-363). Remplacé par ADR-0025 : cible = cluster du banc (MacBook puis OKE).
+
+Accéléré (arbitrages de Paul n°3, 2026-11-18) : la preuve runtime du bras K (app A Ready, check run `success` sur OKE) passe dans T-486 ; plus de répétition sur k3d. T-485 retiré des dépendances (les 3 apps sont connues).

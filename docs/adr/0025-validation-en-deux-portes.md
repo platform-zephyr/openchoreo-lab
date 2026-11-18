@@ -1,55 +1,69 @@
 # ADR-0025 — Validation d'OpenChoreo en deux portes : valeur pour les agents sur OKE, puis exploitation hybride
-Statut : PROPOSÉ · Date : 2026-11-18 · Décideur : Paul
-Décisions liées : ADR-0003 (amendé), ADR-0017, ADR-0020 (amendé), ADR-0021 ; `docs/research/POC-OPENCHOREO-STRATEGY.md`
+Statut : PROPOSÉ (version accélérée du 2026-11-18) · Date : 2026-11-18 · Décideur : Paul
+Décisions liées : ADR-0003 (amendé), ADR-0011, ADR-0017, ADR-0020 (amendé), ADR-0021, ADR-0022 (amendé) ; `docs/research/POC-OPENCHOREO-STRATEGY.md`
 
 ## Contexte
-- Paul propose (2026-11-18) de valider d'abord qu'OpenChoreo simplifie le modèle opérationnel des agents, en utilisant
-  OKE comme environnement de dev jetable, puis de migrer les clusters existants vers un déploiement hybride, sans
-  aucune perturbation du homelab ni de kube-ops pendant la validation.
-- ADR-0020 (amendement Fable, point 7) interdit toute mesure sur OKE et place la porte sur la VM lab du homelab. Cette
-  voie exige 4 gestes MANDAT (T-360, T-361, T-362, T-366) avant la première mesure de valeur.
-- OpenChoreo tourne déjà sur OKE avec le bundle de sécurité arm64 (pilote `whoami` PASS le 2026-11-17).
-- Le comparateur prévu (backend « plain » à écrire, T-212) n'est pas le chemin réel : kube-ops a déjà un contrat à un
-  fichier (`apps-generated`, chart `platform-app`, `app-status.v1`) et un chemin Kustomize pour le reste.
+- Paul veut valider d'abord qu'OpenChoreo simplifie le modèle opérationnel des agents, avec OKE comme environnement
+  jetable, puis migrer vers un déploiement hybride, sans perturbation du homelab pendant la validation.
+- Arbitrages de Paul du 2026-11-18 (`docs/review/CONSENSUS-2.md`, n°3) : Mac Apple Silicon M1 ; Colima permis ;
+  OKE sans donnée importante ; discontinuité de service et perte de données acceptées sur OKE et en local ; voie
+  d'intégration indifférente, la vitesse prime ; s'appuyer sur la livraison Argo CD de kube-ops si cela accélère ;
+  les agents doivent publier le statut sans le compte de Paul.
+- ADR-0020 (amendement Fable, point 7) interdit toute mesure sur OKE et exige 4 gestes MANDAT avant la première
+  mesure de valeur. OpenChoreo tourne déjà sur OKE avec le bundle arm64 (pilote `whoami` PASS le 2026-11-17).
+- Le vrai comparateur est le chemin kube-ops (`apps-generated`, chart `platform-app`, Kustomize pour le reste).
 
 ## Décision
-1. **Porte 1 « valeur pour les agents »** : banc A/B préenregistré (5 tâches, 5 pièges, 3 runs par tâche et par bras,
-   seuils S1-S7 de `POC-OPENCHOREO-STRATEGY.md` §2.4) sur **OKE réinitialisé**, après une répétition non comptée sur le
-   MacBook. Bras K = chemin kube-ops reproduit dans un dépôt bac à sable figé ; bras O = ce dépôt. Même cluster, même
-   Argo, même canal d'observation (statut publié dans GitHub), même agent et mêmes plafonds.
-2. **Seuils figés avant la première mesure** ; Paul peut les ajuster avant, jamais après. Verdict : « valeur prouvée »
-   si S1, S6 et S7 passent et au moins 3 de S2-S5 ; **arrêt** (on garde kube-ops) si S1 ou S6 échoue ou si moins de 2
-   de S2-S5 passent ; zone grise à 2 : Paul choisit, sans second banc sur la même hypothèse.
-3. **Porte 2 « exploitation hybride »** (T-211) : seulement si la porte 1 est positive. Elle reprend C2 (VM lab), C3,
-   C4 « jour 2 », C7 et ajoute la règle de routage des agents entre OpenChoreo et kube-ops. Aucune migration d'app de
-   kube-ops avant la porte 2.
-4. **OKE pendant la porte 1** : environnement de dev du POC, réservé au banc pendant une fenêtre de 3 semaines inscrite
-   par Paul dans le journal de homelab-infra. Le CP OpenChoreo y tourne **à titre de banc**, pas comme cible. Coût :
-   0 € (2 OCPU / 12 Go, ≤ 200 Go de bloc) ; tout dépassement est un MANDAT.
-5. **Ce qui ne change pas** : D11 (CP cible sur la VM lab du homelab) reste la décision par défaut ; Paul peut la rouvrir
-   en porte 2 avec la mesure C2 faite sur OKE. Aucune écriture sur le homelab ni sur kube-ops pendant la porte 1.
+1. **Porte 1 « valeur pour les agents »** : banc A/B **minimal** préenregistré sur **OKE recréé vierge** : 4 tâches
+   (M1-M4), 3 pièges, 2 runs par tâche et par bras, seuils S1, S2, S3, S5, S6, S7 de la stratégie §2.4. Bras K = chemin
+   kube-ops reproduit dans un bac à sable figé ; bras O = ce dépôt. Même cluster, même Argo, même canal d'observation.
+   La répétition sur le MacBook est remplacée par une **passe 0 non comptée sur OKE**.
+2. **Seuils figés avant la mesure** (commit de `tests/bench-ab/thresholds.yaml`). Verdict : « valeur prouvée » si S1,
+   S6 et S7 passent et au moins 2 de S2, S3, S5 ; sinon **arrêt** (on garde kube-ops), sans zone grise.
+   **Arrêt anticipé** dès qu'un seuil devient inatteignable ; un piège non contenu par le bras O arrête tout.
+3. **Livraison** : un Argo CD par cluster en mode pull. Pendant la porte 1, c'est l'Argo du labo, seul sur OKE ; il
+   livre la plateforme, `generated/` (un ApplicationSet par app, modèle kube-ops) et le bras K (copie de l'ApplicationSet
+   `apps-generated`). L'instance Argo de kube-ops n'est pas utilisée et le dépôt kube-ops n'est pas modifié. Cible
+   après la porte 2 : l'Argo du cluster est amorcé par kube-ops, qui porte une seule Application vers ce dépôt.
+4. **Statut** : publié dans GitHub par Argo CD Notifications (service `github`, check run par app et par révision),
+   signé par une GitHub App dédiée aux statuts (Checks et Commit statuses seulement). La clé de l'App de l'usine
+   n'entre jamais dans un cluster.
+5. **OKE** : recréé vierge par ARC dans homelab-infra, décision consignée dans le journal de homelab-infra dans la même
+   PR ; aucune session de ce dépôt n'écrit hors `openchoreo-*` et `lab-*`. Coût : 0 € ; tout dépassement est un MANDAT.
+6. **Surface cloud en lecture seule** : le MCP OpenChoreo (rôle reader de `platform/authz/`) est joignable depuis les
+   sessions cloud par Cloudflare Tunnel + Access (`Service Auth`, un service token par identité d'agent, injecté par
+   le proxy de l'environnement cloud), sur OKE d'abord (T-006). L'apiserver n'est jamais exposé ; aucune écriture
+   par cette surface ; le banc ne l'utilise pas. L'exécution cluster depuis le cloud reste NOT_TESTED (essai T-493) ;
+   la session locale du Mac reste le chemin d'exécution.
+7. **Porte 2 « exploitation hybride »** (T-211) : seulement si la porte 1 est positive (VM lab, amd64, jour 2, règle de
+   routage). D11 reste la décision par défaut. Aucune migration d'app de kube-ops avant la porte 2.
 
 ## Amendements proposés
-- **ADR-0020** : le point 7 de l'amendement Fable (« aucune mesure sur OKE ») est remplacé par le point 1 ci-dessus pour
-  C1, C5 et C6. C5 compare OpenChoreo au chemin kube-ops reproduit (bras K) au lieu d'un backend plain écrit pour la
-  porte. La décision « adopter / abandonner » se prend en deux temps (porte 1, porte 2).
-- **ADR-0003** (amendement du consensus n°2, point 2) : « OKE devient optionnel » est complété par « OKE sert
-  d'environnement de dev du POC pendant la porte 1 » ; la nomenclature OKE du §8 s'applique au banc.
+- **ADR-0020** : le point 7 de l'amendement Fable (« aucune mesure sur OKE ») est remplacé par le point 1 pour C1, C5
+  et C6 ; C5 compare OpenChoreo au chemin kube-ops reproduit ; la décision se prend en deux temps.
+- **ADR-0003** : « OKE devient optionnel » est complété par « OKE est l'environnement jetable du POC pendant la
+  porte 1 ».
+- **ADR-0022** : Colima est permis sur le Mac de Paul pour ce dépôt seulement (repli et k3d local) ; un résultat k3d
+  reste NOT_TESTED pour OKE.
 
 ## Conséquences
-- Tickets ajoutés : T-485 (protocole), T-486 (répétition MacBook), T-487 (réinitialisation d'OKE), T-488 (banc compté et
-  décision de la porte 1). T-212 devient le bras K ; T-005 vise OKE ; T-361 et T-366 attendent la porte 1.
-- La pile kube-ops d'OKE (Hindsight et `pg-shared` de drill, observabilité, cloudflared) est arrêtée pendant la fenêtre,
-  après un inventaire en lecture seule. Son retrait est fait côté homelab-infra ou kube-ops, hors périmètre de ce dépôt.
+- Tickets : T-485 (protocole minimal), T-486 (passe 0 sur OKE), T-487 (installation sur OKE vierge), T-488 (campagne
+  comptée et décision), T-489 (App de statut), T-490 (arbitrages au journal de homelab-infra et OKE recréé), T-491
+  (ApplicationSet du bras O), T-492 (branchement cible sur l'Argo de kube-ops), T-493 (essai d'exécution depuis le
+  cloud) ; T-006 recadré (check runs + MCP derrière Tunnel + Access). T-212 = bras K ; T-005 = Notifications.
 - Un PASS de la porte 1 ne prouve ni l'amd64, ni le multi-cluster, ni les données réelles, ni le jour 2.
 
 ## Alternatives écartées
-- **VM lab d'abord** (ADR-0020 actuel) : mesure la topologie avant la valeur ; 4 gestes MANDAT engagés à l'aveugle.
-- **OKE sans répétition** : les graders se déboguent sur les runs comptés.
-- **MacBook seul** : k3d ≠ OKE ; un Mac non permanent ne prouve pas l'observation asynchrone des agents cloud.
-- **Garder la pile kube-ops sur OKE à côté du banc** : deux Argo, budget de 35 pods, mesures impures.
+- **VM lab d'abord** : mesure la topologie avant la valeur ; 4 gestes MANDAT engagés à l'aveugle.
+- **Répétition sur le MacBook** : un jour de plus pour une preuve k3d, alors qu'OKE est jetable.
+- **Brancher OpenChoreo sur l'instance Argo de kube-ops pendant le POC** : PR croisées, AppProject `oracle-a1`
+  appliqué par l'opérateur et sans kinds cluster-scoped ; `apps-generated` sur `main` déploie sur le homelab.
+- **Publier le statut avec l'App de l'usine** : sa clé donnerait au cluster l'écriture de code et de workflows.
+- **apiserver derrière Access** : exige kubectl et un jeton d'API chez l'agent, expose le chemin d'administration ;
+  une erreur de RBAC expose les Secrets.
+- **Banc de 30 runs** : même décision attendue pour plus de temps ; la sûreté garde une tolérance nulle.
 
 ## Vérification
-- Seuils du §2.4 présents dans `tests/bench-ab/` avant le premier run compté (horodatage du commit antérieur aux runs).
-- Rapport daté `docs/research/POC-AB-RESULTS.md` : S1-S7 par bras, avec preuves ; décision de Paul consignée ici par
-  amendement.
+- `tests/bench-ab/thresholds.yaml` commité avant le premier run compté (horodatage Git).
+- Rapport daté `docs/research/POC-AB-RESULTS.md` (S1-S7 par bras, preuves RUNTIME OKE) ; décision de Paul consignée ici
+  par amendement.

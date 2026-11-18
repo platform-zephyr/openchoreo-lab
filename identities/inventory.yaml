@@ -196,7 +196,7 @@ identities:
     secrets:
       doppler-runtime: valeur
       k8s-secrets: ecriture
-    credentials: [eso-lab-jeton]
+    credentials: [eso-lab-jeton, statut-app-github]
     dev_deviations: [doppler-acces-elargi]
     registry_consumers: [eso-lab]
     elevation: []

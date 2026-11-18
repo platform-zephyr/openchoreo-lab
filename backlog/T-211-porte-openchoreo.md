@@ -27,6 +27,7 @@ docs/review/, docs/adr/0020-porte-adoption-openchoreo.md, docs/adr/0025-validati
 - [ ] tickets `deferred` dégelés ou `dropped` selon la décision
 - [ ] emplacement d'Authentik décidé par Paul (repris de T-213)
 - [ ] emplacement du CP confirmé par Paul (D11 par défaut : VM lab) avec la mesure C2 sur OKE de T-487 et celle de la VM lab
+- [ ] livraison par l'Argo de kube-ops décidée pour le cluster cible (T-492)
 - [ ] C1, C5 et C6 repris du rapport de la porte 1 (T-488), sans nouvelle mesure
 - [ ] C2 différentiel : surcoût d'OpenChoreo par rapport au chemin du bras K sur la même VM ≤ 4 Gio de requests et ≤ 25 pods
 - [ ] C3 : bundle de sécurité retiré ou reconstruction scriptée amd64 ≤ 2 h par patch (T-366)
@@ -40,3 +41,5 @@ docs/review/, docs/adr/0020-porte-adoption-openchoreo.md, docs/adr/0025-validati
 Constats G1-G4 de la revue Fable, acceptés (arbitrage Fable, 2026-11-18) ; T-140 retiré des dépendances.
 
 Recadré par ADR-0025 (2026-11-18) : la porte unique devient deux portes. La règle « jamais de mesure sur OKE » est levée pour la porte 1 ; C1, C5 et C6 viennent du banc A/B (T-488). Le comparateur plain devient le chemin kube-ops reproduit (T-212).
+
+Accéléré (arbitrages de Paul n°3, 2026-11-18) : C1, C5 et C6 viennent du banc minimal (T-488, 4 tâches, 2 runs).

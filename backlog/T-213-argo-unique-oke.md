@@ -31,3 +31,5 @@ platform/install/argocd/, docs/architecture/
 Intégration 2 : plus bloquant du MVP (CP sur la VM lab pendant la porte ; lab-argocd devient l'Argo du lab, D4). Dégel si OKE héberge le CP ou des apps (D11). L'emplacement d'Authentik passe à T-211.
 
 (consensus n°2 et arbitrages de Paul, 2026-11-18) : D11 tranché (CP sur le homelab) ; dégel seulement si OKE héberge des apps.
+
+(arbitrages de Paul n°3, 2026-11-18) : pour le POC, OKE est recréé vierge avec le seul Argo du labo (T-490, T-487) ; la cible « un seul Argo par cluster, amorcé par kube-ops » est T-492.
