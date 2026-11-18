@@ -11,6 +11,9 @@ Dernière mise à jour : 2026-11-17 ~20:45Z. Lire ensuite `missions/MISSION.md` 
 - **Plus de blocage OKE.** Prochaine phase : golden path n°2 stateless (ntfy interne, sans PVC), IDP utilisable (Backstage privé, Authentik, MCP, rôles agents), résidu kgateway avant tout credential réel.
 - Un point de sécurité amont est en **coordination privée** : ne publie AUCUN détail dans ce dépôt public. Fichiers de sécurité locaux exclus de git (`.git/info/exclude`). **Handoff privé (hors dépôt)** : le retrouver avec `find ~/Library/Application\ Support/Claude -name HANDOFF-PRIVATE.md 2>/dev/null` (ne jamais en copier le contenu ici). Dépôt privé du bundle : `platform-zephyr/openchoreo-lab-security` (clone local à côté de ce dépôt ; `gh repo view` pour vérifier l'accès).
 
+## 1b. Agents cloud (décisions de Paul, 2026-11-18)
+Backlog = issues GitHub de ce dépôt (pas Linear). Dev et prod = Environments OpenChoreo sur le même OKE, dev frugal. MCP joignable par Cloudflare Tunnel + Access (exception unique). Modèle et gestes de Paul : `docs/CLOUD-AGENTS.md`. Rien n'est encore exécuté sur OKE.
+
 ## 2. Accès OKE (un seul exécutant : le coordinateur ; les agents n'y ont pas accès)
 - Session bastion ouverte le 2026-11-17 ~20:06Z avec l'accord de Paul (TTL 3 h → expire ~23:06Z). Kubeconfig temporaire généré par le script d'accès (emplacement : handoff privé), contexte `context-oracle-a1-*` (jamais `admin@homeops`).
 - Fermer/rouvrir : script `open-oke-access.sh` de l'agent OKE (emplacement : handoff privé) avec `close` puis `open 10800`. **Piège** : si le tunnel répond « Permission denied » juste après `open` (propagation de la clé), attendre ~20 s et relancer seulement le tunnel avec la commande SSH de `oci bastion session get … ssh-metadata.command` (voir le script).

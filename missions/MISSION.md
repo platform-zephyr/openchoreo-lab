@@ -13,8 +13,13 @@ Budget : OpenChoreo ≤ 1,5 GiB et ≤ 0,3 vCPU au repos = OBJECTIF d'optimisati
 - Préparer des PR ciblées dans `kube-ops` : correctif C1 (kube-ops #1629) et blueprints Authentik. L'APPLICATION sur des ressources de production n'a lieu qu'après vérification du périmètre, de l'impact et d'un rollback éprouvé.
 - Accès OKE par session bastion (ouverte avec l'accord de Paul) : un seul exécutant, le coordinateur.
 - Namespaces `dp-*` générés par OpenChoreo (avec labels de propriété, quotas, admission, nettoyage) ; label `openchoreo.dev/control-plane=true` sur `default` UNIQUEMENT si OpenChoreo 1.3.3 l'exige, sans élargir les permissions sur les autres ressources de `default`.
+## Décisions de Paul du 2026-11-18 (agents cloud, `docs/CLOUD-AGENTS.md`)
+- Backlog du labo : issues GitHub de ce dépôt. Pas Linear tant que l'adoption d'OpenChoreo n'est pas tranchée.
+- Dev et prod sur le **même** OKE (un nœud, pas de HA) : Environments OpenChoreo `development` et `production`. Le dev doit rester frugal (`docs/CLOUD-AGENTS.md` §2).
+- **Exception d'exposition** : le MCP OpenChoreo, et lui seul, peut être publié par Cloudflare Tunnel **derrière Cloudflare Access** (service token dédié, aucun accès anonyme, aucun bypass), en plus de l'authz OpenChoreo. La configuration Cloudflare et Authentik reste un geste de Paul (MANDAT) ; l'agent prépare la PR `platform/` (NetworkPolicy) et la documentation.
+
 ## Toujours INTERDIT (sans nouvelle autorisation écrite de Paul)
-Création du volume PostgreSQL OCI de 50 Go (`--confirm-storage`) ; toute exposition publique (Tunnel, Ingress, LoadBalancer) ; LoadBalancer OCI facturable ; migration Talos ; modification de `kube-system`, de ressources de production ou de politiques cluster-wide non vérifiées ; `tofu apply`, Doppler, Cloudflare ; migration Authentik ; création par un agent d'une identité/clé/token d'accès ; secret affiché ou committé ; TLS désactivé ; contournement d'admission ; suppression de ressources hors du labo ; nouvelle étude comparative.
+Création du volume PostgreSQL OCI de 50 Go (`--confirm-storage`) ; toute exposition publique (Tunnel, Ingress, LoadBalancer) hors l'exception MCP ci-dessus ; LoadBalancer OCI facturable ; migration Talos ; modification de `kube-system`, de ressources de production ou de politiques cluster-wide non vérifiées ; `tofu apply`, Doppler, Cloudflare ; migration Authentik ; création par un agent d'une identité/clé/token d'accès ; secret affiché ou committé ; TLS désactivé ; contournement d'admission ; suppression de ressources hors du labo ; nouvelle étude comparative.
 Périmètre cluster : écriture dans `openchoreo-*`, `lab-*` (+ les namespaces de prérequis que l'installation crée et marque `part-of=openchoreo-lab`) et `dp-*` ; lecture seule ailleurs. Les noms imposés par OpenChoreo (`dp-*`, label sur `default`) sont des exceptions acquittées ci-dessus.
 
 ### Exceptions IMPOSÉES par OpenChoreo 1.3.3 : détail technique À ACQUITTER PAR PAUL (revue B3, 2026-11-17)
