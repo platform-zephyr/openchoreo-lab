@@ -24,6 +24,11 @@ exécutables, pas par des approbations.
 | [0012](0012-connaissance-backlog.md) | Connaissance, backlog et état pour agents | PROPOSÉ |
 | [0013](0013-intention-langage-naturel.md) | L'utilisateur exprime une intention en langage naturel à un LLM | PROPOSÉ |
 | [0014](0014-secrets-openbao.md) | Secrets : OpenBao pour les secrets internes, Doppler pour les primitives externes | PROPOSÉ |
+| [0015](0015-observabilite-remediation.md) | Observabilité, alerting et remédiation automatique | PROPOSÉ |
+| [0016](0016-montees-de-version.md) | Montées de version automatisées | PROPOSÉ |
+| [0017](0017-cout-free-tier.md) | Coût : rester dans le free tier, garde-fous exécutables | PROPOSÉ |
+| [0018](0018-services-ia.md) | Services IA : sandbox, gateway, identité et audit des IA | PROPOSÉ |
+| [0019](0019-data-platform-mesure.md) | Data platform légère et mesure de la plateforme | PROPOSÉ |
 
 Ces ADR ne changent rien au cluster. Un ADR passe d'**PROPOSÉ** à **ACTÉ** par la fusion de la PR qui le modifie,
 approuvée par Paul (`docs/adr/` fait partie du noyau protégé, ADR-0002). Un ADR acté n'est pas réécrit : il est
