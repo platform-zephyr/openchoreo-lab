@@ -12,8 +12,12 @@ pas (WSJF et RICE exigent des notes subjectives : scaledagileframework.com/wsjf 
 intercom.com/blog/rice-simple-prioritization-for-product-managers). Même idée que le coefficient `blocking` de
 l'urgence de Taskwarrior. Dépendance inconnue ou cycle : `PriorityError`.
 
-Usage : python3 tools/backlog/priority.py [--top N] [--json] [--all]
-  par défaut : tickets `todo` prêts (dépendances toutes `done`) ; --all : tous les tickets non terminés.
+Statut : statut DÉRIVÉ (`derive.py` : cases cochées + PR fusionnée dans main lue dans l'historique git local), pas le
+champ `status:` saisi à la main, sauf pour `blocked`, `deferred`, `dropped` (décisions manuelles) ou sans historique git.
+
+Usage : python3 tools/backlog/priority.py [--top N] [--json] [--all] [--diff]
+  par défaut : tickets `todo` prêts (dépendances toutes `done`) ; --all : tous les tickets non terminés ;
+  --diff : tickets dont le statut dérivé diffère de l'en-tête.
 """
 from __future__ import annotations
 
@@ -28,6 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check
+import derive
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = "priority.v1"
@@ -46,6 +51,7 @@ class Node:
     stage: str = ""
     executable: bool = True  # False : geste humain (`model: human`) ou classe MANDAT
     scope_size: int = 0
+    declared: str = ""  # champ `status:` de l'en-tête (le statut utilisé est `status`, dérivé)
 
 
 def natural_key(tid: str) -> tuple[str, int, str]:
@@ -100,15 +106,18 @@ def ready_ids(nodes: Iterable[Node]) -> set[str]:
     return {n.id for n in nodes if n.status == "todo" and all(status.get(d) == "done" for d in n.deps)}
 
 
-def load_nodes(backlog: Path) -> list[Node]:
+def load_nodes(backlog: Path, evidence: derive.Evidence | None = None) -> list[Node]:
+    """Tickets du backlog avec leur statut dérivé ; `evidence` : historique git (défaut : dépôt parent du backlog)."""
+    ev = evidence if evidence is not None else derive.collect(backlog.resolve().parent)
     nodes = []
     for f in sorted(backlog.glob("T-*.md")):
         t = check.parse_ticket(f)
         if t.errors or not t.get("id"):
             continue
         good, _ = check.scope_paths(t.body)
-        nodes.append(Node(t.id, t.status, tuple(t.deps), t.get("stage"),
-                          t.get("model") != "human" and "MANDAT" not in t.get("class"), len(good)))
+        st = derive.derive(t.id, t.status, check.section(t.body, "Critères de fin"), ev, t.get("github_issue"))
+        nodes.append(Node(t.id, st, tuple(t.deps), t.get("stage"),
+                          t.get("model") != "human" and "MANDAT" not in t.get("class"), len(good), t.status))
     return nodes
 
 
@@ -118,8 +127,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--top", type=int, help="limite le nombre de lignes")
     ap.add_argument("--json", action="store_true", help="sortie JSON `priority.v1`")
     ap.add_argument("--all", action="store_true", help="tous les tickets non terminés, pas seulement les prêts")
+    ap.add_argument("--diff", action="store_true", help="tickets dont le statut dérivé diffère de l'en-tête")
     args = ap.parse_args(argv)
     nodes = load_nodes(args.backlog)
+    if args.diff:
+        for n in sorted((n for n in nodes if n.status != n.declared), key=lambda n: natural_key(n.id)):
+            print(f"{n.id}  en-tête {n.declared:<11}  dérivé {n.status}")
+        return 0
     try:
         only = {n.id for n in nodes if n.status not in CLOSED | {"deferred"}} if args.all else ready_ids(nodes)
         ranked = rank(nodes, only)
@@ -129,7 +143,7 @@ def main(argv: list[str] | None = None) -> int:
     ranked = ranked[: args.top] if args.top else ranked
     if args.json:
         rows = [{"id": n.id, "score": s, "stage": n.stage, "executable": n.executable, "scope_size": n.scope_size,
-                 "status": n.status} for n, s in ranked]
+                 "status": n.status, "declared": n.declared} for n, s in ranked]
         print(json.dumps({"schema": SCHEMA, "ranking": rows}, ensure_ascii=False, indent=2, sort_keys=True))
     else:
         print("rang  score  étape   agent  périmètre  ticket")

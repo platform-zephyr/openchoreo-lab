@@ -6,7 +6,10 @@ inexistant, dépendance absente ou gelée, cycle, `model`/`effort` inconnus, tic
 exploitable, ticket `done` avec une case de critère non cochée.
 Avertissements (code 0) : `effort: max` sur Sonnet (plafond xhigh), ticket REVUE sur le noyau sans modèle Opus,
 éléments de périmètre non exploitables dans un ticket qui en contient aussi d'exploitables, ticket `todo` ou
-`in-progress` trop gros pour un run (`sizing.py` : périmètre, critères, glob `**` sur du code ; T-480).
+`in-progress` trop gros pour un run (`sizing.py` : périmètre, critères, glob `**` sur du code ; T-480), statut
+`todo`/`in-progress`/`done` de l'en-tête différent du statut dérivé (`derive.py` : cases + historique git local ; le
+calcul fait foi pour priority.py et next.py), toutes les cases cochées avec un paragraphe « Reste » non vide (le reste
+s'écrit en cases décochées).
 
 Sans dépendance : l'en-tête est un sous-ensemble plat de YAML (`clé: valeur`), le graphe utilise `graphlib`.
 """
@@ -19,6 +22,7 @@ from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import derive
 import sizing
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,6 +43,9 @@ EXTRA_CORE = ["docs/adr", "docs/review"]
 PATH_RE = re.compile(r"^[\w.*?{}\[\]<>/-]+$")  # `<app>` : paramètre de chemin
 # Périmètre hors de ce dépôt : accepté tel quel (aucun glob à contrôler).
 OFF_REPO_MARKERS = ("hors de ce dépôt", "historique git")
+# « Reste » : ligne `Reste … : texte` (paragraphe jusqu'à la ligne vide) ou section `## Reste`.
+RESTE_LINE_RE = re.compile(r"^\W*Reste\b[^:\n]*:(.*?)(?=\n\s*\n|\n## |\Z)", re.M | re.S)
+EMPTY_RESTE = {"", "rien", "néant", "aucun", "aucune", "—", "-", "n/a"}
 
 
 @dataclass
@@ -149,8 +156,18 @@ class Result:
     depth: int = 0
 
 
-def check(root: Path = ROOT) -> Result:
-    """Contrôle tous les tickets de `root/backlog`."""
+def reste(body: str) -> str:
+    """Texte du « Reste » (section `## Reste` ou paragraphe `Reste … :` des notes) ; vide si absent ou nul."""
+    text = section(body, "Reste").strip()
+    if not text:
+        m = RESTE_LINE_RE.search(section(body, "Notes"))
+        text = m.group(1).strip() if m else ""
+    return "" if text.lower().strip(" .") in EMPTY_RESTE else text
+
+
+def check(root: Path = ROOT, evidence: derive.Evidence | None = None) -> Result:
+    """Contrôle tous les tickets de `root/backlog` ; `evidence` : historique git (défaut : lu dans `root`)."""
+    ev = evidence if evidence is not None else derive.collect(root)
     errors: list[str] = []
     warns: list[str] = []
     tickets: dict[str, Ticket] = {}
@@ -176,6 +193,7 @@ def check(root: Path = ROOT) -> Result:
         errors += _check_values(root, t)
         errors += _check_model(t, warns, core)
         errors += _check_body(t, warns)
+        warns += _check_derived(t, ev)
     errors += _check_graph(tickets)
     todo = [t for t in tickets.values() if t.status == "todo"]
     depth = _depth(tickets, todo)
@@ -237,6 +255,20 @@ def _check_body(t: Ticket, warns: list[str]) -> list[str]:
         crit = section(t.body, "Critères de fin")
         if re.search(r"^\s*- \[ \]", crit, re.M):
             out.append(f"CRITÈRES {i} status done avec case non cochée")
+    return out
+
+
+def _check_derived(t: Ticket, ev: derive.Evidence) -> list[str]:
+    """Avertissements seulement : statut déclaré contredit par le calcul ; « Reste » non vide, cases toutes cochées."""
+    out, crit, issue = [], section(t.body, "Critères de fin"), t.get("github_issue")
+    calc = derive.derive(t.id, t.status, crit, ev, issue)
+    if t.status in derive.DERIVED and calc != t.status:
+        out.append(f"STATUT-DÉRIVÉ {t.id} en-tête {t.status}, calcul {calc} "
+                   f"({derive.reason(t.id, crit, ev, issue)}) ; le calcul fait foi")
+    checked, total = derive.boxes(crit)
+    if t.status != "dropped" and total and checked == total and reste(t.body):
+        out.append(f"RESTE {t.id} toutes les cases sont cochées mais « Reste » n'est pas vide : "
+                   "écrire le reste en cases décochées dans « Critères de fin »")
     return out
 
 

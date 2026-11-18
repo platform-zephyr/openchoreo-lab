@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Dispatcher minimal (T-210) : liste les tickets prêts, sortie JSON stable `ready.v1`.
 
-Lecture seule : ne lance aucun agent, n'écrit aucun fichier. Paul (workflow_dispatch) lance la liste.
+Lecture seule : ne lance aucun agent, n'écrit aucun fichier. Statut : dérivé (`derive.py`), comme priority.py. Paul (workflow_dispatch) lance la liste.
 La classe, le modèle et l'effort sont recalculés depuis les chemins du périmètre (admission.py).
 
 Usage :
@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import admission  # noqa: E402
+import derive
 import priority
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -54,7 +55,14 @@ def _perimeter(text: str) -> list[str]:
     return admission.parse_perimeter(body)
 
 
-def load_tickets(backlog: Path) -> dict[str, Ticket]:
+def _criteria(text: str) -> str:
+    m = re.search(r"^## Critères de fin\s*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
+    return m.group(1) if m else ""
+
+
+def load_tickets(backlog: Path, evidence: derive.Evidence | None = None) -> dict[str, Ticket]:
+    """Tickets avec leur statut DÉRIVÉ (derive.py) ; `declared` garde le champ `status:` de l'en-tête."""
+    ev = evidence if evidence is not None else derive.collect(backlog.resolve().parent)
     tickets: dict[str, Ticket] = {}
     for f in sorted(backlog.glob("T-*.md")):
         text = f.read_text(encoding="utf-8")
@@ -62,8 +70,10 @@ def load_tickets(backlog: Path) -> dict[str, Ticket]:
         if "id" not in h:
             continue
         deps = [d.strip() for d in h.get("depends_on", "[]").strip("[]").split(",") if d.strip()]
+        declared = h.get("status", "")
         tickets[h["id"]] = {
-            "id": h["id"], "title": h.get("title", ""), "status": h.get("status", ""),
+            "id": h["id"], "title": h.get("title", ""), "declared": declared,
+            "status": derive.derive(h["id"], declared, _criteria(text), ev, h.get("github_issue", "")),
             "stage": h.get("stage", ""), "lane": h.get("lane", ""), "deps": deps,
             "velocity": h.get("velocity") == "true", "header_class": h.get("class", ""),
             "header_model": h.get("model", ""), "header_effort": h.get("effort", ""),

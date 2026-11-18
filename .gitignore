@@ -1,3 +1,5 @@
 tests/storage/evidence/
 __pycache__/
 .coverage
+# Vue d etat generee en local (python3 tools/backlog/status.py --write) ; publiee par la CI, non versionnee.
+backlog/STATUS.md

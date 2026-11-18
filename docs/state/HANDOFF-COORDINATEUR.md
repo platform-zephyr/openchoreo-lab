@@ -2,8 +2,8 @@
 
 À lire en premier après une compaction ou par une nouvelle session coordinatrice. Ne contient aucun secret. Dépôt PUBLIC : aucune IP, OCID,
 e-mail, hôte interne ni détail de faille nulle part. **Point d'entrée opérationnel : le skill `orchestrate-backlog`** (`.agents/skills/`) ; ce
-document donne l'état, les décisions de Paul et les pièges. Les prochaines étapes : `backlog/NEXT.md` ; l'état de chaque ticket : `backlog/STATUS.md`
-(généré par `python3 tools/backlog/status.py --write`) ; l'ordre de travail : `python3 tools/backlog/priority.py --top 10`.
+document donne l'état, les décisions de Paul et les pièges. Les prochaines étapes : `backlog/NEXT.md` ; l'état de chaque ticket : `python3 tools/backlog/status.py`
+(statut dérivé des cases et des PR fusionnées ; `STATUS.md` n'est plus versionné) ; l'ordre de travail : `python3 tools/backlog/priority.py --top 10`.
 
 ## Où on en est
 - **Mode dev** (arbitrage de Paul) : sécurité allégée, les agents fusionnent après `ci-ok`, revue des code owners suspendue jusqu'à FINAL0.
@@ -24,7 +24,7 @@ document donne l'état, les décisions de Paul et les pièges. Les prochaines é
   T-332, T-411, T-451, T-452, T-458, T-460, T-461, T-466, T-467, T-470, T-478, T-479, T-480…).
 
 ## Reprise : ce qu'il faut faire en arrivant
-1. Charger le skill `orchestrate-backlog` ; lire ce document, `backlog/NEXT.md`, `backlog/STATUS.md`.
+1. Charger le skill `orchestrate-backlog` ; lire ce document, `backlog/NEXT.md`, la sortie de `python3 tools/backlog/status.py`.
 2. `git fetch origin main && git checkout -B claude/cool-hamilton-r7aa5k origin/main` (la branche du coordinateur est supprimée à chaque fusion :
    `delete_branch_on_merge` est actif ; la repousser recrée la branche).
 3. Vérifier la PR #89 (file de fusion) ; clôturer T-479 et T-480 ; relever le coût réel des runs avec `python3 tools/factory/stats.py` (T-479).
@@ -47,7 +47,9 @@ document donne l'état, les décisions de Paul et les pièges. Les prochaines é
 - **PR d'agent rouge pour un vrai défaut** : ne pas pousser sur sa branche ; un agent local reprend la branche (`git merge origin/claude/issue-…`),
   corrige, livre par la branche du coordinateur ; fermer la PR du bot.
 - **Branche d'une PR fermée non supprimée** : le nom `claude/issue-<n>-<slug>` reste ; l'agent en choisit un autre au relancement (ok) ; sinon Paul la supprime.
-- **`STATUS.md` en conflit** entre branches d'agents : prendre « ours » puis `python3 -B tools/backlog/status.py --write`.
+- **`STATUS.md` en conflit** : n'existe plus ; le fichier n'est plus versionné (vue publiée par le job CI `backlog`).
+- **Ticket resté `in-progress` cases cochées et PR fusionnée** (cas T-214) : le statut se dérive (cases + trailer `Ticket:`) ;
+  `check.py` signale l'en-tête périmé (`STATUT-DÉRIVÉ`), `priority.py` et `next.py` suivent le calcul.
 - **Agents de recherche** : `git clone` d'un dépôt tiers est refusé ; un contournement (assembler la commande pour passer le filtre) a été refusé à
   juste titre : un refus d'une garde n'est jamais à contourner, il se signale. WebFetch et `curl` sur `raw.githubusercontent.com` fonctionnent.
 - Détails de la procédure de fusion, d'intégration d'une branche d'agent, du brief type et de l'usine : voir le skill `orchestrate-backlog`

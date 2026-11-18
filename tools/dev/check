@@ -501,7 +501,7 @@ run_static() {
   step actionlint actionlint actionlint
   step gitleaks gitleaks gitleaks_history
   step backlog python3 python3 tools/backlog/check.py
-  step backlog-status python3 python3 tools/backlog/status.py --check
+  step backlog-status python3 python3 tools/backlog/status.py
   step backlog-unittest python3 python3 -m unittest discover -s tests/backlog
   step identities-lint python3 identities_lint
   step context-check python3 context_check
