@@ -6,13 +6,13 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 24 |
+| `in-progress` | 25 |
 | `todo` | 128 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 28 |
 | `dropped` | 27 |
-| **Total** | **255** |
+| **Total** | **256** |
 
 ## En cours (`in-progress`)
 
@@ -42,6 +42,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-476](T-476-score-de-priorite-et-skill-orchestrateur.md) | Score de priorité du backlog (priority.py) et skill orchestrate-backlog | 4/6 | Reste : critères 5 et 6 (branchement CI hors périmètre de cette PR, T-475 modifie `ci.yaml` en parallèle ; mesure sur lots réels). | — |
 | [T-478](T-478-plafonds-natifs-executant.md) | Exécutant : plafonds natifs de Claude Code (--max-budget-usd, --permission-prompts none) et corps d… | 4/6 | Premier critère ouvert : run réel daté sur un ticket simple : `total_cost_usd` ≤ plafond, `permission_denials` sans répétition du même outil, tours comparés au run 44313706955 (79 tours) — NOT_TESTED (aucun dispatch après fu… | — |
 | [T-479](T-479-statistiques-usine-par-run.md) | Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et… | 3/5 | Reste : aucune sortie sensible (test dédié à relire), rapport daté sur les artefacts réels des runs 44313706955, 44326043746, 44331128791, 44333609180, 44338002716 (comparaison coût/tours avant et après T-466/T-474/T-478). | [#86](https://github.com/platform-zephyr/openchoreo-lab/issues/86) |
+| [T-481](T-481-integrer-skills-mattpocock.md) | Intégrer les skills mattpocock/skills (MIT) pour les sessions, l'usine et l'orchestrateur, à SHA fi… | 4/6 | Premier critère ouvert : run réel de l'usine qui lit `mattpocock-tdd` (trace `Read` dans le fichier d'exécution) — NOT_TESTED (aucun dispatch) | — |
 
 ## Bloqué (`blocked`)
 
