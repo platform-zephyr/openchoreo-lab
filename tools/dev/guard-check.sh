@@ -26,8 +26,12 @@ for p in "$HOME/.kube" "$HOME/.oci" "$HOME/.cache/oke-access" "$HOME/.config/gh"
          "$HOME/.doppler" "$HOME/.aws" "$HOME/.azure" "$HOME/.config/gcloud" "$HOME/.ssh" "$HOME/.netrc"; do
   if [[ -e "$p" || -L "$p" ]]; then fail "chemin d'identifiants présent : $p"; fi
 done
-if [[ -e /var/run/docker.sock ]]; then fail "socket Docker monté (/var/run/docker.sock)"; fi
-if [[ ! -e /var/run/docker.sock && ! -e "$HOME/.kube" ]]; then pass "aucun socket Docker, aucun ~/.kube, aucun identifiant de l'hôte monté"; fi
+# Le socket Docker n'est refusé que DANS le conteneur (DEV_FACTORY=1, posé par containerEnv) : un hôte ou un
+# runner CI peut légitimement en exposer un. Le devcontainer ne le monte jamais.
+if [[ -e /var/run/docker.sock ]]; then
+  if [[ "${DEV_FACTORY:-}" == 1 ]]; then fail "socket Docker monté dans le conteneur (/var/run/docker.sock)"; else printf 'INFO socket Docker présent sur cet hôte (contrôle conteneur seulement)\n'; fi
+fi
+if [[ ! -e "$HOME/.kube" ]]; then pass "aucun ~/.kube"; fi
 
 # 3. Aucun contexte kubectl : un conteneur de dev ne doit joindre aucun cluster (OKE, k3d partagé ou autre).
 if command -v kubectl >/dev/null 2>&1; then
