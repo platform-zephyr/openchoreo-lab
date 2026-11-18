@@ -18,6 +18,8 @@
 # Code de sortie : 0 si aucun FAIL ; 1 si au moins un FAIL ; 3 avec --strict (ou CHECK_STRICT=1) s'il reste un
 # NOT_TESTED sans FAIL (la CI utilise --strict) ; 2 pour un usage incorrect. Le verdict final n'est « PASS » que si
 # tous les contrôles sont PASS, sinon « INCOMPLET ».
+# Contrôles miroirs de la CI (SL-1, T-453) : quality, ruff-bugs, shellcheck-all, backlog-unittest, identities-lint,
+# yamllint-platform, coverage. ruff doit être à la version épinglée de ci.yaml, sinon NOT_TESTED.
 # Variables : CHECK_ONLY="a,b" (ne lancer que ces contrôles : tests du script), CHECK_SKIP="a,b" (NOT_TESTED « exclu »),
 # OKE_PHASEB_STATE (cache des charts Helm, partagé et sérialisé par flock).
 # Aucun secret, aucun accès cluster en --static ; sortie sans valeur sensible.
@@ -26,6 +28,8 @@ set -uo pipefail
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SELF_DIR/../.." && pwd)"
 cd "$ROOT" || exit 2
+# Pas de __pycache__ : les .pyc embarquent les valeurs fictives des tests et gitleaks (leak-guard) scanne l'arbre de travail.
+export PYTHONDONTWRITEBYTECODE=1
 
 n_pass=0
 n_fail=0
@@ -136,6 +140,77 @@ shellcheck_all() {
   shellcheck -x -P SCRIPTDIR "${files[@]}"
 }
 
+# Version de ruff épinglée par la CI (ci.yaml, job lint-code) : un ruff d'une autre version ne donne pas les mêmes
+# trouvailles (la ligne de base de tools/quality en dépend). Désaccord = abandon du contrôle (rc 125, NOT_TESTED).
+ruff_pinned() {
+  local want got
+  want="$(grep -o 'ruff==[0-9][0-9.]*' .github/workflows/ci.yaml | head -n 1 | cut -d= -f3)"
+  got="$(ruff --version | awk '{print $2}')"
+  if [[ -z "$want" || "$want" != "$got" ]]; then
+    echo "ruff $got installé, ruff==${want:-?} épinglé par ci.yaml : version différente, contrôle non fiable"
+    return 125
+  fi
+}
+
+# ruff, classe bogue (F, B, E9) sur tools et tests : miroir du job CI lint-code.
+ruff_bugs() {
+  ruff_pinned || return $?
+  ruff check --no-cache --select F,B,E9 tools tests
+}
+
+# Niveau warning sur tous les *.sh versionnés (shellcheck -S warning) : miroir du job CI lint-code.
+shellcheck_versioned() {
+  local -a files=()
+  mapfile -d '' -t files < <(git ls-files -z '*.sh')
+  [[ "${#files[@]}" -gt 0 ]] || { echo "aucun script *.sh versionné : contrôle sans objet"; return 125; }
+  shellcheck -S warning "${files[@]}"
+}
+
+# yamllint de platform/* (même liste que le job CI platform ; component-types et kyverno hors liste, comme en CI).
+yamllint_platform() {
+  local -a dirs=()
+  local d
+  for d in platform/install platform/authz platform/policies platform/data platform/traits platform/project-types \
+    platform/resource-types platform/cluster-agent platform/identity platform/portal tools/oke tests/argo-guard \
+    tests/argo-escalation; do
+    [[ -d "$d" ]] && dirs+=("$d")
+  done
+  yamllint -c tools/appgen/yamllint.yaml "${dirs[@]}"
+}
+
+# Registre des identités (aucune valeur) et tests du lint : miroir du job CI appgen.
+identities_lint() {
+  python3 -I tools/backlog/identities_lint.py && python3 -m unittest discover -s tests/identities
+}
+
+# Cliquet de maintenabilité : miroir du job CI quality.
+quality_ratchet() {
+  ruff_pinned || return $?
+  python3 -m unittest discover -s tests/quality && python3 tools/quality/check.py
+}
+
+# Tests sous couverture puis plancher : miroir du job CI quality-coverage. Fichiers de travail dans un dossier jetable.
+# La couverture du diff n'est vérifiée que si origin/main existe (sinon seul le plancher d'appgen.py s'applique).
+quality_coverage() {
+  ruff_pinned || return $?
+  local w rc=0
+  local -a base=()
+  w="$(mktemp -d "${TMPDIR:-/tmp}/check-cov.XXXXXX")"
+  export COVERAGE_FILE="$w/.coverage"
+  {
+    python3 -m coverage run -m unittest discover -s tests/appgen &&
+      python3 -m coverage run -a -m unittest discover -s tests/backlog &&
+      python3 -m coverage run -a -m unittest discover -s tests/identities &&
+      python3 -m coverage json -q -o "$w/coverage.json"
+  } || rc=$?
+  if [[ "$rc" -eq 0 ]]; then
+    git rev-parse --verify -q origin/main >/dev/null && base=(--base origin/main)
+    python3 tools/quality/check.py --coverage-json "$w/coverage.json" "${base[@]}" || rc=$?
+  fi
+  rm -rf "$w"
+  return "$rc"
+}
+
 in_container() { [[ "${DEV_FACTORY:-}" == 1 ]]; }
 
 run_static() {
@@ -151,10 +226,17 @@ run_static() {
   step check-selftest - tests/dev-factory/check-test.sh
   step devcontainer-json python3 python3 -I -m json.tool .devcontainer/devcontainer.json
   step shellcheck shellcheck shellcheck_all
+  step shellcheck-all shellcheck shellcheck_versioned
   step yamllint yamllint yamllint -c tools/appgen/yamllint.yaml apps tools tests .github
+  step yamllint-platform yamllint yamllint_platform
   step actionlint actionlint actionlint
   step gitleaks gitleaks gitleaks git --redact --no-banner --log-level warn .
   step backlog python3 python3 tools/backlog/check.py
+  step backlog-unittest python3 python3 -m unittest discover -s tests/backlog
+  step identities-lint python3 identities_lint
+  step ruff-bugs ruff ruff_bugs
+  step quality python3,ruff,py:radon,py:mypy quality_ratchet
+  step coverage python3,ruff,py:yaml,py:jsonschema,py:coverage,py:radon,py:mypy quality_coverage
   step appgen-validate python3,py:yaml,py:jsonschema python3 tools/appgen/appgen.py validate
   step appgen-check python3,py:yaml,py:jsonschema python3 tools/appgen/appgen.py check
   step appgen-unittest python3,py:yaml,py:jsonschema python3 -m unittest discover -s tests/appgen
@@ -167,7 +249,8 @@ run_static() {
   step uninstall-guards helm locked env ARGO_GUARD_CHART_CACHE="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}/charts" tests/argo-guard/uninstall-guards.sh
   step kubeconform-platform helm,kubeconform,python3,curl,shasum locked tools/oke/kubeconform-platform.sh
   # Contrôles des tickets T-303, T-306, T-330, T-331 : actifs dès que leur script entre dans le dépôt.
-  script_step leak-guard T-303 - tests/leak-guard/run.sh
+  # leak-guard : sans gitleaks (ou LEAK_GUARD_BIN), NOT_TESTED et non FAIL (run.sh sortirait en 1 : pas un échec).
+  script_step leak-guard T-303 "${LEAK_GUARD_BIN:-gitleaks}" tests/leak-guard/run.sh
   script_step identities T-306 python3 tests/identities/run.sh
   script_step settings T-330 jq tests/hooks/settings.test.sh
   script_step hooks T-331 jq tests/hooks/run.sh
