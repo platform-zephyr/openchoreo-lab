@@ -18,8 +18,9 @@ github_issue: null
 
 ## Intention
 Paul a installé `mattpocock-skills@claude-plugins-official` en local. Ces skills doivent aussi servir (a) aux sessions
-cloud et locales sur ce dépôt, (b) aux agents de l'usine `claude-agent.yml`, (c) à l'orchestrateur, à une version figée
-et relue, sans élargir les permissions ni retirer un refus.
+cloud et locales sur ce dépôt, (b) à l'orchestrateur et au coordinateur, à une version figée et relue, sans élargir les
+permissions ni retirer un refus. Décision de Paul (2026-11-18) : l'usine `claude-agent.yml` (agents non interactifs sur
+runner GitHub) ne lit aucun de ces skills.
 
 ## Périmètre de fichiers
 .agents/skills/mattpocock-*/, .agents/skills/orchestrate-backlog/SKILL.md, AGENTS.md, /NOTICE (attribution), LICENSES/, .github/workflows/claude-agent.yml, tests/factory/external-skills-test.sh
@@ -28,11 +29,17 @@ et relue, sans élargir les permissions ni retirer un refus.
 - [x] dépôt amont lu et méthode officielle d'activation établie (dépôt, action épinglée ; voir Notes : aucune voie déclarative épinglable n'atteint le cloud ni l'usine) : licence, liste des skills, activité, SHA par `git ls-remote` — PROUVÉ (STATIC, 2026-11-18) : `mattpocock/skills` `HEAD` = `5863806dd4e15c63174bee4e7515a4256792ecfa`, MIT (Copyright (c) 2026 Matt Pocock), plugin 1.3.2, 27 skills dans `plugin.json` ; `resolving-merge-conflicts` retiré en amont (CHANGELOG, PR #1120)
 - [x] `orchestrate-backlog` (§6 « Skills externes utiles »), une ligne dans `AGENTS.md`, six skills vendorés avec en-tête de provenance (URL, SHA, licence, modifications), nom préfixé `mattpocock-`, texte MIT et `NOTICE` — PROUVÉ (STATIC, 2026-11-18) : `tests/factory/external-skills-test.sh`
 - [x] `.claude/settings.json` inchangé (permissions et refus intacts) ; garde contre un plugin ou une marketplace flottants et contre une règle `Skill` — PROUVÉ (STATIC, 2026-11-18) : `git diff origin/main -- .claude/settings.json` vide ; 5 mutations détectées
-- [x] usine : consigne de lecture par Read dans `--append-system-prompt`, aucune entrée `plugins`/`plugin_marketplaces`, `Skill` hors `allowedTools` ; 21 mutations détectées au total — PROUVÉ (STATIC, 2026-11-18)
-- [ ] run réel de l'usine qui lit `mattpocock-tdd` (trace `Read` dans le fichier d'exécution) — NOT_TESTED (aucun dispatch)
+- [x] usine : aucune consigne de lecture de skill dans `--append-system-prompt` (ni commentaire T-481), aucune entrée `plugins`/`plugin_marketplaces`, `Skill` hors `allowedTools` ; contrôle d'absence et mutations détectées par `tests/factory/external-skills-test.sh` — voir la PR pour le reçu
+- [x] ~~run réel de l'usine qui lit `mattpocock-tdd`~~ — sans objet (décision de Paul : l'usine ne lit pas les skills)
 - [ ] `tools/dev/check --static --changed` PASS ; section « Implémentations publiques consultées » dans la PR — check local : voir la PR ; PR non ouverte
 
 ## Notes
+Décision de Paul (2026-11-18) : dans l'usine, faire lire des skills qui ne servent pas est inutile ; la consigne « Méthode
+(T-481) » et le commentaire associé sont retirés de `claude-agent.yml`. Les copies `.agents/skills/mattpocock-*` restent
+pour les sessions interactives et le coordinateur. La garde vérifie que la consigne est absente et que
+`plugins`/`plugin_marketplaces` restent absents. Les passages ci-dessous sur la lecture par Read dans l'usine sont
+historiques.
+
 Décision : **copie vendorée** (licence MIT) plutôt qu'activation déclarative. Sources officielles lues le 2026-11-18 :
 - code.claude.com/docs/en/cloud-environments, « What carries over » : une session cloud n'installe pas les plugins de
   `enabledPlugins` ni les marketplaces de `extraKnownMarketplaces` du dépôt ; elle charge `.claude/skills/` (ici un lien

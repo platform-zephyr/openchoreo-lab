@@ -44,7 +44,7 @@ Un ticket `in-progress` porte une ligne « Reste » : c'est son état réel, pas
 
 ## 6. Skills externes utiles (T-481)
 Copies vendorées de `mattpocock/skills` (MIT, SHA figé dans chaque en-tête, garde `tests/factory/external-skills-test.sh`) ; méthode, jamais permission : AGENTS.md et `platform-guardrails` priment.
-- Brief d'un ticket de code : « lis `mattpocock-tdd` ; devant un échec, `mattpocock-diagnosing-bugs` ». L'usine les lit déjà par Read (consigne du workflow) : l'outil Skill n'y est pas autorisé.
+- Brief d'un ticket de code : « lis `mattpocock-tdd` ; devant un échec, `mattpocock-diagnosing-bugs` ». L'usine ne lit aucun skill (décision de Paul) : ce brief ne s'applique qu'aux sous-agents locaux ; l'outil Skill n'y est pas autorisé.
 - Revue d'une branche intégrée : `mattpocock-code-review` (axes Standards et Spec ; spec = fichier du ticket).
 - Ticket qui touche `AGENTS.md`, un skill ou un prompt : `mattpocock-writing-for-agents`. Étude ou art antérieur long : `mattpocock-research` (en plus de `prior-art`). Arbitrage à poser à Paul : `mattpocock-grilling` (session interactive seulement).
 - Conflits de fusion : pas de skill (retiré en amont, CHANGELOG 1.3.x) ; garder les règles du §4.

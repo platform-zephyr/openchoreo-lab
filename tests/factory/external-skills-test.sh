@@ -2,7 +2,8 @@
 # T-481 : garde des skills tiers vendorés (mattpocock/skills, MIT) et de leur activation. Hors ligne, sans secret.
 # Vérifie : SHA unique figé dans chaque en-tête, licence et NOTICE, liste fermée de skills, aucun script ni fichier
 # hors Markdown, nom préfixé = dossier ; .claude/settings.json sans plugin ni marketplace flottants et sans règle Skill ;
-# workflow de l'usine sans entrée plugins/plugin_marketplaces, Skill hors allowedTools, chemins cités existants.
+# workflow de l'usine sans entrée plugins/plugin_marketplaces, Skill hors allowedTools, et sans consigne de lecture des
+# skills (décision de Paul : l'usine ne lit aucun skill ; les copies servent aux sessions interactives et au coordinateur).
 # Puis des mutations (copies) doivent chacune faire échouer la vérification.
 # Usage : tests/factory/external-skills-test.sh
 set -euo pipefail
@@ -62,7 +63,7 @@ perms = st.get("permissions", {})
 for r in perms.get("allow", []):
     assert not r.startswith("Skill"), f"allow Skill : {r}"
 
-# 4. Workflow de l'usine : pas d'installation de plugin à l'exécution, Skill hors allowedTools, chemins cités réels.
+# 4. Workflow de l'usine : pas d'installation de plugin à l'exécution, Skill hors allowedTools, aucune consigne de skill.
 wf = yaml.safe_load((root / ".github/workflows/claude-agent.yml").read_text(encoding="utf-8"))
 steps = wf["jobs"]["dev"]["steps"]
 claude = next(s for s in steps if s.get("id") == "claude")
@@ -73,11 +74,8 @@ for s in steps:
 args = w["claude_args"]
 tools = args.split('--allowedTools "', 1)[1].split('"', 1)[0].split(",")
 assert not any(t == "Skill" or t.startswith("Skill(") for t in tools), "Skill dans allowedTools"
-cited = set(re.findall(r"\.agents/skills/(mattpocock-[a-z-]+)/SKILL\.md", args))
-assert {"mattpocock-tdd", "mattpocock-diagnosing-bugs"} <= cited, f"consigne de l'usine sans les skills : {cited}"
-for c in cited:
-    assert (skills / c / "SKILL.md").is_file(), f"chemin cité absent : {c}"
-assert "jamais une permission" in args, "consigne : méthode, jamais permission"
+assert "Méthode (T-481)" not in args and "mattpocock" not in args and ".agents/skills" not in args, "consigne de lecture de skills dans l'usine"
+assert "T-481" not in (root / ".github/workflows/claude-agent.yml").read_text(encoding="utf-8"), "commentaire T-481 résiduel dans le workflow"
 PY
 }
 
@@ -122,8 +120,8 @@ mutant "settings JSON invalide" eval 'printf "{" >"$R/.claude/settings.json"'
 mutant "entrée plugins dans l'action" sub "$R/.github/workflows/claude-agent.yml" "          base_branch: main" $'          plugins: "mattpocock-skills@claude-plugins-official"\n          base_branch: main'
 mutant "entrée plugin_marketplaces dans l'action" sub "$R/.github/workflows/claude-agent.yml" "          base_branch: main" $'          plugin_marketplaces: "https://github.com/mattpocock/skills.git"\n          base_branch: main'
 mutant "Skill dans allowedTools" sub "$R/.github/workflows/claude-agent.yml" '--allowedTools "Edit,' '--allowedTools "Skill,Edit,'
-mutant "consigne de l'usine retirée" sub "$R/.github/workflows/claude-agent.yml" ".agents/skills/mattpocock-tdd/SKILL.md" "le skill tdd"
-mutant "chemin cité inexistant" sub "$R/.github/workflows/claude-agent.yml" ".agents/skills/mattpocock-diagnosing-bugs/SKILL.md" ".agents/skills/mattpocock-diagnosing-bugz/SKILL.md"
+mutant "consigne de lecture de skills réintroduite dans l'usine" sub "$R/.github/workflows/claude-agent.yml" "Si factory/PAUSE existe" "Méthode (T-481) : lis .agents/skills/mattpocock-tdd/SKILL.md. Si factory/PAUSE existe"
+mutant "chemin de skill cité dans l'usine" sub "$R/.github/workflows/claude-agent.yml" "Aucun accès cluster" "Lis .agents/skills/mattpocock-tdd/SKILL.md. Aucun accès cluster"
 
 if [[ "$fails" -gt 0 ]]; then printf '%s test(s) en echec\n' "$fails"; exit 1; fi
 echo "tous les tests des skills tiers (T-481) passent"
