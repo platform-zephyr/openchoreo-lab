@@ -9,15 +9,15 @@ class: REVUE
 velocity: true
 lane: ci
 stage: S0
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-008 — Check CI des tickets `backlog/` : en-tête, graphe, étapes, champs `model` et `effort`
 
 ## Intention
-Valider l'en-tête des tickets : id unique, statut connu, dépendances existantes et sans cycle, ADR existant. Valide aussi `stage`, `model` (ID complet épinglé ou `human`) et `effort`, et leur cohérence avec la règle de routage (ADR-0023 proposé).
+Valider l'en-tête des tickets : id unique, statut connu, dépendances existantes et sans cycle, ADR existant. Valide aussi `stage`, `model` (ID complet épinglé ou `human`) et `effort`, et leur cohérence avec la règle de routage (ADR-0023 : 3 règles).
 
 ## Périmètre de fichiers
 tools/backlog/check.py, tests/backlog/, backlog/README.md, backlog/proposals/FORMAT.md, .github/workflows/ci.yaml (REVUE)

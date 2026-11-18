@@ -4,14 +4,14 @@ title: "Alertes de coût : relier billing_cost_eur et cost-evidence à ntfy, rè
 status: todo
 phase: P3
 adr: [0011, 0017]
-depends_on: [T-026, T-061, T-065, T-140]
+depends_on: [T-026, T-061, T-061b, T-065, T-140]
 class: AUTONOME + MANDAT
 velocity: false
 lane: alertes
 stage: I4
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-147 — Alertes de coût : relier billing_cost_eur et cost-evidence à ntfy, règle de fraîcheur

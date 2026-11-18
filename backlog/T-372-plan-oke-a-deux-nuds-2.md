@@ -9,9 +9,9 @@ class: MANDAT
 velocity: false
 lane: socle-oke
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-372 — Plan OKE à deux nœuds 2/12 (conditionnel) : pool, volumes, IP de pods

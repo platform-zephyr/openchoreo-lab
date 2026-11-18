@@ -4,14 +4,14 @@ title: "Exposition `private | internal | public` : route par hôte (G6) et refus
 status: todo
 phase: P2
 adr: [0010, 0009]
-depends_on: [T-061, T-189]
+depends_on: [T-061, T-061b, T-189]
 class: AUTONOME
 velocity: false
 lane: exposition
 stage: I3
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-028 — Exposition `private | internal | public` : route par hôte (G6) et refus « public sans auth »

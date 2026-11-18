@@ -1,17 +1,17 @@
 ---
 id: T-348
 title: "Previews par PR sur le cluster dev homelab (TTL, frugalité, preuve publiée)"
-status: todo
-phase: P2
+status: deferred
+phase: P5
 adr: [0004, 0022]
 depends_on: [T-004, T-005, T-061, T-342, T-343]
 class: AUTONOME + REVUE
 velocity: true
 lane: hybride
-stage: I1
+stage: après-porte
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-348 — Previews par PR sur le cluster dev homelab (TTL, frugalité, preuve publiée)
@@ -31,3 +31,5 @@ platform/ (ApplicationSet previews), tools/appgen/ (label preview), tests/dev-cl
 Ne remplace pas la preuve OKE de T-005. Aucune app B ou C en preview (règle de frugalité ADR-0004).
 
 Proposé par la recherche `harness` (clé HAR-18) ; intégration 2 du 2026-11-18.
+
+Différé (consensus n°2 et arbitrages de Paul, 2026-11-18) : dépend de T-342, différé par la règle d'usine (décision 10).

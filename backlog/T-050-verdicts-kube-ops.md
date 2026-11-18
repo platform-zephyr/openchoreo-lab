@@ -11,7 +11,7 @@ lane: migration
 stage: S3
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-050 — Verdict A-F pour chaque app de kube-ops

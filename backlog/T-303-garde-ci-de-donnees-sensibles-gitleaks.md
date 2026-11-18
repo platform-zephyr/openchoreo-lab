@@ -9,9 +9,9 @@ class: REVUE
 velocity: true
 lane: ci
 stage: S0
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-303 — Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes)
@@ -31,3 +31,5 @@ Empêcher toute nouvelle fuite dans un dépôt public : job requis par ci-ok ; m
 
 ## Notes
 Proposé par la recherche `sensitive` (clé SEC-4) ; intégration 2 du 2026-11-18.
+
+En S0, tout de suite (consensus n°2 et arbitrages de Paul, 2026-11-18) : c'est la seule protection des données sensibles pendant le développement.

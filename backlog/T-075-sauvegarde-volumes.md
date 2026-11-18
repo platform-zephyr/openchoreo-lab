@@ -4,14 +4,14 @@ title: "Sauvegarde des volumes : spike VolSync/restic vs Velero/Kopia"
 status: todo
 phase: P2
 adr: [0008]
-depends_on: [T-025, T-061, T-364]
+depends_on: [T-025, T-061, T-061b, T-364]
 class: AUTONOME
 velocity: false
 lane: donnees
 stage: I1
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-075 — Sauvegarde des volumes : spike VolSync/restic vs Velero/Kopia

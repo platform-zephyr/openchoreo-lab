@@ -11,13 +11,13 @@ lane: hybride
 stage: après-porte
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-030 — Data plane distant entre le cluster lab et OKE (selon la décision D11)
 
 ## Intention
-Seulement si Paul demande une app sur OKE ou déplace le CP (D11) : CP sur lab ⇒ DP OKE (exception de flux OKE → homelab, D13) ; CP sur OKE ⇒ DP lab par NetBird L4.
+Seulement si Paul demande une app sur OKE : le CP reste sur la VM lab (D11 tranché) ; un data plane OKE distant s'y connecte (exception de flux OKE → homelab, D13).
 
 ## Périmètre de fichiers
 platform/install/, clusters/homelab/, docs/architecture/MULTI-DATAPLANE.md
@@ -34,3 +34,5 @@ platform/install/, clusters/homelab/, docs/architecture/MULTI-DATAPLANE.md
 Recadré par l'intégration 2 : le cœur (DP homelab, Environments, app A) est passé à T-364 (S1).
 
 Différé après la porte OpenChoreo (D11).
+
+(consensus n°2 et arbitrages de Paul, 2026-11-18) : reste gelé ; DP distant OKE seulement si Paul le demande. Une porte bis mesurerait alors le multi-cluster.

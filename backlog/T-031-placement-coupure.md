@@ -4,14 +4,14 @@ title: "Test de reprise du cluster lab (critère C4 révisé)"
 status: todo
 phase: P1
 adr: [0003]
-depends_on: [T-061, T-364]
+depends_on: [T-061, T-061b, T-364]
 class: AUTONOME + MANDAT
 velocity: false
 lane: hybride
 stage: S3
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-031 — Test de reprise du cluster lab (critère C4 révisé)

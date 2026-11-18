@@ -1,17 +1,17 @@
 ---
 id: T-319
 title: "Pool Remote Control sur le homelab pour les tâches à ressources locales"
-status: todo
-phase: P2
+status: deferred
+phase: P5
 adr: [0021]
 depends_on: [T-061, T-318]
 class: AUTONOME + MANDAT
 velocity: false
 lane: hybride
-stage: I2
-model: claude-sonnet-5-5
+stage: après-porte
+model: claude-opus-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R1-noyau
 github_issue: null
 ---
 # T-319 — Pool Remote Control sur le homelab pour les tâches à ressources locales
@@ -30,3 +30,5 @@ ops/runners/remote-control.md, tools/factory/rc-pool.sh
 MANDAT : un /login interactif de Paul. Le jeton setup-token ne peut pas ouvrir de session RC.
 
 Proposé par la recherche `factory` (clé FAC-10) ; intégration 2 du 2026-11-18.
+
+Différé (consensus n°2 et arbitrages de Paul, 2026-11-18) : dépend de T-318, différé par la règle d'usine (décision 10).

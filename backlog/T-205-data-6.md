@@ -11,7 +11,7 @@ lane: homelab
 stage: après-porte
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-205 — Spike Garage sur le homelab (objet S3, volume, sauvegarde R2)

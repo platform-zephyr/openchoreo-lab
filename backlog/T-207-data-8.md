@@ -11,7 +11,7 @@ lane: observabilité
 stage: après-porte
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-207 — Jauges bornées vers Grafana Cloud et alertes sur seuils d'objectif

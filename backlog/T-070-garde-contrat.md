@@ -9,9 +9,9 @@ class: REVUE
 velocity: true
 lane: ci
 stage: S3
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-070 — Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/`

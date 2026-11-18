@@ -53,3 +53,16 @@ Décisions liées : D-2026-11-15-03 et D-2026-11-16-07 (homelab-infra, autonomie
 
 ## Références
 `.github/CODEOWNERS`, `.agents/skills/platform-guardrails/SKILL.md`, `docs/AGENT-PR-MODEL.md`, `docs/GITOPS-TRUST-BOUNDARY.md`.
+
+## Amendement (consensus n°2 et arbitrages de Paul, 2026-11-18)
+Source : `docs/review/CONSENSUS-2.md` (arbitrage 4).
+1. **Sécurité de développement et sécurité finale.** Pendant le développement, un niveau de sécurité moindre est accepté :
+   les sessions d'agents agissent avec l'identité de Paul et le ruleset garde son contournement admin. Seule compte la
+   sécurité **finale** de la plateforme.
+2. **Étape FINAL « Durcissement final »**, obligatoire avant de déclarer la plateforme finie : identité d'usine et GitHub App
+   (T-215), noyau CODEOWNERS testé avec l'identité agent (T-007), ruleset sans `bypass_actors` admin (T-400), revue de
+   sécurité finale (T-401), garde d'image multi-arch si des apps vont sur OKE (T-402). La puce « les agents n'agissent
+   jamais avec le compte admin de Paul » du §2 devient une exigence de l'étape FINAL.
+3. Ce qui reste vrai dès maintenant : aucun secret, jeton ou donnée sensible dans le dépôt public (garde CI T-303 en S0) ;
+   le noyau reste soumis à l'approbation de Paul ; un agent n'élargit jamais ses propres droits (§5).
+4. Vérification : T-401 conclut PASS sur chaque point avant que Paul écrive « plateforme finie » dans STATE.md et MISSION.md.

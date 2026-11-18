@@ -11,7 +11,7 @@ lane: connaissance
 stage: après-porte
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-042 — Atlas : entrée de catalogue et skill de routage d'intention

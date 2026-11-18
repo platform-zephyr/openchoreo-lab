@@ -1,7 +1,7 @@
 # Backlog de la plateforme
 
 Source des tâches du labo (ADR-0012). Un fichier par ticket : `T-NNN-<slug>.md`. Vue d'ensemble : [INDEX.md](INDEX.md).
-Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md` ; intégration 2 : [INTEGRATION-2.md](INTEGRATION-2.md)). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
+Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md` ; intégration 2 : [INTEGRATION-2.md](INTEGRATION-2.md) ; consensus n°2 et arbitrages de Paul : [INTEGRATION-3.md](INTEGRATION-3.md)). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
 renvoie au fichier du ticket.
 
 ## En-tête d'un ticket
@@ -17,25 +17,25 @@ depends_on: [T-003]       # tickets qui doivent être `done` avant
 class: AUTONOME           # AUTONOME | REVUE | MANDAT (platform-guardrails), combinables : "AUTONOME + MANDAT"
 velocity: false           # true : accélère nettement les suivants
 lane: ci                  # couloir de fichiers (parallélisme sans conflit)
-stage: S0                 # S0-S3 (MVP), PORTE, I1-I9 (incréments), après-porte
+stage: S0                 # S0-S3 (MVP), PORTE, I1-I8 (incréments), FINAL (durcissement final), I9, après-porte
 model: claude-sonnet-5-5  # claude-haiku-5-5 | claude-sonnet-5-5 | claude-opus-5-5 | human (geste de Paul seul)
 effort: high              # low | medium | high | xhigh | max (Sonnet ≤ xhigh) ; `none` avec `human`
-routing: R99-defaut       # règle de backlog/proposals/model-routing.yaml qui a fixé le modèle (ADR-0023 proposé)
+routing: R3-defaut        # règle d'ADR-0023 qui a fixé le modèle : R0-geste-humain | R1-noyau | R2-texte | R3-defaut
 github_issue: null        # numéro si un agent a été lancé
 ---
 ```
 
-`model` et `effort` sont obligatoires sur un ticket `todo` ou `in-progress` (`check.py`). Ils viennent de la **première
-règle** de routage qui s'applique (couloir, chemins du périmètre, type de tâche) ; un modèle proposé par l'auteur ne fait
-que monter au-dessus du plancher de la règle, jamais descendre. Le dispatcher (T-210, T-382) recalcule le plancher depuis
-les chemins réellement touchés.
+`model` et `effort` sont obligatoires sur un ticket `todo` ou `in-progress` (`check.py`). Ils viennent des **3 règles**
+d'ADR-0023 (consensus n°2) : périmètre dans le noyau (CODEOWNERS, `docs/adr/`, `docs/review/`) → Opus `high` ; texte hors
+noyau → Haiku `medium` + revue Sonnet ; reste → Sonnet `high`. Le dispatcher (T-210) recalcule le modèle depuis les chemins
+réellement touchés et ignore un `model:` sous le plancher.
 
 Corps : `## Intention`, `## Périmètre de fichiers`, `## Critères de fin` (cases à cocher, chacune vérifiable :
 commande, test ou preuve runtime datée), `## Notes` (facultatif).
 
 ## Prendre un ticket (agent)
 
-1. Choisir un ticket `todo` dont toutes les dépendances sont `done`, de l'étape la plus basse (ROADMAP.md) ; `deferred` = gelé jusqu'à la porte OpenChoreo (ADR-0020).
+1. Choisir un ticket `todo` dont toutes les dépendances sont `done`, de l'étape la plus basse (ROADMAP.md) ; `deferred` = gelé jusqu'à la porte OpenChoreo (ADR-0020) ou, pour DeepSeek, après le chantier.
 2. Passer `status: in-progress` dans la même PR que le travail (pas de PR de statut seule).
 3. Livrer selon la classe : AUTONOME = merge après `ci-ok` ; REVUE = PR prête, Paul approuve ; MANDAT = la PR décrit
    le geste exact attendu de Paul (noms, jamais de valeurs).

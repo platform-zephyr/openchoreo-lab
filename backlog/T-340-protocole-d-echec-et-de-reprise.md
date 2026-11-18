@@ -11,7 +11,7 @@ lane: agents-harness
 stage: S1
 model: claude-opus-5-5
 effort: high
-routing: R01-noyau-securite
+routing: R1-noyau
 github_issue: null
 ---
 # T-340 — Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d'échec, skill `resume-ticket`

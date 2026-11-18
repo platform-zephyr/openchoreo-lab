@@ -4,14 +4,14 @@ title: "`lab-platform` en synchronisation automatique (hors lab-pg)"
 status: todo
 phase: P1
 adr: [0002]
-depends_on: [T-001, T-002, T-061, T-363]
+depends_on: [T-001, T-002, T-061, T-061b, T-363]
 class: REVUE
 velocity: true
 lane: socle-oke
 stage: S2
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R1-noyau
 github_issue: null
 ---
 # T-062 — `lab-platform` en synchronisation automatique (hors lab-pg)

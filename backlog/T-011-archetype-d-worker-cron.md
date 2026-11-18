@@ -4,14 +4,14 @@ title: "Archétype D : `spec.kind: worker | cronjob` (G1)"
 status: todo
 phase: P2
 adr: [0005]
-depends_on: [T-010, T-061]
+depends_on: [T-010, T-061, T-061b]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: I1bis
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-011 — Archétype D : `spec.kind: worker | cronjob` (G1)

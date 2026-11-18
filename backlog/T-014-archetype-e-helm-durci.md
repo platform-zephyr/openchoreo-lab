@@ -11,7 +11,7 @@ lane: contrat-appgen
 stage: I1bis
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-014 — Archétype E : chart Helm tiers encapsulé dans une cellule durcie (G7)

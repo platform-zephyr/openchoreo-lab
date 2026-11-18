@@ -1,17 +1,17 @@
 ---
 id: T-392
 title: "Revue trimestrielle du routage : retraits de modèles, nouveaux modèles, dérive des tarifs"
-status: todo
-phase: P4
+status: deferred
+phase: P5
 adr: [0016, 0023]
 depends_on: [T-061, T-323, T-388]
 class: AUTONOME
 velocity: false
 lane: veille
-stage: I9
-model: claude-haiku-5-5
-effort: low
-routing: R15-veille-releases
+stage: après-porte
+model: claude-opus-5-5
+effort: high
+routing: R1-noyau
 github_issue: null
 ---
 # T-392 — Revue trimestrielle du routage : retraits de modèles, nouveaux modèles, dérive des tarifs
@@ -30,3 +30,5 @@ docs/state/model-prices.yaml, backlog/routing.yaml
 Retraits annoncés : Opus 5.5 ≥ 2027-09-22, Sonnet 5.5 ≥ 2027-09-28, Haiku 5.5 ≥ 2027-10-07, Fable 5.2 ≥ 2027-11-09 (lus le 2026-11-18).
 
 Proposé par la recherche `model-routing` (clé MOD-13) ; intégration 2 du 2026-11-18.
+
+Différé (consensus n°2 et arbitrages de Paul, 2026-11-18) : routage à 3 règles jusqu'aux données du pilote (décision 8).

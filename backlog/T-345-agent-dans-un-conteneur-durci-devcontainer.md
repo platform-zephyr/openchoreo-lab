@@ -11,7 +11,7 @@ lane: dev-factory
 stage: S2
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-345 — Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité

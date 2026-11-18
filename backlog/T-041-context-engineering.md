@@ -8,10 +8,10 @@ depends_on: []
 class: REVUE
 velocity: true
 lane: connaissance
-stage: S0
-model: claude-sonnet-5-5
-effort: medium
-routing: R10-code-simple
+stage: S1
+model: claude-opus-5-5
+effort: high
+routing: R1-noyau
 github_issue: null
 ---
 # T-041 — Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur
@@ -26,3 +26,6 @@ AGENTS.md, STATE.md, docs/, tools/, tests/
 - [ ] fichiers toujours chargés ≤ 130 lignes au total
 - [ ] check CI taille/liens/fraîcheur
 - [ ] aucune règle impérative perdue (diff relu)
+
+## Notes
+Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).

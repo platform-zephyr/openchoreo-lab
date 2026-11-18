@@ -734,7 +734,244 @@ for x in T:
     if model == "claude-sonnet-5-5" and eff == "max": eff = "xhigh"
     x["model"], x["effort"], x["routing"] = model, eff, r["id"]
 
-SP={"S0":"P0","S1":"P0","S2":"P1","S3":"P1","PORTE":"P1","I1":"P2","I1bis":"P2","I2":"P2","I3":"P2","I4":"P3","I5":"P3","I6":"P3","I7":"P4","I8":"P4","I9":"P4","après-porte":"P5"}
+# ===== Consensus n°2 + arbitrages de Paul (2026-11-18, docs/review/CONSENSUS-2.md) =====
+# Les « Arbitrages de Paul » (fin de CONSENSUS-2.md) priment sur le tableau des décisions. Résumé : backlog/INTEGRATION-3.md.
+C2 = "(consensus n°2 et arbitrages de Paul, 2026-11-18)"
+ACTIVE = ("todo", "in-progress")
+def st(id): return X[id].get("status", "todo")
+def deps_minus(id, *ds): X[id]["deps"] = sorted(d for d in X[id]["deps"] if d not in ds)
+def deps_plus(id, *ds): X[id]["deps"] = sorted(set(X[id]["deps"]) | set(ds))
+def move_done(src, dst, pred, prefix=""):
+    keep, moved = [], []
+    for d in X[src]["done"]: (moved if pred(d) else keep).append(d)
+    X[src]["done"] = keep; X[dst]["done"] += [f"{prefix}{d}" for d in moved]
+def defer2(id, why):
+    X[id]["status"] = "deferred"; X[id]["stage"] = "après-porte"; note(id, why)
+
+# --- 1. Données sensibles (arbitrage 1) : pas de fenêtre privée ni de purge ; T-303 tout de suite ; T-301 = geste de Paul
+X["T-300"]["status"] = "dropped"
+note("T-300", f"Abandonné {C2} : pas de fenêtre privée ni de purge du cache GitHub (arbitrage 1 ; décision 6 annulée).")
+X["T-301"].update(title="Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique)",
+    deps=["T-302", "T-303"], cls="MANDAT", model="human", effort="none",
+    intent="Paul réécrit lui-même l'historique (mailmap, détail sensible, identifiants d'infrastructure) avec un agent Claude local, au moment qu'il choisit. "
+           "Pas de dépôt privé, pas de demande de purge du cache GitHub. Aucun ticket n'attend ce geste.",
+    done=["miroir de sauvegarde privé avant réécriture", "garde T-303 : 0 constat sur tout l'historique réécrit",
+          "branches ouvertes au moment de la réécriture rebasées ou recréées, PR rouvertes"])
+X["T-301"]["notes"] = "Proposé par la recherche `sensitive` (clé SEC-2) ; intégration 2 du 2026-11-18. Commandes `git filter-repo` préparées dans le rapport d'audit (hors dépôt)."
+note("T-301", f"Recadré {C2} : geste de Paul (arbitrage 1), hors chemin critique ; le pilote (T-322) et le cron (T-314) ne l'attendent plus. "
+     "Conseil : choisir un moment sans PR d'agent ouverte. Copies déjà faites (forks, archives publiques) hors de portée : prévenir l'amont reste une question à Paul.")
+note("T-303", f"En S0, tout de suite {C2} : c'est la seule protection des données sensibles pendant le développement.")
+note("T-302", f"En S0 {C2}.")
+
+# --- 2. Étape FINAL « Durcissement final » (arbitrage 4) : sécurité de dev réduite, seule la sécurité finale compte
+FINAL = ["T-215", "T-007", "T-121"]
+X["T-215"]["deps"] = ["T-061"]
+rep("T-215", "config git `noreply` imposée par le harness (hook ou réglage de session) ; aucun commit d'usine sous l'identité de Paul",
+    "bascule vers l'App des workflows qui utilisaient l'identité de dev : dispatch (T-313, T-314), merge automatique (T-315), preuve (T-005), remédiation (T-106), Renovate (T-121)")
+note("T-215", f"Étape FINAL {C2} : pendant le développement, les sessions agissent avec l'identité de Paul (arbitrage 4) ; le pack identité est obligatoire avant de déclarer la plateforme finie (décision 1 déplacée).")
+rep("T-007", "aucun commit d'usine sous l'identité de Paul sur les 7 derniers jours (lecture des auteurs et des trailers)")
+note("T-007", f"Étape FINAL {C2} : le noyau CODEOWNERS testé et l'essai réel avec l'identité agent font partie du durcissement final.")
+note("T-121", f"Étape FINAL {C2} : Renovate auto-hébergé exige la GitHub App de T-215.")
+mk("T-400", "retrait-bypass-admin-ruleset", "Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation ponctuelle",
+   "P4", ["0002"], ["T-007", "T-215"], "REVUE + MANDAT", "tools/apply-branch-protection.sh, docs/AGENT-PR-MODEL.md",
+   "Plus aucun compte, même admin, ne contourne `ci-ok` et la revue des code owners. Paul réactive le contournement à la main, ponctuellement, et le retire aussitôt.",
+   ["`bypass_actors` vide dans le ruleset appliqué (lecture de l'API datée, sans jeton affiché)", "procédure écrite : réactivation ponctuelle par Paul, motif consigné, retrait immédiat",
+    "essai : une PR sans `ci-ok` verte n'est fusionnable par aucun compte (preuve datée)"],
+   f"Décision 1 du consensus n°2, déplacée dans l'étape FINAL par l'arbitrage 4. MANDAT : réglage du ruleset par Paul.", False, "gouvernance")
+mk("T-401", "revue-securite-finale", "Revue de sécurité finale de la plateforme (prérequis de « plateforme finie »)",
+   "P4", ["0002", "0006", "0021", "0022"], ["T-007", "T-215", "T-400", "T-402"], "MANDAT",
+   "docs/review/SECURITY-FINAL.md, .github/workflows/claude-agent.yml, .claude/",
+   "Vérifier, avant de déclarer la plateforme finie, que la sécurité finale est tenue : identité d'usine, ruleset sans contournement, noyau CODEOWNERS testé, exécutant aux outils étroits, historique propre.",
+   ["rapport daté par une revue adverse (session distincte, Opus) : identité d'usine, ruleset, noyau, secrets, exposition, admission ; chaque point PASS/FAIL avec preuve",
+    "garde T-303 verte sur tout l'historique (après T-301 si Paul l'a fait)",
+    "Paul déclare « plateforme finie » dans STATE.md et MISSION.md, ou liste les écarts restants"],
+   f"Arbitrage 4 {C2} : seule la sécurité finale compte ; ce ticket est la dernière porte avant « plateforme finie ».", False, "gouvernance")
+move_done("T-313", "T-401", lambda d: d.startswith("(repris de HAR-3) actionlint") or d.startswith("(repris de HAR-3) une commande hors liste")
+          or d.startswith("`--permission-mode") or d.startswith("`show_full_output` absent ; aucun secret hors jeton Claude ; `--permission-mode")
+          or d.startswith("une PR du noyau lancée par l'exécutant"), "(repris de T-313) ")
+mk("T-402", "garde-image-multi-arch", "Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64)",
+   "P4", ["0003", "0006"], ["T-123", "T-365"], "AUTONOME", "tools/appgen/, tests/appgen/, clusters/*/capabilities.yaml",
+   "Une app qui peut aller sur les deux clusters exige une image multi-arch (manifest list amd64 + arm64) ; une app limitée au homelab n'exige que amd64.",
+   ["appgen refuse une app `cluster: oke` (ou éligible aux deux) dont le digest n'a pas les deux architectures (test négatif)", "une app homelab seule passe avec amd64 (test positif)"],
+   f"Décision 11 du consensus n°2, placée en FINAL {C2}. Sans objet tant qu'aucune app OKE n'est demandée par Paul : passer `dropped` à la revue finale si c'est toujours le cas.", False, "contrat-appgen")
+FINAL += ["T-400", "T-401", "T-402"]
+for k in FINAL: X[k]["stage"] = "FINAL"
+# Les tickets actifs hors FINAL ne dépendent plus de l'identité d'usine ni du test du noyau
+for x in T:
+    if x.get("status", "todo") in ACTIVE and x["id"] not in FINAL:
+        gone = [d for d in x["deps"] if d in ("T-215", "T-007")]
+        if gone:
+            deps_minus(x["id"], *gone)
+            note(x["id"], f"Dépendance retirée {C2} : {', '.join(gone)} (étape FINAL). Pendant le développement, identité de session de Paul ; bascule vers l'App de T-215 en FINAL.")
+X["T-315"]["title"] = "Merge automatique sous conditions : auto-merge natif pendant le dev, App de merge en FINAL"
+note("T-315", f"{C2} : pendant le développement, l'auto-merge natif est armé par la session (identité de Paul) avec les mêmes conditions ; l'App de merge arrive avec T-215 (FINAL).")
+
+# --- 3. S0 minimal pour le pilote 24 h (décision 2, sans T-215 ni ruleset : arbitrage 4)
+S0 = ["T-303", "T-302", "T-061", "T-061b", "T-008", "T-313", "T-210", "T-311", "T-330", "T-301"]
+for x in T:
+    if x.get("stage") == "S0" and x["id"] not in S0 and x.get("status", "todo") in ACTIVE and x["id"] not in FINAL:
+        x["stage"] = "S1"; note(x["id"], f"Passé de S0 à S1 {C2} : pas nécessaire au pilote 24 h (voie parallèle).")
+# T-061 scindé (décision 3)
+X["T-061"].update(title="Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote)", adr=["0002", "0021"],
+    scope="missions/MISSION.md, AGENTS.md, STATE.md, docs/adr/0002-autonomie-des-agents.md, docs/adr/0021-usine-agents-24-7.md, docs/adr/README.md",
+    intent="Acter le minimum qui autorise le pilote : ADR-0002 (avec la sécurité de dev et l'étape FINAL) et ADR-0021 réduit (règle d'usine, paliers, liste figée, PAUSE). Lever les contradictions de MISSION et STATE.",
+    done=["ADR-0002 (amendement « sécurité de dev, sécurité finale ») et ADR-0021 réduit actés par Paul",
+          "MISSION.md réaligné : homelab par défaut, CP OpenChoreo sur le homelab (D11), OKE sur demande, interdits réécrits en classes, critère « plateforme finie » = étape FINAL `done`",
+          "STATE.md : homelab par défaut, chiffres du backlog à jour, consensus n°2 cité ; AGENTS.md sans contradiction",
+          "MISSION.md et STATE.md : A1 = 2/12, plus de « 4/24 »"])
+X["T-061"]["notes"] = f"T-061a de la décision 3 {C2}. Le reste de l'ancien T-061 est dans T-061b, en parallèle du pilote."
+mk("T-061b", "acter-autres-adr", "Acter les autres ADR (0001, 0003-0006, 0010-0013, 0020, 0022, 0023) et les amendements du consensus n°2 (T-061b)",
+   "P0", ["0003", "0020", "0022", "0023"], [], "MANDAT", "docs/adr/, docs/architecture/",
+   "Acter, en parallèle du pilote, les ADR qui ne le conditionnent pas, avec les amendements homelab et ceux du consensus n°2.",
+   ["ADR 0001, 0003-0006, 0010-0013 et 0020 actés ou amendés", "ADR-0022 (harness) et ADR-0023 (routage à 3 règles, alias, DeepSeek après le chantier) actés",
+    "amendements actés : ADR-0003 (CP sur le homelab, OKE optionnel), ADR-0020 (porte mono-cluster, horloge à T-363 `done`, repli le 2026-11-25) ; texte d'ADR-0017 amendé (acté avec T-218)",
+    "TARGET-ARCHITECTURE, MULTI-DATAPLANE, DECISIONS-OPEN (D1 reformulée, D11 tranchée, D12-D14) à jour",
+    "aucun ticket ne cite encore « Talos éteint la nuit » ou « CP sur OKE » comme prérequis"],
+   f"T-061b de la décision 3 {C2}. Ne bloque pas le pilote.", False, "gouvernance")
+X["T-061b"]["stage"] = "S0"
+# Versions minimales des tickets du pilote
+X["T-311"].update(title="Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3", cls="REVUE", deps=["T-061"],
+    scope="factory/config.yaml, factory/PAUSE, .github/workflows/claude-agent.yml (groupe de concurrence), docs/AGENT-PR-MODEL.md",
+    intent="Le minimum pour lancer le pilote sans risque de dérive : un interrupteur `factory/PAUSE` qui arrête tout lancement et tout merge automatique, et une concurrence plafonnée à 3. Le ledger de quota se construit pendant le pilote (T-326).")
+mk("T-326", "ledger-quota-disjoncteur", "Ledger de quota 5 h et hebdomadaire, seuils 70/85/100 % et disjoncteur (construit pendant le pilote)",
+   "P0", ["0017", "0021"], ["T-311", "T-313"], "REVUE", "factory/config.yaml, tools/factory/ledger.py, tools/cost/agent_usage.py, tests/factory/",
+   "Compléter le gouverneur minimal avec les mesures du pilote : sommes par fenêtre de 5 h et par semaine, seuils, disjoncteur et reprise au reset.", [],
+   f"Partie « ledger » de l'ancien T-311 {C2}. Règle d'usine (ADR-0021) : admis s'il supprime la surveillance manuelle du quota par Paul mesurée au pilote.", False, "agents")
+move_done("T-311", "T-326", lambda d: not (d.startswith("factory/PAUSE") or d.startswith("règle écrite")))
+X["T-311"]["done"].insert(1, "concurrence 3 fixée dans factory/config.yaml et appliquée par le groupe de concurrence du workflow (test)")
+X["T-326"]["stage"] = "S1"
+X["T-313"]["title"] = "Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1"
+X["T-313"]["done"] = [d for d in X["T-313"]["done"] if not d.startswith("(repris de HAR-3) essai réel") and not d.startswith("(repris de HAR-3) le résumé")] + \
+    ["(repris de HAR-3) le résumé du job affiche total_cost_usd et num_turns, aucune sortie d'outil", "`show_full_output` absent ; aucun secret hors jeton Claude"]
+note("T-313", f"Version minimale {C2} : lancé par Paul (workflow_dispatch) avec l'identité de dev ; les outils étroits, le mode de permission et l'essai du noyau passent à la revue finale T-401.")
+X["T-210"]["title"] = "Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins)"
+X["T-210"]["intent"] = "Calculer les tickets prêts (dépendances `done`, étape ouverte, aucun geste humain en attente), recalculer classe et modèle depuis les chemins du périmètre, et sortir une liste que Paul lance à la main pendant le pilote."
+move_done("T-210", "T-314", lambda d: not (d.startswith("next.py liste") or d.startswith("classe recalculée")), "(repris de T-210) ")
+X["T-210"]["done"] += ["la liste à lancer reste fournie par Paul (workflow_dispatch) ; next.py ne lance rien",
+    "modèle et effort recalculés depuis les chemins du périmètre (3 règles d'ADR-0023) ; un `model:` d'en-tête sous le plancher est ignoré (test)"]
+note("T-210", f"Version minimale {C2} : l'admission (couloirs, chevauchement, ressources exclusives, gouverneur, plafond) passe au dispatcher planifié T-314.")
+for k in ("T-322", "T-314"): deps_minus(k, "T-301")
+X["T-322"]["notes"] = X["T-322"]["notes"].replace(" Ne démarre qu'après la réécriture de l'historique (T-301).", "")
+X["T-317"]["done"] = [("escalade d'un cran (Sonnet → Opus) seulement sur échec de capacité prouvé : 2 échecs sur des critères de fin, CI verte par ailleurs (ADR-0023)"
+                       if "T-382" in d else d) for d in X["T-317"]["done"]]
+X["T-314"]["notes"] = X["T-314"]["notes"].replace("S0 reste manuel (CONSENSUS #11)", "S0 et le pilote restent manuels (CONSENSUS #11)")
+
+# --- 4. Lab : T-366 bundle multi-arch + installateur ; D11 tranché (CP sur la VM lab) ; kube-ops peut libérer de la place
+mk("T-366", "bundle-multi-arch-installateur-lab", "Bundle de sécurité multi-arch et installateur pour le cluster lab",
+   "P0", ["0003", "0020"], ["T-001", "T-061"], "REVUE + MANDAT",
+   "security/bundle.lock, tools/oke/security-bundle.sh, tools/lab/install.sh, docs/SECURITY-BUNDLE.md, dépôt privé du bundle (hors de ce dépôt)",
+   "Le contrôleur corrigé n'existe qu'en arm64 et le cluster lab est x86_64 ; l'installation sécurisée (Helm 4 avec post-rendu) n'est pas exécutable par Argo. Construire l'image pour les deux architectures et un installateur lab exécuté par un détenteur du kubeconfig lab.",
+   ["image corrigée publiée en manifest list amd64 + arm64, digest épinglé dans security/bundle.lock", "installateur lab : dry-run par défaut, arrêt avant toute écriture si le bundle manque ou ne correspond pas au lock (test de refus)",
+    "l'installateur passe par le harness d'accès de homelab-infra (kubeconfig lab distribué par Doppler), jamais par Argo ni par un agent", "installation à blanc datée sur un cluster amd64 jetable"],
+   f"Décision 4 {C2}. MANDAT : publication dans le dépôt privé du bundle et lecture du package. Aucun détail de la faille dans ce dépôt public.", True, "socle-lab")
+X["T-366"]["stage"] = "S1"
+deps_plus("T-364", "T-366", "T-001")
+X["T-364"]["done"] = [("procédure d'ajout d'un data plane OKE distant (T-030) esquissée, non exécutée" if d.startswith("procédure de déplacement du CP") else d) for d in X["T-364"]["done"]]
+X["T-364"]["notes"] = X["T-364"]["notes"].replace(
+    "Emplacement DÉFINITIF du control plane NON tranché : décision de Paul à la porte (D11, T-211). Le CP est sur la VM lab pendant la porte seulement (recommandation homelab, ADR-0003 amendé par T-061).",
+    f"D11 tranché par Paul {C2} : le control plane OpenChoreo est sur la VM lab du homelab, de façon définitive (ADR-0003 amendé). OKE reste optionnel (T-030).")
+X["T-364"]["title"] = "OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab"
+X["T-211"]["done"] = [d for d in X["T-211"]["done"] if not d.startswith("D11 : Paul décide")] + [
+    "D11 tranché le 2026-11-18 : CP sur la VM lab ; le rapport dit que la porte évalue OpenChoreo en mono-cluster (ADR-0020 amendé)",
+    "horloge de 3 jours de chaque voie à partir de T-363 `done` ; mesures des deux moteurs séquentielles, mêmes apps, même VM",
+    "repli : si la VM lab n'est pas Ready le 2026-11-25, C1 et C5 mesurés sur OKE pour les deux moteurs"]
+X["T-211"]["done"] = [d.replace("ADR-0020 amendé (T-061)", "ADR-0020 amendé (T-061b)") for d in X["T-211"]["done"]]
+X["T-211"]["title"] = "Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C5 et décision de Paul (2026-12-04)"
+X["T-030"].update(intent="Seulement si Paul demande une app sur OKE : le CP reste sur la VM lab (D11 tranché) ; un data plane OKE distant s'y connecte (exception de flux OKE → homelab, D13).")
+note("T-030", f"{C2} : reste gelé ; DP distant OKE seulement si Paul le demande. Une porte bis mesurerait alors le multi-cluster.")
+note("T-213", f"{C2} : D11 tranché (CP sur le homelab) ; dégel seulement si OKE héberge des apps.")
+note("T-361", f"{C2} : contraintes thermique et NVMe levées (arbitrage 3). Des services de kube-ops peuvent être désactivés pour faire de la place à la VM lab : "
+     "liste et gain mesurés par T-360, désactivation par PR dans kube-ops, geste de Paul.")
+note("T-360", f"{C2} : mesurer aussi la RAM libérable en désactivant des services de kube-ops (arbitrage 3).")
+note("T-368", f"{C2} : contrainte thermique levée (arbitrage 3) ; l'alerte Tctl reste informative.")
+
+# --- 5. Accès des agents cloud à la plateforme du homelab : T-006 dégelé (même sujet)
+X["T-006"].update(status="todo", stage="S1", deps=["T-061", "T-364"], cls="REVUE + MANDAT", lane="acces-mcp",
+    title="Accès des agents cloud à la plateforme du homelab : lecture MCP/API OpenChoreo et statut des apps (lecture seule)",
+    scope="docs/CLOUD-AGENTS.md, docs/AGENT-RUNNERS.md, platform/ (NetworkPolicy tunnel → MCP), tests/mcp/, PR cross-dépôt kube-ops (route du tunnel, application Access)",
+    intent="Les sessions cloud et les runners lisent l'état de la plateforme du homelab sans kubeconfig : (a) MCP/API OpenChoreo derrière le Cloudflare Tunnel + Access déjà présents côté homelab (kube-ops), "
+           "service token Access et client `openchoreo-agent-reader` ; ou (b) statut des apps publié dans GitHub par la preuve automatique (T-005). Lecture seule dans les deux cas.",
+    done=["décision (a), (b) ou les deux, écrite dans docs/CLOUD-AGENTS.md avec le risque de chaque voie",
+          "NetworkPolicy : seul le namespace du tunnel atteint le port MCP (si (a))",
+          "depuis une session cloud et un runner : lecture OK, sans service token → refus, écriture → refus (preuve datée)",
+          "aucune écriture cluster possible par ce chemin (test négatif)",
+          "MANDAT Paul : application Access et service token (côté kube-ops), client Authentik, secret réseau de l'environnement cloud (formulaire, jamais dans le chat)"])
+note("T-006", f"Dégelé et élargi {C2} (arbitrage 2) : même sujet que le nouveau ticket « accès des agents cloud ». Access exige normalement deux en-têtes de service token : l'injection en un seul en-tête reste à prouver, sinon prévoir un relais.")
+
+# --- 6. Runners (arbitrage 6)
+X["T-343"]["title"] = "Runners pour le dépôt public : hébergés par défaut, ARC homelab admis pour push/dispatch de mainteneurs seulement"
+X["T-343"]["intent"] = ("Runners GitHub hébergés par défaut. homelab-infra (privé) a déjà des runners ARC sur le cluster local. Pour ce dépôt public, un scale set ARC homelab n'est admis "
+    "que pour des workflows déclenchés par push ou workflow_dispatch d'un mainteneur, jamais sur une PR de fork : scale set dédié (pas celui d'OpenTofu), JIT, non privilégié, sans secret, default-deny.")
+X["T-343"]["done"] = [d for d in X["T-343"]["done"] if not d.startswith("(repris de FAC-9)") and not d.startswith("décision (a) ou (b)")] + [
+    "liste des workflows admis sur ARC homelab (déclencheurs push et workflow_dispatch de mainteneurs seulement), garde CI qui refuse `runs-on` homelab sur `pull_request`/`pull_request_target`",
+    "essai daté : une PR de fork ne peut planifier aucun job sur le groupe de runners homelab"]
+X["T-343"]["done"] = [d.replace("si (b) : pod runner", "pod runner ARC") for d in X["T-343"]["done"]]
+note("T-343", f"Ajusté {C2} (arbitrage 6).")
+note("T-367", f"{C2} : bloqué jusqu'à T-343 ; règle d'admission = push/dispatch de mainteneurs, jamais PR de fork (arbitrage 6).")
+
+# --- 7. Différés : règle d'usine (décision 10), routage (décision 8), DeepSeek après le chantier (arbitrage 5)
+for k in ("T-346", "T-386", "T-323", "T-352", "T-342", "T-343", "T-318", "T-320"):
+    defer2(k, f"Différé {C2} : règle d'usine d'ADR-0021 (décision 10) ; avant la porte, un ticket d'usine n'entre que s'il supprime un geste de Paul mesuré au pilote.")
+for k in ("T-382", "T-388", "T-392"):
+    if st(k) != "deferred": defer2(k, f"Différé {C2} : routage à 3 règles jusqu'aux données du pilote (décision 8).")
+for k in ("T-350", "T-389", "T-390"):
+    defer2(k, f"DeepSeek : après le chantier (arbitrage 5 de Paul, 2026-11-18) ; tous les agents de dev sont Claude.")
+note("T-388", "DeepSeek : après le chantier (arbitrage 5).")
+# Cascade : un ticket actif qui ne sert qu'un ticket différé est différé ; sinon la dépendance gelée est retirée
+CASCADE = {"T-319": "T-318", "T-347": "T-346", "T-348": "T-342", "T-349": "T-346"}
+for k, why in CASCADE.items():
+    defer2(k, f"Différé {C2} : dépend de {why}, différé par la règle d'usine (décision 10).")
+for x in T:
+    if x.get("status", "todo") not in ACTIVE: continue
+    frozen = [d for d in x["deps"] if d in X and st(d) in ("deferred", "blocked")]
+    if frozen:
+        deps_minus(x["id"], *frozen); note(x["id"], f"Dépendance gelée retirée {C2} : {', '.join(frozen)}.")
+X["T-210"]["done"] = [d.replace("route.py (T-382)", "des 3 règles d'ADR-0023") for d in X["T-210"]["done"]]
+X["T-314"]["done"] = [d.replace("route.py (T-382)", "des 3 règles d'ADR-0023") for d in X["T-314"]["done"]]
+X["T-008"]["intent"] = X["T-008"]["intent"].replace("(ADR-0023 proposé)", "(ADR-0023 : 3 règles)")
+
+# --- 8. Liste figée des 20 tickets du pilote (décision 10) et T-061b pour le reste
+# 20 tickets sans cluster réel (k3d jetable en CI admis), prêts dès S0 fait ou par chaîne interne à la liste, étapes S1-S3.
+# Il n'existe pas 20 tickets AUTONOME purs prêts : 11 sont REVUE (noyau), approuvés par Paul par lot pendant le pilote.
+PILOT = ["T-002", "T-214", "T-332", "T-041", "T-050", "T-325", "T-326", "T-337", "T-365", "T-338",
+         "T-070", "T-216", "T-345", "T-331", "T-340", "T-217", "T-341", "T-321", "T-314", "T-317"]
+X["T-322"]["deps"] = ["T-008", "T-061", "T-302", "T-303", "T-311", "T-313", "T-330"]   # S0 minimal (décision 2, arbitrage 4)
+note("T-314", f"Dans la liste figée du pilote {C2} : construit pendant le pilote, cron activé seulement après la décision de T-322.")
+X["T-322"]["done"] += ["liste figée du pilote traitée à N=3 en dispatch manuel ; aucun ticket hors liste lancé pendant le pilote",
+    "paliers N = 3 → 6 → 10 décidés par Paul sur les mesures (ADR-0021), consignés dans factory/config.yaml"]
+note("T-322", "Liste figée du pilote (20) : " + ", ".join(PILOT) + ".")
+for x in T:
+    if x.get("status", "todo") in ACTIVE and "T-061" in x["deps"] and x["id"] not in S0 + PILOT + ["T-322"] and x["id"] != "T-061b":
+        x["deps"] = sorted(set(x["deps"]) | {"T-061b"})
+
+# --- 9. Routage à 3 règles (décision 8, ADR-0023) : recalcul de model/effort de chaque ticket actif
+_CO = [l.split()[0].lstrip("/") for l in open("/home/user/openchoreo-lab/.github/CODEOWNERS") if l.strip() and not l.startswith("#") and len(l.split()) > 1]
+NOYAU = sorted(set(_CO + ["docs/adr/", "docs/review/", "CODEOWNERS"]))
+def _tokens(scope):
+    s = _re.sub(r"\([^)]*\)", "", scope)
+    return [t.strip(" `") for t in _re.split(r"[,;]", s) if t.strip(" `")]
+def _hit(scope, p): return _re.search(r"(^|[\s,(`])" + _re.escape(p), scope) is not None
+def is_noyau(x): return any(_hit(x["scope"], p) for p in NOYAU)
+def is_text(x):
+    tk = _tokens(x["scope"])
+    if not tk: return False
+    def doc(t):
+        t = t.split()[0]
+        if t.startswith(("docs/adr", "docs/review", "docs/state", "docs/schema", "backlog/proposals")): return False
+        return t.startswith("docs/") or t.endswith(".md")
+    return all(doc(t) for t in tk)
+for x in T:
+    if x.get("status", "todo") == "dropped": continue
+    if x.get("model") == "human" or x["id"] == "T-301":
+        x.update(model="human", effort="none", routing="R0-geste-humain"); continue
+    if is_noyau(x): x.update(model="claude-opus-5-5", effort="high", routing="R1-noyau")
+    elif is_text(x):
+        x.update(model="claude-haiku-5-5", effort="medium", routing="R2-texte")
+        note(x["id"], "Routage R2 (ADR-0023) : Haiku `medium`, revue Sonnet en check requis (2 refus → Sonnet) ; ne touche ni l'en-tête du ticket ni backlog/proposals/. "
+             "Le dispatcher relance en Sonnet si le diff réel sort du périmètre texte.")
+    else: x.update(model="claude-sonnet-5-5", effort="high", routing="R3-defaut")
+
+SP={"S0":"P0","S1":"P0","S2":"P1","S3":"P1","PORTE":"P1","I1":"P2","I1bis":"P2","I2":"P2","I3":"P2","I4":"P3","I5":"P3","I6":"P3","I7":"P4","I8":"P4","FINAL":"P4","I9":"P4","après-porte":"P5"}
 for x in T:
     if x.get("stage") in SP: x["phase"]=SP[x["stage"]]
 PH = {"P0":"Fondations : débloquer l'autonomie","P1":"Golden path complet","P2":"Primitives (sécurité, secrets, identité, données, exposition)","P3":"Hybride OKE + homelab","P4":"Intention en langage naturel et connaissance","P5":"Migration depuis kube-ops"}

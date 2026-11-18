@@ -11,7 +11,7 @@ lane: exposition
 stage: après-porte
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-076 — Application Cloudflare Access générée par app (Crossplane)

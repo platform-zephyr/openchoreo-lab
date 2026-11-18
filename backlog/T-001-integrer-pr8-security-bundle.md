@@ -8,10 +8,10 @@ depends_on: []
 class: REVUE
 velocity: true
 lane: socle-oke
-stage: S0
-model: claude-sonnet-5-5
+stage: S1
+model: claude-opus-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R1-noyau
 github_issue: null
 ---
 # T-001 — Fusionner la PR #8 (installation fail-closed avec le security bundle)
@@ -29,3 +29,5 @@ tools/oke/, security/, docs/SECURITY-BUNDLE.md, tests/security-bundle/
 
 ## Notes
 Coordinateur. Prérequis de tout ce qui installe sur OKE.
+
+Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).

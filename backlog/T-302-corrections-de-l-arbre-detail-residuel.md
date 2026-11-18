@@ -11,7 +11,7 @@ lane: gouvernance
 stage: S0
 model: claude-opus-5-5
 effort: high
-routing: R01-noyau-securite
+routing: R1-noyau
 github_issue: null
 ---
 # T-302 — Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets
@@ -28,3 +28,5 @@ docs/REVIEW-PHASE-B.md, docs/REVIEW-PR8.md, platform/cluster-agent/, platform/po
 
 ## Notes
 Proposé par la recherche `sensitive` (clé SEC-3) ; intégration 2 du 2026-11-18.
+
+En S0 (consensus n°2 et arbitrages de Paul, 2026-11-18).

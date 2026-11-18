@@ -8,10 +8,10 @@ depends_on: []
 class: AUTONOME
 velocity: true
 lane: dev-factory
-stage: S0
-model: claude-sonnet-5-5
+stage: S1
+model: claude-opus-5-5
 effort: high
-routing: R99-defaut
+routing: R1-noyau
 github_issue: null
 ---
 # T-332 — Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée
@@ -31,3 +31,5 @@ tools/dev/check, tools/dev/toolchain.lock, tests/dev-factory/
 Remplace la dépendance de `dev test` à Colima/Mac. La VM cloud est x86_64, la CI arm64 : --static doit être indépendant de l'architecture.
 
 Proposé par la recherche `harness` (clé HAR-2) ; intégration 2 du 2026-11-18.
+
+Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).

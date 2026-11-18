@@ -1,17 +1,17 @@
 ---
 id: T-350
 title: "Voie DeepSeek : spike de compatibilité et critère d'admission par le banc"
-status: todo
-phase: P4
+status: deferred
+phase: P5
 adr: [0018, 0022]
 depends_on: [T-061, T-164, T-311, T-346, T-386, T-388]
 class: REVUE + MANDAT
 velocity: false
 lane: agents
-stage: I7
-model: claude-sonnet-5-5
+stage: après-porte
+model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-350 — Voie DeepSeek : spike de compatibilité et critère d'admission par le banc
@@ -32,3 +32,5 @@ docs/research/DEEPSEEK-LANE.md, tools/bench/, .github/workflows/ (voie dédiée)
 La clé est un secret : GitHub secret ou secret réseau, jamais dans le dépôt. Les sessions cloud (`--cloud`) ne sont pas disponibles avec un fournisseur tiers : voie runner seulement.
 
 Proposé par la recherche `harness` (clé HAR-20) ; intégration 2 du 2026-11-18.
+
+DeepSeek : après le chantier (arbitrage 5 de Paul, 2026-11-18) ; tous les agents de dev sont Claude.

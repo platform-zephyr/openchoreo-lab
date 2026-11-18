@@ -4,14 +4,14 @@ title: "Reprise automatique et escalade de modèle : max_attempts, tickets bloqu
 status: todo
 phase: P0
 adr: [0021]
-depends_on: [T-061, T-314, T-382]
+depends_on: [T-061, T-314]
 class: AUTONOME
 velocity: true
 lane: agents
 stage: S1
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-317 — Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle
@@ -27,9 +27,11 @@ tools/factory/recover.py, tests/factory/
 - [ ] test de boucle : un bot ne déclenche pas un bot (allowed_bots vide)
 - [ ] conflit simulé sur lab-apps.yaml : rebase automatique ou needs-paul
 - [ ] (repris de MOD-4) deux échecs CI simulés → relance au cran suivant, une seule fois par cran ; au-delà : issue `needs-human`
-- [ ] (repris de MOD-4) l'escalade suit l'échelle de la règle de routage (T-382), étiquette `escalated-from`
+- [ ] escalade d'un cran (Sonnet → Opus) seulement sur échec de capacité prouvé : 2 échecs sur des critères de fin, CI verte par ailleurs (ADR-0023)
 
 ## Notes
 Proposé par la recherche `factory` (clé FAC-8) ; intégration 2 du 2026-11-18.
 
 Vocabulaire des classes d'échec partagé avec le protocole T-340.
+
+Dépendance gelée retirée (consensus n°2 et arbitrages de Paul, 2026-11-18) : T-382.

@@ -4,14 +4,14 @@ title: "Première app familiale complète (OIDC + base + sauvegarde) sur le home
 status: todo
 phase: P2
 adr: [0007, 0008, 0014, 0003]
-depends_on: [T-020, T-021, T-027, T-031, T-040, T-043, T-061, T-189]
+depends_on: [T-020, T-021, T-027, T-031, T-040, T-043, T-061, T-061b, T-189]
 class: AUTONOME
 velocity: false
 lane: apps
 stage: I3
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-051 — Première app familiale complète (OIDC + base + sauvegarde) sur le homelab

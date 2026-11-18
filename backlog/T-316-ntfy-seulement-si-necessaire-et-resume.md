@@ -4,14 +4,14 @@ title: "ntfy seulement si nécessaire et résumé quotidien unique"
 status: todo
 phase: P0
 adr: [0015, 0021]
-depends_on: [T-061, T-314]
+depends_on: [T-061, T-061b, T-314]
 class: AUTONOME + MANDAT
 velocity: false
 lane: observabilité
 stage: S1
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-316 — ntfy seulement si nécessaire et résumé quotidien unique

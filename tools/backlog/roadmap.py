@@ -23,30 +23,33 @@ def anc(n):
     for d in list(r): r|=anc(d)
     return frozenset(r)
 for n in T: T[n]['w']=W(n); T[n]['u']=len(desc(n))
-ORDER=['S0','S1','S2','S3','PORTE','I1','I1bis','I2','I3','I4','I5','I6','I7','I8','I9']
-NAMES={'S0':'MVP — socle de confiance, purge, identité, harness et usine (dispatch manuel)','S1':'MVP — preuve automatique, usine en marche, moteur OpenChoreo sur la VM lab',
+ORDER=['S0','S1','S2','S3','PORTE','I1','I1bis','I2','I3','I4','I5','I6','I7','I8','FINAL','I9']
+NAMES={'S0':'MVP — S0 minimal du pilote 24 h (garde de fuite, ADR, exécutant, dispatcher, PAUSE, réglages)','S1':'MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud',
  'S2':'MVP — second moteur (plain), travailleur homelab, mesures','S3':'MVP — golden path, intentions, banc et étalonnage',
  'PORTE':"Porte d'adoption OpenChoreo (2026-12-04)",'I1':'Données','I1bis':'Archétypes D et E','I2':'Secrets et identité','I3':'Exposition, admission, première app familiale',
- 'I4':'Exploitation : observabilité, remédiation, ntfy','I5':'Montées de version','I6':'Migration Doppler, rotation, audit','I7':'Services IA (homelab)','I8':'Mesure (DORA, maturité)','I9':'Divers'}
+ 'I4':'Exploitation : observabilité, remédiation, ntfy','I5':'Montées de version','I6':'Migration Doppler, rotation, audit','I7':'Services IA (homelab)','I8':'Mesure (DORA, maturité)','FINAL':'Durcissement final (obligatoire avant « plateforme finie »)','I9':'Divers'}
 SHORT={'claude-haiku-5-5':'haiku','claude-sonnet-5-5':'sonnet','claude-opus-5-5':'opus','human':'humain'}
 def L(n): return f"[{n}]({ALL[n]['f']})"
 def M(x): return f"{SHORT.get(x['model'],x['model'])}/{x['effort']}"
 md=["""# Feuille de route (générée depuis `backlog/`)
 
-Ordonnancement issu du **consensus avec la revue adverse** (`docs/review/CONSENSUS.md`) et de l'**intégration 2**
-(`backlog/INTEGRATION-2.md`, 2026-11-18 soir). Objectif de Paul : finir le plus vite possible avec un maximum d'agents en
-parallèle ; ce qui accélère passe devant (harness, dispatcher, identité, garde de fuite en S0/S1).
+Ordonnancement issu du **consensus n°2 et des arbitrages de Paul** (`docs/review/CONSENSUS-2.md`, 2026-11-18 ; résumé :
+`backlog/INTEGRATION-3.md`), après le consensus n°1 (`docs/review/CONSENSUS.md`) et l'intégration 2. Objectif de Paul : finir
+vite avec un maximum d'agents en parallèle ; la sécurité de développement est réduite, **seule la sécurité finale compte**
+(étape FINAL).
 
 ## Règles
-1. **Étapes dans l'ordre** : MVP (S0 → S3), puis la **porte OpenChoreo** (ADR-0020), puis des **incréments** (I1 → I9) dont un
-   ou deux sont ouverts à la fois. Une étape peut démarrer dès que les dépendances de ses tickets sont `done`.
+1. **Étapes dans l'ordre** : MVP (S0 → S3), puis la **porte OpenChoreo** en mono-cluster (ADR-0020 amendé), puis des
+   **incréments** (I1 → I8), puis le **durcissement final** (FINAL) avant de déclarer la plateforme finie. Une étape peut
+   démarrer dès que les dépendances de ses tickets sont `done`.
 2. **Dans une étape** : par vague de dépendances, d'abord les tickets `velocity`, puis ceux qui débloquent le plus.
-3. **Parallélisme** : plafond de départ 4 agents (T-210), relevé par la mesure du pilote (T-322) ; au plus 2 par couloir,
-   1 sur `contrat-appgen` avant T-214 ; aucun chevauchement de périmètre (T-210).
-4. **Modèle** : colonne « Modèle » = `model/effort` de l'en-tête, issu de la première règle de routage qui s'applique
-   (`backlog/proposals/model-routing.yaml`, ADR-0023 proposé) ; un modèle proposé ne fait que monter au-dessus du plancher.
-5. **Gestes de Paul par lot** : une séance par étape (liste ci-dessous, assistant T-325). Les agents préparent les PR et les demandes exactes.
-6. **MVP** = une app A sur le homelab (VM lab), en prod, livrée à partir d'une phrase, avec preuve datée sans coordinateur.
+3. **Parallélisme** : pilote à N=3 sur une liste figée de 20 tickets ; paliers 3 → 6 → 10 décidés par Paul (ADR-0021) ; au plus
+   2 agents par couloir, 1 sur `contrat-appgen` avant T-214 ; aucun chevauchement de périmètre (T-314).
+4. **Modèle** (ADR-0023, 3 règles) : noyau (chemins CODEOWNERS, `docs/adr/`, `docs/review/`) → opus/high ; texte hors noyau →
+   haiku/medium + revue Sonnet ; reste → sonnet/high. Le dispatcher recalcule depuis les chemins et ignore un `model:` sous le plancher.
+5. **Règle d'usine** (ADR-0021) : avant la porte, un ticket d'usine n'entre que s'il supprime un geste de Paul mesuré au pilote.
+6. **MVP** = une app A sur le homelab (VM lab, CP OpenChoreo sur le homelab), en prod, livrée à partir d'une phrase, avec
+   preuve datée sans coordinateur. DeepSeek : après le chantier.
 """]
 md.append("## Gestes de Paul\n\nMANDAT = geste de Paul (accès, identité, dépense, VM) ; REVUE = approbation d'une PR du noyau. Ordre = vague.\n")
 md.append("| Étape | Gestes (MANDAT) | Approbations (REVUE) |\n|---|---|---|")
@@ -57,16 +60,23 @@ for st in ORDER:
     if G or R: md.append(f"| {st} | "+", ".join(L(n) for n in G)+" | "+", ".join(L(n) for n in R)+" |")
 H=[n for n in T if T[n]['model']=='human']
 if H: md.append("\nGestes purement humains (aucun agent) : "+", ".join(f"{L(n)} {T[n]['title']}" for n in sorted(H)))
-# Lancement 24/7
-PILOT='T-322'; AFTER=['T-314','T-321','T-315','T-316','T-317','T-320','T-318','T-323']
+# Lancement 24/7 : liste figée du pilote (lue dans T-322) et ses prérequis
+PILOT='T-322'; AFTER=['T-315','T-316','T-006']
 if PILOT in T:
-    md.append(f"\n## Lancement 24/7\n\nPilote de **24 h à N=3** en dispatch manuel ({L(PILOT)}) : mesure du coût par ticket, du % de quota 5 h et hebdomadaire,"
-              " de la concurrence cloud ; puis N=6, puis 8-10 si le quota hebdomadaire reste sous 70 % au jour 3. Prérequis (ordre de vague) :\n")
-    md.append("| Ticket | Titre | Vague | Classe | Modèle |\n|---|---|---|---|---|")
-    for n in sorted(anc(PILOT)|{PILOT},key=lambda n:(T[n]['w'],n)):
-        md.append(f"| {L(n)} | {T[n]['title']} | {T[n]['w']} | {T[n]['cls']} | {M(T[n])} |")
-    md.append("\nAprès le pilote (cron, merge armé, ntfy, reprise, revue, trieur, travailleur homelab, tableau de bord) : "+
-              ", ".join(f"{L(n)} ({T[n]['stage']})" for n in AFTER if n in T)+".")
+    src=open('/home/user/openchoreo-lab/backlog/'+ALL[PILOT]['f']).read()
+    m=re.search(r'Liste figée du pilote \(\d+\) : ([^\n]*)',src)
+    LIST=re.findall(r'T-\d+[a-z]?',m.group(1)) if m else []
+    PRE=sorted(anc(PILOT),key=lambda n:(T[n]['w'],n))
+    md.append(f"\n## Lancement 24/7\n\nPilote de **24 h à N=3** en dispatch manuel ({L(PILOT)}) : coût par ticket, % de quota 5 h et hebdomadaire,"
+              " concurrence cloud ; puis paliers 6 et 10 décidés par Paul. Il ne dépend ni de T-215 ni du ruleset (FINAL), ni de la"
+              " réécriture de l'historique (T-301, geste de Paul hors chemin critique).\n")
+    md.append(f"### Prérequis : S0 minimal ({len(PRE)} tickets)\n\n| Ticket | Titre | Vague | Classe | Modèle |\n|---|---|---|---|---|")
+    for n in PRE: md.append(f"| {L(n)} | {T[n]['title']} | {T[n]['w']} | {T[n]['cls']} | {M(T[n])} |")
+    md.append(f"\n### Liste figée du pilote ({len(LIST)} tickets, aucun autre lancement pendant le pilote)\n\n| Ticket | Titre | Étape | Classe | Modèle | Dépend de (hors S0) |\n|---|---|---|---|---|---|")
+    for n in LIST:
+        if n in T: md.append(f"| {L(n)} | {T[n]['title']} | {T[n]['stage']} | {T[n]['cls']} | {M(T[n])} | {', '.join(d for d in T[n]['deps'] if d in T and d not in PRE) or '—'} |")
+        else: md.append(f"| {n} | (absent ou non `todo`) | | | | |")
+    md.append("\nAprès le pilote : activation du cron T-314, puis "+", ".join(f"{L(n)} ({T[n]['stage']})" for n in AFTER if n in T)+".")
 # Chemin critique
 end=max(T,key=lambda n:(T[n]['w'],n in ('T-211',)))
 path=[end]

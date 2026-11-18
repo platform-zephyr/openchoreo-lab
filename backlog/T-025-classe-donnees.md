@@ -4,14 +4,14 @@ title: "Classe de donnée dans le contrat et labels `data-class` (G8)"
 status: todo
 phase: P2
 adr: [0008]
-depends_on: [T-002, T-061]
+depends_on: [T-002, T-061, T-061b]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: I1
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-025 — Classe de donnée dans le contrat et labels `data-class` (G8)

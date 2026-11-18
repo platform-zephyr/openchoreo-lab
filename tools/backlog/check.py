@@ -7,7 +7,7 @@ for f in glob.glob('/home/user/openchoreo-lab/backlog/T-*.md'):
     T[g('id')]=dict(stage=(re.search(r'^stage: (.*)$',s,re.M).group(1).strip() if re.search(r'^stage:',s,re.M) else ''),ph=g('phase'),deps=deps,st=g('status'),v=g('velocity')=='true',lane=g('lane'),cls=g('class'),title=g('title').strip('"'),
                 model=(re.search(r'^model: (.*)$',s,re.M).group(1).strip() if re.search(r'^model:',s,re.M) else ''),
                 effort=(re.search(r'^effort: (.*)$',s,re.M).group(1).strip() if re.search(r'^effort:',s,re.M) else ''))
-ORD={k:n for n,k in enumerate(['S0','S1','S2','S3','PORTE','I1','I1bis','I2','I3','I4','I5','I6','I7','I8','I9','après-porte'])}
+ORD={k:n for n,k in enumerate(['S0','S1','S2','S3','PORTE','I1','I1bis','I2','I3','I4','I5','I6','I7','I8','FINAL','I9','après-porte'])}
 bad=0
 # Routage des modèles (ADR-0023 proposé, backlog/proposals/model-routing.yaml) : model et effort obligatoires sur un ticket actif
 MODELS={'claude-haiku-5-5','claude-sonnet-5-5','claude-opus-5-5','human'}

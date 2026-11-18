@@ -1,17 +1,17 @@
 ---
 id: T-388
 title: "Registre des modèles et tarifs : docs/state/model-prices.yaml avec date de lecture et lint à 90 jours (sources DeepSeek déjà lues)"
-status: todo
-phase: P1
+status: deferred
+phase: P5
 adr: [0017, 0023]
 depends_on: [T-061]
 class: AUTONOME + MANDAT
 velocity: false
 lane: veille
-stage: S2
-model: claude-haiku-5-5
-effort: low
-routing: R15-veille-releases
+stage: après-porte
+model: claude-opus-5-5
+effort: high
+routing: R1-noyau
 github_issue: null
 ---
 # T-388 — Registre des modèles et tarifs : docs/state/model-prices.yaml avec date de lecture et lint à 90 jours (sources DeepSeek déjà lues)
@@ -30,3 +30,7 @@ docs/state/model-prices.yaml, tools/backlog/lint_prices.py
 Les hôtes bloqués pour l'outil web restent lisibles par curl depuis le shell. MANDAT seulement si une clé ou une dépense est créée.
 
 Proposé par la recherche `model-routing` (clé MOD-9) ; intégration 2 du 2026-11-18.
+
+Différé (consensus n°2 et arbitrages de Paul, 2026-11-18) : routage à 3 règles jusqu'aux données du pilote (décision 8).
+
+DeepSeek : après le chantier (arbitrage 5).

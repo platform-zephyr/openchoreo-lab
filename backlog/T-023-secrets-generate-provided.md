@@ -4,14 +4,14 @@ title: "Secrets `generate` et `provided` via OpenBao + ESO, statut `secret-missi
 status: todo
 phase: P2
 adr: [0014, 0011]
-depends_on: [T-005, T-022, T-060, T-061]
+depends_on: [T-005, T-022, T-060, T-061, T-061b]
 class: AUTONOME + REVUE + MANDAT
 velocity: false
 lane: secrets
 stage: I2
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-023 — Secrets `generate` et `provided` via OpenBao + ESO, statut `secret-missing`

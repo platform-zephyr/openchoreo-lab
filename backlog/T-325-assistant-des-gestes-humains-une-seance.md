@@ -8,10 +8,10 @@ depends_on: [T-008]
 class: AUTONOME
 velocity: true
 lane: connaissance
-stage: S0
+stage: S1
 model: claude-sonnet-5-5
-effort: medium
-routing: R10-code-simple
+effort: high
+routing: R3-defaut
 github_issue: null
 ---
 # T-325 — Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT
@@ -31,3 +31,5 @@ tools/factory/gestes.sh, docs/GESTES-PAUL.md (généré)
 Le geste est fait par Paul ; le script ne crée aucun accès (platform-guardrails §2). Réduit le temps de séance, pas les droits.
 
 Proposé par la recherche `factory` (clé FAC-16) ; intégration 2 du 2026-11-18.
+
+Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).

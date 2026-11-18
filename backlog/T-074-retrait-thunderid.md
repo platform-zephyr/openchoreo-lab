@@ -4,14 +4,14 @@ title: "Retirer ThunderID du contrat et des capacités ; Authentik seul"
 status: todo
 phase: P2
 adr: [0007]
-depends_on: [T-001, T-061]
+depends_on: [T-001, T-061, T-061b]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: I2
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-074 — Retirer ThunderID du contrat et des capacités ; Authentik seul

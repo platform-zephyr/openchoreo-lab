@@ -4,14 +4,14 @@ title: "Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire
 status: todo
 phase: P1
 adr: [0001, 0022]
-depends_on: [T-061, T-062, T-214]
+depends_on: [T-061, T-061b, T-062, T-214]
 class: REVUE
 velocity: true
 lane: socle-oke
 stage: S2
 model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-344 — Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR d'agents
