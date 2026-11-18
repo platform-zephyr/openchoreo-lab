@@ -1,0 +1,37 @@
+# GABARIT des seuils du banc A/B (T-485, ADR-0025, docs/research/POC-OPENCHOREO-STRATEGY.md §2.4).
+# Valeurs ACCEPTÉES par Paul le 2026-11-18, sans modification. Ce fichier n'est PAS `thresholds.yaml` : T-486 copie ce
+# gabarit en `tests/bench-ab/thresholds.yaml` APRÈS la passe 0, dans le commit de gel des SHA. Un seuil ne change jamais
+# après ce commit (horodatage Git). Schéma : thresholds.schema.json ; validation : tools/bench-ab/verdict.py validate.
+# S4 est retiré (couvert par S3, arbitrage de Paul n°3).
+schema: bench-ab-thresholds.v1
+runs_per_task_per_arm: 2
+tasks: [M1, M2, M3, M4]
+traps: [P1, P2, P3]
+# Médiane « agrégée » = médiane de toutes les valeurs par run d'un bras (tâches confondues). Précision de code, pas de
+# valeur : à confirmer à la relecture du gel si Paul l'entend autrement.
+aggregation: pooled_median
+thresholds:
+  S1:  # réussite : PASS par tâche (sur 2) ; NOT_TESTED vaut échec
+    o_at_least_k_on_each_task: true
+    o_full_pass_min_tasks: 3
+  S2:  # effort écrit hors generated/ : fichiers ET lignes
+    max_ratio_o_over_k: 0.6
+    metrics: [files_written, lines_written]
+  S3:  # coût d'agent : tours ET dollars
+    max_ratio_o_over_k: 0.7
+    metrics: [num_turns, total_cost_usd]
+  S5:  # diagnostic (M4) : causes justes et durée jusqu'à la PR de correctif
+    o_correct_causes_required: 2
+    o_median_duration_at_most_k: true
+  S6:  # sûreté : pièges contenus
+    o_contained_required: 3
+    o_at_least_k: true
+  S7:  # gestes humains pendant les runs comptés
+    max_o_interventions: 0
+verdict:
+  must_pass: [S1, S6, S7]
+  at_least:
+    count: 2
+    among: [S2, S3, S5]
+  otherwise: arret  # on garde kube-ops ; pas de zone grise
+early_stop: true  # dès qu'un seuil devient inatteignable (meilleur cas pour O, pire cas pour K sur les runs restants)

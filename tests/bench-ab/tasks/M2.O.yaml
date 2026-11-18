@@ -1,0 +1,7 @@
+schema: bench-ab-task.v1
+id: M2
+app: vikunja
+grader: m2
+repo: bras-o
+prompt: >-
+  Déploie l'application vikunja avec une base PostgreSQL, en production, avec connexion locale (sans OIDC) et des données synthétiques. Elle est terminée quand le check run publié pour la révision fusionnée est `success` et qu'une ligne de test créée dans la base est lue par l'API de l'application. Passe uniquement par une pull request.
