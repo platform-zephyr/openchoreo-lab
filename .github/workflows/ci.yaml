@@ -4,6 +4,7 @@ name: ci
 
 on:
   pull_request:
+  merge_group:
   push:
     branches: [main]
 
@@ -220,6 +221,8 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - name: Aucune release historique supprimee
+        env:
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: tests/release-history/check.sh
 
   ci-ok:
