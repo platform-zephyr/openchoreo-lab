@@ -34,6 +34,6 @@ Proposé par la recherche `sensitive` (clé SEC-4) ; intégration 2 du 2026-11-1
 
 En S0, tout de suite (consensus n°2 et arbitrages de Paul, 2026-11-18) : c'est la seule protection des données sensibles pendant le développement.
 
-Garde gitleaks et règles maison implémentées dans une autre branche (fusion après l'intégration 5). Critère restant : même script en local, en CI et dans le hook Stop (dépend de T-331).
+Garde gitleaks et règles maison livrées et vertes en CI (job `leak-guard` : tests, shellcheck, garde sur l'arbre ; run 44307223494 et push `main` 44308148294 ; `tools/dev/leak-guard.sh` rejoué ici le 2026-11-18 à 12:55 UTC : PASS, fichier et ligne seuls en sortie). Reste (2026-11-18) : la dernière case, car le hook Stop n'existe pas (T-331 `todo`). Critère restant : même script en local, en CI et dans le hook Stop (dépend de T-331).
 
 Dette initiale de 129 emplacements dans .gitleaksignore (IP privées réelles dans docs/ et apps/*/NOTES.md, chemins /Users dans tests/*/evidence) : ticket de nettoyage à créer (T-450).

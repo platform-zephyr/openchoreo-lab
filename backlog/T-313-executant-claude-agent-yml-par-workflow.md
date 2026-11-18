@@ -25,7 +25,7 @@ Remplacer le déclencheur par label (acteur SmadjaPaul) par workflow_dispatch(ti
 ## Critères de fin
 - [ ] lancement manuel avec une liste d'ID : N PR parallèles sur couloirs distincts (preuve datée)
 - [ ] chaque PR porte durée, tours, coût estimé et statuts PASS/FAIL/NOT_TESTED
-- [ ] (repris de MOD-4) run de test : la session s'exécute sur le modèle demandé (preuve : modèle consigné dans la sortie result)
+- [x] (repris de MOD-4) run de test : la session s'exécute sur le modèle demandé (preuve : modèle consigné dans la sortie result) (2026-11-18 : run `claude-agent` 44307563892, artefact `mission-result-57` : `model_requested` = `model_observed` = `claude-sonnet-5-5`, 10 tours, `total_cost_usd` 0,165 ; RUNTIME)
 - [x] (repris de MOD-4) entrées `model` et `effort` du workflow passées à claude_args (--model, --effort) ; Sonnet plafonné à `xhigh`
 - [ ] (repris de MOD-5) trailers Model, Effort, Escalated-from sur chaque PR d'agent ; mission-result.v1 contient modèle, effort, escalade, tokens, tours, durée, échecs CI, sans aucun prompt
 - [x] (repris de HAR-3) le résumé du job affiche total_cost_usd et num_turns, aucune sortie d'outil
@@ -48,3 +48,5 @@ Dépendance retirée (consensus n°2 et arbitrages de Paul, 2026-11-18) : T-215 
 Version minimale (consensus n°2 et arbitrages de Paul, 2026-11-18) : lancé par Paul (workflow_dispatch) avec l'identité de dev ; les outils étroits, le mode de permission et l'essai du noyau passent à la revue finale T-401.
 
 Arbitrage Fable (arbitrage Fable, 2026-11-18) : `noreply` et trailers imposés dès S0 (F2) ; plafonds Opus portés à 90 min / 150 tours (P6).
+
+Examen du 2026-11-18 (RUNTIME, run 44307563892 → PR #63, ouverte par `openchoreo-worker[bot]`). Prouvé : modèle observé = demandé ; `mission-result.v1` archivé avec modèle, effort, escalade (null), tokens, tours, durée, échecs CI (0 provisoire), sans prompt ; commit en `noreply@anthropic.com` avec `Ticket`, `Model`, `Effort`, `Claude-Session`. Reste : (a) lancement parallèle de N issues sur couloirs distincts, jamais joué ; (b) le corps de la PR #63 dit « non mesuré » pour durée, tours et coût : la case « chaque PR porte durée, tours, coût » n'est pas prouvée ; (c) trailers « sur chaque PR » : une seule PR d'essai, `Escalated-from` jamais exercé ; (d) l'étape `check-trailers` du job était `skipped` dans ce run, et `ci.yaml` n'appelle pas `run-ticket.sh check-trailers` : le refus par la CI d'un commit sans trailer n'est prouvé que par test (22 contrôles PASS rejoués ici). Écart à lever : la note T-304 cite 13 tours et ~0,14 $, l'artefact du run 44307563892 en donne 10 et 0,165 $ (autre run d'essai ?).

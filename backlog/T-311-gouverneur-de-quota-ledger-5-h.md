@@ -38,3 +38,5 @@ Proposé par la recherche `factory` (clé FAC-2) ; intégration 2 du 2026-11-18.
 Dépendance retirée (consensus n°2 et arbitrages de Paul, 2026-11-18) : T-215 (étape FINAL). Pendant le développement, identité de session de Paul ; bascule vers l'App de T-215 en FINAL.
 
 Constat P5 de la revue Fable, accepté (arbitrage Fable, 2026-11-18).
+
+Examen du 2026-11-18 : `tests/factory/pause-test.sh` rejoué ici, PASS (dont `max-parallel` workflow = config = 3, aucun groupe de concurrence unique, workflow branché sur le kill-switch ; `factory/PAUSE` absent aujourd'hui). Aucune des deux cases ouvertes n'est prouvable sans run : le test ne couvre ni le désarmement d'un auto-merge déjà armé, ni le lot réel de 5 dispatchs (les runs `claude-agent` existants sont des dispatchs d'une issue). Reste : un run avec `factory/PAUSE` posé, et un dispatch de 5 issues (T-322 ou un essai dédié, geste de Paul pour lancer).
