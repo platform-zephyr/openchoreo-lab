@@ -18,6 +18,8 @@
 #   --jobs N    exécute jusqu'à N contrôles indépendants en parallèle (défaut 1 ; sortie dans l'ordre des contrôles)
 #   --json      une ligne JSON par contrôle puis une ligne de bilan sur stdout ; le texte lisible passe sur stderr
 #   --list      liste les contrôles de --static (un nom par ligne)
+#   --only a,b  ne lance que ces contrôles (forme de la CI, T-460) ; prime sur CHECK_ONLY. Ni --only ni CHECK_ONLY ne
+#               sont transmis aux processus enfants : un `check --fast` lancé par un test (hook Stop) voit tout.
 #
 # Statuts (un résultat n'est PASS qu'avec une exécution réelle) :
 #   PASS        le contrôle a tourné et réussi
@@ -38,7 +40,8 @@
 # job `secrets` de ci.yaml (historique, règles par défaut) ; la garde propre au dépôt (.gitleaks.toml) est `leak-guard`.
 # Variables : CHECK_ONLY="a,b" (ne lancer que ces contrôles : tests du script), CHECK_SKIP="a,b" (NOT_TESTED « exclu »),
 # CHECK_CHANGED_FILES (liste de chemins, un par ligne : remplace git pour --changed et --fast ; tests),
-# OKE_PHASEB_STATE (cache des charts Helm, partagé et sérialisé par flock).
+# OKE_PHASEB_STATE (cache des charts Helm, partagé et sérialisé par flock), QUALITY_OUTPUT (étape coverage : écrit aussi
+# quality.v1.json à ce chemin, artefact CI).
 # Aucun secret, aucun accès cluster en --static ; sortie sans valeur sensible.
 # shellcheck disable=SC2329  # fonctions appelées indirectement par step et dispatch
 set -uo pipefail
@@ -51,6 +54,9 @@ cd "$ROOT" || exit 2
 export PYTHONDONTWRITEBYTECODE=1
 
 STRICT="${CHECK_STRICT:-0}"
+# Sélection : lue une fois puis retirée de l'environnement (pas d'héritage par les check imbriqués, T-460).
+ONLY="${CHECK_ONLY:-}"
+unset CHECK_ONLY
 JOBS=1
 LISTMODE=""
 SEQ=0
@@ -77,8 +83,8 @@ now_ms() {
 }
 
 selected() { # NOM : vrai si le contrôle doit être considéré
-  [[ -z "${CHECK_ONLY:-}" ]] && return 0
-  [[ ",${CHECK_ONLY}," == *",$1,"* ]]
+  [[ -z "$ONLY" ]] && return 0
+  [[ ",${ONLY}," == *",$1,"* ]]
 }
 
 # record STATUT NOM DUREE_MS DETAIL : une ligne lisible (sauf SKIP) et une ligne TSV pour le bilan, le JSON et le reçu.
@@ -419,6 +425,8 @@ quality_coverage() {
   } || rc=$?
   if [[ "$rc" -eq 0 ]]; then
     git rev-parse --verify -q origin/main >/dev/null && base=(--base origin/main)
+    # QUALITY_OUTPUT=<chemin> : écrit aussi quality.v1.json (artefact du job CI quality-coverage, historique T-421).
+    [[ -n "${QUALITY_OUTPUT:-}" ]] && base+=(--output "$QUALITY_OUTPUT")
     python3 tools/quality/check.py --coverage-json "$w/coverage.json" "${base[@]}" || rc=$?
   fi
   rm -rf "$w"
@@ -438,11 +446,31 @@ coverage_ready() {
 
 appgen_unittest_step() {
   if [[ -z "$LISTMODE" ]] && selected appgen-unittest \
-    && { [[ -z "${CHECK_ONLY:-}" ]] || [[ ",${CHECK_ONLY}," == *",coverage,"* ]]; } && coverage_ready; then
+    && { [[ -z "$ONLY" ]] || [[ ",${ONLY}," == *",coverage,"* ]]; } && coverage_ready; then
     skip_step appgen-unittest "fusionné avec coverage (mêmes tests, une seule exécution)"
     return 0
   fi
   step appgen-unittest python3,py:yaml,py:jsonschema python3 -m unittest discover -s tests/appgen
+}
+
+# Tests de l'usine (tests/factory/*-test.sh : exécutant, gouverneur, gestes, ledger, recouvrement, câblage du workflow).
+# Tous tournent ; un FAIL l'emporte ; un test qui se déclare NOT_TESTED (gitleaks absent pour gestes-test) donne rc 125.
+factory_tests() {
+  local t rc=0 nt=0 out
+  out="$(mktemp "${TMPDIR:-/tmp}/check-factory.XXXXXX")"
+  for t in tests/factory/*-test.sh; do
+    echo "-- $t"
+    if ! bash "$t" >"$out" 2>&1; then
+      rc=1
+      # Les lignes FAIL d'abord (le tail seul les perdait quand un test affiche beaucoup de PASS apres), puis la fin.
+      grep -E '^FAIL|FAIL \(' "$out" | head -n 20
+      tail -n 15 "$out"
+    fi
+    grep -q '^NOT_TESTED' "$out" && { nt=1; grep '^NOT_TESTED' "$out"; }
+  done
+  rm -f "$out"
+  [[ "$rc" -eq 0 && "$nt" -eq 1 ]] && return 125
+  return "$rc"
 }
 
 in_container() { [[ "${DEV_FACTORY:-}" == 1 ]]; }
@@ -458,6 +486,8 @@ run_static() {
   step toolchain-lock - tests/dev-factory/lock-concordance.sh
   step dev-factory-static - tests/dev-factory/run.sh
   step check-selftest - tests/dev-factory/check-test.sh
+  step ci-parity python3,py:yaml tests/dev-factory/ci-parity.sh
+  step factory python3,py:yaml,jq factory_tests
   step devcontainer-json python3 python3 -I -m json.tool .devcontainer/devcontainer.json
   step shellcheck shellcheck shellcheck_all
   step shellcheck-all shellcheck shellcheck_versioned
@@ -466,6 +496,7 @@ run_static() {
   step actionlint actionlint actionlint
   step gitleaks gitleaks gitleaks_history
   step backlog python3 python3 tools/backlog/check.py
+  step backlog-status python3 python3 tools/backlog/status.py --check
   step backlog-unittest python3 python3 -m unittest discover -s tests/backlog
   step identities-lint python3 identities_lint
   step ruff-bugs ruff ruff_bugs
@@ -611,7 +642,7 @@ write_receipt() { # RESULT SECONDES
   TZ=UTC printf -v when '%(%Y-%m-%dT%H:%M:%SZ)T' -1
   printf '{"sha":"%s","dirty":%s,"level":"%s","date":"%s","result":"%s","pass":%s,"fail":%s,"not_tested":%s,"skipped":%s,"seconds":%s,"only":"%s","skip_env":"%s","steps":[%s]}\n' \
     "$sha" "$dirty" "$LEVEL" "$when" "$1" "$n_pass" "$n_fail" "$n_nt" "$n_skip" "$2" \
-    "$(json_escape "${CHECK_ONLY:-}")" "$(json_escape "${CHECK_SKIP:-}")" "$STEPS_JSON" >"$path" 2>/dev/null \
+    "$(json_escape "$ONLY")" "$(json_escape "${CHECK_SKIP:-}")" "$STEPS_JSON" >"$path" 2>/dev/null \
     || echo "-- reçu non écrit : $path"
 }
 
@@ -676,6 +707,12 @@ main() {
         shift
         ;;
       --jobs=*) JOBS="${a#--jobs=}" ;;
+      --only)
+        [[ $# -gt 0 && "$1" != --* ]] || { echo "check: --only demande une liste de contrôles (a,b)" >&2; exit 2; }
+        ONLY="$1"
+        shift
+        ;;
+      --only=*) ONLY="${a#--only=}" ;;
       --file)
         while [[ $# -gt 0 && "$1" != --* ]]; do files+=("$1"); shift; done
         [[ "${#files[@]}" -gt 0 ]] || { echo "check: --file demande au moins un chemin" >&2; exit 2; }

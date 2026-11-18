@@ -204,14 +204,16 @@ if grep -rn 'LAB_COORDINATOR_SESSION' "$ROOT/.github" "$RT" | grep -v '^[^:]*:[0
   ko "LAB_COORDINATOR_SESSION posee ou citee hors commentaire par l'executant"
 else ok "LAB_COORDINATOR_SESSION jamais posee par l'executant"; fi
 
-# 9. Branchement dans ci.yaml : job hooks appelle tests/hooks/run.sh, dans needs de ci-ok, jamais `skipped` au niveau du job.
-if python3 -I - "$ci" <<'PY'; then ok "ci.yaml : job hooks (tests/hooks/run.sh) branche dans ci-ok sans condition de job"; else ko "ci.yaml : job hooks mal branche"; fi
+# 9. Branchement dans ci.yaml : job hooks appelle tests/hooks/run.sh (via check --only settings,hooks), dans needs de ci-ok, jamais `skipped` au niveau du job.
+if python3 -I - "$ci" <<'PY'; then ok "ci.yaml : job hooks (check --only settings,hooks) branche dans ci-ok sans condition de job"; else ko "ci.yaml : job hooks mal branche"; fi
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
 job = wf["jobs"]["hooks"]
 assert "if" not in job, "un if de job le rendrait skipped, donc ferait echouer ci-ok"
 assert "hooks" in wf["jobs"]["ci-ok"]["needs"]
-assert "tests/hooks/run.sh" in "\n".join(s.get("run", "") for s in job["steps"])
+runs = "\n".join(s.get("run", "") for s in job["steps"])
+# Depuis T-475 : etapes settings et hooks de tools/dev/check (qui lancent tests/hooks/run.sh et settings.test.sh).
+assert "tools/dev/check --static --only settings,hooks --strict" in runs or "tests/hooks/run.sh" in runs
 PY
 
 # 10. Durcissement T-466 : continue-on-error + Verdict, always() sur les trailers, branche par l'API REST, prompt,

@@ -36,3 +36,6 @@ Proposé par la recherche `harness` (clé HAR-1) ; intégration 2 du 2026-11-18.
 Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).
 
 Extension de périmètre (SL-5, `docs/research/SHIFT-LEFT-DEV-ENV.md` §5) : hooks PostToolUse (`check --file`), Stop (`check --fast` puis `leak-guard.sh`), PreToolUse sur Bash (refus de push forcé, merge --admin, kubectl/helm vers un cluster), SessionStart (`doctor`), et branchement de l'étape `hooks` de `tools/dev/check`. Un agent travaille dessus au 2026-11-18 (branche locale `worktree-agent-*`, non intégrée).
+
+T-475 (2026-11-18) : le job `hooks` appelle `tools/dev/check --static --only settings,hooks --strict` ; `--only` n'est
+pas transmis au `check --fast` du hook Stop testé (obstacle du `miroir` levé). STATIC PASS en local (10,3 s).
