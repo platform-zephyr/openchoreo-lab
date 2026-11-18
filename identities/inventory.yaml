@@ -1,0 +1,305 @@
+# Inventaire des identités et matrice identité × catégories de secrets (T-183, schéma identities/schema/inventory.v1.json).
+# Fichier PUBLIC : des NOMS, des catégories et des dates. JAMAIS de valeur, d'IP, d'hôte, d'e-mail ni d'identifiant de compte.
+# Source de la matrice de docs/IDENTITY.md §11 : python3 -I tools/identity-inventory/inventory.py --write la régénère,
+# sans option le script valide ce fichier et refuse un écart avec le document.
+#
+# Sens des champs :
+# - `secrets` : accès CIBLE (moindre privilège, docs/research/IDENTITY-SECRETS.md §2) aux catégories qu'elle ne possède pas.
+#   Catégorie absente = aucun accès. presence = métadonnées ; creation = créer sans lire ; ecriture = écrire ou synchroniser
+#   sans lecture humaine ; valeur = lire le contenu ; valeur-break-glass = lecture d'urgence, auditée.
+# - `credentials` : ses propres credentials, par nom du registre docs/state/identities.yaml (propriétaire et échéance requis).
+# - `dev_deviations` : credentials du registre qui dépassent la cible pendant le mode dev (`dev: true` exigé, fin à FINAL0).
+# - `registry_consumers` : slugs `consumers` du registre portés par cette identité (contrôle de couverture).
+# - `elevation` : au plus UN chemin d'élévation, vers une autre identité de l'inventaire.
+# - `status` : déclaratif (actif = l'identité existe ; propose = prévue). Ce n'est pas une preuve runtime.
+version: 1
+categories:
+  - id: apps
+    short: apps
+    description: secrets applicatifs d'une cellule (chemin apps/{app}/{env}/{nom})
+  - id: plateforme
+    short: plat
+    description: secrets des composants de plateforme (chemin platform/{composant}/{nom})
+  - id: llm
+    short: llm
+    description: clé d'un fournisseur LLM de plateforme (chemin platform/llm/{fournisseur})
+  - id: clients-oidc
+    short: oidc
+    description: secrets des clients OIDC émis par Authentik
+  - id: doppler-runtime
+    short: dp-run
+    description: configs Doppler runtime du lab et du homelab (amorçage de la plateforme)
+  - id: doppler-iac
+    short: dp-iac
+    description: configs Doppler de l'IaC (plan en lecture, apply en écriture)
+  - id: openbao-seal
+    short: seal
+    description: clé de seal statique d'OpenBao
+  - id: k8s-secrets
+    short: k8s
+    description: objets Secret Kubernetes des namespaces de cellule et de plateforme
+  - id: acces-cluster
+    short: admin
+    description: accès d'administration du cluster (kubeconfig d'administration, secrets machine Talos)
+identities:
+  - id: paul-admin
+    type: humain
+    status: actif
+    authentication: OIDC Authentik, groupe authentik-admins, MFA
+    surface: [OpenBao (policy platform-admin), Doppler (session personnelle), cluster du lab (admin), dépôt (code owner)]
+    token_ttl: 1h
+    owner: paul
+    expires: 2027-05-18
+    secrets:
+      apps: valeur-break-glass
+      plateforme: valeur-break-glass
+      llm: valeur-break-glass
+      clients-oidc: valeur-break-glass
+      doppler-runtime: valeur
+      doppler-iac: valeur
+      openbao-seal: valeur-break-glass
+      k8s-secrets: valeur
+      acces-cluster: valeur
+    credentials: []
+    elevation: []
+    note: hors break-glass, la policy platform-admin donne config et présence ; durée OpenBao maximale de 4 h.
+  - id: humain-deposant
+    type: humain
+    status: propose
+    authentication: OIDC Authentik, groupe openchoreo-developers
+    surface: [OpenBao (chemins provided de ses apps), portail OpenChoreo]
+    token_ttl: 1h
+    owner: paul
+    expires: 2027-05-18
+    secrets:
+      apps: creation
+    credentials: []
+    elevation: []
+    note: création et mise à jour sans lecture (capabilities create et update) ; présence par les métadonnées.
+  - id: humain-famille-amis
+    type: humain
+    status: actif
+    authentication: OIDC Authentik, groupes family ou friends
+    surface: [applications exposées à leur groupe (identity.groups de app.yaml)]
+    token_ttl: n/a
+    owner: paul
+    expires: 2027-05-18
+    secrets: {}
+    credentials: []
+    elevation: []
+  - id: agent-dev
+    type: agent
+    status: actif
+    authentication: GitHub App (jeton d'installation) et abonnement Claude du runner
+    surface: [dépôt openchoreo-lab (PR seulement), runner cloud]
+    token_ttl: 1h
+    owner: paul
+    expires: 2027-02-18
+    secrets: {}
+    credentials: [abonnement-claude-jeton, executant-identite-github, executant-app-github, agents-app-github]
+    dev_deviations: [doppler-acces-elargi]
+    registry_consumers: [executant-cloud, workflow-agent-claude]
+    elevation: []
+    note: ses credentials sont injectés par le runner ; il ne lit aucune valeur de secret (ADR-0014 §5).
+  - id: agent-ops-lecteur
+    type: agent
+    status: propose
+    authentication: Authentik client_credentials (openchoreo-agent-reader)
+    surface: [API et MCP OpenChoreo en lecture, hôte MCP derrière Cloudflare Access]
+    token_ttl: 15m
+    owner: plateforme
+    expires: 2027-02-18
+    secrets:
+      apps: presence
+    credentials: [agent-lecteur-oidc, acces-mcp-service-token]
+    registry_consumers: [executant-cloud]
+    elevation:
+      - to: agent-remediation
+        via: mandat de Paul, client openchoreo-agent-operator émis pour la durée du mandat
+        class: MANDAT
+    note: la présence vient de app-status (secret-missing), jamais d'une lecture des Secrets.
+  - id: agent-remediation
+    type: agent
+    status: propose
+    authentication: Authentik client_credentials (openchoreo-agent-operator) et liaison authz bornée
+    surface: [releasebinding en développement et staging (CEL)]
+    token_ttl: 15m
+    owner: plateforme
+    expires: 2027-02-18
+    secrets: {}
+    credentials: [agent-operateur-oidc]
+    registry_consumers: [executant-cloud]
+    elevation: []
+  - id: executant-local
+    type: agent
+    status: actif
+    authentication: session locale de l'exécutant (Mac, puis N100)
+    surface: [cluster du lab, dépôt openchoreo-lab (PR seulement)]
+    token_ttl: n/a
+    owner: paul
+    expires: 2026-12-18
+    secrets: {}
+    credentials: []
+    dev_deviations: [lab-kubeconfig, talos-secrets-machine-lab]
+    registry_consumers: [executant-local]
+    elevation: []
+    note: écarts du mode dev, retirés à FINAL0 ; cible = lecture via agent-ops-lecteur.
+  - id: openchoreo-plan-controle
+    type: plateforme
+    status: actif
+    authentication: ServiceAccount Kubernetes (control plane et cluster-agent)
+    surface: [objets OpenChoreo (SecretReference, ReleaseBinding)]
+    token_ttl: 1h
+    owner: plateforme
+    expires: 2027-05-18
+    secrets:
+      k8s-secrets: presence
+    credentials: []
+    elevation: []
+    note: manipule des SecretReference, jamais la valeur ; droits selon platform/authz.
+  - id: portail-backstage
+    type: plateforme
+    status: propose
+    authentication: ServiceAccount, auth Kubernetes OpenBao
+    surface: [portail Backstage, synchro du catalogue]
+    token_ttl: 1h
+    owner: plateforme
+    expires: 2027-02-18
+    secrets:
+      plateforme: valeur
+    credentials: [portail-clients-oidc]
+    registry_consumers: [portail]
+    elevation: []
+    note: rôle portal limité à platform/portal/* ; Secrets de son seul namespace.
+  - id: eso-apps
+    type: eso
+    status: propose
+    authentication: auth Kubernetes OpenBao, un SecretStore par cellule (cible)
+    surface: [namespaces de cellule]
+    token_ttl: 15m
+    owner: plateforme
+    expires: 2027-02-18
+    secrets:
+      apps: valeur
+      k8s-secrets: ecriture
+    credentials: []
+    elevation: []
+    note: v1 lecture apps/* bornée par VAP sur remoteRef ; cible lecture apps/{app}/{env}/* par cellule.
+  - id: eso-plateforme
+    type: eso
+    status: actif
+    authentication: jeton Doppler statique, ClusterSecretStore limité aux namespaces de plateforme
+    surface: [namespaces de plateforme du lab]
+    token_ttl: 90d
+    owner: plateforme
+    expires: 2027-02-18
+    secrets:
+      doppler-runtime: valeur
+      k8s-secrets: ecriture
+    credentials: [eso-lab-jeton]
+    dev_deviations: [doppler-acces-elargi]
+    registry_consumers: [eso-lab]
+    elevation: []
+  - id: authentik-serveur
+    type: plateforme
+    status: actif
+    authentication: auth Kubernetes OpenBao (cible)
+    surface: [Authentik, son namespace]
+    token_ttl: 15m
+    owner: plateforme
+    expires: 2027-05-18
+    secrets:
+      clients-oidc: valeur
+      doppler-runtime: valeur
+    credentials: []
+    elevation: []
+    note: OpenBao seulement apps/+/+/oidc_client_secret ; Doppler pour l'amorçage admin.
+  - id: openbao-reconciliateur
+    type: job
+    status: propose
+    authentication: auth Kubernetes OpenBao, rôle bao-config (Job Argo)
+    surface: [OpenBao sys/policies et auth, sans lecture kv/data]
+    token_ttl: 15m
+    owner: plateforme
+    expires: 2027-02-18
+    secrets: {}
+    credentials: []
+    elevation: []
+  - id: generateur-secrets
+    type: job
+    status: propose
+    authentication: auth Kubernetes OpenBao (Job)
+    surface: [OpenBao kv apps/* et platform/*, création seule (cas=0)]
+    token_ttl: 15m
+    owner: plateforme
+    expires: 2027-02-18
+    secrets:
+      apps: creation
+      plateforme: creation
+    credentials: []
+    elevation: []
+  - id: crossplane-homelab
+    type: crossplane
+    status: propose
+    authentication: jeton fournisseur Cloudflare Access seulement, livré par ESO
+    surface: [Cloudflare Access, son namespace]
+    token_ttl: 90d
+    owner: plateforme
+    expires: 2027-02-18
+    secrets:
+      doppler-runtime: valeur
+    credentials: []
+    elevation: []
+    note: lit son seul jeton fournisseur dans la config runtime du homelab.
+  - id: ci-github
+    type: ci
+    status: actif
+    authentication: GITHUB_TOKEN du workflow, sans secret de production
+    surface: [jobs de PR, cluster k3d éphémère]
+    token_ttl: 1h
+    owner: plateforme
+    expires: 2027-05-18
+    secrets: {}
+    credentials: []
+    elevation: []
+    note: valeurs factices dans k3d.
+  - id: arc-opentofu
+    type: iac
+    status: actif
+    authentication: jetons Doppler iac-plan (lecture) et iac-apply (écriture), runners ARC
+    surface: [racines OpenTofu de homelab-infra]
+    token_ttl: 90d
+    owner: paul
+    expires: 2027-02-18
+    secrets:
+      doppler-iac: valeur
+    credentials: []
+    elevation: []
+    note: credentials portés par le registre de homelab-infra, hors de ce dépôt.
+  - id: openbao-pod
+    type: plateforme
+    status: propose
+    authentication: Secret de seal monté, lisible par le seul pod
+    surface: [namespace openbao]
+    token_ttl: 90d
+    owner: plateforme
+    expires: 2027-02-18
+    secrets:
+      openbao-seal: valeur
+    credentials: []
+    elevation: []
+  - id: job-migration
+    type: job
+    status: propose
+    authentication: jeton Doppler temporaire en lecture et auth Kubernetes OpenBao (rôle migration)
+    surface: [copie Doppler vers OpenBao, création seule]
+    token_ttl: 24h
+    owner: paul
+    expires: 2027-02-18
+    secrets:
+      doppler-runtime: valeur
+      apps: creation
+      plateforme: creation
+    credentials: []
+    elevation: []
+    note: jeton Doppler de 24 h au plus, révoqué après la migration.

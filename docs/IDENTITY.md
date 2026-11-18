@@ -168,3 +168,64 @@ Limite assumée : une réinitialisation de la base Authentik régénère ces sec
 | 2026-11-17 19:43 CET | `GET /application/o/openchoreo/jwks/` | 404 : slug libre |
 
 Non vérifiable sans client : `iss` en mode global, présence d'`azp`, surcharge d'`aud`, scopes appliqués en client_credentials, policy d'application en client_credentials. Tous couverts par §9.
+
+## 11. Inventaire machine des identités et matrice identité × secrets (T-183)
+
+Source : `identities/inventory.yaml` (schéma `identities/schema/inventory.v1.json`). La matrice ci-dessous en est dérivée ; ne pas l'éditer à la main. Les credentials sont cités par leur nom dans le registre `docs/state/identities.yaml` (T-306) ; aucun fichier ne contient de valeur. Les accès décrits sont la **cible** de moindre privilège (`docs/research/IDENTITY-SECRETS.md` §2) ; les écarts du mode dev sont listés à part et expirent à FINAL0. Le statut est déclaratif : ce n'est pas une preuve runtime.
+
+- Valider et vérifier la matrice : `python3 -I tools/identity-inventory/inventory.py` (code 1 si l'inventaire est invalide ou si la matrice diffère).
+- Régénérer la matrice après une modification de l'inventaire : `python3 -I tools/identity-inventory/inventory.py --write`.
+- Refus (tests `tests/identities/test_inventory.py`, lancés par le job CI `appgen` et par `tools/dev/check`) : credential absent du registre ou sans propriétaire ni échéance ; plus d'un chemin d'élévation, ou élévation en cycle ; identité d'agent avec lecture de valeur ; écart dev sur un credential non `dev: true` ; credential du registre dont un consommateur n'est porté par aucune identité ; valeur ressemblant à un secret (mêmes règles que `tools/backlog/identities_lint.py`).
+- Ajouter une identité : une entrée dans `identities/inventory.yaml` et, si elle porte un credential, une entrée du registre, dans la même PR.
+
+<!-- BEGIN identity-inventory : généré par tools/identity-inventory/inventory.py --write, ne pas éditer -->
+
+| Identité | Type | Statut | Authentification | Durée | Propriétaire | Échéance | Élévation | Écarts dev |
+|---|---|---|---|---|---|---|---|---|
+| `paul-admin` | humain | actif | OIDC Authentik, groupe authentik-admins, MFA | 1h | paul | 2027-05-18 | — | — |
+| `humain-deposant` | humain | propose | OIDC Authentik, groupe openchoreo-developers | 1h | paul | 2027-05-18 | — | — |
+| `humain-famille-amis` | humain | actif | OIDC Authentik, groupes family ou friends | n/a | paul | 2027-05-18 | — | — |
+| `agent-dev` | agent | actif | GitHub App (jeton d'installation) et abonnement Claude du runner | 1h | paul | 2027-02-18 | — | `doppler-acces-elargi` |
+| `agent-ops-lecteur` | agent | propose | Authentik client_credentials (openchoreo-agent-reader) | 15m | plateforme | 2027-02-18 | agent-remediation (MANDAT) | — |
+| `agent-remediation` | agent | propose | Authentik client_credentials (openchoreo-agent-operator) et liaison authz bornée | 15m | plateforme | 2027-02-18 | — | — |
+| `executant-local` | agent | actif | session locale de l'exécutant (Mac, puis N100) | n/a | paul | 2026-12-18 | — | `lab-kubeconfig`, `talos-secrets-machine-lab` |
+| `openchoreo-plan-controle` | plateforme | actif | ServiceAccount Kubernetes (control plane et cluster-agent) | 1h | plateforme | 2027-05-18 | — | — |
+| `portail-backstage` | plateforme | propose | ServiceAccount, auth Kubernetes OpenBao | 1h | plateforme | 2027-02-18 | — | — |
+| `eso-apps` | eso | propose | auth Kubernetes OpenBao, un SecretStore par cellule (cible) | 15m | plateforme | 2027-02-18 | — | — |
+| `eso-plateforme` | eso | actif | jeton Doppler statique, ClusterSecretStore limité aux namespaces de plateforme | 90d | plateforme | 2027-02-18 | — | `doppler-acces-elargi` |
+| `authentik-serveur` | plateforme | actif | auth Kubernetes OpenBao (cible) | 15m | plateforme | 2027-05-18 | — | — |
+| `openbao-reconciliateur` | job | propose | auth Kubernetes OpenBao, rôle bao-config (Job Argo) | 15m | plateforme | 2027-02-18 | — | — |
+| `generateur-secrets` | job | propose | auth Kubernetes OpenBao (Job) | 15m | plateforme | 2027-02-18 | — | — |
+| `crossplane-homelab` | crossplane | propose | jeton fournisseur Cloudflare Access seulement, livré par ESO | 90d | plateforme | 2027-02-18 | — | — |
+| `ci-github` | ci | actif | GITHUB_TOKEN du workflow, sans secret de production | 1h | plateforme | 2027-05-18 | — | — |
+| `arc-opentofu` | iac | actif | jetons Doppler iac-plan (lecture) et iac-apply (écriture), runners ARC | 90d | paul | 2027-02-18 | — | — |
+| `openbao-pod` | plateforme | propose | Secret de seal monté, lisible par le seul pod | 90d | plateforme | 2027-02-18 | — | — |
+| `job-migration` | job | propose | jeton Doppler temporaire en lecture et auth Kubernetes OpenBao (rôle migration) | 24h | paul | 2027-02-18 | — | — |
+
+| Identité | apps | plat | llm | oidc | dp-run | dp-iac | seal | k8s | admin |
+|---|---|---|---|---|---|---|---|---|---|
+| `paul-admin` | V! | V! | V! | V! | V | V | V! | V | V |
+| `humain-deposant` | C | — | — | — | — | — | — | — | — |
+| `humain-famille-amis` | — | — | — | — | — | — | — | — | — |
+| `agent-dev` | — | — | — | — | — | — | — | — | — |
+| `agent-ops-lecteur` | P | — | — | — | — | — | — | — | — |
+| `agent-remediation` | — | — | — | — | — | — | — | — | — |
+| `executant-local` | — | — | — | — | — | — | — | — | — |
+| `openchoreo-plan-controle` | — | — | — | — | — | — | — | P | — |
+| `portail-backstage` | — | V | — | — | — | — | — | — | — |
+| `eso-apps` | V | — | — | — | — | — | — | E | — |
+| `eso-plateforme` | — | — | — | — | V | — | — | E | — |
+| `authentik-serveur` | — | — | — | V | V | — | — | — | — |
+| `openbao-reconciliateur` | — | — | — | — | — | — | — | — | — |
+| `generateur-secrets` | C | C | — | — | — | — | — | — | — |
+| `crossplane-homelab` | — | — | — | — | V | — | — | — | — |
+| `ci-github` | — | — | — | — | — | — | — | — | — |
+| `arc-opentofu` | — | — | — | — | — | V | — | — | — |
+| `openbao-pod` | — | — | — | — | — | — | V | — | — |
+| `job-migration` | C | C | — | — | V | — | — | — | — |
+
+Légende : P présence, C création sans lecture, E écriture ou synchronisation, V lecture de valeur, V! lecture d'urgence auditée (break-glass), — aucun accès.
+
+Catégories : apps = secrets applicatifs d'une cellule (chemin apps/{app}/{env}/{nom}) ; plat = secrets des composants de plateforme (chemin platform/{composant}/{nom}) ; llm = clé d'un fournisseur LLM de plateforme (chemin platform/llm/{fournisseur}) ; oidc = secrets des clients OIDC émis par Authentik ; dp-run = configs Doppler runtime du lab et du homelab (amorçage de la plateforme) ; dp-iac = configs Doppler de l'IaC (plan en lecture, apply en écriture) ; seal = clé de seal statique d'OpenBao ; k8s = objets Secret Kubernetes des namespaces de cellule et de plateforme ; admin = accès d'administration du cluster (kubeconfig d'administration, secrets machine Talos).
+
+<!-- END identity-inventory -->

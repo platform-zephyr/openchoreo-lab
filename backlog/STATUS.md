@@ -7,10 +7,10 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | Statut | Tickets |
 |---|---|
 | `in-progress` | 16 |
-| `todo` | 135 |
+| `todo` | 134 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 22 |
+| `done` | 23 |
 | `dropped` | 27 |
 | **Total** | **248** |
 
@@ -53,7 +53,6 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-041](T-041-context-engineering.md) | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
 | [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
 | [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
-| [T-183](T-183-ids-4.md) | Matrice identité × secrets exécutable et inventaire des identités | 0/3 | — |
 | [T-201](T-201-data-2.md) | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
 | [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 0/4 | — |
 | [T-215](T-215-pack-identite.md) | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
@@ -127,7 +126,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-168](T-168-ai-9.md) | Bac d'exécution éphémère (agent-sandbox) pour le code lancé par les agents | T-160 (todo), T-163 (todo) | — |
 | [T-171](T-171-ai-12.md) | Premier service IA de référence (LibreChat ou équivalent) de bout en bout | T-162 (todo), T-163 (todo), T-165 (todo), T-166 (todo), T-404 (todo) | — |
 | [T-181](T-181-ids-2.md) | Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao | T-022 (todo), T-190 (todo), T-404 (todo) | — |
-| [T-184](T-184-ids-5.md) | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | T-022 (todo), T-183 (todo) | — |
+| [T-184](T-184-ids-5.md) | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | T-022 (todo) | — |
 | [T-185](T-185-ids-6.md) | Transport des blueprints vers l'Authentik de production (ConfigMap dédié) | T-404 (todo) | — |
 | [T-186](T-186-ids-7.md) | Golden path utilisateur : arrivée et départ (users/<id>.yaml) | T-185 (todo) | — |
 | [T-189](T-189-ids-10.md) | `identity.mode: oidc \| proxy \| none` avec client OIDC généré et secret dans OpenBao | T-074 (todo), T-184 (todo), T-185 (todo) | — |
@@ -198,6 +197,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-061](T-061-aligner-mission-adr.md) | Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote) | 2026-11-18 | `PR #54` | — |
 | [T-061b](T-061b-acter-autres-adr.md) | Acter les autres ADR (0001, 0003-0006, 0010-0013, 0020, 0022, 0023, 0024) et les amendements du consensus n°2 (T-061b) | 2026-11-18 | `PR #54` | — |
 | [T-072](T-072-app-status-schema.md) | Schéma `app-status.v1` et `_checks` en sortie JSON stable | 2026-11-18 | `PR #8` | — |
+| [T-183](T-183-ids-4.md) | Matrice identité × secrets exécutable et inventaire des identités | 2026-11-18 | — | — |
 | [T-302](T-302-corrections-de-l-arbre-detail-residuel.md) | Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets | 2026-11-18 | — | — |
 | [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 2026-11-18 | `PR #63`, `backlog/evidence/T-304-essai-executant-2026-11-18.md` | — |
 | [T-306](T-306-registre-identites.md) | Registre des identités et secrets `docs/state/identities.yaml` (noms, rôles, dates, jamais de valeur) | 2026-11-18 | — | — |
