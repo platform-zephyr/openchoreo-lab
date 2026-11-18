@@ -194,25 +194,16 @@ cycle() {
                               || rec T-SWITCH FAIL "générations modifiées par la bascule"
 
   # --- T-DEPLOY : correction par Git de l'Environment, puis déploiement complet ---------------------
-  python3 - "$W/platform/install/manifests/40-openchoreo-env.yaml" <<'EOF'
-import sys
-p = sys.argv[1]; s = open(p).read()
-old = "  isProduction: true\n---"
-new = """  isProduction: true
-  # Correction (preuve GitOps k3d) : le CCT exige gateway.ingress.internal pour un endpoint `internal`.
-  gateway:
-    ingress:
-      internal:
-        name: gateway-default
-        namespace: openchoreo-data-plane
-        http: {host: internal.localhost, listenerName: http, port: 19080}
----"""
-assert old in s; open(p, "w").write(s.replace(old, new, 1))
-EOF
-  local sha t0 ta td
-  sha=$(gcommit "k3d: gateway.ingress.internal sur Environment production"); t0=$(date +%s)
+  # T-458 : patch idempotent (plus d'ancre de texte) ; verdict added|updated|noop dans les preuves.
+  local envpatch sha t0 ta td
+  envpatch=$(python3 "$HERE/patch_env.py" "$W/platform/install/manifests/40-openchoreo-env.yaml") || envpatch=ECHEC
+  evs T-DEPLOY "patch_env.py : $envpatch (gateway.ingress.internal.http.host = internal.localhost)"
+  if [[ "$envpatch" == noop ]]; then sha=$(git -C "$W" rev-parse HEAD)   # déjà conforme : rien à committer
+  else sha=$(gcommit "k3d: gateway.ingress.internal sur Environment production") || sha=$(git -C "$W" rev-parse HEAD); fi
+  t0=$(date +%s)
   ta=$(wait_until 420 app_synced_at gl-platform "$sha") || true
   td=$(wait_until 600 bash -c "$(declare -f k dpns rb_ready dep dep_ok); rb_ready && dep_ok 1 '$(k -n gl-oc get workload whoami-workload -o jsonpath='{.spec.container.image}')'") || true
+  [[ "$td" != timeout ]] && { wait_until 180 http_ok >/dev/null || true; }  # la route suit l'hôte interne patché
   local tot=$(( $(date +%s)-t0 ))
   local ns; ns=$(dpns)
   ev T-DEPLOY k get ns "$ns" --show-labels
@@ -230,7 +221,7 @@ EOF
   evs T-DEPLOY "sonde gl-git -> whoami.$ns:8080 : $deny"
   if [[ "$td" != timeout && "$code" == 200 && "$psa" == restricted && -n "$np" && "$deny" == BLOCKED ]]; then
     rec T-DEPLOY PASS "commit->pod Running ${tot}s (Git->Argo ${ta}s) ; PSA restricted ; default-deny (sonde externe BLOCKED) ; HTTP 200 via gateway-default"
-  else rec T-DEPLOY FAIL "td=$td http=$code psa=$psa np=$np sonde=$deny"; fi
+  else rec T-DEPLOY FAIL "patch_env=$envpatch td=$td http=$code psa=$psa np=$np sonde=$deny"; fi
   RECON+=("env-fix:git->argo=${ta}s,commit->pod=${tot}s")
 
   # --- T-ANNOT : annotations Prune=false (correction appgen proposée) + prune=true -----------------

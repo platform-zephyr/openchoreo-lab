@@ -62,3 +62,9 @@ export KUBECONFIG=<kubeconfig du k3d jetable>    # contexte k3d-* obligatoire ; 
 tests/gitops-k3d/run.sh all       # ~25 min ; écrit evidence/ et evidence/results.tsv
 tests/gitops-k3d/run.sh cleanup   # supprime Applications, gl-oc, dp-gl-oc-*, gl-git, argocd, CRD argoproj
 ```
+
+## T-458 : ancre T-DEPLOY réparée (2026-11-18)
+
+- Cause : le patch de T-DEPLOY cherchait `  isProduction: true\n---` dans `40-openchoreo-env.yaml`. La correction G1 est dans `main` : l'ancre n'existe plus, l'`assert` échouait, la suite s'arrêtait après T-SWITCH.
+- Correctif : `patch_env.py` (idempotent : `added`, `updated` ou `noop`), testé par `test_patch_env.py` (STATIC, 13 cas dont 5 négatifs, contre le vrai manifeste de `main`).
+- Statut runtime : **NOT_TESTED**. Aucun cluster k3d dans la session de correction. Les cas T-ARGO-HEALTH, T-PRUNE-STATUS, T-PIN-STALE, T-STRATEGY et T-RETRAIT-1 (FAIL au run 4, « corrigés statiquement » depuis) restent NOT_TESTED ; leur classement attend le dispatch manuel de `k3d-integration` (suite `gitops-k3d`) sur la branche.
