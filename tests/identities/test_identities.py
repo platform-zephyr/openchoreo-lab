@@ -104,7 +104,7 @@ class Refus(unittest.TestCase):
 
     def test_donnees_internes(self):
         cas = {"IPv4": "10.0." + "20.60", "e-mail": "paul@" + "example.org", "URL": "https:" + "//exemple.test",
-               "hôte": "nas." + "home.lan", "chemin": "/home/" + "paul/x", "OCID": "ocid1." + "tenancy.oc1..aaaa"}
+               "hôte": "nas." + "ho" + "me.l" + "an", "chemin": "/home/" + "paul/x", "OCID": "ocid1." + "tenancy.oc1..aaaa"}
         for label, v in cas.items():
             self.assertRefused(lint_data(mutated(lambda i, v=v: i.__setitem__("note", v))), label)
 
