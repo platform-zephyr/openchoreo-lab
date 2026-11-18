@@ -15,9 +15,10 @@ title = "openchoreo-lab leak guard"
 useDefault = true
 
 # Copies de travail locales des agents (.claude/worktrees) : hors arbre suivi, scannees depuis leur propre racine.
+# Ancre a la racine scannee (T-483) : un chemin absolu ou une racine situee sous .claude/worktrees/ n'est pas ignore.
 [[allowlists]]
-description = "worktrees locaux des agents"
-paths = ['''(?:^|/)\.claude/worktrees/''']
+description = "worktrees locaux des agents, imbriques sous la racine scannee"
+paths = ['''^\.claude/worktrees/''']
 
 # Le "secret" de chaque regle est le groupe 1 (la valeur sensible) ; les allowlists le testent.
 

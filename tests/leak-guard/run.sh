@@ -11,6 +11,7 @@
 # Usage : LEAK_GUARD_BIN=/chemin/gitleaks tests/leak-guard/run.sh   (defaut : gitleaks du PATH)
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 2
+ROOT="$PWD"
 GUARD="$PWD/tools/dev/leak-guard.sh"
 BIN="${LEAK_GUARD_BIN:-gitleaks}"
 if ! command -v "$BIN" >/dev/null 2>&1; then
@@ -113,6 +114,37 @@ if [[ "$RC" -eq 1 ]] && grep -q '^INFO motifs du proprietaire absents' "$W/out";
 else
   ko "variable vide : comportement inattendu (code $RC)"
 fi
+
+# --- T-483 : un worktree d'agent sous .claude/worktrees/ n'est pas aveugle ---
+# Racine scannee situee sous un chemin .claude/worktrees/x/ (hors depot : copie dans $W, jamais le worktree reel).
+wt="$W/.claude/worktrees/x"
+mkdir -p "$wt"
+printf 'serveur %s\n' "$V_PRIV_A" >"$wt/note.md"
+RC=0
+bash "$GUARD" "$wt" >"$W/out" 2>&1 || RC=$?
+if [[ "$RC" -eq 1 ]] && grep -q '^LEAK ' "$W/out"; then ok "T-483 racine sous .claude/worktrees/x : valeur detectee"; else ko "T-483 racine sous .claude/worktrees/x : PASS a vide (code $RC)"; fi
+# Meme racine scannee par chemin ABSOLU (gitleaks teste alors le chemin complet contre l'allowlist de chemins).
+RC=0
+(cd "$wt" && "$(command -v "$BIN")" dir "$wt" --config "$ROOT/.gitleaks.toml" --no-banner --redact=100 --log-level error) >/dev/null 2>&1 || RC=$?
+if [[ "$RC" -eq 1 ]]; then ok "T-483 chemin absolu sous .claude/worktrees/x : valeur detectee"; else ko "T-483 chemin absolu sous .claude/worktrees/x : aveugle (code $RC)"; fi
+# Un worktree imbrique DANS la racine scannee reste ignore (role d'origine de l'allowlist, ancree a la racine).
+nest="$W/case-nested"
+mkdir -p "$nest/.claude/worktrees/y"
+printf 'serveur %s\n' "$V_PRIV_A" >"$nest/.claude/worktrees/y/note.md"
+RC=0
+bash "$GUARD" "$nest" >"$W/out" 2>&1 || RC=$?
+if [[ "$RC" -eq 0 ]]; then ok "T-483 worktree imbrique sous la racine : ignore"; else ko "T-483 worktree imbrique : code $RC"; fi
+# Garde de sanite : une configuration qui rend la sonde aveugle donne le code 2, jamais PASS.
+printf 'title = "aveugle"\n[[allowlists]]\npaths = ["(?s).*"]\n' >"$W/blind.toml"
+mkdir -p "$W/repo-blind/tools/dev"
+cp "$GUARD" "$W/repo-blind/tools/dev/leak-guard.sh"
+cp "$W/blind.toml" "$W/repo-blind/.gitleaks.toml"
+: >"$W/repo-blind/.gitleaksignore"
+mkdir -p "$W/repo-blind/src"
+printf 'rien\n' >"$W/repo-blind/src/a.md"
+RC=0
+bash "$W/repo-blind/tools/dev/leak-guard.sh" "$W/repo-blind" >"$W/out" 2>&1 || RC=$?
+if [[ "$RC" -eq 2 ]]; then ok "T-483 sonde aveugle : code 2 (pas un PASS a vide)"; else ko "T-483 sonde aveugle : code $RC"; fi
 
 # --- Erreurs d'outil : jamais un PASS ---
 RC=0
