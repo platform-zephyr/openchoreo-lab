@@ -298,7 +298,7 @@ jobs:
       - name: Outils (versions figees, archives verifiees par sha256)
         run: |
           set -euo pipefail
-          python3 -m pip install --disable-pip-version-check "yamllint==1.38.0" "PyYAML==6.0.2"
+          python3 -m pip install --disable-pip-version-check "yamllint==1.38.0" "PyYAML==6.0.2" "jsonschema==4.23.0"
           cd "$RUNNER_TEMP"
           curl -fsSLO "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
           echo "${SHELLCHECK_SHA256}  shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz" | sha256sum -c -
