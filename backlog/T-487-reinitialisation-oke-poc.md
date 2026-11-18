@@ -4,7 +4,7 @@ title: "OKE vierge pour le POC : installation depuis Git, un seul Argo, AppProje
 status: todo
 phase: P1
 adr: [0025, 0003, 0017]
-depends_on: [T-001, T-490]
+depends_on: [T-001, T-490, T-494]
 class: REVUE + MANDAT
 velocity: true
 lane: socle-oke
