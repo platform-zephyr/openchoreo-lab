@@ -9,6 +9,9 @@
 - Périmètre cluster : namespaces `openchoreo-*` et `lab-*` uniquement.
 - Un résultat n'est « PASS » qu'avec une preuve runtime datée (PASS / FAIL / NOT_TESTED / BLOCKED). k3d ≠ OKE.
 - Réponses en français, conclusion d'abord.
+- Avant de coder un ticket qui touche du code, un manifeste ou un workflow : charger `prior-art` (art antérieur borné, ADR-0024).
+- La PR contient la section « Implémentations publiques consultées » (format : `.github/pull_request_template.md`).
+- L'amont d'abord : un standard amont est préféré au code propre ; l'écart est justifié dans la PR.
 
 ## Skills disponibles (`.agents/skills/`, lus par Claude Code via `.claude/skills`)
 - `add-app` : intention → archétype → `app.yaml` → PR → CI → preuves.

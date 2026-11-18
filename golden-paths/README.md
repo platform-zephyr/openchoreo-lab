@@ -127,6 +127,15 @@ CLUSTER_LABEL=k3d KUBE_CONTEXT=k3d-openchoreo \
 | `check-cronjob.sh` | D1 à D3 (prêt pour G1) |
 | `check-helm.sh` | H1 à H4 |
 
+### Sortie JSON stable (`app-status.v1`, ADR-0011)
+
+```bash
+CLUSTER_LABEL=k3d golden-paths/_checks/run-all.sh <app> production --format json   # JSON seul sur stdout
+GP_NO_CLUSTER=1 CLUSTER_LABEL=k3d golden-paths/_checks/run-all.sh <app> --format json  # NOT_TESTED, niveau STATIC, code 3
+```
+
+Schéma : [`docs/schema/app-status-v1.schema.json`](../docs/schema/app-status-v1.schema.json) (+ exemples). `PASS` exige le niveau `RUNTIME` et zéro FAIL/BLOCKED/NOT_TESTED ; sans cluster joignable le verdict est `NOT_TESTED`. Chaque échec porte une `cause` typée (`check_failed` à corriger, `prerequisite_missing` ou `cluster_unreachable` réessayable). Tests : `python3 -m unittest discover -s tests/checks -v`.
+
 Les tests **actifs** (pod privilégié refusé, egress coupé, refus SQL inter-bases) écrivent dans le cluster : ils vivent dans `tests/k3d/` (APP-CONTRACT §8), pas ici.
 
 Écarts contrat ↔ golden paths : [`SCHEMA-GAPS.md`](SCHEMA-GAPS.md).

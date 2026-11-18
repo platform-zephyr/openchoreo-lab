@@ -1,27 +1,95 @@
 # Agents de développement sur runners GitHub (anthropics/claude-code-action, épinglé par SHA, tag v1).
-# Un label `agent:dev` posé PAR PAUL sur une issue = un job = un agent = une branche claude/* = une PR.
+# T-313 : lancement manuel UNIQUEMENT (workflow_dispatch : issues, modèle, effort). Une issue = un job = une session neuve
+# = une branche claude/* = une PR. Plus de déclencheur par label (un label posé par GITHUB_TOKEN ne déclenche rien).
+# Plafonds par modèle (tools/factory/run-ticket.sh) : Opus 90 min / 150 tours ; Sonnet et Haiku 45 min / 60 tours.
+# Sortie : mission-result.v1 (docs/schema/mission-result.v1.json) archivé en artefact, résumé du job sans sortie d'outil.
 # L'agent n'a AUCUN accès OKE/Doppler/OCI : seul le contenu du dépôt et le jeton de l'App Claude (courte durée,
 # ce dépôt seulement). Déploiement = merge puis Argo CD ; la preuve runtime reste au coordinateur.
+# Gouverneur (T-311) : kill-switch factory/PAUSE, matrice max-parallel 3 (factory/config.yaml), dispatch manuel du pilote.
 # Sécurité : déclencheur restreint à l'acteur propriétaire (une issue publique ne suffit pas), concurrence par issue,
 # pas de show_full_output (dépôt public : les journaux sont publics), pas de secret autre que le jeton Claude.
 # docs/AGENT-RUNNERS.md : mise en route.
 name: claude-agent
 on:
-  issues:
-    types: [labeled]
+  # Pilote (ADR-0021) : Paul lance une liste d'issues ; la matrice les execute 3 a la fois (max-parallel).
+  workflow_dispatch:
+    inputs:
+      tickets:
+        description: "Numeros d'issues (virgules ou espaces), 20 au plus"
+        required: true
+        type: string
+      model:
+        description: "Modele (champ model: du ticket)"
+        required: true
+        default: claude-sonnet-5-5
+        type: choice
+        options: [claude-haiku-5-5, claude-sonnet-5-5, claude-opus-5-5]
+      effort:
+        description: "Effort (Sonnet et Haiku plafonnes a xhigh)"
+        required: true
+        default: high
+        type: choice
+        options: [low, medium, high, xhigh, max]
+      escalated_from:
+        description: "Modele precedent si relance par escalade (facultatif)"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
 
-concurrency:
-  group: claude-agent-issue-${{ github.event.issue.number }}
-  cancel-in-progress: false
-
+# Gouverneur (T-311, ADR-0021). Pas de groupe de concurrence au niveau du workflow : un groupe unique n'admet qu'un run
+# actif et un en attente et annule le suivant (docs.github.com, « Control the concurrency of workflows and jobs »).
+# - Kill-switch : factory/PAUSE sur main = aucun agent lance (job plan, puis re-controle dans chaque job de la matrice).
+# - Concurrence 3 : `max-parallel: 3` sur la matrice ; les issues au-dela attendent, aucune n'est annulee.
+# - Une issue ne tourne qu'une fois a la fois : groupe par issue au niveau du job, sans annulation.
 jobs:
-  dev:
-    if: github.event.label.name == 'agent:dev' && github.event.sender.login == 'SmadjaPaul'
+  plan:
+    if: github.actor == 'SmadjaPaul'
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 45
+    timeout-minutes: 5
+    outputs:
+      paused: ${{ steps.pause.outputs.paused }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      timeout_minutes: ${{ steps.limits.outputs.timeout_minutes }}
+      max_turns: ${{ steps.limits.outputs.max_turns }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Kill-switch factory/PAUSE
+        id: pause
+        run: factory/pause-check.sh || [ "$?" -eq 10 ]
+      - name: Plafonds du modele (effort valide, Sonnet plafonne a xhigh)
+        id: limits
+        env:
+          MODEL: ${{ inputs.model }}
+          EFFORT: ${{ inputs.effort }}
+        run: |
+          tools/factory/run-ticket.sh effort "$MODEL" "$EFFORT"
+          tools/factory/run-ticket.sh limits "$MODEL" | tee -a "$GITHUB_OUTPUT"
+      - name: Matrice des issues
+        id: matrix
+        if: steps.pause.outputs.paused == 'false'
+        env:
+          TICKETS: ${{ inputs.tickets }}
+        run: factory/plan-matrix.sh
+
+  dev:
+    needs: plan
+    if: needs.plan.outputs.paused == 'false'
+    name: "dev issue ${{ matrix.issue }}"
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: ${{ fromJSON(needs.plan.outputs.timeout_minutes) }}
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    concurrency:
+      group: claude-agent-issue-${{ matrix.issue }}
+      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write
@@ -31,18 +99,65 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - name: Kill-switch factory/PAUSE (re-controle sur origin/main)
+        id: pause
+        env:
+          PAUSE_REF: origin/main
+        run: factory/pause-check.sh || [ "$?" -eq 10 ]
+      - if: steps.pause.outputs.paused == 'false'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
       - name: Outils de test statique (aucun accès cluster)
+        if: steps.pause.outputs.paused == 'false'
         run: python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt "yamllint==1.38.0"
-      - uses: anthropics/claude-code-action@469588f42e6b1e94cd14ad09dccfeaec772ce0fd # v1
+      - name: Identite git de l'executant (noreply impose)
+        if: steps.pause.outputs.paused == 'false'
+        run: |
+          git config user.name "Claude"
+          git config user.email "noreply@anthropic.com"
+      - id: claude
+        if: steps.pause.outputs.paused == 'false'
+        env:
+          GIT_AUTHOR_NAME: Claude
+          GIT_AUTHOR_EMAIL: noreply@anthropic.com
+          GIT_COMMITTER_NAME: Claude
+          GIT_COMMITTER_EMAIL: noreply@anthropic.com
+        uses: anthropics/claude-code-action@469588f42e6b1e94cd14ad09dccfeaec772ce0fd # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          label_trigger: "agent:dev"
+          prompt: "Traite l'issue #${{ matrix.issue }} de ce dépôt (lis-la avec gh issue view ${{ matrix.issue }}) selon AGENTS.md."
           base_branch: main
           branch_prefix: "claude/"
           claude_args: |
-            --max-turns 60
-            --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3:*),Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(yamllint:*),Bash(shellcheck:*)"
-            --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Aucun accès cluster ni secret. Une PR par issue, périmètre de fichiers de l'issue seulement ; apps/**, generated/** (via appgen) libres ; platform/, tools/, tests/, .github/ exigent l'approbation de Paul. N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
+            --model ${{ inputs.model }}
+            --effort ${{ inputs.effort }}
+            --max-turns ${{ needs.plan.outputs.max_turns }}
+            --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3:*),Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(factory/pause-check.sh:*),Bash(yamllint:*),Bash(shellcheck:*)"
+            --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Si factory/PAUSE existe sur origin/main, ne lance aucun merge automatique (factory/pause-check.sh) et arrête-toi. Aucun accès cluster ni secret. Chaque commit porte les trailers Ticket: T-NNN, Model: ${{ inputs.model }}, Effort: ${{ inputs.effort }}, Escalated-from: ${{ inputs.escalated_from }} (si non vide) et Claude-Session, et l'e-mail noreply@anthropic.com. Remplis le modèle .github/pull_request_template.md (durée, tours, coût, statuts). Une PR par issue, périmètre de fichiers de l'issue seulement ; apps/**, generated/** (via appgen) libres ; platform/, tools/, tests/, .github/ exigent l'approbation de Paul. N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
+      - name: Controle des trailers et de l'identite (refus si absents)
+        if: steps.pause.outputs.paused == 'false' && steps.claude.outputs.branch_name != ''
+        env:
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+        run: |
+          git fetch --no-tags origin main "$BRANCH"
+          tools/factory/run-ticket.sh check-trailers "origin/main..origin/${BRANCH}"
+      - name: Compte rendu mission-result.v1 (cout et tours, sans sortie d'outil)
+        if: always() && steps.pause.outputs.paused == 'false' && steps.claude.outputs.execution_file != ''
+        env:
+          EXEC_FILE: ${{ steps.claude.outputs.execution_file }}
+          ISSUE: ${{ matrix.issue }}
+          MODEL: ${{ inputs.model }}
+          EFFORT: ${{ inputs.effort }}
+          ESC: ${{ inputs.escalated_from }}
+          BRANCH: ${{ steps.claude.outputs.branch_name }}
+        run: |
+          tools/factory/run-ticket.sh result "$EXEC_FILE" "$ISSUE" "$MODEL" "$EFFORT" "$ESC" "$BRANCH" >"mission-result-${ISSUE}.json"
+          python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print('model_observed=',d['model_observed'],'cost=',d['total_cost_usd'],'turns=',d['num_turns'])" "mission-result-${ISSUE}.json"
+      - name: Archive mission-result
+        if: always() && steps.pause.outputs.paused == 'false'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mission-result-${{ matrix.issue }}
+          path: mission-result-${{ matrix.issue }}.json
+          if-no-files-found: ignore

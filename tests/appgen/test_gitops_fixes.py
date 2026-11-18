@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT / "tools" / "appgen"))
 sys.path.insert(0, str(ROOT / "tests" / "appgen"))
 
 import appgen  # noqa: E402
-from test_extensions import TODAY, Base, Sandbox, whoami  # noqa: E402
+from test_extensions import Base, Sandbox, whoami  # noqa: E402
 
 MANIFESTS = ROOT / "platform" / "install" / "manifests"
 HEALTH_VALUES = ROOT / "platform" / "install" / "argocd" / "health" / "values-openchoreo-health.yaml"

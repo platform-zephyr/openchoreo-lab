@@ -1,7 +1,7 @@
 ---
 id: T-302
 title: "Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets"
-status: todo
+status: in-progress
 phase: P0
 adr: [0002]
 depends_on: [T-303]
@@ -24,9 +24,16 @@ docs/REVIEW-PHASE-B.md, docs/REVIEW-PR8.md, platform/cluster-agent/, platform/po
 
 ## Critères de fin
 - [ ] 0 constat CRITIQUE/ÉLEVÉ dans l'arbre selon la garde T-303
-- [ ] commentaires des manifestes réécrits en durcissement générique
+- [x] commentaires des manifestes réécrits en durcissement générique (2026-11-18 : `platform/cluster-agent/reduced-clusterrole.yaml`, `platform/policies/vap-cluster-agent-scope.yaml` ; règles RBAC et VAP inchangées, `yaml.safe_load_all` OK, diff limité aux lignes de commentaire)
 
 ## Notes
+Avancement du 2026-11-18 : scénario résiduel réécrit en durcissement générique dans
+`docs/REVIEW-PHASE-B.md` et `docs/REVIEW-PR8.md` ; chemins locaux retirés de `docs/research/KUBE-OPS-REQUIREMENTS.md`
+et `docs/research/AGENT-FACTORY-24-7.md` ; noms réels de projet et de config Doppler et inventaire chiffré retirés de
+`docs/research/{IDENTITY-SECRETS,HOMELAB-INFRA-REQUIREMENTS,HOMELAB-CAPACITY-DATAPLANE}.md` et
+`docs/architecture/TARGET-ARCHITECTURE.md`. Hors périmètre : les preuves `tests/*/evidence` (T-450) et le fichier d'exclusions gitleaks.
+Premier critère NOT_TESTED : la garde T-303 n'est pas livrée ; le ticket reste `in-progress` jusqu'à son passage.
+
 Proposé par la recherche `sensitive` (clé SEC-3) ; intégration 2 du 2026-11-18.
 
 En S0 (consensus n°2 et arbitrages de Paul, 2026-11-18).

@@ -3,8 +3,8 @@ import os as _os
 ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..'))
 ALL={}
 for f in sorted(glob.glob(ROOT+'/backlog/T-*.md')):
-    s=open(f).read(); g=lambda k: re.search(rf'^{k}: (.*)$',s,re.M).group(1).strip()
-    o=lambda k: (re.search(rf'^{k}: (.*)$',s,re.M).group(1).strip() if re.search(rf'^{k}:',s,re.M) else '')
+    s=open(f).read(); g=lambda k, s=s: re.search(rf'^{k}: (.*)$',s,re.M).group(1).strip()
+    o=lambda k, s=s: (re.search(rf'^{k}: (.*)$',s,re.M).group(1).strip() if re.search(rf'^{k}:',s,re.M) else '')
     ALL[g('id')]=dict(f=f.split('/')[-1],st=g('status'),stage=g('stage'),deps=[d.strip() for d in g('depends_on').strip('[]').split(',') if d.strip()],
                     v=g('velocity')=='true',lane=g('lane'),cls=g('class'),title=g('title').strip('"'),model=o('model'),effort=o('effort'))
 T={k:v for k,v in ALL.items() if v['st']=='todo'}
@@ -57,7 +57,7 @@ vite avec un maximum d'agents en parallèle ; la sécurité de développement es
 md.append("## Gestes de Paul\n\nMANDAT = geste de Paul (accès, identité, dépense, VM) ; REVUE = approbation d'une PR du noyau. Ordre = vague.\n")
 md.append("| Étape | Gestes (MANDAT) | Approbations (REVUE) |\n|---|---|---|")
 for st in ORDER:
-    srt=lambda N: sorted(N,key=lambda n:(T[n]['w'],n))
+    srt=lambda N: sorted(N,key=lambda m:(T[m]['w'],m))
     G=srt([n for n in T if T[n]['stage']==st and 'MANDAT' in T[n]['cls']])
     R=srt([n for n in T if T[n]['stage']==st and 'REVUE' in T[n]['cls'] and 'MANDAT' not in T[n]['cls']])
     if G or R: md.append(f"| {st} | "+", ".join(L(n) for n in G)+" | "+", ".join(L(n) for n in R)+" |")

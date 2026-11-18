@@ -8,9 +8,9 @@
 #
 # Le chart ne rend alors plus templates/cluster-agent/clusterrole.yaml ni clusterrolebinding.yaml ;
 # ce fichier les remplace (propriétaire : Argo lab-platform). Différences avec le ClusterRole du chart :
-#   RETIRÉ : rbac.authorization.k8s.io (roles, rolebindings, clusterroles, clusterrolebindings),
-#            cilium.io ciliumclusterwidenetworkpolicies, external-secrets.io clustersecretstores et
-#            secretstores, apps daemonsets, pods/exec (pas d'`occ component exec` dans le labo).
+#   RETIRÉ (moindre privilège du cluster-agent) : toute permission que le labo n'utilise pas, dont la
+#            gestion RBAC, les politiques réseau cluster-wide, les magasins de secrets, les daemonsets
+#            et l'accès interactif aux pods (pas d'`occ component exec` dans le labo).
 #   AJOUTÉ : resourcequotas, limitranges (requis par le CPT cell-restricted).
 # VAP lab-cluster-agent-scope reste en place : elle borne les namespaces, ce que RBAC ne sait pas
 # faire (namespaces dp-* créés dynamiquement).

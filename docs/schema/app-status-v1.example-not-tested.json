@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "app-status.v1",
+  "app": "whoami",
+  "environment": "production",
+  "cluster": "k3d",
+  "archetype": "A-stateless-http",
+  "source": { "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "release": "whoami-20261118-1" },
+  "level": "STATIC",
+  "verdict": "NOT_TESTED",
+  "timestamp": "2026-11-18T12:00:00Z",
+  "summary": { "PASS": 0, "FAIL": 0, "NOT_TESTED": 1, "BLOCKED": 0 },
+  "cause": { "type": "cluster_unreachable", "retryable": true, "rule": "CLUSTER" },
+  "checks": [
+    { "id": "CLUSTER", "script": "run-all.sh", "status": "NOT_TESTED", "message": "aucun cluster joignable ou GP_NO_CLUSTER=1 : aucune observation runtime", "cause": { "type": "cluster_unreachable", "retryable": true, "rule": "CLUSTER" } }
+  ]
+}

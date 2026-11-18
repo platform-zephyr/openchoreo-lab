@@ -1,4 +1,4 @@
-# CI du labo OpenChoreo. Permissions minimales, aucun secret, actions epinglees par SHA de commit.
+# CI du labo OpenChoreo. Permissions minimales, aucun secret (sauf LEAK_GUARD_EXTRA_PATTERNS, facultatif, job leak-guard), actions epinglees par SHA de commit.
 # Le job ci-ok est le seul check requis par la protection de branche (tools/apply-branch-protection.sh).
 name: ci
 
@@ -65,6 +65,10 @@ jobs:
         run: python3 -m unittest discover -s tests/appgen -v
       - name: Pas de derive (render doit ne rien modifier)
         run: python3 tools/appgen/appgen.py check
+      - name: Registre des identites (schema, aucune valeur) et tests du lint
+        run: |
+          python3 -I tools/backlog/identities_lint.py
+          python3 -m unittest discover -s tests/identities -v
 
   crd-schema:
     runs-on: ubuntu-24.04-arm
@@ -116,8 +120,43 @@ jobs:
           echo "${GITLEAKS_SHA256}  gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" | sha256sum -c -
           tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" gitleaks
           sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
-      - name: Detection de secrets (historique complet, valeurs masquees)
-        run: gitleaks git --redact --no-banner --log-level warn .
+      - name: Detection de secrets (historique complet, regles par defaut, valeurs masquees)
+        # Config explicite : sans elle gitleaks charge .gitleaks.toml (regles OCID/IPv4/e-mail/chemin de la garde T-303,
+        # appliquees a l'arbre par le job leak-guard) et ferait echouer sur l'historique deja publie.
+        run: |
+          printf '[extend]\nuseDefault = true\n' >"$RUNNER_TEMP/gitleaks-default.toml"
+          gitleaks git --config "$RUNNER_TEMP/gitleaks-default.toml" --redact --no-banner --log-level warn .
+
+  leak-guard:
+    # Garde de donnees sensibles du depot public (T-303) : OCID Oracle, IPv4 non documentaire, e-mail hors noreply,
+    # chemin /Users/<nom>, hote interne, jeton. Meme script qu'en local et dans le hook Stop (tools/dev/leak-guard.sh).
+    # Les motifs propres au proprietaire (domaine, nom, e-mail) viennent du secret LEAK_GUARD_EXTRA_PATTERNS, jamais du
+    # depot ; absent (PR de fork, secret non cree) : regles generiques seules, avertissement INFO, le job reste requis.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Installer gitleaks (archive verifiee par sha256)
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" | sha256sum -c -
+          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+      - name: shellcheck du script et de ses tests
+        run: |
+          command -v shellcheck >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck; }
+          shellcheck -x -P SCRIPTDIR tools/dev/leak-guard.sh tests/leak-guard/run.sh
+      - name: Tests (cas negatifs et positifs, absence de valeur en sortie, motif propre absent)
+        # Sans le secret : les tests fixent eux-memes les motifs dont ils ont besoin.
+        run: env -u LEAK_GUARD_EXTRA_PATTERNS tests/leak-guard/run.sh
+      - name: Garde sur l'arbre (motifs generiques + motifs du proprietaire si le secret existe)
+        # Le secret n'est expose qu'a cette etape (jamais aux tests, jamais aux PR de fork).
+        env:
+          LEAK_GUARD_EXTRA_PATTERNS: ${{ secrets.LEAK_GUARD_EXTRA_PATTERNS }}
+        run: tools/dev/leak-guard.sh
 
   actionlint:
     runs-on: ubuntu-24.04-arm
@@ -258,10 +297,47 @@ jobs:
       - name: Tests statiques (garde-fou negatif, pins, montages)
         run: tests/dev-factory/run.sh
 
+  backlog:
+    # Tickets backlog/T-*.md : en-tete, graphe, etapes, model/effort (tools/backlog/check.py, ADR-0012, ADR-0023). Stdlib seule.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Tests de check.py
+        run: python3 -m unittest discover -s tests/backlog -v
+      - name: Controle des tickets
+        run: python3 tools/backlog/check.py
+
+  lint-code:
+    # ADR-0024, T-413 : ruff (bogues F,B,E9 bloquants ; jeu complet en avertissement) et shellcheck -S warning sur tous les *.sh versionnes.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Installer ruff (version figee)
+        run: python3 -m pip install --disable-pip-version-check "ruff==0.16.9"
+      - name: "ruff, classe bogue (F, B, E9), 0 erreur"
+        run: ruff check --select F,B,E9 tools tests
+      - name: ruff, jeu complet (avertissement, ligne de base QA-4)
+        continue-on-error: true
+        run: ruff check --statistics tools tests
+      - name: shellcheck -S warning sur tous les scripts versionnes
+        run: |
+          command -v shellcheck >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck; }
+          git ls-files -z '*.sh' | xargs -0 shellcheck -S warning
+
   ci-ok:
     # Check requis par la protection de branche : echoue si un job amont n'est pas en success.
     if: always()
-    needs: [yamllint, appgen, crd-schema, secrets, actionlint, charts, platform, release-history, dev-factory]
+    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, release-history, dev-factory, backlog, lint-code]
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Agregation

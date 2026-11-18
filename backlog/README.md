@@ -1,7 +1,7 @@
 # Backlog de la plateforme
 
 Source des tâches du labo (ADR-0012). Un fichier par ticket : `T-NNN-<slug>.md`. Vue d'ensemble : [INDEX.md](INDEX.md).
-Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md` ; intégration 2 : [INTEGRATION-2.md](INTEGRATION-2.md) ; consensus n°2 et arbitrages de Paul : [INTEGRATION-3.md](INTEGRATION-3.md) ; arbitrage Fable : [INTEGRATION-4.md](INTEGRATION-4.md)). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
+Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md` ; intégration 2 : [INTEGRATION-2.md](INTEGRATION-2.md) ; consensus n°2 et arbitrages de Paul : [INTEGRATION-3.md](INTEGRATION-3.md) ; arbitrage Fable : [INTEGRATION-4.md](INTEGRATION-4.md) ; qualité et GitHub : [INTEGRATION-5.md](INTEGRATION-5.md)). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
 renvoie au fichier du ticket.
 
 ## En-tête d'un ticket
@@ -30,6 +30,20 @@ d'ADR-0023 (consensus n°2) : périmètre dans le noyau (CODEOWNERS, `docs/adr/`
 noyau → Haiku `medium` + revue Sonnet ; reste → Sonnet `high`. Le dispatcher (T-210) recalcule le modèle depuis les chemins
 réellement touchés et ignore un `model:` sous le plancher.
 
+Valeurs contrôlées par `tools/backlog/check.py` (job CI `backlog`, requis via `ci-ok`) :
+- **erreur** (CI rouge) : champ de base absent, `id` dupliqué ou différent du nom de fichier, `status`, `class`, `phase`,
+  `stage` inconnus, ADR sans fichier `docs/adr/<n>-*.md`, dépendance absente, abandonnée ou gelée, étape antérieure à celle
+  d'une dépendance, cycle, `model` hors `claude-haiku-5-5 | claude-sonnet-5-5 | claude-opus-5-5 | human`, `effort` hors
+  `low … max` (`none` avec `human`), `model`/`effort` absents d'un ticket actif, `status: done` avec une case non cochée,
+  ticket actif sans périmètre exploitable ;
+- **avertissement** (CI verte) : `effort: max` sur Sonnet (plafond `xhigh`), ticket REVUE dont le périmètre touche le noyau
+  (CODEOWNERS, `docs/adr/`, `docs/review/`) sans `model: claude-opus-5-5`, éléments de périmètre non exploitables dans un
+  périmètre qui en contient aussi d'exploitables.
+
+Un périmètre exploitable est une liste, séparée par des virgules, de chemins ou de globs (`apps/<app>/`, `docs/**/*.md`) ;
+une parenthèse à la fin d'un élément est un commentaire. Un périmètre situé hors de ce dépôt s'écrit avec la mention
+`hors de ce dépôt` (ou `historique git`).
+
 Corps : `## Intention`, `## Périmètre de fichiers`, `## Critères de fin` (cases à cocher, chacune vérifiable :
 commande, test ou preuve runtime datée), `## Notes` (facultatif).
 
@@ -45,4 +59,8 @@ commande, test ou preuve runtime datée), `## Notes` (facultatif).
 4. `status: done` seulement quand **tous** les critères de fin sont cochés avec leur preuve (lien ou fichier daté).
 5. Un ticket bloqué passe `blocked` avec une ligne `Bloqué par :` dans `## Notes`.
 
-Outils : `tools/backlog/seed.py` (génération initiale, à remplacer par l'édition directe des tickets), `check.py` (graphe), `roadmap.py` (ROADMAP.md).
+Outils : `tools/backlog/seed.py` (génération initiale, à remplacer par l'édition directe des tickets), `check.py` (en-têtes, graphe, routage ; tests : `python3 -m unittest discover -s tests/backlog`), `roadmap.py` (ROADMAP.md).
+
+## Identités et secrets (T-306)
+
+Toute création d'identité ou de secret (jeton, clé, client OIDC, kubeconfig, accès à un coffre) ajoute une entrée dans `docs/state/identities.yaml` **dans la même PR** : nom, rôle, portée, propriétaire, dates, `dev: true|false`, coffre, consommateurs. Jamais de valeur, d'IP, d'hôte interne ni d'e-mail. Le lint `tools/backlog/identities_lint.py` (job `appgen` de la CI) refuse tout champ de valeur et toute chaîne ressemblant à un secret.

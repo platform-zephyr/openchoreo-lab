@@ -176,4 +176,4 @@ Dispatcher LLM : coût de quota et non-déterminisme. Agent SDK sur abonnement :
 Pilote 24 h (coût par ticket, % de quota) ; PR de test du noyau non fusionnable ; test négatif : mandat expiré ou chemin hors liste → `needs-paul` ; drill de limite de quota (reprise au reset) ; drill de boucle (3e tentative refusée) ; relecture hebdomadaire du résumé.
 
 ## Références
-S1 à S17 ci-dessus ; `docs/CLOUD-AGENTS.md`, `docs/AGENT-RUNNERS.md`, `docs/AGENT-PR-MODEL.md`, `docs/DEV-FACTORY.md`, `/home/user/atlas/dispatcher/mission-contract.md`, `headless-profile.md`, `policies/`.
+S1 à S17 ci-dessus ; `docs/CLOUD-AGENTS.md`, `docs/AGENT-RUNNERS.md`, `docs/AGENT-PR-MODEL.md`, `docs/DEV-FACTORY.md`, Atlas `dispatcher/mission-contract.md`, `headless-profile.md`, `policies/`.

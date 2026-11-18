@@ -28,3 +28,20 @@ fusionner une PR sensible sans Paul.
 ## Accès Kubernetes
 Aucun accès en écriture : le déploiement passe par Git → Argo. Lecture : client MCP `openchoreo-agent-reader` (docs/AGENT-ACCESS.md).
 Les opérations destructrices (suppression d'application, volumes, authz) passent par une PR sur des chemins protégés.
+
+## Gouverneur minimal de l'usine (T-311, ADR-0021)
+- **Kill-switch** : le fichier `factory/PAUSE` sur `main` (noyau, CODEOWNERS) arrête tout lancement d'agent et tout merge
+  automatique. Pour arrêter : créer le fichier (vide) par PR ; pour reprendre : le supprimer. Lecture par
+  `factory/pause-check.sh` (code 10 = en pause). `claude-agent.yml` le contrôle dans le job `plan`, puis à nouveau dans
+  chaque job de la matrice (un job peut attendre longtemps derrière `max-parallel`). Un agent qui arme l'auto-merge
+  exécute d'abord `factory/pause-check.sh` avec `PAUSE_REF=origin/main` et n'arme rien si le code est 10. Limite connue :
+  une PR dont l'auto-merge est déjà armé n'est pas désarmée par la pause ; le désarmement (`gh pr merge --disable-auto`)
+  relève du dispatcher (T-210) et de T-315.
+- **Concurrence 3** : la matrice du job `dev` porte `max-parallel: 3` (valeur de `factory/config.yaml`, vérifiée par
+  `tests/factory/pause-test.sh`). Un `workflow_dispatch` avec 5 issues crée 5 jobs : 3 tournent, 2 attendent, aucun n'est
+  annulé. Pas de groupe de concurrence unique : un groupe n'admet qu'un run actif et un en attente et annule le suivant.
+  Le plafond vaut par run de workflow : pendant le pilote, un seul dispatch à la fois (liste figée de T-322). Le groupe
+  par issue (`claude-agent-issue-<n>`, sans annulation) évite deux agents sur la même issue.
+- **Quota** : les valeurs de coût sont des estimations côté client, pas la facture ; aucun solde d'abonnement n'est lu
+  (NOT_PROVEN). Une clé API facturée au token exige un plafond mensuel Console (geste MANDAT de Paul). Aucun euro par
+  agent n'est promis.

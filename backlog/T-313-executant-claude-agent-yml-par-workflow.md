@@ -1,7 +1,7 @@
 ---
 id: T-313
 title: "Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1"
-status: todo
+status: in-progress
 phase: P0
 adr: [0002, 0013, 0021]
 depends_on: [T-210, T-311]
@@ -26,14 +26,15 @@ Remplacer le déclencheur par label (acteur SmadjaPaul) par workflow_dispatch(ti
 - [ ] lancement manuel avec une liste d'ID : N PR parallèles sur couloirs distincts (preuve datée)
 - [ ] chaque PR porte durée, tours, coût estimé et statuts PASS/FAIL/NOT_TESTED
 - [ ] (repris de MOD-4) run de test : la session s'exécute sur le modèle demandé (preuve : modèle consigné dans la sortie result)
-- [ ] (repris de MOD-4) entrées `model` et `effort` du workflow passées à claude_args (--model, --effort) ; Sonnet plafonné à `xhigh`
+- [x] (repris de MOD-4) entrées `model` et `effort` du workflow passées à claude_args (--model, --effort) ; Sonnet plafonné à `xhigh`
 - [ ] (repris de MOD-5) trailers Model, Effort, Escalated-from sur chaque PR d'agent ; mission-result.v1 contient modèle, effort, escalade, tokens, tours, durée, échecs CI, sans aucun prompt
-- [ ] (repris de HAR-3) le résumé du job affiche total_cost_usd et num_turns, aucune sortie d'outil
-- [ ] `show_full_output` absent ; aucun secret hors jeton Claude
+- [x] (repris de HAR-3) le résumé du job affiche total_cost_usd et num_turns, aucune sortie d'outil
+- [x] `show_full_output` absent ; aucun secret hors jeton Claude
 - [ ] config git `noreply` et trailers (Ticket, Model, Effort, Claude-Session) imposés par l'exécutant dès S0 ; un commit d'agent sans trailer ou avec un e-mail personnel est refusé par la CI (test)
-- [ ] plafonds par modèle : Opus 90 min et 150 tours ; Sonnet et Haiku 45 min et 60 tours (`timeout-minutes`, `--max-turns`)
+- [x] plafonds par modèle : Opus 90 min et 150 tours ; Sonnet et Haiku 45 min et 60 tours (`timeout-minutes`, `--max-turns`)
 
 ## Notes
+Avancement 2026-11-18 (niveau STATIC : `tests/factory/run-ticket-test.sh`, 22 contrôles PASS ; `tests/factory/pause-test.sh` PASS ; `check.py` 0 erreur). Cases cochées : model/effort dans claude_args, résumé du job, `show_full_output` absent, plafonds. Reste NOT_TESTED, faute de run réel (geste de Paul, dispatch + jeton) : lancement parallèle, durée/tours/coût dans chaque PR, modèle observé en run réel, trailers Model/Effort/Escalated-from sur chaque PR (le prompt les exige, rien ne le prouve), mission-result.v1 complet (échecs CI = 0 provisoire). Reste à faire dans un autre périmètre : brancher `run-ticket.sh check-trailers` dans `ci.yaml` pour refuser tout commit d'agent sans trailer (la preuve existe dans le job du workflow et en test, pas dans la CI des PR).
 Un label posé par GITHUB_TOKEN ne déclenche pas de workflow : utiliser dispatch avec le jeton de l'App. Plafond de départ 4, relevé par T-322.
 
 La proposition visait : T-210 (décision d'intégration : INTEGRATION-2.md).

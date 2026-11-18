@@ -1,6 +1,6 @@
 # STATE — OpenChoreo Lab (HANDOFF / reprise sans mémoire conversationnelle)
 
-Dernière mise à jour : 2026-11-17 ~20:45Z (§1b et §1c : 2026-11-18, consensus n°2). Lire ensuite `missions/MISSION.md` (règles et autorisations de Paul).
+Dernière mise à jour : 2026-11-17 ~20:45Z (§1b et §1c : 2026-11-18, consensus n°2). Lire ensuite `missions/MISSION.md` (règles et autorisations de Paul). — reprise du coordinateur : `docs/state/HANDOFF-COORDINATEUR.md`.
 **Objectif** : un IDP OpenChoreo 1.3.3 réellement utilisable sur le cluster OKE `oracle-a1` ; premier jalon attendu = un service `whoami` créé et livré de bout en bout PAR la plateforme (intention → app.yaml → appgen → PR → CI → merge → Argo CD → OpenChoreo → pod Ready → HTTP 200 → modification → rollback Git), avec PREUVE RUNTIME DATÉE sur OKE (pas seulement k3d). Pas de nouvelle étude.
 **Règle de preuve** : PASS = preuve runtime datée. k3d ≠ OKE. Statique ≠ runtime. NOT_TESTED / BLOCKED ne sont jamais des PASS.
 

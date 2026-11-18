@@ -1,1 +1,3 @@
 tests/storage/evidence/
+__pycache__/
+.coverage

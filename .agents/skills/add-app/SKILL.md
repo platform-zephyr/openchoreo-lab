@@ -9,6 +9,7 @@ Prérequis : charger `platform-guardrails`. Référence : `golden-paths/README.m
 
 ## Étapes
 
+0. **Art antérieur** : charger `prior-art` (niveau `complet` pour un nouvel `apps/<nom>`) ; la section « Implémentations publiques consultées » va dans le corps de la PR.
 1. **Qualifier l'intention** (sans poser de question si la réponse est dans l'image ou la doc amont) :
    - image officielle et tag récent : `docker buildx imagetools inspect <img>:<tag>` → digest de l'index et présence de `linux/arm64` ;
    - port, uid, chemin d'écriture, besoin de base, de volume, d'egress, d'OIDC, d'exposition publique : lire le Dockerfile ou la doc de l'app.

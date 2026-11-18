@@ -1,0 +1,33 @@
+# Configuration unique des outils Python du dépôt (ADR-0024, T-413).
+# Ce fichier ne déclare pas de paquet : il ne sert qu'à ruff, mypy, pytest et coverage.
+# Versions des outils épinglées par `==` dans .github/workflows/ci.yaml (ruff==0.16.9).
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+extend-exclude = [".claude", "docs/research"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C90", "RUF"]
+# E501 (ligne trop longue) : 1 332 occurrences, sans valeur ici.
+ignore = ["E501"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+# Garde bloquante de la CI : `ruff check --select F,B,E9 tools tests` (0 erreur).
+# Le jeu complet ci-dessus est un avertissement (non bloquant) compté dans la ligne de base de QA-4.
+
+[tool.mypy]
+python_version = "3.12"
+files = ["tools/appgen"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests/appgen", "tests/backlog", "tests/identities"]
+
+[tool.coverage.run]
+source = ["tools/appgen", "tools/backlog"]
+
+[tool.coverage.report]
+show_missing = true

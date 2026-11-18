@@ -1,0 +1,200 @@
+# Propositions issues de la recherche GitHub du 2026-11-18 (docs/research/GITHUB-CONFIG.md). Organisation Free, dépôt public.
+# Champs en plus du format : stage, model (suggestions ; le dispatcher recalcule le modèle depuis les chemins, ADR-0023 :
+# tout chemin sous .github/, tools/github/ ou CODEOWNERS est noyau, donc opus).
+# Aucun réglage GitHub n'est appliqué par un agent : les objets « MANDAT » sont des gestes de Paul (admin d'organisation).
+- key: GH-1
+  title: "Rulesets as-code : tools/github/apply.sh (--check/--apply) et main-dev.json alignés sur l'ADR-0002"
+  phase: P0
+  stage: S0
+  adr: ["0002"]
+  depends_on: []
+  class: REVUE
+  velocity: true
+  parallel_lane: "gouvernance"
+  model: claude-opus-5-5
+  scope: "tools/github/, .github/rulesets/main-dev.json, tools/apply-branch-protection.sh, .github/CODEOWNERS, tests/github-config/"
+  intent: "Remplacer la charge utile en ligne du script par des JSON versionnés et un script idempotent à deux modes (--check sort en erreur si l'état lu diffère). Corriger require_code_owner_review (false en dev, amendement n°2 de l'ADR-0002). apply-branch-protection.sh reste comme enveloppe."
+  done: ["main-dev.json : non_fast_forward, deletion, PR (0 approbation, code owners false), merge_queue SQUASH, check ci-ok, bypass Admin en mode pull_request", "apply.sh : affichage sans écriture par défaut, PUT/PATCH idempotents, aucune valeur secrète lue ni écrite", "test hors ligne : JSON valide, --check détecte une dérive simulée (cas négatif)", "/tools/github/ et /.github/rulesets/ présents dans CODEOWNERS"]
+  notes: "Paul exécute --apply (jeton admin). L'agent n'a ni jeton admin ni accès à l'API des réglages. Absorbe la charge utile de tools/apply-branch-protection.sh sans changer son nom (cité par T-400, ADR et docs)."
+- key: GH-2
+  title: "Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON)"
+  phase: P0
+  stage: S0
+  adr: ["0002", "0006"]
+  depends_on: ["GH-1"]
+  class: REVUE + MANDAT
+  velocity: true
+  parallel_lane: "gouvernance"
+  model: claude-opus-5-5
+  scope: ".github/settings/repo.json, .github/settings/actions.json, .github/settings/security.json, tools/github/apply.sh"
+  intent: "Versionner et appliquer : squash seul, auto-merge, suppression des branches fusionnées, wiki/Discussions/Pages coupés ; GITHUB_TOKEN en lecture, PR par Actions interdites, allowlist d'actions, SHA complet obligatoire, approbation des workflows de forks pour tous les externes ; secret scanning, push protection, Dependabot alerts et security updates, signalement privé, CodeQL default setup (python, actions)."
+  done: ["--check dev PASS après application par Paul (lecture datée, sans jeton affiché)", "champs sha_pinning_required et fork-pr-contributor-approval validés sur l'API réelle, sinon repli documenté (NOT_TESTED levé)", "CodeQL default setup actif sur python et actions ; une alerte factice ou un run vert prouvé", "un workflow qui utilise une action hors allowlist échoue (essai daté)", "aucun dependabot.yml de version updates (Renovate seul)"]
+  notes: "MANDAT : exécution par Paul. L'allowlist liste actions/*, github/codeql-action/*, anthropics/claude-code-action ; tout ajout passe par le noyau."
+- key: GH-3
+  title: "SECURITY.md et politique de signalement privé"
+  phase: P0
+  stage: S0
+  adr: ["0006"]
+  depends_on: ["GH-2"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "gouvernance"
+  model: claude-haiku-5-5
+  scope: "SECURITY.md"
+  intent: "Dire comment signaler une faille (bouton privé de l'onglet Security, jamais une issue publique), le périmètre, aucun secret dans un signalement, le délai de première réponse tenu par Paul."
+  done: ["SECURITY.md à la racine, reconnu par GitHub (onglet Security)", "aucune adresse e-mail personnelle ni identifiant interne (garde T-303 verte)", "relecture Sonnet"]
+  notes: "Texte hors noyau : haiku puis revue Sonnet (ADR-0023). Le signalement privé doit être activé par GH-2 avant la fusion."
+- key: GH-4
+  title: "Protection des tags : core-baseline et v* (ruleset de type tag)"
+  phase: P0
+  stage: S0
+  adr: ["0002"]
+  depends_on: ["T-305", "GH-1"]
+  class: REVUE + MANDAT
+  velocity: false
+  parallel_lane: "gouvernance"
+  model: claude-opus-5-5
+  scope: ".github/rulesets/tags.json, tools/github/apply.sh"
+  intent: "Interdire suppression et déplacement du tag core-baseline (référence du diff de T-401) et des tags v*. Paul applique le ruleset juste après T-305."
+  done: ["tags.json : cibles refs/tags/core-baseline* et refs/tags/v*, règles deletion et update (et non_fast_forward)", "essai daté : suppression et déplacement du tag refusés pour une identité Write", "--check dev couvre aussi tags.json"]
+  notes: "Releases immuables à activer au premier artefact publié (GH-14), pas avant."
+- key: GH-5
+  title: "Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions"
+  phase: P0
+  stage: S0
+  adr: ["0002"]
+  depends_on: []
+  class: MANDAT
+  velocity: false
+  parallel_lane: "gouvernance"
+  model: claude-haiku-5-5
+  scope: "docs/runbooks/github-org-paul.md"
+  intent: "Une séance d'environ 20 minutes, une action par ligne : 2FA obligatoire, permission de base « aucune », création de dépôts interdite, jetons fins avec approbation et durée 30 jours, classiques restreints, accès tiers restreint, politiques Actions de l'organisation. Chaque réglage a sa commande de lecture (gh api) pour la preuve."
+  done: ["runbook rédigé, une action par ligne, sans valeur secrète", "preuve datée de chaque réglage par lecture API (2FA, base permission, repo creation, PAT policy), 2FA lue dans l'interface car l'API est en lecture seule", "ajouté au calendrier des gestes (T-325)"]
+  notes: "Réglages impossibles à écrire par l'API (2FA) ou sans effet d'un agent. Aucun agent n'a de droit d'organisation. Rouvrir la question des organisations Free uniquement si une fonction « NON » du tableau devient nécessaire."
+- key: GH-6
+  title: "Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset"
+  phase: P0
+  stage: S1
+  adr: ["0002", "0004"]
+  depends_on: ["T-002", "GH-1"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "ci"
+  model: claude-opus-5-5
+  scope: ".github/workflows/k3d-integration.yml, .github/rulesets/, docs/CI-K3D.md"
+  intent: "Une PR qui touche platform/ doit avoir la CI k3d verte (ADR-0002 §4). Ajouter merge_group au workflow k3d (sinon le check requis ne se publie jamais dans la file) puis requérir k3d-ok ; la suite gitops-k3d reste KNOWN_FAIL non bloquante."
+  done: ["k3d-integration.yml déclenché par merge_group ; k3d-ok vert quand la porte (gate) dit « non lancé »", "ruleset : k3d-ok requis, ci-ok inchangé", "essai daté : une PR platform/ rouge est retirée de la file ; une PR apps/ passe sans suite k3d"]
+  notes: "Variante : ajouter k3d-ok au needs de ci-ok (docs/CI-K3D.md §4). Choisir une seule voie. Coût : minutes de runner ARM gratuites en dépôt public."
+- key: GH-7
+  title: "Labels as-code et formulaires d'issue : issues vides coupées, proposition de ticket"
+  phase: P0
+  stage: S1
+  adr: ["0012"]
+  depends_on: ["GH-2"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "gouvernance"
+  model: claude-opus-5-5
+  scope: ".github/labels.yml, .github/ISSUE_TEMPLATE/config.yml, .github/ISSUE_TEMPLATE/, tools/github/apply.sh"
+  intent: "Synchroniser les labels (agent:dev, needs-paul, k3d, dependencies, stage:*, lane:*, class:*) par gh label create --force ; interdire les issues vides ; lien de contact vers le signalement privé ; formulaire « proposition de ticket » aligné sur backlog/proposals/FORMAT.md."
+  done: ["labels.yml appliqué, --check sans dérive", "config.yml : blank_issues_enabled false, lien vers le signalement privé", "yamllint vert (CI), formulaire existant agent-task.yml inchangé"]
+  notes: "Les issues publiques restent une entrée non fiable : seul le contenu relu par Paul avant le label agent:dev est suivi (docs/AGENT-RUNNERS.md)."
+- key: GH-8
+  title: "Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteurs"
+  phase: P0
+  stage: S1
+  adr: ["0002", "0021"]
+  depends_on: ["T-313", "GH-2"]
+  class: REVUE + MANDAT
+  velocity: false
+  parallel_lane: "ci"
+  model: claude-opus-5-5
+  scope: ".github/workflows/claude-agent.yml, docs/AGENT-RUNNERS.md, docs/state/identities.yaml"
+  intent: "Fermer l'exfiltration par un workflow poussé sur une branche : le secret CLAUDE_CODE_OAUTH_TOKEN passe dans l'environnement agent-runner limité à main. Ajouter le contrôle author_association de l'issue et la lecture du corps au moment du label. Politique d'exécution d'Actions : seuls Paul et les Apps déclenchent les workflows (si disponible en plan Free)."
+  done: ["secret déplacé dans l'environnement ; un workflow de test poussé sur une branche ne le lit pas (essai négatif daté)", "un label posé sur une issue d'un auteur externe ne lance aucun job (essai négatif)", "politique d'acteurs : essai ou NOT_AVAILABLE consigné avec la raison"]
+  notes: "Même fichier que T-313 : à faire après lui (un seul agent par fichier). MANDAT : Paul crée l'environnement et déplace le secret, sans le copier dans le chat. Inscrire le nom du secret dans le registre T-306."
+- key: GH-9
+  title: "Project v2 « Pilote » : vue en lecture du backlog (facultatif)"
+  phase: P0
+  stage: S3
+  adr: ["0012"]
+  depends_on: ["T-325"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "connaissance"
+  model: claude-sonnet-5-5
+  scope: "tools/backlog/, docs/runbooks/github-project.md"
+  intent: "Tableau et feuille de route GitHub Projects (gratuit) alimentés depuis backlog/ (étape, couloir, classe, modèle). Git reste la source de vérité ; le Project est un miroir lecture seule régénéré. Paul crée le Project ; l'écriture passe par la session du coordinateur, pas par une App agent."
+  done: ["miroir régénérable, supprimable sans perte", "aucune permission d'écriture sur les Projects pour une App d'agent", "décision « garder ou supprimer » consignée après le pilote"]
+  notes: "Ne pas élargir une App pour ce confort. À abandonner si le tableau INDEX.md suffit."
+- key: GH-10
+  title: "Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation)"
+  phase: P0
+  stage: S3
+  adr: ["0016"]
+  depends_on: ["GH-2"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "supply-chain"
+  model: claude-opus-5-5
+  scope: ".github/workflows/dependency-review.yml"
+  intent: "La page dependency review ouvre la fonction aux dépôts publics ; le tableau Advanced Security dit non. Tester actions/dependency-review-action sur une PR qui modifie un pin d'action ou requirements.txt ; requérir le check seulement si l'essai passe."
+  done: ["PR d'essai : le job s'exécute et échoue sur une dépendance vulnérable factice, ou NOT_AVAILABLE consigné", "permissions : contents read seulement, action épinglée par SHA, dans l'allowlist", "décision requis ou non écrite"]
+  notes: "Valeur faible aujourd'hui (peu de manifestes : requirements.txt, pins d'actions, digests d'images). Renovate couvre les versions."
+- key: GH-11
+  title: "Deux Apps : openchoreo-agents (sans workflows) et openchoreo-renovate (workflows, sans merge)"
+  phase: P4
+  stage: FINAL0
+  adr: ["0002", "0016"]
+  depends_on: ["T-215", "T-306"]
+  class: REVUE + MANDAT
+  velocity: false
+  parallel_lane: "gouvernance"
+  model: claude-opus-5-5
+  scope: "docs/AGENT-IDENTITY.md, docs/AGENT-PR-MODEL.md, docs/state/identities.yaml"
+  intent: "T-215 prévoit une seule App. Renovate doit modifier .github/workflows/ (pins d'actions) : il lui faut la permission workflows, qu'aucun agent ne doit avoir (ADR-0002 §5). Séparer : agents = Contents, Pull requests, Actions, Metadata ; Renovate = Contents, Pull requests, Workflows, Metadata ; aucune des deux dans bypass_actors. Une App ne coûte ni siège ni licence."
+  done: ["permissions des deux Apps listées dans identities.yaml (noms, jamais de valeur)", "essai : une PR de l'App agents sur .github/workflows/ est refusée au push", "essai : une PR de l'App Renovate sur .github/workflows/ n'est pas fusionnable sans Paul", "clés privées en secrets d'environnement factory (branche main seule)"]
+  notes: "MANDAT : création des Apps par Paul. Contredit le texte « une seule App » de T-215 : le coordinateur arbitre. Alternative écartée : un PAT fin (proscrit : droits de Paul, durée longue)."
+  absorbs: ["T-215"]
+- key: GH-12
+  title: "Ruleset main-final.json et CODEOWNERS par étapes (FINAL0 puis FINAL)"
+  phase: P4
+  stage: FINAL0
+  adr: ["0002"]
+  depends_on: ["T-007", "GH-6", "GH-11"]
+  class: REVUE + MANDAT
+  velocity: false
+  parallel_lane: "gouvernance"
+  model: claude-opus-5-5
+  scope: ".github/rulesets/main-final.json, .github/CODEOWNERS, tools/github/apply.sh"
+  intent: "Préparer la charge utile de T-400 : bypass_actors vide, revue des code owners active, approbation du dernier push, ci-ok lié à l'App GitHub Actions (integration_id 15368) pour qu'aucun porteur Write ne forge le statut, k3d-ok requis. FINAL0 : CODEOWNERS réduit à authz, policies, security ; FINAL : noyau complet. Créer la team core-owners (second approbateur possible)."
+  done: ["--check final PASS après application par Paul (lecture datée)", "essai : un statut ci-ok publié par une identité Write est ignoré", "essai : une PR du noyau écrite par l'App n'est fusionnable qu'après approbation de Paul", "procédure de réactivation ponctuelle du bypass : motif consigné, retrait immédiat"]
+  notes: "T-400 applique ce fichier (à ajouter à sa liste de dépendances). Un auteur ne peut pas approuver sa propre PR : Paul n'écrit plus le noyau directement en FINAL, sauf réactivation ponctuelle."
+- key: GH-13
+  title: "Preuve de la configuration finale : essais négatifs et lecture de l'état, sans jeton affiché"
+  phase: P4
+  stage: FINAL
+  adr: ["0002"]
+  depends_on: ["T-400", "GH-12", "GH-8"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "securite"
+  model: claude-opus-5-5
+  scope: "tests/github-config/, docs/proofs/"
+  intent: "Entrée de T-401 pour la partie GitHub : --check final, et essais avec l'identité App : push direct sur main refusé, ruleset non modifiable, statut ci-ok forgé ignoré, workflow poussé sur branche sans accès au secret d'environnement, suppression de core-baseline refusée."
+  done: ["tableau PASS/FAIL/NOT_TESTED daté, chaque ligne avec sa commande de lecture", "aucun secret ni jeton dans la sortie (garde T-303 verte)", "résultat consigné par T-401"]
+- key: GH-14
+  title: "Attestations de provenance et releases immuables (quand une image ou une archive est construite)"
+  phase: P4
+  stage: FINAL
+  adr: ["0016"]
+  depends_on: ["T-402", "GH-12"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "supply-chain"
+  model: claude-opus-5-5
+  scope: ".github/workflows/, docs/SECURITY-BUNDLE.md"
+  intent: "Conditionnel : si le dépôt publie une image ou une archive (garde multi-arch T-402, tag core-baseline), générer une attestation de provenance (gratuite en dépôt public) et activer les releases immuables. Sinon NOT_APPLICABLE : aucun artefact n'est construit aujourd'hui."
+  done: ["attest-build-provenance sur chaque artefact publié, permissions id-token, attestations, contents limitées au job", "gh attestation verify PASS (preuve datée)", "ou NOT_APPLICABLE consigné par T-401"]
+  notes: "Complète T-136 (Scorecard). Les workflows de verrouillage (actions.lock, GA le 2026-10-28) restent à évaluer avec Renovate : NOT_TESTED."

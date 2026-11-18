@@ -31,7 +31,7 @@ Niveaux : [C] constaté dans un dépôt, [S] source externe lue, [E] estimé, [N
 | Sujet | Constat | Gravité |
 |---|---|---|
 | CRD Gateway API | Cilium 1.20 impose v1.6.1 ; le socle OpenChoreo du dépôt est calé sur v1.5.1 + kgateway v2.3.11 [C]. Un seul jeu de CRD par cluster ; compatibilité kgateway ↔ v1.6.1 [NP] | Élevée |
-| ESO | `ClusterSecretStore doppler-cluster` lit tout `cluster/prd` ; une `ExternalSecret` d'une cellule `dp-*` pourrait le viser : il faudrait une VAP ciblée | Élevée |
+| ESO | `ClusterSecretStore doppler-cluster` a une portée large côté Doppler ; une `ExternalSecret` d'une cellule `dp-*` pourrait le viser : il faudrait une VAP ciblée | Élevée |
 | Kyverno | Politiques kube-ops globales (Audit, cible Enforce D-06) ; les pods OpenChoreo les déclenchent, une montée de Kyverno côté kube-ops change le lab | Moyenne |
 | Argo | Deux Argo cluster-admin sur un cluster : ApplicationSets kube-ops en `prune+selfHeal` ; risque de suppression croisée, `instanceLabelKey` à séparer | Moyenne |
 | Périmètre agent | `AGENTS.md` : écriture `openchoreo-*` / `lab-*` seulement ; or le CP crée des CRD, ClusterRole et VAP cluster-scopés, hors périmètre | Élevée |

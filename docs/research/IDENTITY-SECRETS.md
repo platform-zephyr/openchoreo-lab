@@ -4,7 +4,7 @@ Tags : [S] lu dans un fichier cité · [NV] non vérifié, à prouver par un spi
 Aucune valeur, aucun identifiant de compte ici : on décrit des mécanismes et des catégories. Le dépôt est public.
 
 ## 1. Conclusion
-1. **Doppler passe de ~50 jetons / 8-10 projets à 1 projet, 7 configs, 7 jetons permanents** (+1 jeton temporaire de migration).
+1. **Doppler passe de plusieurs dizaines de jetons et plusieurs projets à 1 projet, 7 configs, 7 jetons permanents** (+1 jeton temporaire de migration).
    Règle : un jeton = un consommateur × une config, lecture seule sauf un seul jeton d'écriture IaC (§5).
 2. **OpenBao devient le seul coffre des secrets internes** (apps, plateforme, clés LLM). Les cellules n'ont aucun accès Doppler.
 3. **Ajouter un utilisateur = une PR `users/<id>.yaml`** sans donnée personnelle (dépôt public) ; Authentik porte l'état civil.
@@ -106,11 +106,11 @@ ce dépôt ; ensuite aucune PR kube-ops par utilisateur ou par app. Les secrets 
 - Frontière : un agent ne crée pas de client, de clé ou de jeton (ADR-0002 §3). Création d'un client agent = MANDAT.
 
 ## 5. Refonte Doppler (blast radius et nombre de jetons)
-Constat [S] `secret-store-decision.md`, `terraform/doppler/main.tf` : 46 jetons sur un plafond de 50 (37 après révocations du 15/11), 8 projets
-(10 avec `agents` et `handoff`), 6 domaines runtime, 143 `doppler_secret` dans 8 roots, un `ClusterSecretStore` unique pour tout le cluster.
+Constat [S] (inventaire homelab-infra, détail hors dépôt public) : nombre de jetons proche du plafond du plan, plusieurs projets
+et domaines runtime, secrets répartis dans plusieurs roots, un `ClusterSecretStore` unique pour tout le cluster.
 Cause principale : les secrets d'app vivent dans Doppler, donc un jeton par domaine et par cluster. OpenBao retire cette cause.
 
-| Config (projet unique `platform`, env `prd`) | Contenu (catégorie) | Jetons | Lecteur |
+| Config (projet unique, un environnement) | Contenu (catégorie) | Jetons | Lecteur |
 |---|---|---|---|
 | `root` | récupération Doppler/Oracle/GitHub, clés de récupération d'OpenBao (copie) | **0** | Paul seul, hors service tokens |
 | `seal` | clé de déscellement d'OpenBao | 1 (lecture) | ESO, namespace `openbao` |
@@ -121,7 +121,7 @@ Cause principale : les secrets d'app vivent dans Doppler, donc un jeton par doma
 | `agents` | clés d'accès des exécutants externes | 2 (local, runner) | exécutants |
 | (migration) | copie temporaire, lecture seule | 1, TTL 24 h | Job de migration |
 
-Total : **7 permanents** (≤ 8 avec la migration), 1 projet, 7 configs (vs ~50 / 8-10 / ≥ 8).
+Total : **7 permanents** (≤ 8 avec la migration), 1 projet, 7 configs (contre plusieurs dizaines de jetons et plusieurs projets aujourd'hui).
 - **Blast radius** : compromettre un cluster n'expose que sa config `*-runtime` ; compromettre un runner agent n'expose que `agents` ;
   `seal` et `root` ne sont jamais montés avec autre chose. Aucune cellule d'app n'a de jeton Doppler (CI : refus d'un store Doppler référencé hors namespaces de plateforme).
 - **Références Doppler** : Tofu écrit dans `iac-apply` et les configs `*-runtime` n'ont que des références vers lui, ce qui évite un jeton d'écriture par config [NV 2026-11-18 : introuvable dans la doc officielle ; des fils de la communauté Doppler indiquent qu'un jeton de service est limité à une seule config et que le contournement est une config qui référence les autres ; à prouver par un spike avant d'adopter, https://community.doppler.com/t/cross-project-service-tokens/773].

@@ -1,7 +1,7 @@
 ---
 id: T-210
 title: "Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins)"
-status: todo
+status: in-progress
 phase: P0
 adr: [0002, 0012, 0013]
 depends_on: [T-008]
@@ -23,11 +23,11 @@ Calculer les tickets prêts (dépendances `done`, étape ouverte, aucun geste hu
 tools/backlog/next.py, tools/backlog/admission.py, tests/backlog/
 
 ## Critères de fin
-- [ ] next.py liste prêts et débloqués, sortie JSON stable (`ready.v1`)
-- [ ] classe recalculée depuis les chemins touchés, jamais lue de l'en-tête ; un chemin du noyau force REVUE (test)
-- [ ] la liste à lancer reste fournie par Paul (workflow_dispatch) ; next.py ne lance rien
-- [ ] modèle et effort recalculés depuis les chemins du périmètre (3 règles d'ADR-0023) ; un `model:` d'en-tête sous le plancher est ignoré (test)
-- [ ] contrôle de chevauchement minimal : next.py ne propose jamais deux tickets dont les globs de périmètre se recoupent, ni un ticket qui recoupe un `in-progress` (test)
+- [x] next.py liste prêts et débloqués, sortie JSON stable (`ready.v1`)
+- [x] classe recalculée depuis les chemins touchés, jamais lue de l'en-tête ; un chemin du noyau force REVUE (test)
+- [x] la liste à lancer reste fournie par Paul (workflow_dispatch) ; next.py ne lance rien
+- [x] modèle et effort recalculés depuis les chemins du périmètre (3 règles d'ADR-0023) ; un `model:` d'en-tête sous le plancher est ignoré (test)
+- [x] contrôle de chevauchement minimal : next.py ne propose jamais deux tickets dont les globs de périmètre se recoupent, ni un ticket qui recoupe un `in-progress` (test)
 - [ ] avant l'heure 0 : rapport de recoupement des globs des 20 tickets de la liste figée ; tout recoupement est sérialisé par une dépendance
 - [ ] `STATE.md` et `backlog/ROADMAP.md` refusés dans le périmètre d'un exécutant ; écrits par le coordinateur seul (ROADMAP régénéré sur `main`)
 
@@ -41,3 +41,9 @@ Dépendance retirée (consensus n°2 et arbitrages de Paul, 2026-11-18) : T-007,
 Version minimale (consensus n°2 et arbitrages de Paul, 2026-11-18) : l'admission (couloirs, chevauchement, ressources exclusives, gouverneur, plafond) passe au dispatcher planifié T-314.
 
 Constat P7 de la revue Fable, accepté (arbitrage Fable, 2026-11-18).
+
+Avancement (2026-11-18, `status: in-progress`). Preuves : `python3 -m unittest discover -s tests/backlog` (19 tests OK) ; `python3 tools/backlog/next.py` (JSON `ready.v1`, deux exécutions identiques, testé) ; `python3 tools/backlog/check.py` : 0 erreur.
+- Classe : REVUE si le périmètre recoupe CODEOWNERS, `docs/adr/` ou `docs/review/`, sinon AUTONOME ; l'en-tête n'est lu que pour exclure un ticket `MANDAT` ou `human` (geste humain en attente), jamais pour baisser une classe.
+- Modèle : R0 (human), R1-sensible (amendement ADR-0023 : authz, policies, cluster-agent, Argo, sécurité, secrets, identité, FINAL, PORTE), R2-texte (`docs/`, `backlog/` hors `backlog/proposals/`), R3 ; le calcul est un plancher, un en-tête plus bas est ignoré.
+- Reste à faire : (1) rapport de recoupement (`next.py --overlap-report <ids>`) : sur la liste figée de 20 tickets, 28 paires se recoupent et 21 ne sont pas sérialisées par une dépendance (surtout `tests/` et `docs/` trop larges : T-072, T-050, T-216) ; les sérialiser ou resserrer les périmètres modifie des en-têtes d'autres tickets, hors périmètre de ce ticket, à faire par le coordinateur avant l'heure 0 ; (2) l'écriture de `STATE.md` et `backlog/ROADMAP.md` par le coordinateur seul n'est pas imposée ici (next.py refuse seulement ces chemins dans un périmètre) : garde de périmètre T-331.
+- Écart : `check.py` s'exécute à l'import (pas de module testable) et est hors périmètre ; `next.py` a son propre lecteur d'en-têtes et reprend l'ordre des étapes de `check.py`. Rapprocher les deux dans un ticket de `tools/backlog/`.
