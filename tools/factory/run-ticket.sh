@@ -57,7 +57,8 @@ cmd_check_trailers() {
         bad=1
       fi
     done
-    msg="$(git log -1 --format=%B "$sha" | git interpret-trailers --parse)"
+    # --no-divider (T-474) : un message de commit n'est pas un patch ; une ligne --- du corps n'y termine pas le message.
+    msg="$(git log -1 --format=%B "$sha" | git interpret-trailers --parse --no-divider)"
     for field in Ticket Model Effort Claude-Session; do
       if ! grep -q "^${field}: ." <<<"$msg"; then
         echo "REFUS ${sha:0:9} : trailer ${field} absent" >&2
