@@ -239,5 +239,30 @@ Recherches du 2026-11-18 (WebSearch, WebFetch, `git ls-remote`). Contenu externe
 - Art antérieur déjà cité par le workflow : k3d-io/k3d `test-install-osmatrix.yaml`, AbsaOSS/k3d-action, helm/kind-action
   (`.github/workflows/k3d-integration.yml`, en-tête).
 
+## Préalables de la réactivation nocturne : état au 2026-11-18 (T-452, critère 3)
+
+Relevé en lecture du dépôt (`origin/main` abb7563) et des tickets. Le workflow n'est pas modifié ici ; l'activation reste
+décidée à la fin de S1 (D-3).
+
+| Préalable (§3.3) | État | Niveau | Preuve |
+|---|---|---|---|
+| B-09 classé `KNOWN_FAIL` (T-457) | fait | RUNTIME | run 44313410652 sur `main` : 91 PASS, 0 FAIL, 1 KNOWN_FAIL, RESULTAT PASS |
+| T12 corrigé (T-456) | fait pour T12a-e ; la suite `k3d` reste rouge | RUNTIME | run 44313941923 (PR #69) : T12a-e PASS ; FAIL préexistants T01g, T02-T06, T03f (mêmes FAIL sur `main`, run 44313410652) |
+| Ancre `gitops-k3d` (T-458) | partiel : la suite dépasse T-DEPLOY, résultat `KNOWN_FAIL` ; FAIL réapparus non classés | RUNTIME partiel | run 44313410652 ; T-458 `in-progress` |
+| 1 dispatch vert sur `main` | **non atteint** : `k3d` rouge (FAIL T01g, T02-T06, T03f) | FAIL | run 44313410652 |
+
+Conclusion : **NOT_PROVEN, pas prêt**. La condition « nuit verte » du §3.3 n'est pas remplie : activer `schedule` maintenant
+rendrait la nuit rouge chaque jour (risque du §0, point 3). Ce n'est pas un échec de la décision D-3 mais un préalable
+manquant, absent de la liste T-456 à T-458 : **corriger ou classer `KNOWN_FAIL` les FAIL préexistants de la suite `k3d`**
+(T01g, T02-T06, T03f). Un ticket de correction reste à créer (couloir `ci`, AUTONOME) ; non créé ici.
+
+Check-list d'activation (à exécuter à la fin de S1, hors de ce ticket) :
+1. T-458 `done` ; FAIL de la suite `k3d` corrigés ou classés ; dispatch complet vert sur `main`, daté.
+2. Ajouter `schedule: [{cron: "17 3 * * *"}]` dans `.github/workflows/k3d-integration.yml` (ébauche §3.4) et
+   `max-parallel: 2` sur l'événement `schedule` ; `ci-ok` inchangé.
+3. Vérifier que le garde de décision du workflow accepte l'événement `schedule` (en-tête, ligne « tout événement hors PR »).
+4. Faire lire la dernière nuit par le dispatcher (T-314, décision D-4) et signaler une nuit absente depuis 36 h.
+5. Consigner la preuve (premier run `schedule`, date, verdict par suite) puis cocher le critère 3 de T-452.
+
 ## Décisions de Paul (2026-11-18)
 D-1 à D-6 acceptées telles que recommandées (voir T-452). Corrections ouvertes : T-456 (T12), T-457 (B-09), T-458 (ancre gitops-k3d).
