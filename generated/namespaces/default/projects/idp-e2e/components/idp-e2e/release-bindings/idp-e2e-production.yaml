@@ -9,7 +9,10 @@ spec:
     projectName: idp-e2e
     componentName: idp-e2e
   environment: production
-  releaseName: idp-e2e-bd7910ec5e
+  releaseName: idp-e2e-fccc4cf4e7
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 2
+  traitEnvironmentConfigs:
+    probes:
+      enabled: true

@@ -9,7 +9,7 @@ spec:
     projectName: rustical-pilot
     componentName: rustical-pilot
   environment: production
-  releaseName: rustical-pilot-ca3d175b7e
+  releaseName: rustical-pilot-35c5659ebb
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1
@@ -17,3 +17,5 @@ spec:
     data:
       size: 1Gi
       storageClass: local-path
+    probes:
+      enabled: true

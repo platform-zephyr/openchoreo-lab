@@ -23,6 +23,6 @@ Ready signifie « app saine » ; le quota suit `size × replicas` et le stockage
 tools/appgen/, platform/component-types/, platform/project-types/, tests/
 
 ## Critères de fin
-- [ ] readiness/liveness rendues
-- [ ] quota calculé, test medium×3 et archétype C
+- [x] readiness/liveness rendues (STATIC : trait health-probes dans Component, release figée et binding ; CEL non évaluée)
+- [x] quota calculé (déjà en place : size × replicas + surge ; tests medium×3 et archétype C ajoutés)
 - [ ] CI k3d verte

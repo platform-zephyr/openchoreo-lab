@@ -9,7 +9,10 @@ spec:
     projectName: ntfy
     componentName: ntfy
   environment: production
-  releaseName: ntfy-e9df078cae
+  releaseName: ntfy-545e7a1c0d
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1
+  traitEnvironmentConfigs:
+    probes:
+      enabled: true

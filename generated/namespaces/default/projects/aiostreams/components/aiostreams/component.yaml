@@ -24,3 +24,20 @@ spec:
     parameters:
       mountPath: /app/data
       dataClass: rebuildable
+  - kind: ClusterTrait
+    name: health-probes
+    instanceName: probes
+    parameters:
+      containerName: main
+      liveness:
+        enabled: true
+        handler: &id001
+          httpGet:
+            port: 3000
+            path: /api/v1/status
+        initialDelaySeconds: 10
+        periodSeconds: 10
+      readiness:
+        enabled: true
+        handler: *id001
+        periodSeconds: 5

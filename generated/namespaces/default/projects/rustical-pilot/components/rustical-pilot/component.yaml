@@ -24,3 +24,20 @@ spec:
     parameters:
       mountPath: /var/lib/rustical
       dataClass: rebuildable
+  - kind: ClusterTrait
+    name: health-probes
+    instanceName: probes
+    parameters:
+      containerName: main
+      liveness:
+        enabled: true
+        handler: &id001
+          httpGet:
+            port: 4000
+            path: /
+        initialDelaySeconds: 10
+        periodSeconds: 10
+      readiness:
+        enabled: true
+        handler: *id001
+        periodSeconds: 5

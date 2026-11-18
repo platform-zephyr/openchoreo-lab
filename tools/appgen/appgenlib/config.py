@@ -38,6 +38,7 @@ PROJECT_TYPE = "cell-restricted"
 COMPONENT_TYPE = "deployment/service-restricted"
 CCT_NAME = "service-restricted"
 PVC_TRAIT = "persistent-volume-claim"
+PROBES_TRAIT = "health-probes"   # T-010 (G2) : readiness/liveness derivees de runtime.healthPath
 DATA_CLASS_LABEL = "platform.smadja.dev/data-class"   # T-025, ADR-0008 (G8)
 CRT_NAME = "cnpg-lab-db"
 DB_INSTANCE = "lab-pg"

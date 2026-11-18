@@ -9,7 +9,10 @@ spec:
     projectName: searxng
     componentName: searxng
   environment: production
-  releaseName: searxng-a3dba8c695
+  releaseName: searxng-a73e57f428
   componentTypeEnvironmentConfigs:
     size: medium
     replicas: 1
+  traitEnvironmentConfigs:
+    probes:
+      enabled: true
