@@ -12,7 +12,7 @@ stage: S1
 model: claude-sonnet-5-5
 effort: high
 routing: R3-defaut
-github_issue: null
+github_issue: 87
 ---
 # T-480 — Garde de taille des tickets
 

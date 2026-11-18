@@ -12,7 +12,7 @@ stage: S1
 model: claude-sonnet-5-5
 effort: high
 routing: R3-defaut
-github_issue: null
+github_issue: 86
 ---
 # T-479 — Statistiques de l'usine par run
 
