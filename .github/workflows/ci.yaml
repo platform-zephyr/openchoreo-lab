@@ -222,10 +222,43 @@ jobs:
       - name: Aucune release historique supprimee
         run: tests/release-history/check.sh
 
+  dev-factory:
+    # Outillage de la Development Factory (tools/dev, .devcontainer, tests/dev-factory) : statique, sans cluster ni secret.
+    # Le conteneur ARM64 n'est pas construit en CI (docs/DEV-FACTORY.md) ; ici : shellcheck, yamllint, JSON, tests du garde-fou.
+    runs-on: ubuntu-24.04-arm
+    env:
+      SHELLCHECK_VERSION: "v0.11.0"
+      SHELLCHECK_SHA256: "12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Outils (versions figees, archives verifiees par sha256)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check "yamllint==1.38.0"
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
+          echo "${SHELLCHECK_SHA256}  shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz" | sha256sum -c -
+          tar -xJf "shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
+          sudo install -m 0755 "shellcheck-${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
+          shellcheck --version | head -2
+      - name: shellcheck et yamllint de tools/dev et .devcontainer
+        run: |
+          set -euo pipefail
+          shellcheck -x -P SCRIPTDIR tools/dev/dev tools/dev/guard-check.sh tests/dev-factory/run.sh
+          yamllint -c tools/appgen/yamllint.yaml tools/dev .devcontainer
+          python3 -I -m json.tool .devcontainer/devcontainer.json >/dev/null
+      - name: Tests statiques (garde-fou negatif, pins, montages)
+        run: tests/dev-factory/run.sh
+
   ci-ok:
     # Check requis par la protection de branche : echoue si un job amont n'est pas en success.
     if: always()
-    needs: [yamllint, appgen, crd-schema, secrets, actionlint, charts, platform, release-history]
+    needs: [yamllint, appgen, crd-schema, secrets, actionlint, charts, platform, release-history, dev-factory]
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Agregation

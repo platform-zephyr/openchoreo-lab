@@ -1,0 +1,304 @@
+#!/usr/bin/env bash
+# dev : Development Factory du labo OpenChoreo (docs/DEV-FACTORY.md).
+# Un worktree Git + un conteneur de développement ARM64 par tâche. Les contrôles sans cluster s'exécutent dans le
+# conteneur. Ne contacte jamais OKE ni le cluster k3d partagé, ne monte aucun identifiant de l'hôte.
+#
+# Usage :
+#   dev up <tâche>          crée ../wt-<tâche> (branche feat/<tâche> depuis origin/main) et démarre son conteneur
+#   dev exec <tâche> -- CMD  exécute CMD dans le conteneur de la tâche (ex. : dev exec <t> -- tools/dev/dev test)
+#   dev test                contrôles statiques sans cluster (dans l'environnement courant)
+#   dev reset <tâche>       recrée le conteneur (worktree et caches conservés)
+#   dev destroy <tâche>     supprime conteneur + worktree SEULEMENT si propres et poussés (sinon refus)
+#   dev status              worktrees, conteneurs, branches feat/*, PR ouvertes (gh), état agents
+#
+# Variables : DEV_DOCKER_CONTEXT (contexte Docker à utiliser), DEV_ALLOW_SHARED_VM=1 (accepte la VM Colima
+# partagée 'openchoreo', à éviter), DEV_STATE_DIR (défaut ~/.local/state/openchoreo-lab-dev, hors dépôt),
+# DEV_BASE_REF (défaut origin/main).
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SELF_DIR/../.." && pwd)"
+DC_DIR="$ROOT/.devcontainer"
+GIT_COMMON="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir)"
+MAIN_ROOT="$(dirname "$GIT_COMMON")"
+WT_PARENT="$(dirname "$MAIN_ROOT")"
+WS_DIR="/workspaces/openchoreo-lab"
+STATE_DIR="${DEV_STATE_DIR:-$HOME/.local/state/openchoreo-lab-dev}"
+STATE_FILE="$STATE_DIR/agents.json"
+BASE_REF="${DEV_BASE_REF:-origin/main}"
+DOCKER="docker"
+if [[ -n "${DEV_DOCKER_CONTEXT:-}" ]]; then export DOCKER_CONTEXT="$DEV_DOCKER_CONTEXT"; fi
+
+die()  { printf 'dev: %s\n' "$*" >&2; exit 1; }
+info() { printf '%s\n' "$*"; }
+
+usage() { awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; }
+
+valid_task() {
+  [[ "$1" =~ ^[a-z0-9][a-z0-9-]{1,39}$ ]] || die "nom de tâche invalide (a-z0-9-, 2 à 40 caractères) : $1"
+}
+
+cname() { printf 'oclab-dev-%s' "$1"; }
+
+# Contrôle de la cible Docker : jamais la VM Colima partagée (k3d du responsable) sans accord explicite.
+check_docker_target() {
+  command -v "$DOCKER" >/dev/null 2>&1 || die "docker absent du PATH"
+  local ep
+  ep="$($DOCKER context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null || true)"
+  if [[ "$ep" == *"/.colima/openchoreo/"* && "${DEV_ALLOW_SHARED_VM:-0}" != 1 ]]; then
+    die "contexte Docker = VM Colima partagée 'openchoreo' (k3d du responsable). Refus. Choisir DEV_DOCKER_CONTEXT, ou DEV_ALLOW_SHARED_VM=1 après accord."
+  fi
+  $DOCKER info >/dev/null 2>&1 || die "daemon Docker injoignable (contexte : ${DOCKER_CONTEXT:-défaut})"
+  local arch
+  arch="$($DOCKER info --format '{{.Architecture}}')"
+  [[ "$arch" == aarch64 || "$arch" == arm64 ]] || die "daemon Docker non ARM64 ($arch) : l'image est linux/arm64"
+}
+
+# Arguments docker run issus de .devcontainer/devcontainer.json (source unique : runArgs, mounts, containerEnv).
+dc_args() {
+  python3 -I - "$DC_DIR/devcontainer.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+out = list(d.get("runArgs", []))
+for m in d.get("mounts", []):
+    out += ["--mount", m]
+for k, v in d.get("containerEnv", {}).items():
+    out += ["-e", f"{k}={v}"]
+sys.stdout.write("\0".join(out) + "\0")
+PY
+}
+
+image_tag() {
+  local h
+  h="$(shasum -a 256 "$DC_DIR/Dockerfile" | cut -c1-12)"
+  printf 'openchoreo-lab-dev:%s-u%s-g%s' "$h" "$(id -u)" "$(id -g)"
+}
+
+ensure_image() {
+  local tag
+  tag="$(image_tag)"
+  if ! $DOCKER image inspect "$tag" >/dev/null 2>&1; then
+    info "construction de l'image $tag (linux/arm64)..."
+    $DOCKER build --platform linux/arm64 \
+      --build-arg "HOST_UID=$(id -u)" --build-arg "HOST_GID=$(id -g)" \
+      -t "$tag" -f "$DC_DIR/Dockerfile" "$DC_DIR" >&2
+  fi
+  printf '%s' "$tag"
+}
+
+container_running() {
+  [[ "$($DOCKER inspect -f '{{.State.Running}}' "$1" 2>/dev/null || echo false)" == true ]]
+}
+
+start_container() { # TACHE WORKTREE
+  local t="$1" wt="$2" name tag
+  name="$(cname "$t")"
+  tag="$(ensure_image)"
+  local -a dcargs=()
+  while IFS= read -r -d '' a; do dcargs+=("$a"); done < <(dc_args)
+  $DOCKER run -d --name "$name" --label openchoreo-lab-dev=1 --label "dev.task=$t" \
+    "${dcargs[@]}" \
+    --mount "type=bind,source=$wt,target=$WS_DIR" \
+    --mount "type=bind,source=$GIT_COMMON,target=$GIT_COMMON" \
+    -w "$WS_DIR" "$tag" sleep infinity >/dev/null
+}
+
+guard() { # TACHE : garde-fous dans le conteneur, arrêt si KO
+  local t="$1"
+  if ! $DOCKER exec "$(cname "$t")" tools/dev/guard-check.sh; then
+    $DOCKER rm -f "$(cname "$t")" >/dev/null 2>&1 || true
+    die "garde-fous KO : conteneur supprimé"
+  fi
+}
+
+create_worktree() { # TACHE
+  local t="$1" wt="$WT_PARENT/wt-$1" branch="feat/$1"
+  if [[ -e "$wt" ]]; then
+    git -C "$wt" rev-parse --git-dir >/dev/null 2>&1 || die "$wt existe et n'est pas un worktree Git"
+    info "worktree existant : $wt"
+    return 0
+  fi
+  git -C "$MAIN_ROOT" fetch --quiet origin main 2>/dev/null || info "fetch origin impossible : base locale utilisée"
+  if git -C "$MAIN_ROOT" show-ref --verify --quiet "refs/heads/$branch"; then
+    git -C "$MAIN_ROOT" worktree add "$wt" "$branch" >&2
+  else
+    git -C "$MAIN_ROOT" worktree add -b "$branch" "$wt" "$BASE_REF" >&2
+  fi
+}
+
+# Registre hors Git (agent-id = tâche, branche, worktree, conteneur). `dev status` le recoupe avec git et gh.
+state_update() { # add|remove TACHE WORKTREE BRANCHE
+  mkdir -p "$STATE_DIR"
+  python3 -I - "$STATE_FILE" "$@" <<'PY'
+import datetime, json, os, sys
+path, action, task, wt, branch = sys.argv[1:6]
+data = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {"agents": []}
+agents = [a for a in data["agents"] if a.get("agent_id") != task]
+if action == "add":
+    agents.append({"agent_id": task, "branch": branch, "worktree": wt, "container": "oclab-dev-" + task,
+                   "updated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")})
+data["agents"] = agents
+tmp = path + ".tmp"
+with open(tmp, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2)
+os.replace(tmp, path)
+PY
+}
+
+cmd_up() {
+  [[ $# -eq 1 ]] || die "usage : dev up <tâche>"
+  local t="$1"; valid_task "$t"
+  check_docker_target
+  create_worktree "$t"
+  local wt="$WT_PARENT/wt-$t" name
+  name="$(cname "$t")"
+  if $DOCKER container inspect "$name" >/dev/null 2>&1; then
+    container_running "$name" || $DOCKER start "$name" >/dev/null
+  else
+    start_container "$t" "$wt"
+  fi
+  guard "$t"
+  state_update add "$t" "$wt" "feat/$t"
+  info "prêt : worktree $wt, conteneur $name (branche feat/$t)"
+  info "suite : dev exec $t -- tools/dev/dev test"
+}
+
+cmd_exec() {
+  [[ $# -ge 2 ]] || die "usage : dev exec <tâche> -- <commande...>"
+  local t="$1"; shift
+  valid_task "$t"
+  [[ "$1" == -- ]] && shift
+  [[ $# -ge 1 ]] || die "commande manquante"
+  check_docker_target
+  container_running "$(cname "$t")" || die "conteneur absent ou arrêté : dev up $t"
+  $DOCKER exec -w "$WS_DIR" "$(cname "$t")" "$@"
+}
+
+# ---- dev test : contrôles statiques, sans cluster, sans secret ----
+FAILS=0
+run_step() { # NOM COMMANDE...
+  local name="$1"; shift
+  local log t0 t1 rc=0
+  log="$(mktemp "${TMPDIR:-/tmp}/dev-test.XXXXXX")"
+  t0="$(date +%s)"
+  "$@" >"$log" 2>&1 || rc=$?
+  t1="$(date +%s)"
+  if [[ "$rc" -eq 0 ]]; then
+    printf 'PASS  %-22s %4ss\n' "$name" "$((t1 - t0))"
+  else
+    FAILS=$((FAILS + 1))
+    printf 'FAIL  %-22s %4ss (rc=%s)\n' "$name" "$((t1 - t0))" "$rc"
+    tail -n 25 "$log" | sed 's/^/      | /'
+  fi
+  rm -f "$log"
+}
+
+# Les rendus et téléchargements de charts partagent un cache (volume) : sérialisés entre conteneurs.
+locked() {
+  local st="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}"
+  mkdir -p "$st"
+  if command -v flock >/dev/null 2>&1; then
+    flock -x -w 900 "$st/.dev-test.lock" "$@"
+  else
+    "$@"
+  fi
+}
+
+cmd_test() {
+  [[ $# -eq 0 ]] || die "usage : dev test"
+  cd "$ROOT"
+  info "dev test : $(git rev-parse --short HEAD 2>/dev/null || echo '?') dans $ROOT"
+  run_step guard-check tools/dev/guard-check.sh
+  run_step shellcheck shellcheck -x -P SCRIPTDIR tools/dev/dev tools/dev/guard-check.sh tests/dev-factory/run.sh \
+    tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh
+  run_step devcontainer-json python3 -I -m json.tool .devcontainer/devcontainer.json
+  run_step dev-factory-static tests/dev-factory/run.sh
+  run_step yamllint yamllint -c tools/appgen/yamllint.yaml apps tools tests .github
+  run_step actionlint actionlint
+  run_step gitleaks gitleaks git --redact --no-banner --log-level warn .
+  run_step appgen-validate python3 tools/appgen/appgen.py validate
+  run_step appgen-check python3 tools/appgen/appgen.py check
+  run_step appgen-unittest python3 -m unittest discover -s tests/appgen
+  run_step argo-guard-rules python3 -I tools/oke/argo_guard.py .
+  run_step argo-guard-negative tests/argo-guard/run.sh
+  run_step release-history tests/release-history/check.sh
+  run_step cell-cpt tests/cell-cpt/run.sh
+  run_step security-bundle locked tests/security-bundle/run.sh
+  run_step render-check locked tools/oke/render-check.sh
+  run_step uninstall-guards locked env ARGO_GUARD_CHART_CACHE="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}/charts" tests/argo-guard/uninstall-guards.sh
+  run_step kubeconform-platform locked tools/oke/kubeconform-platform.sh
+  if [[ "$FAILS" -gt 0 ]]; then
+    printf 'RESULT: FAIL (%s étape(s) en échec)\n' "$FAILS"
+    exit 1
+  fi
+  printf 'RESULT: PASS\n'
+}
+
+cmd_reset() {
+  [[ $# -eq 1 ]] || die "usage : dev reset <tâche>"
+  local t="$1"; valid_task "$t"
+  check_docker_target
+  local wt="$WT_PARENT/wt-$t"
+  [[ -d "$wt" ]] || die "worktree absent : $wt (dev up $t)"
+  $DOCKER rm -f "$(cname "$t")" >/dev/null 2>&1 || true
+  start_container "$t" "$wt"
+  guard "$t"
+  info "conteneur recréé : $(cname "$t") (worktree et caches conservés)"
+}
+
+cmd_destroy() {
+  [[ $# -eq 1 ]] || die "usage : dev destroy <tâche>"
+  local t="$1"; valid_task "$t"
+  local wt="$WT_PARENT/wt-$t"
+  [[ -d "$wt" ]] || die "worktree absent : $wt"
+  if [[ -n "$(git -C "$wt" status --porcelain --ignored)" ]]; then
+    die "refus : changements non commités ou fichiers ignorés dans $wt (git status --ignored)"
+  fi
+  local up
+  up="$(git -C "$wt" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+  [[ -n "$up" ]] || die "refus : la branche feat/$t n'a pas de branche distante suivie (non poussée)"
+  local ahead
+  ahead="$(git -C "$wt" rev-list --count '@{u}..HEAD')"
+  [[ "$ahead" -eq 0 ]] || die "refus : $ahead commit(s) non poussé(s) sur feat/$t"
+  if command -v "$DOCKER" >/dev/null 2>&1 && $DOCKER info >/dev/null 2>&1; then
+    $DOCKER rm -f "$(cname "$t")" >/dev/null 2>&1 || true
+  fi
+  git -C "$MAIN_ROOT" worktree remove "$wt" >&2
+  state_update remove "$t" "$wt" "feat/$t"
+  info "supprimé : conteneur $(cname "$t") et worktree $wt (branche feat/$t conservée, poussée)"
+}
+
+cmd_status() {
+  info "== worktrees (git worktree list)"
+  git -C "$MAIN_ROOT" worktree list | grep -F "$WT_PARENT/wt-" || info "(aucun worktree wt-* dans $WT_PARENT)"
+  info "== conteneurs (label openchoreo-lab-dev=1)"
+  if command -v "$DOCKER" >/dev/null 2>&1 && $DOCKER info >/dev/null 2>&1; then
+    $DOCKER ps -a --filter label=openchoreo-lab-dev=1 --format '{{.Names}} {{.State}} {{.Status}}' || true
+  else
+    info "(daemon Docker injoignable)"
+  fi
+  info "== branches feat/* (suivi distant)"
+  git -C "$MAIN_ROOT" for-each-ref --format='%(refname:short) -> %(upstream:short)' refs/heads/feat/
+  info "== PR ouvertes (gh)"
+  gh pr list --state open --limit 50 --json number,headRefName,isDraft,title \
+    --jq '.[] | "#\(.number) \(.headRefName) draft=\(.isDraft) \(.title)"' 2>/dev/null || info "(gh indisponible ou non authentifié)"
+  info "== registre agents (hors Git) : $STATE_FILE"
+  if [[ -f "$STATE_FILE" ]]; then python3 -I -c 'import json,sys; [print(a["agent_id"], a["branch"], a["worktree"], a["updated"]) for a in json.load(open(sys.argv[1]))["agents"]]' "$STATE_FILE"; else info "(absent)"; fi
+}
+
+main() {
+  local cmd="${1:-help}"
+  [[ $# -gt 0 ]] && shift
+  case "$cmd" in
+    up) cmd_up "$@" ;;
+    exec) cmd_exec "$@" ;;
+    test) cmd_test "$@" ;;
+    reset) cmd_reset "$@" ;;
+    destroy) cmd_destroy "$@" ;;
+    status) cmd_status ;;
+    help|-h|--help) usage ;;
+    *) die "commande inconnue : $cmd (dev help)" ;;
+  esac
+}
+
+main "$@"
