@@ -7,12 +7,12 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | Statut | Tickets |
 |---|---|
 | `in-progress` | 19 |
-| `todo` | 131 |
+| `todo` | 134 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 26 |
+| `done` | 27 |
 | `dropped` | 27 |
-| **Total** | **251** |
+| **Total** | **255** |
 
 ## En cours (`in-progress`)
 
@@ -60,6 +60,8 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-100](T-100-obs-0.md) | 4 | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
 | [T-201](T-201-data-2.md) | 4 | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
 | [T-050](T-050-verdicts-kube-ops.md) | 3 | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
+| [T-479](T-479-statistiques-usine-par-run.md) | 0 | Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et par ticket) | 0/5 | — |
+| [T-480](T-480-garde-taille-tickets.md) | 0 | Garde de taille des tickets : avertissement de check.py au-delà de ce qu'un run absorbe | 0/5 | — |
 | [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | 0 | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
 | [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
@@ -129,6 +131,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-006](T-006-mcp-cloudflare-access.md) | 0 | Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitH… | T-005 (todo) | [#52](https://github.com/platform-zephyr/openchoreo-lab/issues/52) |
 | [T-419](T-419-retrait-seed-py.md) | 0 | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-214 (todo) | — |
 | [T-436](T-436-labels-formulaires-issues.md) | 0 | Labels as-code et formulaires d'issue : issues vides coupées, proposition de ticket | T-431 (todo) | — |
+| [T-478](T-478-plafonds-natifs-executant.md) | 0 | Exécutant : plafonds natifs de Claude Code (--max-budget-usd, --permission-prompts none) et corps d… | T-466 (in-progress) | — |
 | [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | 0 | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | T-412 (todo), T-322 (todo) | — |
 | [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | 0 | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR… | T-062 (todo), T-214 (todo) | — |
 | [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | 0 | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | T-332 (in-progress) | — |
@@ -221,6 +224,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-464](T-464-regles-d-agent-local-d-abord.md) | Règles d'agent « local d'abord » dans AGENTS.md et les skills (SL-10) | 2026-11-18 | — | — |
 | [T-468](T-468-corriger-check-selftest.md) | Corriger le FAIL de check-selftest (test périmé après T-460) | — | — | — |
 | [T-474](T-474-trailers-injectes-par-hook-git.md) | Trailers de commit injectés par un hook git du workflow (Ticket, Model, Effort, Escalated-from, Claude-Session) | 2026-11-18 | — | — |
+| [T-477](T-477-etude-art-anterieur-usine.md) | Étude : art antérieur des usines d'agents à réutiliser (FACTORY-PRIOR-ART) | 2026-11-18 | — | — |
 
 ## Gelés et abandonnés
 
