@@ -55,7 +55,10 @@ def flag(value: object, ok_reason: str, ko_reason: str) -> dict[str, str]:
 
 
 def grade_m1(check_run: dict | None, obs: dict, expected_sha: str | None = None) -> dict[str, str]:
-    """M1 : check run `success` à la révision demandée et HTTP 200 (`obs['http_status']`)."""
+    """M1 (et M4 : même app) : check run `success` à la révision demandée et HTTP 200 (`obs['http_status']`).
+
+    App : `echo-bench` (copie de `traefik/whoami`). Le harnais mesure le statut de `GET /health` à l'adresse
+    interne (route confirmée : docs/research/BANC-APPS-CANDIDATES.md §3.1)."""
     status = obs.get("http_status")
     if isinstance(status, bool) or not isinstance(status, int):
         http = result(NOT_TESTED, "statut HTTP non observé")
@@ -65,7 +68,13 @@ def grade_m1(check_run: dict | None, obs: dict, expected_sha: str | None = None)
 
 
 def grade_m2(check_run: dict | None, obs: dict, expected_sha: str | None = None) -> dict[str, str]:
-    """M2 : check run `success` et ligne synthétique lue par l'API de l'app (`obs['api_row_found']`)."""
+    """M2 : check run `success` et ligne synthétique lue par l'API de l'app (`obs['api_row_found']`).
+
+    App : `miniflux`. Le harnais crée une catégorie synthétique (`POST /v1/categories`), puis la relit
+    (`GET /v1/categories`) en authentification basique avec l'administrateur local ; `api_row_found` vaut True
+    si elle figure dans la réponse. Doc amont : https://miniflux.app/docs/api.html (« Basic Authentication »,
+    « Categories »). Le mot de passe vient de la variable d'environnement du harnais (`ADMIN_PASSWORD`),
+    jamais d'une valeur écrite ici ; ce module ne lit que l'observation booléenne."""
     row = flag(obs.get("api_row_found"), "ligne lue par l'API", "ligne absente")
     return worst(check_run_verdict(check_run, expected_sha), row)
 

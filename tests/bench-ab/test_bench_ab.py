@@ -19,7 +19,7 @@ import verdict  # noqa: E402
 
 SHA = "1111111111111111111111111111111111111111"
 TEMPLATE = BENCH / "thresholds.template.yaml"
-EXPECTED_APPS = {"M1": "it-tools", "M2": "vikunja", "M3": "ntfy", "M4": "it-tools"}
+EXPECTED_APPS = {"M1": "echo-bench", "M2": "miniflux", "M3": "ntfy", "M4": "echo-bench"}
 
 
 def load_yaml(path):
@@ -126,7 +126,7 @@ class GradersTest(unittest.TestCase):
         for key in ("nonprod_value_seen", "prod_unchanged_before_promotion", "prod_value_seen", "prod_restored"):
             self.assertEqual(graders.grade("m3", ok, m3_obs(**{key: False}))["status"], "FAIL", key)
             self.assertEqual(graders.grade("m3", ok, m3_obs(**{key: None}))["status"], "NOT_TESTED", key)
-        self.assertEqual(graders.grade("m3", ok, m3_obs(other_apps_touched=["vikunja"]))["status"], "FAIL")
+        self.assertEqual(graders.grade("m3", ok, m3_obs(other_apps_touched=["miniflux"]))["status"], "FAIL")
         self.assertEqual(graders.grade("m3", ok, m3_obs(other_apps_touched=None))["status"], "NOT_TESTED")
 
     def test_m4_cause(self):
