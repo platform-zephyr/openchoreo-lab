@@ -11,7 +11,7 @@ Un golden path = un archétype d'app. Il fournit un `app.yaml` minimal (contrat 
 | E | Chart Helm tiers | **illustratif, désactivé** | `apps/_examples/podinfo-helm` | [`E-helm-chart/`](E-helm-chart/app.yaml) | [`CHECKLIST`](E-helm-chart/CHECKLIST.md) |
 | F | Non éligible | refus motivé | — | — | [`F-non-eligible/README.md`](F-non-eligible/README.md) |
 
-Tous les résultats runtime sont étiquetés `k3d` ou `oke`. Un PASS sur k3d n'est pas une preuve OKE. `cluster: oke` reste refusé tant que le gate OKE n'est pas franchi (`STATE.md`).
+Tous les résultats runtime sont étiquetés `k3d` ou `oke`. Un PASS sur k3d n'est pas une preuve OKE. Le gate OKE est franchi (pilote `whoami` PASS sur OKE le 2026-11-17, `STATE.md`) : `cluster: oke` est accepté ; une dépense sur OKE (PVC `oci-bv`) reste protégée.
 
 ## Choisir l'archétype (règle APP-CONTRACT §3, dans cet ordre)
 
@@ -108,7 +108,7 @@ Verdict motivé, aucune action. Voir [`F-non-eligible/README.md`](F-non-eligible
 
 ## Vérifications runtime (`_checks/`)
 
-Scripts **en lecture seule** : `kubectl get/describe/auth can-i` à travers un wrapper qui refuse tout autre verbe et toute lecture de Secret autre que `-o name`. Ils sont utilisables sur k3d aujourd'hui et sur OKE après le gate (même code, `CLUSTER_LABEL=oke`).
+Scripts **en lecture seule** : `kubectl get/describe/auth can-i` à travers un wrapper qui refuse tout autre verbe et toute lecture de Secret autre que `-o name`. Ils sont utilisables sur k3d et sur OKE (même code, `CLUSTER_LABEL=oke`).
 
 ```bash
 export KUBECONFIG=<kubeconfig dédié au labo>      # jamais celui de Paul

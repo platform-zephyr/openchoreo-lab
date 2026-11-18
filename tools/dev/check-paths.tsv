@@ -40,3 +40,4 @@ leak-guard	*
 identities	docs/state/*,tests/identities/*,tools/backlog/*
 settings	.claude/*,tests/hooks/*
 hooks	.claude/*,tests/hooks/*,tools/dev/leak-guard.sh
+context-check	*.md,tools/context-check/*,tests/context-check/*

@@ -1,3 +1,8 @@
+---
+owner: paul
+updated: 2026-11-18
+review_days: 30
+---
 # Mission — OpenChoreo Lab (IDP opérationnel sur OKE)
 
 Objectif : un IDP OpenChoreo 1.3.3 réellement utilisable sur `oracle-a1` : Claude utilise le portail et les API pour déployer un service par PR GitOps, puis prouve qu'il fonctionne (preuves runtime). Le laboratoire reste jetable (`CLEANUP.md`), mais la plateforme doit être exploitable. Détail de l'état : `STATE.md`.

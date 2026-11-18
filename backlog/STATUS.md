@@ -6,8 +6,8 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 29 |
-| `todo` | 122 |
+| `in-progress` | 30 |
+| `todo` | 121 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 33 |
@@ -19,6 +19,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | Ticket | Titre | Critères | Reste | Issue |
 |---|---|---|---|---|
 | [T-002](T-002-ci-k3d.md) | CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue | 3/4 | Reste : critère 4 exige un run GitHub réel (NOT_TESTED, aucun run possible depuis cette session). `development` : le bootstrap ne l'invente plus si `platform/` le fournit (STATIC, yq 4.54.3 testé avec un faux manifeste). `docs/research/GITHUB-CONFIG.md` est a… | — |
+| [T-041](T-041-context-engineering.md) | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 2/3 | Reste à la session coordinatrice (garde T-331 : `STATE.md` lui est réservé) : réécrire `STATE.md` au gabarit `docs/research/context-engineering/openchoreo-lab-proposal/STATE.md`, archiver l'ancien dans `docs/state/journal/2026-11-18.md`, puis retirer `pending… | — |
 | [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | 2/2 | Reste : aucun rendu `kustomize build`/`helm template` n'a tourné (inventaire exhaustif du skill NOT_TESTED, verdicts provisoires) ; SQLite de K04/K13/K27, Chrome de K33, chart de K26 non prouvés ; RUNTIME NOT_TESTED partout ; passer `done` après le rendu des… | — |
 | [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 3/9 | Reste : (a) `lint_runbooks.py` et `tests/observe` ne sont pas appelés par `tools/dev/check` ni `ci.yaml` (fichiers chauds, hors périmètre) ; (b) `golden-paths/_checks/status_json.py` n'émet pas encore `cause.nature` ; (c) la planification OpenTofu (homelab-in… | — |
 | [T-201](T-201-data-2.md) | Ingestion GitHub vers Parquet et métriques DORA par agent | 7/7 | (ligne « Reste » absente) | — |
@@ -65,7 +66,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | Ticket | Score | Titre | Critères | Issue |
 |---|---|---|---|---|
 | [T-060](T-060-residu-kgateway.md) | 14 | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | 0/2 | — |
-| [T-041](T-041-context-engineering.md) | 8 | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
 | [T-484](T-484-plancher-couverture-appgenlib.md) | 0 | Plancher de couverture : viser tools/appgen/appgenlib/ au lieu de la façade appgen.py | 0/3 | — |
 | [T-417](T-417-typage-mypy.md) | 0 | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | 0/2 | — |
 | [T-366](T-366-bundle-multi-arch-installateur-lab.md) | 58 | Bundle de sécurité multi-arch et installateur pour le cluster lab | 0/4 | — |
@@ -103,7 +103,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-189](T-189-ids-10.md) | 7 | `identity.mode: oidc \| proxy \| none` avec client OIDC généré et secret dans OpenBao | T-074 (todo), T-184 (todo), T-185 (todo) | — |
 | [T-212](T-212-backend-plain.md) | 6 | Backend « plain » d'appgen (spike 3 jours) : chart commun + Argo par cluster | T-363 (todo) | — |
 | [T-027](T-027-drill-restauration-auto.md) | 6 | Drill de restauration automatique et `restore-evidence` | T-005 (todo), T-012 (todo), T-026 (todo), T-075 (todo) | — |
-| [T-044](T-044-banc-intentions.md) | 5 | Banc d'essai de 5 intentions A (MVP) | T-015 (todo), T-040 (todo), T-041 (todo), T-043 (todo), T-212 (todo) | — |
+| [T-044](T-044-banc-intentions.md) | 5 | Banc d'essai de 5 intentions A (MVP) | T-015 (todo), T-040 (todo), T-041 (in-progress), T-043 (todo), T-212 (todo) | — |
 | [T-051](T-051-premiere-app-familiale.md) | 4 | Première app familiale complète (OIDC + base + sauvegarde) sur le homelab | T-020 (todo), T-021 (todo), T-027 (todo), T-031 (todo), T-040 (todo), T-043 (todo), T-189 (todo), T-404 (todo) | — |
 | [T-123](T-123-upg-4.md) | 4 | Garde d'image : arm64, registre autorisé, signature cosign, provenance | T-122 (todo) | — |
 | [T-190](T-190-ids-11.md) | 4 | `tools/secrets-migrate` : script idempotent Doppler → OpenBao sans affichage de valeur | T-184 (todo) | — |
