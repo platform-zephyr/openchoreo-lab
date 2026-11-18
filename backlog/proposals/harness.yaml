@@ -1,7 +1,7 @@
 # Propositions de tickets — domaine HARNESS (environnements de dev des agents, harness engineering).
 # Recherche : docs/research/AGENT-HARNESS.md. ADR proposé : "NEW-HARNESS" (ADR-0021 dans le rapport, §5).
 # Champs ajoutés au format FORMAT.md : `stage` (S0..S3, I1..I8) et `model` suggéré (haiku | sonnet | opus ; DeepSeek = seulement après HAR-20).
-# Faits web non vérifiés : marqués [NV] dans la recherche ; revérifier avant de démarrer HAR-13, HAR-20.
+# Faits web : [V] lus le 2026-11-18 (y compris DeepSeek et GitHub par curl) ; seul [NV] restant : modes dind/kubernetes d'ARC (HAR-13).
 # Noyau (consensus décision 1) : .claude/, .github/, tools/backlog/, docs/adr/ => classe REVUE au moins.
 
 - key: HAR-0
@@ -244,7 +244,7 @@
   notes: "Périmètre cluster : namespaces openchoreo-* et lab-* seulement ; lecture seule ailleurs (AGENTS.md). Aucune mesure du surcoût de vcluster n'est publiée par le projet [NV]."
 
 - key: HAR-13
-  title: "Runners ARC sur le homelab : scale set éphémère sans privilège, limité à `main`"
+  title: "Spike runners homelab pour le dépôt public : ARC JIT sans secret limité à `main`, ou aucun runner (preuve par Job PostSync)"
   phase: P1
   stage: S2
   model: sonnet
@@ -254,11 +254,11 @@
   velocity: false
   parallel_lane: "hybride"
   scope: "docs/AGENT-RUNNERS.md, platform/ (si le scale set vit ici), PR cross-dépôt vers homelab-infra / kube-ops"
-  intent: "Scale set ARC dédié (pas celui d'OpenTofu), zéro à N pods éphémères, aucun mode privilégié ni dind, aucun secret, NetworkPolicy default-deny avec sorties vers GitHub et le cluster dev seulement, groupe de runners accessible aux workflows de `main` et à workflow_dispatch, jamais aux PR de fork. Sert N2 (pilotage du cluster dev, banc nocturne). Relire les modes ARC et le prix des runners auto-hébergés avant décision [NV]."
+  intent: "GitHub déconseille « presque toujours » les runners auto-hébergés pour un dépôt public (PR de tiers, compromission persistante) et recommande des runners JIT éphémères. Décider : (a) aucun runner homelab, le N2 est piloté par Job PostSync/CronJob dans le cluster qui publie la preuve (T-005), ou (b) scale set ARC dédié (pas celui d'OpenTofu), JIT, zéro à N pods, non privilégié, sans secret, default-deny, groupe réservé aux workflows de `main` et à workflow_dispatch. Défaut : (a). Relire les modes ARC (non lus) [NV]."
   done:
-    - "essai : une PR de fork ne peut pas planifier de job sur ce groupe (preuve datée)"
-    - "pod runner : securityContext restricted, aucun volume hôte, aucun Secret monté"
-    - "décision de coût écrite (frais de plateforme GitHub vérifiés à la source) ou BLOCKED"
+    - "décision (a) ou (b) écrite avec le risque GitHub cité ; si (b) : essai prouvant qu'une PR de fork ne peut pas planifier de job sur ce groupe (preuve datée)"
+    - "si (b) : pod runner securityContext restricted, aucun volume hôte, aucun Secret monté"
+    - "coût : frais de plateforme (0,002 USD/min annoncés puis reportés, gratuits en dépôt public) vérifiés à la source à la date de la décision"
     - "le propriétaire du déploiement (kube-ops ou homelab-infra) est nommé ; aucune écriture hors périmètre"
   notes: "Frontière de dépôt : homelab-infra possède l'ARC d'OpenTofu ; ne pas mélanger. MANDAT : la création de l'objet côté homelab est un geste de Paul."
 
@@ -382,7 +382,7 @@
   velocity: false
   parallel_lane: "agents"
   scope: "docs/research/DEEPSEEK-LANE.md, tools/bench/, .github/workflows/ (voie dédiée)"
-  intent: "Mesurer sur le banc une session pilotée par DeepSeek via un point d'accès compatible Anthropic (outils, MCP, taille de contexte, erreurs). Anthropic ne supporte pas le routage de Claude Code vers un modèle non-Claude : voie non supportée, donc admise seulement si pass^3 ≥ 0,8 sur les types N0 retenus, hors noyau, sans secret du dépôt, clé en secret du dépôt. Relire la documentation DeepSeek (hôte bloqué ici) [NV]."
+  intent: "Mesurer sur le banc une session pilotée par DeepSeek via son point d'accès compatible Anthropic (https://api.deepseek.com/anthropic ; la doc DeepSeek indique `mcp_servers` ignoré et remappage des noms claude-* vers ses modèles : donc MCP et choix de modèle par nom à tester). Anthropic ne supporte pas le routage de Claude Code vers un modèle non-Claude : voie non supportée, admise seulement si pass^3 ≥ 0,8 sur les types N0 retenus, hors noyau ; clé en secret du dépôt."
   done:
     - "rapport de compatibilité daté : fonctionnalités testées / non testées"
     - "pass@1 et pass^3 par type de ticket, comparés à sonnet et haiku"
