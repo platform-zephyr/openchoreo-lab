@@ -25,8 +25,8 @@ MANDAT = geste de Paul (accès, identité, dépense, VM) ; REVUE = approbation d
 
 | Étape | Gestes (MANDAT) | Approbations (REVUE) |
 |---|---|---|
-| S0 | [T-434](T-434-gestes-organisation-paul.md), [T-301](T-301-reecriture-de-l-historique-et-purge.md), [T-431](T-431-reglages-depot-actions-securite.md), [T-304](T-304-essai-reel-executant.md), [T-305](T-305-tag-core-baseline.md), [T-433](T-433-protection-tags.md) | [T-210](T-210-dispatcher-agents.md), [T-302](T-302-corrections-de-l-arbre-detail-residuel.md), [T-413](T-413-pyproject-ruff-shellcheck.md), [T-430](T-430-rulesets-as-code.md), [T-313](T-313-executant-claude-agent-yml-par-workflow.md), [T-414](T-414-cliquet-maintenabilite.md), [T-326](T-326-ledger-quota-disjoncteur.md), [T-411](T-411-skill-prior-art-gabarit-pr.md) |
-| S1 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-002](T-002-ci-k3d.md), [T-041](T-041-context-engineering.md), [T-450](T-450-nettoyage-gitleaksignore.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-435](T-435-k3d-ok-requis.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-436](T-436-labels-formulaires-issues.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
+| S0 | [T-301](T-301-reecriture-de-l-historique-et-purge.md), [T-431](T-431-reglages-depot-actions-securite.md), [T-434](T-434-gestes-organisation-paul.md), [T-304](T-304-essai-reel-executant.md), [T-305](T-305-tag-core-baseline.md), [T-433](T-433-protection-tags.md) | [T-313](T-313-executant-claude-agent-yml-par-workflow.md), [T-414](T-414-cliquet-maintenabilite.md), [T-326](T-326-ledger-quota-disjoncteur.md), [T-411](T-411-skill-prior-art-gabarit-pr.md) |
+| S1 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-435](T-435-k3d-ok-requis.md), [T-450](T-450-nettoyage-gitleaksignore.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-436](T-436-labels-formulaires-issues.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
 | S2 |  | [T-423](T-423-reduire-complexite-argo-guard.md), [T-062](T-062-lab-platform-auto.md), [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) |
 | S3 | [T-140](T-140-cost-1.md), [T-031](T-031-placement-coupure.md) | [T-070](T-070-garde-contrat.md), [T-439](T-439-essai-dependency-review.md), [T-368](T-368-garde-fous-de-capacite-du-homelab.md) |
 | PORTE | [T-211](T-211-porte-openchoreo.md) |  |
@@ -47,43 +47,40 @@ Gestes purement humains (aucun agent) : [T-301](T-301-reecriture-de-l-historique
 
 Pilote de **24 h à N=3** en dispatch manuel ([T-322](T-322-calibrage-du-quota-pilote-24-h.md)) : coût par ticket, % de quota 5 h et hebdomadaire, concurrence cloud ; puis paliers 6 et 10 décidés par Paul. Il ne dépend ni de T-215 ni du ruleset (FINAL0), ni de T-061/T-061b (actés par la fusion de la PR #48). Moteur horaire d'Atlas/homelab-infra en pause pendant les 24 h.
 
-### Prérequis : S0 minimal (8 tickets)
+### Prérequis : S0 minimal (5 tickets)
 
 | Ticket | Titre | Vague | Classe | Modèle |
 |---|---|---|---|---|
-| [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | 0 | REVUE | sonnet/high |
-| [T-302](T-302-corrections-de-l-arbre-detail-residuel.md) | Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets | 0 | REVUE | opus/high |
-| [T-413](T-413-pyproject-ruff-shellcheck.md) | `pyproject.toml` (ruff, mypy, pytest, coverage), 13 bogues ruff à 0 et shellcheck sur les 59 scripts | 0 | REVUE | sonnet/high |
-| [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 1 | REVUE | sonnet/high |
-| [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 2 | REVUE + MANDAT | sonnet/high |
-| [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 2 | REVUE | sonnet/high |
-| [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 2 | REVUE | sonnet/high |
-| [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 3 | MANDAT | sonnet/high |
+| [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 0 | REVUE | sonnet/high |
+| [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 1 | REVUE + MANDAT | sonnet/high |
+| [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 1 | REVUE | sonnet/high |
+| [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 1 | REVUE | sonnet/high |
+| [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 2 | MANDAT | sonnet/high |
 
 ### Liste figée du pilote (20 tickets, aucun autre lancement pendant le pilote)
 
 | Ticket | Titre | Étape | Classe | Modèle | Dépend de (hors S0) |
 |---|---|---|---|---|---|
-| [T-002](T-002-ci-k3d.md) | CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue | S1 | REVUE | sonnet/high | — |
+| T-002 | (absent ou non `todo`) | | | | |
 | [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | S1 | AUTONOME | sonnet/high | T-414 |
 | [T-332](T-332-commande-unique-tools-dev-check-static.md) | Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée | S1 | AUTONOME | sonnet/high | — |
 | [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | S3 | AUTONOME | sonnet/high | — |
 | [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | S1 | AUTONOME | sonnet/high | — |
 | [T-337](T-337-definition-of-done-executable-verify-par.md) | Definition of done exécutable : `verify:` par critère et `done.py` avec preuve datée | S1 | REVUE | sonnet/high | T-332 |
 | [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | S1 | AUTONOME | sonnet/high | T-214 |
-| [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenChoreo) | S1 | AUTONOME | sonnet/high | T-002, T-332 |
-| [T-216](T-216-ci-registre.md) | CI extensible par registre de suites | S1 | REVUE | sonnet/high | T-002 |
+| [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenChoreo) | S1 | AUTONOME | sonnet/high | T-332 |
+| [T-216](T-216-ci-registre.md) | CI extensible par registre de suites | S1 | REVUE | sonnet/high | — |
 | [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | S2 | AUTONOME | sonnet/high | T-332 |
 | [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | S1 | REVUE | sonnet/high | T-332 |
 | [T-340](T-340-protocole-d-echec-et-de-reprise.md) | Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d'échec, skill `resume-ticket` | S1 | AUTONOME | sonnet/high | T-337 |
-| [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | S1 | REVUE | opus/high | T-002 |
+| [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | S1 | REVUE | opus/high | — |
 | [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md) | Sous-agents de projet : `reviewer` (lecture seule) et `ci-triager` | S1 | REVUE | sonnet/high | T-337 |
-| [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | Revue indépendante automatique avant merge (modèle différent, lecture seule) | S1 | REVUE | sonnet/high | T-002 |
+| [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | Revue indépendante automatique avant merge (modèle différent, lecture seule) | S1 | REVUE | sonnet/high | — |
 | [T-314](T-314-dispatcher-planifie-cron-15-min-et.md) | Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission | S1 | REVUE | sonnet/high | — |
 | [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle | S1 | AUTONOME | sonnet/high | T-314 |
-| [T-072](T-072-app-status-schema.md) | Schéma `app-status.v1` et `_checks` en sortie JSON stable | S1 | AUTONOME | sonnet/high | — |
-| [T-025](T-025-classe-donnees.md) | Classe de donnée dans le contrat et labels `data-class` (G8) | I1 | AUTONOME | sonnet/high | T-002, T-072, T-214 |
-| [T-074](T-074-retrait-thunderid.md) | Retirer ThunderID du contrat et des capacités ; Authentik seul | I2 | AUTONOME | sonnet/high | T-025, T-072, T-365 |
+| T-072 | (absent ou non `todo`) | | | | |
+| [T-025](T-025-classe-donnees.md) | Classe de donnée dans le contrat et labels `data-class` (G8) | I1 | AUTONOME | sonnet/high | T-214 |
+| [T-074](T-074-retrait-thunderid.md) | Retirer ThunderID du contrat et des capacités ; Authentik seul | I2 | AUTONOME | sonnet/high | T-025, T-365 |
 
 Après le pilote : activation du cron T-314, puis [T-315](T-315-merge-automatique-sous-conditions-app-de.md) (S1), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) (S1), [T-006](T-006-mcp-cloudflare-access.md) (S1).
 
@@ -97,8 +94,8 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 
 | Étape | haiku | sonnet | opus | humain |
 |---|---|---|---|---|
-| S0 | 2 | 11 | 1 | 1 |
-| S1 | 0 | 37 | 3 | 0 |
+| S0 | 2 | 8 | 0 | 1 |
+| S1 | 0 | 35 | 3 | 0 |
 | S2 | 1 | 4 | 3 | 0 |
 | S3 | 0 | 13 | 0 | 0 |
 | PORTE | 0 | 0 | 1 | 0 |
@@ -114,67 +111,61 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | I8 | 0 | 3 | 0 | 0 |
 | FINAL | 0 | 0 | 5 | 0 |
 
-## S0 — MVP — S0 minimal du pilote 24 h (garde de fuite, ADR, exécutant, dispatcher, PAUSE, réglages) (15 tickets)
+## S0 — MVP — S0 minimal du pilote 24 h (garde de fuite, ADR, exécutant, dispatcher, PAUSE, réglages) (11 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-413](T-413-pyproject-ruff-shellcheck.md) | `pyproject.toml` (ruff, mypy, pytest, coverage), 13 bogues ruff à 0 et shellcheck sur les 59 scripts | 0 | ci | REVUE | sonnet/high | oui | 62 |
-| [T-430](T-430-rulesets-as-code.md) | Rulesets as-code : tools/github/apply.sh (--check/--apply) et main-dev.json alignés sur l'ADR-0002 | 0 | gouvernance | REVUE | sonnet/high | oui | 44 |
-| [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | 0 | ci | REVUE | sonnet/high | oui | 19 |
-| [T-302](T-302-corrections-de-l-arbre-detail-residuel.md) | Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets | 0 | gouvernance | REVUE | opus/high |  | 5 |
+| [T-414](T-414-cliquet-maintenabilite.md) | Cliquet de maintenabilité `tools/quality/check.py` + `baseline.json` (seuils durs sur le code neuf) | 0 | ci | REVUE | sonnet/high | oui | 57 |
+| [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 0 | ci | REVUE | sonnet/high | oui | 17 |
+| [T-431](T-431-reglages-depot-actions-securite.md) | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 0 | gouvernance | REVUE + MANDAT | sonnet/high | oui | 5 |
+| [T-301](T-301-reecriture-de-l-historique-et-purge.md) | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | 0 | gouvernance | MANDAT | humain/none |  | 0 |
 | [T-434](T-434-gestes-organisation-paul.md) | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | 0 | gouvernance | MANDAT | haiku/medium |  | 0 |
-| [T-414](T-414-cliquet-maintenabilite.md) | Cliquet de maintenabilité `tools/quality/check.py` + `baseline.json` (seuils durs sur le code neuf) | 1 | ci | REVUE | sonnet/high | oui | 57 |
-| [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 1 | ci | REVUE | sonnet/high | oui | 17 |
-| [T-431](T-431-reglages-depot-actions-securite.md) | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 1 | gouvernance | REVUE + MANDAT | sonnet/high | oui | 5 |
-| [T-301](T-301-reecriture-de-l-historique-et-purge.md) | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | 1 | gouvernance | MANDAT | humain/none |  | 0 |
-| [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 2 | agents-harness | REVUE | sonnet/high | oui | 5 |
-| [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 2 | ci | REVUE + MANDAT | sonnet/high | oui | 4 |
-| [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 2 | agents | REVUE | sonnet/high |  | 4 |
-| [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | 2 | gouvernance | AUTONOME | haiku/medium |  | 0 |
-| [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 3 | gouvernance | MANDAT | sonnet/high |  | 3 |
-| [T-433](T-433-protection-tags.md) | Protection des tags : core-baseline et v* (ruleset de type tag) | 4 | gouvernance | REVUE + MANDAT | sonnet/high |  | 0 |
+| [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 1 | agents-harness | REVUE | sonnet/high | oui | 5 |
+| [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 1 | ci | REVUE + MANDAT | sonnet/high | oui | 4 |
+| [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 1 | agents | REVUE | sonnet/high |  | 4 |
+| [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | 1 | gouvernance | AUTONOME | haiku/medium |  | 0 |
+| [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 2 | gouvernance | MANDAT | sonnet/high |  | 3 |
+| [T-433](T-433-protection-tags.md) | Protection des tags : core-baseline et v* (ruleset de type tag) | 3 | gouvernance | REVUE + MANDAT | sonnet/high |  | 0 |
 
-## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (40 tickets)
+## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (38 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-002](T-002-ci-k3d.md) | CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue | 0 | ci | REVUE | sonnet/high | oui | 75 |
 | [T-001](T-001-integrer-pr8-security-bundle.md) | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0 | socle-oke | REVUE | opus/high | oui | 56 |
-| [T-072](T-072-app-status-schema.md) | Schéma `app-status.v1` et `_checks` en sortie JSON stable | 0 | preuve | AUTONOME | sonnet/high | oui | 47 |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | Mesures du homelab avant dimensionnement (lecture seule) | 0 | hybride | AUTONOME + MANDAT | sonnet/high | oui | 47 |
 | [T-332](T-332-commande-unique-tools-dev-check-static.md) | Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée | 0 | dev-factory | AUTONOME | sonnet/high | oui | 12 |
 | [T-041](T-041-context-engineering.md) | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0 | connaissance | REVUE | sonnet/high | oui | 4 |
+| [T-216](T-216-ci-registre.md) | CI extensible par registre de suites | 0 | ci | REVUE | sonnet/high | oui | 1 |
+| [T-418](T-418-tests-outils-backlog.md) | Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui) | 0 | backlog | AUTONOME | sonnet/high | oui | 1 |
 | [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | 0 | connaissance | AUTONOME | sonnet/high | oui | 0 |
+| [T-435](T-435-k3d-ok-requis.md) | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | 0 | ci | REVUE | sonnet/high |  | 37 |
+| [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | 0 | securite | REVUE | opus/high |  | 0 |
 | [T-450](T-450-nettoyage-gitleaksignore.md) | Nettoyer la dette de .gitleaksignore (129 emplacements) et le vider | 0 | ci | REVUE | sonnet/high |  | 0 |
+| [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 53 |
 | [T-366](T-366-bundle-multi-arch-installateur-lab.md) | Bundle de sécurité multi-arch et installateur pour le cluster lab | 1 | socle-lab | REVUE + MANDAT | opus/high | oui | 40 |
 | [T-003](T-003-env-development-promotion.md) | Environment `development`, promotion vers `production`, pins de release par environnement | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 31 |
 | [T-337](T-337-definition-of-done-executable-verify-par.md) | Definition of done exécutable : `verify:` par critère et `done.py` avec preuve datée | 1 | backlog-outils | REVUE | sonnet/high | oui | 4 |
 | [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | 1 | agents-harness | REVUE | sonnet/high | oui | 3 |
-| [T-216](T-216-ci-registre.md) | CI extensible par registre de suites | 1 | ci | REVUE | sonnet/high | oui | 1 |
-| [T-418](T-418-tests-outils-backlog.md) | Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui) | 1 | backlog | AUTONOME | sonnet/high | oui | 1 |
+| [T-314](T-314-dispatcher-planifie-cron-15-min-et.md) | Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission | 1 | ci | REVUE | sonnet/high | oui | 2 |
+| [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | Revue indépendante automatique avant merge (modèle différent, lecture seule) | 1 | ci | REVUE | sonnet/high | oui | 1 |
 | [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md) | Environnement Claude Code cloud « openchoreo-lab-agent » : script d'installation, réseau, secrets réseau | 1 | agents-harness | AUTONOME + MANDAT | sonnet/high | oui | 0 |
 | [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenChoreo) | 1 | tests-fixtures | AUTONOME | sonnet/high | oui | 0 |
+| [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md) | Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi par chemins | 1 | ci | AUTONOME + REVUE | sonnet/high | oui | 0 |
 | [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md) | VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops) | 1 | hybride | MANDAT | sonnet/high |  | 46 |
-| [T-435](T-435-k3d-ok-requis.md) | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | 1 | ci | REVUE | sonnet/high |  | 37 |
-| [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | 1 | securite | REVUE | opus/high |  | 0 |
-| [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 2 | contrat-appgen | AUTONOME | sonnet/high | oui | 53 |
-| [T-314](T-314-dispatcher-planifie-cron-15-min-et.md) | Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission | 2 | ci | REVUE | sonnet/high | oui | 2 |
+| [T-437](T-437-durcir-executant-environnement.md) | Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteurs | 1 | ci | REVUE + MANDAT | sonnet/high |  | 1 |
+| [T-436](T-436-labels-formulaires-issues.md) | Labels as-code et formulaires d'issue : issues vides coupées, proposition de ticket | 1 | gouvernance | REVUE | sonnet/high |  | 0 |
+| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | 2 | contrat-appgen | AUTONOME | sonnet/high | oui | 46 |
 | [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md) | Sous-agents de projet : `reviewer` (lecture seule) et `ci-triager` | 2 | agents-harness | REVUE | sonnet/high | oui | 2 |
-| [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | Revue indépendante automatique avant merge (modèle différent, lecture seule) | 2 | ci | REVUE | sonnet/high | oui | 1 |
-| [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md) | Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi par chemins | 2 | ci | AUTONOME + REVUE | sonnet/high | oui | 0 |
+| [T-412](T-412-verificateur-prior-art-ci.md) | Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop | 2 | ci | REVUE | sonnet/high | oui | 2 |
+| [T-315](T-315-merge-automatique-sous-conditions-app-de.md) | Merge automatique sous conditions : auto-merge natif pendant le dev, App de merge en FINAL | 2 | gouvernance | REVUE + MANDAT | sonnet/high | oui | 0 |
+| [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle | 2 | agents | AUTONOME | sonnet/high | oui | 0 |
 | [T-340](T-340-protocole-d-echec-et-de-reprise.md) | Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d'échec, skill `resume-ticket` | 2 | agents-harness | AUTONOME | sonnet/high | oui | 0 |
 | [T-362](T-362-isolation-reseau-de-la-vm-lab.md) | Isolation réseau de la VM lab (UniFi, pare-feu) | 2 | hybride | MANDAT | sonnet/high |  | 45 |
-| [T-437](T-437-durcir-executant-environnement.md) | Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteurs | 2 | ci | REVUE + MANDAT | sonnet/high |  | 1 |
-| [T-436](T-436-labels-formulaires-issues.md) | Labels as-code et formulaires d'issue : issues vides coupées, proposition de ticket | 2 | gouvernance | REVUE | sonnet/high |  | 0 |
-| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | 3 | contrat-appgen | AUTONOME | sonnet/high | oui | 46 |
+| [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) | ntfy seulement si nécessaire et résumé quotidien unique | 2 | observabilité | AUTONOME + MANDAT | sonnet/high |  | 0 |
 | [T-363](T-363-socle-de-la-plateforme-sur-la.md) | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stockage) | 3 | socle-lab | REVUE + MANDAT | sonnet/high | oui | 44 |
-| [T-412](T-412-verificateur-prior-art-ci.md) | Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop | 3 | ci | REVUE | sonnet/high | oui | 2 |
-| [T-315](T-315-merge-automatique-sous-conditions-app-de.md) | Merge automatique sous conditions : auto-merge natif pendant le dev, App de merge en FINAL | 3 | gouvernance | REVUE + MANDAT | sonnet/high | oui | 0 |
-| [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle | 3 | agents | AUTONOME | sonnet/high | oui | 0 |
+| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | 3 | agents | AUTONOME + MANDAT | sonnet/high | oui | 1 |
 | [T-415](T-415-sous-agent-prior-art-scout.md) | Sous-agent `prior-art-scout` (lecture seule, budget borné) | 3 | agents-harness | REVUE | sonnet/high |  | 1 |
-| [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) | ntfy seulement si nécessaire et résumé quotidien unique | 3 | observabilité | AUTONOME + MANDAT | sonnet/high |  | 0 |
 | [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md) | OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab | 4 | hybride | REVUE + MANDAT | sonnet/high | oui | 39 |
-| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | 4 | agents | AUTONOME + MANDAT | sonnet/high | oui | 1 |
 | [T-419](T-419-retrait-seed-py.md) | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | 4 | backlog | AUTONOME | sonnet/high |  | 0 |
 | [T-005](T-005-preuve-runtime-auto.md) | Preuve runtime automatique après sync (Job PostSync + publication) | 5 | preuve | AUTONOME + REVUE + MANDAT | sonnet/high | oui | 29 |
 | [T-006](T-006-mcp-cloudflare-access.md) | Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitHub (lecture seule) | 6 | acces-mcp | AUTONOME | sonnet/high |  | 0 |
@@ -184,26 +175,26 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
 | [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | 1 | dev-factory | AUTONOME | sonnet/high |  | 0 |
-| [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 2 | usine | AUTONOME | haiku/medium |  | 0 |
-| [T-423](T-423-reduire-complexite-argo-guard.md) | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | 2 | frontière-argo | REVUE | opus/high |  | 0 |
-| [T-417](T-417-typage-mypy.md) | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | 3 | contrat-appgen | AUTONOME | sonnet/high |  | 0 |
+| [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 1 | usine | AUTONOME | haiku/medium |  | 0 |
+| [T-423](T-423-reduire-complexite-argo-guard.md) | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | 1 | frontière-argo | REVUE | opus/high |  | 0 |
+| [T-417](T-417-typage-mypy.md) | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | 2 | contrat-appgen | AUTONOME | sonnet/high |  | 0 |
 | [T-062](T-062-lab-platform-auto.md) | `lab-platform` en synchronisation automatique (hors lab-pg) | 4 | socle-oke | REVUE | opus/high | oui | 1 |
 | [T-212](T-212-backend-plain.md) | Backend « plain » d'appgen (spike 3 jours) : chart commun + Argo par cluster | 4 | moteur-plain | AUTONOME | sonnet/high |  | 4 |
+| [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | 4 | usine | AUTONOME | sonnet/high |  | 0 |
 | [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR d'agents | 5 | socle-oke | REVUE | opus/high | oui | 0 |
-| [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | 5 | usine | AUTONOME | sonnet/high |  | 0 |
 
 ## S3 — MVP — golden path, intentions, banc et étalonnage (13 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
+| [T-070](T-070-garde-contrat.md) | Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/` | 0 | ci | REVUE | sonnet/high | oui | 0 |
 | [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | 0 | migration | AUTONOME | sonnet/high |  | 2 |
 | [T-010](T-010-probes-quota.md) | Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4) | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 13 |
-| [T-070](T-070-garde-contrat.md) | Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/` | 1 | ci | REVUE | sonnet/high | oui | 0 |
 | [T-140](T-140-cost-1.md) | Registre des limites free tier (valeur, date, source) et lint de péremption | 1 | coût | AUTONOME + MANDAT | sonnet/high |  | 4 |
+| [T-421](T-421-indicateurs-quality-v1.md) | Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine | 1 | observabilité | AUTONOME | sonnet/high |  | 0 |
+| [T-439](T-439-essai-dependency-review.md) | Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation) | 1 | supply-chain | REVUE | sonnet/high |  | 0 |
 | [T-040](T-040-recettes-apps.md) | Catalogue de recettes d'apps homelab vérifiées | 2 | intention | AUTONOME | sonnet/high |  | 7 |
 | [T-004](T-004-garde-frugalite-dev.md) | Check CI de frugalité du dev | 2 | contrat-appgen | AUTONOME | sonnet/high |  | 1 |
-| [T-421](T-421-indicateurs-quality-v1.md) | Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine | 2 | observabilité | AUTONOME | sonnet/high |  | 0 |
-| [T-439](T-439-essai-dependency-review.md) | Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation) | 2 | supply-chain | REVUE | sonnet/high |  | 0 |
 | [T-368](T-368-garde-fous-de-capacite-du-homelab.md) | Garde-fous de capacité du homelab : quotas lab-*, alertes RAM/NVMe/Tctl, budget versionné | 4 | coût | AUTONOME + REVUE | sonnet/high |  | 0 |
 | [T-031](T-031-placement-coupure.md) | Test de reprise et « jour 2 » du cluster lab (critère C4 révisé) | 5 | hybride | AUTONOME + MANDAT | sonnet/high |  | 5 |
 | [T-043](T-043-plan-compte-rendu.md) | Gabarits de plan et de compte rendu dans `add-app` | 6 | intention | AUTONOME | sonnet/high | oui | 8 |
@@ -230,8 +221,8 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-025](T-025-classe-donnees.md) | Classe de donnée dans le contrat et labels `data-class` (G8) | 3 | contrat-appgen | AUTONOME | sonnet/high |  | 13 |
-| [T-069](T-069-vap-data-class.md) | VAP : refus de DELETE des données `irreplaceable` (G8) | 4 | securite | REVUE | opus/high |  | 0 |
+| [T-025](T-025-classe-donnees.md) | Classe de donnée dans le contrat et labels `data-class` (G8) | 2 | contrat-appgen | AUTONOME | sonnet/high |  | 13 |
+| [T-069](T-069-vap-data-class.md) | VAP : refus de DELETE des données `irreplaceable` (G8) | 3 | securite | REVUE | opus/high |  | 0 |
 | [T-026](T-026-sauvegardes.md) | Sauvegarde des bases : CNPG → R2 par préfixe | 5 | donnees | AUTONOME + MANDAT | sonnet/high |  | 7 |
 | [T-075](T-075-sauvegarde-volumes.md) | Sauvegarde des volumes : spike VolSync/restic vs Velero/Kopia | 5 | donnees | AUTONOME | sonnet/high |  | 5 |
 | [T-012](T-012-verify-contrat.md) | `spec.verify` : vérification fonctionnelle déclarée (G10) | 6 | contrat-appgen | AUTONOME | sonnet/high |  | 5 |
@@ -250,10 +241,10 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 |---|---|---|---|---|---|---|---|
 | [T-183](T-183-ids-4.md) | Matrice identité × secrets exécutable et inventaire des identités | 0 | identité-secrets/inventaire | AUTONOME + REVUE | opus/high |  | 10 |
 | [T-060](T-060-residu-kgateway.md) | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | 1 | socle-oke | REVUE | sonnet/high |  | 10 |
+| [T-074](T-074-retrait-thunderid.md) | Retirer ThunderID du contrat et des capacités ; Authentik seul | 3 | contrat-appgen | AUTONOME | sonnet/high |  | 5 |
 | [T-185](T-185-ids-6.md) | Transport des blueprints vers l'Authentik de production (ConfigMap dédié) | 4 | identité-secrets/authentik | MANDAT | opus/high | oui | 6 |
 | [T-022](T-022-spike-openbao.md) | OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill | 4 | secrets | AUTONOME + MANDAT | sonnet/high |  | 21 |
 | [T-164](T-164-ai-5.md) | Identité des agents : client Authentik par agent, inventaire et coupe-circuit | 4 | identité-agents | REVUE + MANDAT | opus/high |  | 6 |
-| [T-074](T-074-retrait-thunderid.md) | Retirer ThunderID du contrat et des capacités ; Authentik seul | 4 | contrat-appgen | AUTONOME | sonnet/high |  | 5 |
 | [T-184](T-184-ids-5.md) | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | 5 | identité-secrets/openbao | AUTONOME + REVUE | opus/high | oui | 9 |
 | [T-186](T-186-ids-7.md) | Golden path utilisateur : arrivée et départ (users/<id>.yaml) | 5 | identité-secrets/utilisateurs | REVUE | opus/high |  | 0 |
 | [T-189](T-189-ids-10.md) | `identity.mode: oidc | proxy | none` avec client OIDC généré et secret dans OpenBao | 6 | identité-secrets/apps | REVUE | opus/high | oui | 4 |
@@ -274,8 +265,8 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 1 | observabilité | AUTONOME | sonnet/high | oui | 4 |
-| [T-107](T-107-obs-7.md) | Escalade ntfy : contact points, script de notification, route différée | 2 | remédiation | AUTONOME + MANDAT | sonnet/high |  | 2 |
+| [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0 | observabilité | AUTONOME | sonnet/high | oui | 4 |
+| [T-107](T-107-obs-7.md) | Escalade ntfy : contact points, script de notification, route différée | 1 | remédiation | AUTONOME + MANDAT | sonnet/high |  | 2 |
 | [T-101](T-101-obs-1.md) | Collecte : Alloy de kube-ops réutilisé, budget de séries, sondes depuis healthPath | 2 | observabilité | AUTONOME | sonnet/high |  | 0 |
 | [T-109](T-109-obs-9.md) | Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane | 5 | plateforme-santé | AUTONOME + MANDAT | sonnet/high |  | 0 |
 | [T-106](T-106-obs-6.md) | Pont alerte -> agent : workflow remediate, dédoublonnage, budget, disjoncteur | 6 | remédiation | REVUE + MANDAT | sonnet/high | oui | 1 |
@@ -287,10 +278,10 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-120](T-120-upg-1.md) | Renovate durci : catégories, âge minimal, limites de PR, dashboard, labels | 1 | renovate | REVUE | sonnet/high | oui | 9 |
-| [T-122](T-122-upg-3.md) | upgrade-gate : classification exécutable des PR de montée | 2 | porte | AUTONOME + REVUE | sonnet/high | oui | 7 |
+| [T-120](T-120-upg-1.md) | Renovate durci : catégories, âge minimal, limites de PR, dashboard, labels | 0 | renovate | REVUE | sonnet/high | oui | 9 |
+| [T-122](T-122-upg-3.md) | upgrade-gate : classification exécutable des PR de montée | 1 | porte | AUTONOME + REVUE | sonnet/high | oui | 7 |
+| [T-123](T-123-upg-4.md) | Garde d'image : arm64, registre autorisé, signature cosign, provenance | 2 | supply-chain | AUTONOME | sonnet/high |  | 3 |
 | [T-132](T-132-upg-13.md) | Runbook et preflight de montée Kubernetes OKE (nœud unique) | 2 | k8s-os | AUTONOME + MANDAT | sonnet/high |  | 0 |
-| [T-123](T-123-upg-4.md) | Garde d'image : arm64, registre autorisé, signature cosign, provenance | 3 | supply-chain | AUTONOME | sonnet/high |  | 3 |
 | [T-124](T-124-upg-5.md) | Porte de merge des apps : dev, preuve PASS, promotion automatique, revert automatique | 6 | porte | AUTONOME + REVUE | sonnet/high | oui | 1 |
 | [T-125](T-125-upg-6.md) | File sérialisée des montées en development et garde de budget | 7 | porte | AUTONOME | sonnet/high |  | 0 |
 | [T-131](T-131-upg-12.md) | Montées stateful : précondition de sauvegarde fraîche et restauration prouvée | 8 | stateful | AUTONOME | sonnet/high |  | 0 |
@@ -332,11 +323,11 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-121](T-121-upg-2.md) | Renovate auto-hébergé avec GitHub App (CI déclenchée, postUpgradeTasks) | 2 | renovate | REVUE + MANDAT | opus/high | oui | 0 |
-| [T-402](T-402-garde-image-multi-arch.md) | Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64) | 4 | contrat-appgen | AUTONOME | opus/high |  | 2 |
+| [T-121](T-121-upg-2.md) | Renovate auto-hébergé avec GitHub App (CI déclenchée, postUpgradeTasks) | 1 | renovate | REVUE + MANDAT | opus/high | oui | 0 |
+| [T-402](T-402-garde-image-multi-arch.md) | Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64) | 3 | contrat-appgen | AUTONOME | opus/high |  | 2 |
 | [T-405](T-405-rotation-complete-final.md) | Rotation complète des secrets et identités du registre (FINAL) | 4 | gouvernance | MANDAT | opus/high |  | 1 |
-| [T-443](T-443-attestations-provenance-releases.md) | Attestations de provenance et releases immuables (quand une image ou une archive est construite) | 5 | supply-chain | REVUE | opus/high |  | 1 |
-| [T-401](T-401-revue-securite-finale.md) | Revue de sécurité finale de la plateforme (prérequis de « plateforme finie ») | 6 | gouvernance | MANDAT | opus/high |  | 0 |
+| [T-443](T-443-attestations-provenance-releases.md) | Attestations de provenance et releases immuables (quand une image ou une archive est construite) | 4 | supply-chain | REVUE | opus/high |  | 1 |
+| [T-401](T-401-revue-securite-finale.md) | Revue de sécurité finale de la plateforme (prérequis de « plateforme finie ») | 5 | gouvernance | MANDAT | opus/high |  | 0 |
 
 ## Gelés jusqu'à la porte ou bloqués par un déclencheur (47)
 
