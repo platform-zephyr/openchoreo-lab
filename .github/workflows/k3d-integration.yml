@@ -189,6 +189,16 @@ jobs:
             kubectl get clusterdataplane,environment,project,projectreleasebinding,releasebinding,resource,resourcereleasebinding -A -o wide
             echo --- describe PRB
             kubectl describe projectreleasebinding -A
+            echo --- describe RRB
+            kubectl describe resourcereleasebinding -A
+            echo --- secrets ESO et PushSecret
+            kubectl get pushsecret,externalsecret,secretstore,clustersecretstore -A -o wide
+            kubectl describe pushsecret -A
+            echo --- logs lab-pg
+            for p in $(kubectl -n lab-pg get pods -o name 2>/dev/null); do
+              echo "### $p"; kubectl -n lab-pg logs "$p" --all-containers --tail=80 || true
+              kubectl -n lab-pg logs "$p" --all-containers --previous --tail=80 2>/dev/null || true
+            done
             echo --- logs plans
             for ns in openchoreo-control-plane openchoreo-data-plane; do
               for d in $(kubectl -n "$ns" get deploy -o name); do
