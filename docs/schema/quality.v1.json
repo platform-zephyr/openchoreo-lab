@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quality.v1",
+  "title": "Indicateurs de maintenabilité d'un merge sur main (T-421)",
+  "description": "Une ligne JSON par merge dans docs/state/quality-history.jsonl. Compteurs, SHA et chemins de fichiers : aucune valeur secrète. Un indicateur informe, il ne bloque pas.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "date", "commit", "cc_max", "cc_p95", "functions_gt_15", "files_gt_400_lines", "ruff_errors", "mypy_errors", "coverage"],
+  "properties": {
+    "schema": {"const": "quality.v1"},
+    "date": {"type": "string", "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"},
+    "commit": {"type": "string", "pattern": "[0-9a-f]{40}|unknown"},
+    "cc_max": {"type": "integer", "minimum": 0},
+    "cc_p95": {"type": "integer", "minimum": 0},
+    "functions_gt_15": {"type": "integer", "minimum": 0},
+    "files_gt_400_lines": {"type": "integer", "minimum": 0},
+    "ruff_errors": {"type": "integer", "minimum": 0},
+    "mypy_errors": {"type": "integer", "minimum": 0},
+    "coverage": {
+      "type": ["object", "null"],
+      "required": ["appgen_percent", "total_percent"],
+      "properties": {
+        "appgen_percent": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "total_percent": {"type": "number", "minimum": 0, "maximum": 100}
+      }
+    },
+    "shellcheck_issues": {"type": ["integer", "null"], "minimum": 0},
+    "docstring_percent": {"type": "number", "minimum": 0, "maximum": 100},
+    "touched_files": {"type": "array", "description": "Fichiers .py touchés par le merge, pour relier la qualité au taux de revert et aux itérations CI par fichier."}
+  }
+}

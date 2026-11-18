@@ -1,9 +1,13 @@
 """Tests de tools/backlog/check.py : un dépôt factice par cas (tmp), aucun accès réseau ni cluster."""
+import contextlib
+import functools
 import importlib.util
+import io
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SPEC = importlib.util.spec_from_file_location(
     "backlog_check", Path(__file__).resolve().parents[2] / "tools" / "backlog" / "check.py")
@@ -166,6 +170,68 @@ class CheckTest(unittest.TestCase):
     def test_entete_absent(self):
         self.add("# pas d'en-tête\n")
         self.assertTrue(self.run_check().errors)
+
+    def test_champ_de_base_absent(self):
+        for key in ("title", "lane", "velocity", "depends_on"):
+            with self.subTest(key=key):
+                self.add(ticket(**{key: None}))
+                self.assertError(f"CHAMP-ABSENT T-900 {key}", self.run_check())
+
+    def test_nom_de_fichier_different_de_id(self):
+        self.add(ticket(), "T-123-autre.md")
+        self.assertError("NOM-FICHIER", self.run_check())
+        (self.root / "backlog" / "T-123-autre.md").unlink()
+        self.add(ticket(), "T-900.md")  # nom exact sans slug : accepté
+        self.assertEqual(self.run_check().errors, [])
+
+    def test_etape_tiret_acceptee_seulement_si_dropped(self):
+        self.add(ticket(status="dropped", stage="—", model=None, effort=None))
+        self.assertEqual(self.run_check().errors, [])
+        self.add(ticket(status="todo", stage="—"))
+        self.assertError("ÉTAPE-INCONNUE", self.run_check())
+
+    def test_model_absent_tolere_hors_ticket_actif(self):
+        self.add(ticket(status="done", criteria="- [x] a", model=None, effort=None))
+        self.assertEqual(self.run_check().errors, [])
+
+    def test_ticket_done_sans_perimetre_accepte(self):
+        self.add(ticket(status="done", scope="", criteria="- [x] a"))
+        self.assertEqual(self.run_check().errors, [])
+
+    def test_adr_via_fichier_sans_slug(self):
+        (self.root / "docs" / "adr" / "0002.md").write_text("# ADR\n")
+        self.add(ticket(adr="[0002]"))
+        self.assertEqual(self.run_check().errors, [])
+
+    def test_noyau_et_sous_chemins(self):
+        core = check.core_paths(self.root)
+        self.assertIn("platform/authz", core)
+        self.assertIn("docs/adr", core)
+        self.assertTrue(check.touches_core(["docs/**/*.md"], core))  # préfixe `docs` contient docs/adr
+        self.assertTrue(check.touches_core(["platform/authz/x.yaml"], core))
+        self.assertTrue(check.touches_core(["**/*.md"], core))  # préfixe vide
+        self.assertFalse(check.touches_core(["apps/demo"], core))
+
+    def test_noyau_sans_codeowners(self):
+        (self.root / ".github" / "CODEOWNERS").unlink()
+        self.assertEqual(check.core_paths(self.root), check.EXTRA_CORE)
+
+    def test_parse_list_et_split_scope(self):
+        self.assertEqual(check.parse_list('["T-1", \'T-2\']'), ["T-1", "T-2"])
+        self.assertEqual(check.parse_list("[]"), [])
+        self.assertEqual(check.split_scope("a/b (x, y), c/d"), ["a/b (x, y)", "c/d"])
+
+    def test_main_code_de_sortie(self):
+        for text, code in [(ticket(), 0), (ticket(model="claude-unknown"), 1)]:
+            with self.subTest(code=code):
+                self.add(text)
+                buf = io.StringIO()
+                # `main()` appelle check() avec la racine du vrai dépôt : on la redirige vers la racine factice.
+                fake = functools.partial(check.check, self.root)
+                with mock.patch.object(check, "check", fake), contextlib.redirect_stdout(buf):
+                    rc = check.main()
+                self.assertEqual(rc, code)
+                self.assertIn("erreurs", buf.getvalue())
 
     def test_depot_reel_sans_erreur(self):
         r = check.check(check.ROOT)

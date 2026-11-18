@@ -1,0 +1,1 @@
+{"cc_max": 65, "cc_p95": 9, "commit": "585161e6b17ea0e3a64fc82ed7c2ba8b053e8eda", "coverage": null, "date": "2026-11-18T14:45:37Z", "docstring_percent": 18.5, "files_gt_400_lines": 4, "functions_gt_15": 23, "mypy_errors": 12, "ruff_errors": 224, "schema": "quality.v1", "shellcheck_issues": 135, "touched_files": ["tests/backlog/test_status.py", "tools/backlog/status.py"]}

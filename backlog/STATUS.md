@@ -6,11 +6,11 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 16 |
-| `todo` | 135 |
+| `in-progress` | 17 |
+| `todo` | 131 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 22 |
+| `done` | 25 |
 | `dropped` | 27 |
 | **Total** | **248** |
 
@@ -27,6 +27,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | 4/4 | (ligne « Reste » absente) | — |
 | [T-332](T-332-commande-unique-tools-dev-check-static.md) | Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée | 1/3 | Reste aussi : empreintes linux-amd64 dans `toolchain.lock` (VM cloud x86_64) ; les contrôles de T-303, T-306, T-330, T-331 s'activent seuls (NOT_TESTED tant que leur script manque). | — |
 | [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 3/4 | Premier critère ouvert : essai daté : un agent traite un ticket `complet` de test et rend une section valide (preuve STATIC dans la PR) | — |
+| [T-421](T-421-indicateurs-quality-v1.md) | Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine | 0/2 | Premier critère ouvert : schéma JSON versionné, une ligne par merge sur `main`, aucune valeur secrète | — |
 | [T-451](T-451-ci-speed-csafeloader-alerte-post-merge.md) | CI plus rapide : CSafeLoader dans appgen et argo_guard, alerte des échecs k3d post-merge | 3/5 | Premier critère ouvert : un run `ci` réel montre `platform` et `appgen` sous 30 s, et le premier `hit` du cache des charts de `platform-render` (lien du run) | — |
 | [T-452](T-452-reactiver-les-suites-k3d-quand-et-comment.md) | Réactiver les suites k3d : quand et sous quelle forme (étude) | 2/3 | Reste ouvert : critère 3 (le `schedule` nocturne) à la fin de S1. | — |
 | [T-458](T-458-ancre-gitops-k3d-obsolete.md) | Réparer l'ancre obsolète de gitops-k3d (correction G1 déjà dans main) | 0/3 | Premier critère ouvert : ancre réparée, la suite va au-delà de T-DEPLOY | — |
@@ -53,15 +54,11 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-041](T-041-context-engineering.md) | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
 | [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
 | [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
-| [T-183](T-183-ids-4.md) | Matrice identité × secrets exécutable et inventaire des identités | 0/3 | — |
 | [T-201](T-201-data-2.md) | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
 | [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 0/4 | — |
 | [T-215](T-215-pack-identite.md) | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
-| [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | 0/3 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
-| [T-418](T-418-tests-outils-backlog.md) | Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui) | 0/2 | — |
 | [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
-| [T-421](T-421-indicateurs-quality-v1.md) | Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine | 0/2 | — |
 | [T-431](T-431-reglages-depot-actions-securite.md) | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 0/5 | — |
 | [T-434](T-434-gestes-organisation-paul.md) | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | 0/3 | — |
 | [T-469](T-469-triage-echecs-suite-k3d.md) | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
@@ -127,7 +124,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-168](T-168-ai-9.md) | Bac d'exécution éphémère (agent-sandbox) pour le code lancé par les agents | T-160 (todo), T-163 (todo) | — |
 | [T-171](T-171-ai-12.md) | Premier service IA de référence (LibreChat ou équivalent) de bout en bout | T-162 (todo), T-163 (todo), T-165 (todo), T-166 (todo), T-404 (todo) | — |
 | [T-181](T-181-ids-2.md) | Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao | T-022 (todo), T-190 (todo), T-404 (todo) | — |
-| [T-184](T-184-ids-5.md) | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | T-022 (todo), T-183 (todo) | — |
+| [T-184](T-184-ids-5.md) | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | T-022 (todo) | — |
 | [T-185](T-185-ids-6.md) | Transport des blueprints vers l'Authentik de production (ConfigMap dédié) | T-404 (todo) | — |
 | [T-186](T-186-ids-7.md) | Golden path utilisateur : arrivée et départ (users/<id>.yaml) | T-185 (todo) | — |
 | [T-189](T-189-ids-10.md) | `identity.mode: oidc \| proxy \| none` avec client OIDC généré et secret dans OpenBao | T-074 (todo), T-184 (todo), T-185 (todo) | — |
@@ -174,7 +171,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-412](T-412-verificateur-prior-art-ci.md) | Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop | T-411 (in-progress), T-331 (in-progress), T-332 (in-progress) | — |
 | [T-415](T-415-sous-agent-prior-art-scout.md) | Sous-agent `prior-art-scout` (lecture seule, budget borné) | T-411 (in-progress), T-341 (todo) | — |
 | [T-417](T-417-typage-mypy.md) | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | T-214 (todo) | — |
-| [T-419](T-419-retrait-seed-py.md) | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-418 (todo), T-214 (todo) | — |
+| [T-419](T-419-retrait-seed-py.md) | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-214 (todo) | — |
 | [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | T-412 (todo), T-322 (todo) | — |
 | [T-423](T-423-reduire-complexite-argo-guard.md) | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | T-001 (todo) | — |
 | [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | T-431 (todo) | — |
@@ -198,13 +195,16 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-061](T-061-aligner-mission-adr.md) | Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote) | 2026-11-18 | `PR #54` | — |
 | [T-061b](T-061b-acter-autres-adr.md) | Acter les autres ADR (0001, 0003-0006, 0010-0013, 0020, 0022, 0023, 0024) et les amendements du consensus n°2 (T-061b) | 2026-11-18 | `PR #54` | — |
 | [T-072](T-072-app-status-schema.md) | Schéma `app-status.v1` et `_checks` en sortie JSON stable | 2026-11-18 | `PR #8` | — |
+| [T-183](T-183-ids-4.md) | Matrice identité × secrets exécutable et inventaire des identités | 2026-11-18 | — | — |
 | [T-302](T-302-corrections-de-l-arbre-detail-residuel.md) | Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets | 2026-11-18 | — | — |
 | [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 2026-11-18 | `PR #63`, `backlog/evidence/T-304-essai-executant-2026-11-18.md` | — |
 | [T-306](T-306-registre-identites.md) | Registre des identités et secrets `docs/state/identities.yaml` (noms, rôles, dates, jamais de valeur) | 2026-11-18 | — | — |
+| [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | 2026-11-18 | — | — |
 | [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 2026-11-18 | — | — |
 | [T-330](T-330-reglages-de-projet-claude-settings-json.md) | Réglages de projet `.claude/settings.json` : permissions deny, mode dontAsk, sandbox, plafonds de sortie | 2026-11-18 | — | — |
 | [T-413](T-413-pyproject-ruff-shellcheck.md) | `pyproject.toml` (ruff, mypy, pytest, coverage), 13 bogues ruff à 0 et shellcheck sur les 59 scripts | 2026-11-18 | — | — |
 | [T-414](T-414-cliquet-maintenabilite.md) | Cliquet de maintenabilité `tools/quality/check.py` + `baseline.json` (seuils durs sur le code neuf) | 2026-11-18 | — | — |
+| [T-418](T-418-tests-outils-backlog.md) | Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui) | 2026-11-18 | — | — |
 | [T-430](T-430-rulesets-as-code.md) | Rulesets as-code : tools/github/apply.sh (--check/--apply) et main-dev.json alignés sur l'ADR-0002 | 2026-11-18 | — | — |
 | [T-450](T-450-nettoyage-gitleaksignore.md) | Nettoyer la dette de .gitleaksignore (129 emplacements) et le vider | 2026-11-18 | — | — |
 | [T-453](T-453-combler-ecart-check-static-ci.md) | Combler l'écart check --static ↔ CI (SL-1) | 2026-11-18 | — | — |
