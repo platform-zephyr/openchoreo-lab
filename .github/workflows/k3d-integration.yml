@@ -74,6 +74,7 @@ jobs:
           - suite: vap
             cluster: lab-sec-vap
             bootstrap: none
+            audit: "true"
             timeout: 25
             command: tests/vap/run.sh --label ci
             evidence: tests/vap/evidence
@@ -81,6 +82,7 @@ jobs:
           - suite: argo-escalation
             cluster: argo-esc
             bootstrap: none
+            audit: "false"
             timeout: 30
             command: tests/argo-escalation/run.sh all
             evidence: tests/argo-escalation/evidence
@@ -88,6 +90,7 @@ jobs:
           - suite: k3d
             cluster: openchoreo
             bootstrap: oc
+            audit: "false"
             timeout: 60
             command: tests/k3d/run.sh
             evidence: tests/k3d/evidence
@@ -95,10 +98,14 @@ jobs:
           - suite: gitops-k3d
             cluster: gitops
             bootstrap: oc
+            audit: "false"
             timeout: 60
             command: tests/gitops-k3d/run.sh all
             evidence: tests/gitops-k3d/evidence
     name: k3d ${{ matrix.suite }}
+    env:
+      # Les suites appellent `docker exec` sur le nœud k3d : contexte Docker local du runner (pas Colima du Mac).
+      DOCKER_CONTEXT: default
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -142,9 +149,19 @@ jobs:
         run: |
           set -euo pipefail
           start=$SECONDS
+          # vap : journal d'audit de l'API server (validation_failure) attendu par tests/vap/run.sh.
+          audit=()
+          if [ "${{ matrix.audit }}" = "true" ]; then
+            audit=(
+              --volume "$GITHUB_WORKSPACE/tests/vap/audit-policy.yaml:/etc/lab/audit-policy.yaml@server:0"
+              --k3s-arg "--kube-apiserver-arg=audit-log-path=/var/log/lab-audit.log@server:0"
+              --k3s-arg "--kube-apiserver-arg=audit-policy-file=/etc/lab/audit-policy.yaml@server:0"
+            )
+          fi
           k3d cluster create "${{ matrix.cluster }}" \
             --image "$K3S_IMAGE" --agents 0 \
             --k3s-arg "--disable=traefik@server:0" \
+            "${audit[@]}" \
             --wait --timeout 300s
           # Le cluster est lu par les suites via KUBECONFIG (chemin par défaut de k3d, jamais le Mac).
           echo "KUBECONFIG=$HOME/.kube/config" >> "$GITHUB_ENV"

@@ -66,7 +66,9 @@ helm upgrade --install kgateway "$ctl" -n openchoreo-control-plane -f "$V/kgatew
 
 log "6. OpenChoreo control plane"
 tgz="$(fetch_chart openchoreo-control-plane "$OPENCHOREO_CP_CHART" "$OPENCHOREO_VERSION" "$OPENCHOREO_CP_TGZ_SHA256")"
-helm upgrade --install openchoreo-control-plane "$tgz" -n openchoreo-control-plane -f "$V/openchoreo-control-plane.yaml" --wait --timeout 10m
+# Portail Backstage désactivé comme `install.sh --step 6` (son Secret backstage-secrets n'existe pas en CI).
+helm upgrade --install openchoreo-control-plane "$tgz" -n openchoreo-control-plane -f "$V/openchoreo-control-plane.yaml" \
+  --set backstage.enabled=false --wait --timeout 10m
 wait_deploys openchoreo-control-plane
 copy_gateway_ca
 kubectl -n openchoreo-control-plane rollout restart deployment/controller-manager deployment/openchoreo-api deployment/cluster-gateway
