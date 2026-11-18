@@ -23,7 +23,7 @@ PreToolUse Bash (refus des commandes cluster, curl|sh, --no-verify, push forcé)
 .claude/hooks/, .claude/settings.json (section hooks), tests/hooks/
 
 ## Critères de fin
-- [ ] tests/hooks/ : une entrée JSON par cas (autorisé et refusé) ; code de sortie attendu ; exécuté en CI (étape `hooks` de tools/dev/check livrée, 106 cas PASS ; reste à l'appeler depuis ci.yaml, autre agent)
+- [x] tests/hooks/ : une entrée JSON par cas (autorisé et refusé) ; code de sortie attendu ; exécuté en CI (job `hooks` de ci.yaml, dans `needs` de `ci-ok` ; étape `hooks` de tools/dev/check ; 106 cas PASS en local 2026-11-18)
 - [x] le hook Stop bloque sur un yaml invalide et laisse finir sur un dépôt propre (preuve de session : backlog/evidence/T-331-hooks-2026-11-18.md)
 - [x] aucun hook `prompt` ou `agent` pour une règle sans exception
 - [x] chaque hook s'exécute en moins de 5 s sur un dépôt propre (mesure datée : même fichier)

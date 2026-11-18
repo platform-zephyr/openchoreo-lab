@@ -444,10 +444,31 @@ jobs:
           git fetch --no-tags origin main
           tools/factory/run-ticket.sh check-trailers origin/main..HEAD
 
+  hooks:
+    # Hooks Claude Code (T-331) : un cas JSON par entrée, autorisé et refusé (tests/hooks/run.sh). Job sans `if` : un job
+    # `skipped` ferait échouer ci-ok. Dépendances : jq (image du runner, sinon apt), yamllint et PyYAML pour les cas d édition.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Outils (versions figees)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt "yamllint==1.38.0"
+          command -v jq >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq jq; }
+      - name: Hooks (cas autorises et refuses)
+        run: tests/hooks/run.sh
+      - name: Hooks vs settings.json
+        run: tests/hooks/settings.test.sh
+
   ci-ok:
     # Check requis par la protection de branche : echoue si un job amont n'est pas en success.
     if: always()
-    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, platform-render, release-history, dev-factory, backlog, lint-code, quality, quality-coverage, agent-trailers]
+    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, platform-render, release-history, dev-factory, backlog, lint-code, quality, quality-coverage, agent-trailers, hooks]
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Agregation
