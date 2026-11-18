@@ -2,6 +2,10 @@
 # Non bloquant : le check requis reste `ci-ok` (ci.yaml). Agrégat propre : `k3d-ok`.
 # Aucun secret : ni `secrets.*` ni jeton. Actions épinglées par SHA ; binaires épinglés par sha256.
 # Plan pour le rendre requis : docs/CI-K3D.md §6.
+# Avant le merge (pull_request) : seulement si le label `k3d` est posé ou si la PR touche ce que les suites testent
+# (platform/, tools/oke/, tools/k3d/, tools/appgen/, tests/{k3d,vap,argo-escalation,gitops-k3d}/, ce workflow).
+# Après le merge (push sur main, chaque commit, sans annulation) et chaque nuit : toutes les suites, toujours. Un échec
+# post-merge rend le commit rouge sur main (docs/research/CI-SPEED.md §4). Sur PR, un push annule le run obsolète.
 # Pas de déclencheur merge_group : ce workflow n'est pas un check requis, la file de fusion n'a donc pas à l'attendre
 # (seul `ci-ok` de ci.yaml l'est). Ajouter `merge_group` seulement quand `k3d-ok` deviendra requis (docs/CI-K3D.md §6).
 # Limite : le chart OpenChoreo est installé SANS security bundle (docs/SECURITY-BUNDLE.md) ; un PASS ne prouve pas
@@ -14,13 +18,18 @@ on:
   workflow_dispatch:
   pull_request:
     types: [opened, reopened, synchronize, labeled, unlabeled]
+  push:
+    branches: [main]
+  schedule:
+    # Chaque nuit (UTC), hors heure pleine : dérive des charts, images et dépendances amont sans nouveau commit.
+    - cron: "17 3 * * *"
 
 permissions:
   contents: read
 
 concurrency:
   group: k3d-integration-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # Binaires linux-arm64 (runners ubuntu-24.04-arm). Empreintes = fichiers de checksums publiés par chaque projet
@@ -36,8 +45,9 @@ env:
 
 jobs:
   gate:
-    # Décide si la suite tourne : workflow_dispatch, label `k3d`, ou fichiers touchés sous platform/, tools/oke/,
-    # tools/k3d/, tools/appgen/, tests/ (ou ce workflow).
+    # Décide si la suite tourne : tout événement hors PR (workflow_dispatch, push main, schedule), label `k3d`, ou
+    # fichiers touchés sous platform/, tools/oke/, tools/k3d/, tools/appgen/, tests/{k3d,vap,argo-escalation,
+    # gitops-k3d}/ (ou ce workflow). Les autres tests/ (appgen, backlog, leak-guard...) sont couverts par ci-ok.
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     outputs:
@@ -61,7 +71,7 @@ jobs:
           elif jq -e 'index("k3d") != null' <<<"$LABELS" >/dev/null; then
             run=true
           elif git diff --name-only "$BASE" "$HEAD" \
-              | grep -Eq '^(platform/|tools/oke/|tools/k3d/|tools/appgen/|tests/|\.github/workflows/k3d-integration\.yml$)'; then
+              | grep -Eq '^(platform/|tools/(oke|k3d|appgen)/|tests/(k3d|vap|argo-escalation|gitops-k3d)/|\.github/workflows/k3d-integration\.yml$)'; then
             run=true
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"

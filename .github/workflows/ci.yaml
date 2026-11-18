@@ -11,9 +11,11 @@ on:
 permissions:
   contents: read
 
+# Un nouveau push sur une PR annule le run obsolete de la meme PR. Sur main (push) et dans la file de fusion
+# (merge_group, ref unique par groupe), aucun run n'est annule : chaque commit fusionne garde son verdict post-merge.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # Binaires linux-arm64 (runners ubuntu-24.04-arm). gitleaks/actionlint: empreintes = digests publies des releases GitHub ; kubeconform: empreinte calculee localement (pas de digest publie). Ne pas modifier sans revoir les empreintes.
@@ -194,11 +196,10 @@ jobs:
   platform:
     # Garde-fous de platform/** et tools/oke/** (revue PR #8, P1 ; flux A2, docs/ARGO-ESCALATION.md) : regles Argo
     # (argo_guard + cas negatifs, dont la separation par source lab-apps/lab-platform/lab-authz/lab-root),
-    # gardes de uninstall.sh (kubectl/helm factices), rendus Helm epingles (PSA, 0 PVC/LB, images par digest),
-    # kubeconform -strict, yamllint, shellcheck. Aucun secret, aucun cluster. docs/CI-PLATFORM-CHECKS.md.
+    # cellule restreinte, yamllint, shellcheck. Aucun secret, aucun cluster. docs/CI-PLATFORM-CHECKS.md.
+    # Les rendus Helm, le security bundle, les gardes uninstall.sh et kubeconform sont dans `platform-render`,
+    # en parallele (docs/research/CI-SPEED.md) ; les deux jobs sont dans ci-ok.
     runs-on: ubuntu-24.04-arm
-    env:
-      OKE_PHASEB_STATE: ${{ github.workspace }}/../phaseb
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -206,25 +207,13 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-      - name: Outils (versions figees, archives verifiees par sha256)
+      - name: Outils (versions figees)
         run: |
           set -euo pipefail
           python3 -m pip install --disable-pip-version-check "yamllint==1.38.0" "PyYAML==6.0.2"
-          cd "$RUNNER_TEMP"
-          curl -fsSLO "https://get.helm.sh/helm-${HELM_VERSION}-linux-arm64.tar.gz"
-          echo "${HELM_SHA256}  helm-${HELM_VERSION}-linux-arm64.tar.gz" | sha256sum -c -
-          tar -xzf "helm-${HELM_VERSION}-linux-arm64.tar.gz" linux-arm64/helm
-          sudo install -m 0755 linux-arm64/helm /usr/local/bin/helm
-          curl -fsSLO "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-arm64.tar.gz"
-          echo "${KUBECONFORM_SHA256}  kubeconform-linux-arm64.tar.gz" | sha256sum -c -
-          tar -xzf kubeconform-linux-arm64.tar.gz kubeconform
-          sudo install -m 0755 kubeconform /usr/local/bin/kubeconform
-          curl -fsSLo yq_linux_arm64 "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_arm64"
-          echo "${YQ_SHA256}  yq_linux_arm64" | sha256sum -c -
-          sudo install -m 0755 yq_linux_arm64 /usr/local/bin/yq
-          # Outils de la distribution : ShellCheck (image du runner, sinon apt) et jq (image du runner).
+          # ShellCheck : image du runner, sinon apt.
           command -v shellcheck >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck; }
-          helm version --short && kubeconform -v && yq --version && shellcheck --version | head -2 && jq --version
+          shellcheck --version | head -2
       - name: yamllint (platform hors component-types, tools/oke, tests/argo-guard)
         run: |
           yamllint -c tools/appgen/yamllint.yaml platform/install platform/authz platform/policies platform/data \
@@ -240,10 +229,54 @@ jobs:
         run: tests/argo-guard/run.sh
       # Les tests sur VRAI Argo (tests/argo-escalation/run.sh) exigent un cluster jetable : hors CI, preuve
       # archivee dans tests/argo-escalation/RESULTS.md (docs/ARGO-ESCALATION.md).
-      - name: Security bundle - refus fail-closed (sans cluster)
-        run: tests/security-bundle/run.sh
       - name: Cellule restreinte - RoleBinding borne + label egress-isolated (statique)
         run: tests/cell-cpt/run.sh
+
+  platform-render:
+    # Rendus Helm epingles (PSA, 0 PVC/LB, images par digest), security bundle fail-closed, gardes de uninstall.sh
+    # (kubectl/helm factices), kubeconform -strict. Aucun secret, aucun cluster. Separe de `platform` pour la duree
+    # (docs/research/CI-SPEED.md) ; memes commandes, meme ordre.
+    runs-on: ubuntu-24.04-arm
+    env:
+      OKE_PHASEB_STATE: ${{ github.workspace }}/../phaseb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      # Cache des archives de charts et du manifest Gateway API, cle = versions.env. Sans risque d'empoisonnement :
+      # fetch_chart et fetch_gw_crds (tools/oke/lib.sh) reverifient le sha256 epingle de chaque fichier, cache ou non.
+      # Le cache de main est lisible par les PR ; celui d'une PR ne l'est que par elle-meme (portee par ref).
+      - name: Cache des charts epingles (sha256 reverifie a chaque usage)
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ${{ github.workspace }}/../phaseb/charts
+            ${{ github.workspace }}/../phaseb/gateway-api-*.yaml
+          key: phaseb-charts-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('platform/install/versions.env') }}
+      - name: Outils (versions figees, archives verifiees par sha256)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check "PyYAML==6.0.2"
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "https://get.helm.sh/helm-${HELM_VERSION}-linux-arm64.tar.gz"
+          echo "${HELM_SHA256}  helm-${HELM_VERSION}-linux-arm64.tar.gz" | sha256sum -c -
+          tar -xzf "helm-${HELM_VERSION}-linux-arm64.tar.gz" linux-arm64/helm
+          sudo install -m 0755 linux-arm64/helm /usr/local/bin/helm
+          curl -fsSLO "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-arm64.tar.gz"
+          echo "${KUBECONFORM_SHA256}  kubeconform-linux-arm64.tar.gz" | sha256sum -c -
+          tar -xzf kubeconform-linux-arm64.tar.gz kubeconform
+          sudo install -m 0755 kubeconform /usr/local/bin/kubeconform
+          curl -fsSLo yq_linux_arm64 "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_arm64"
+          echo "${YQ_SHA256}  yq_linux_arm64" | sha256sum -c -
+          sudo install -m 0755 yq_linux_arm64 /usr/local/bin/yq
+          # jq : image du runner.
+          helm version --short && kubeconform -v && yq --version && jq --version
+      - name: Security bundle - refus fail-closed (sans cluster)
+        # Reutilise les .tgz OpenChoreo du cache (option prevue par le script ; sha256 reverifie par fetch_chart).
+        run: SECURITY_BUNDLE_CHART_CACHE="$OKE_PHASEB_STATE/charts" tests/security-bundle/run.sh
       - name: Rendus Helm epingles + psa_check + 0 PVC/LB/image sans digest
         run: tools/oke/render-check.sh
       - name: Gardes uninstall.sh (kubectl et helm factices, CRD rendues)
@@ -337,7 +370,7 @@ jobs:
   ci-ok:
     # Check requis par la protection de branche : echoue si un job amont n'est pas en success.
     if: always()
-    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, release-history, dev-factory, backlog, lint-code]
+    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, platform-render, release-history, dev-factory, backlog, lint-code]
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Agregation
