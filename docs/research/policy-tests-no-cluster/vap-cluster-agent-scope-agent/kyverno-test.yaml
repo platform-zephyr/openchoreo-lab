@@ -1,0 +1,16 @@
+# Prototype T-463 : VAP-1 (identité cluster-agent) testée sans cluster. Limite : `kyverno test` rejoue des
+# CREATE de corps complets ; pas de sous-ressource (exec, status), de CONNECT ni d'oldObject.
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: vap-cluster-agent-scope-agent}
+policies: [../../../../platform/policies/vap-cluster-agent-scope.yaml]
+resources: [resources.yaml]
+userinfo: userinfo.yaml
+results:
+  - {policy: lab-cluster-agent-scope, resources: [cm-inside, dp-ok, rb-ok], result: pass}
+  # R1 cluster-scoped, R2 hors dp-*, R3 PSA, R4 RoleBinding, R5 Role.
+  - {policy: lab-cluster-agent-scope, resources: [cr-evil], kind: ClusterRole, result: fail}
+  - {policy: lab-cluster-agent-scope, resources: [cm-outside], kind: ConfigMap, result: fail}
+  - {policy: lab-cluster-agent-scope, resources: [dp-privileged, kube-evil], kind: Namespace, result: fail}
+  - {policy: lab-cluster-agent-scope, resources: [rb-admin], kind: RoleBinding, result: fail}
+  - {policy: lab-cluster-agent-scope, resources: [role-in-cell], kind: Role, result: fail}

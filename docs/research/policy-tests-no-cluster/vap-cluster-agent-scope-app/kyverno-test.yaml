@@ -1,0 +1,11 @@
+# Prototype T-463 : VAP-1 R1/R2b pour une identité applicative (SA de dp-demo).
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: vap-cluster-agent-scope-app}
+policies: [../../../../platform/policies/vap-cluster-agent-scope.yaml]
+resources: [resources.yaml]
+userinfo: userinfo.yaml
+results:
+  - {policy: lab-cluster-agent-scope, resources: [own-ns], kind: ConfigMap, result: pass}
+  - {policy: lab-cluster-agent-scope, resources: [other-ns], kind: ConfigMap, result: fail}
+  - {policy: lab-cluster-agent-scope, resources: [dp-new], kind: Namespace, result: fail}

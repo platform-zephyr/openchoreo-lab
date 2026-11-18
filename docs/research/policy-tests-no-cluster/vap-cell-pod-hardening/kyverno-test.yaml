@@ -1,0 +1,11 @@
+# Prototype T-463 : VAP-2 native testée sans cluster par `kyverno test` (le fichier du dépôt, non copié).
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata: {name: vap-cell-pod-hardening}
+policies: [../../../../platform/policies/vap-cell-pod-hardening.yaml]
+resources: [resources.yaml]
+results:
+  - {policy: lab-cell-pod-hardening, resources: [ok-digest], kind: Pod, result: pass}
+  - {policy: lab-cell-pod-hardening, resources: [bad-tag, bad-priv, bad-hostpath, bad-hostnet, bad-init-tag], kind: Pod, result: fail}
+  # Hors dp-* et lab-pg : matchConditions non remplies, la VAP ne s'applique pas.
+  - {policy: lab-cell-pod-hardening, resources: [hostnet-outside-scope], kind: Pod, result: skip}
