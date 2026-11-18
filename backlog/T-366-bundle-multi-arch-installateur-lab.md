@@ -4,7 +4,7 @@ title: "Bundle de sécurité multi-arch et installateur pour le cluster lab"
 status: todo
 phase: P0
 adr: [0003, 0020]
-depends_on: [T-001, T-061, T-061b]
+depends_on: [T-001, T-061, T-061b, T-488]
 class: REVUE + MANDAT
 velocity: true
 lane: socle-lab
@@ -30,3 +30,5 @@ security/bundle.lock, tools/oke/security-bundle.sh, tools/lab/install.sh, docs/S
 
 ## Notes
 Décision 4 (consensus n°2 et arbitrages de Paul, 2026-11-18). MANDAT : publication dans le dépôt privé du bundle et lecture du package. Aucun détail de la faille dans ce dépôt public.
+
+Retardé par ADR-0025 (2026-11-18) : dépend de la porte 1 (T-488) ; le bundle arm64 suffit au banc sur OKE et sur un MacBook Apple Silicon.

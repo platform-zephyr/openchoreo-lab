@@ -1,10 +1,10 @@
 ---
 id: T-211
-title: "Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04)"
+title: "Porte 2 « exploitation hybride » : mesurer C2, C3, C4, C7 et la règle de routage, décision de Paul"
 status: todo
 phase: P1
-adr: [0020]
-depends_on: [T-031, T-044, T-050, T-061, T-061b, T-212, T-364]
+adr: [0020, 0025]
+depends_on: [T-031, T-044, T-050, T-061, T-061b, T-212, T-364, T-488]
 class: MANDAT
 velocity: false
 lane: gouvernance
@@ -14,28 +14,29 @@ effort: high
 routing: R1-sensible
 github_issue: null
 ---
-# T-211 — Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04)
+# T-211 — Porte 2 « exploitation hybride » : C2, C3, C4, C7, règle de routage et décision de Paul
 
 ## Intention
-Rapport daté des critères C1-C7 (ADR-0020 amendé par l'arbitrage Fable) et décision adopter/abandonner, avec les règles en cas d'échec d'une voie. Seuils proposés par défaut, ajustables par Paul avant la mesure.
+Après une porte 1 positive (T-488, ADR-0025), mesurer ce que la porte 1 ne prouve pas : coût et jour 2 sur la VM lab amd64, couverture du catalogue kube-ops, règle de routage des agents entre OpenChoreo et kube-ops. Décision adopter/abandonner avant toute migration d'app. Seuils proposés par défaut, ajustables par Paul avant la mesure.
 
 ## Périmètre de fichiers
-docs/review/, docs/adr/0020-porte-adoption-openchoreo.md
+docs/review/, docs/adr/0020-porte-adoption-openchoreo.md, docs/adr/0025-validation-en-deux-portes.md
 
 ## Critères de fin
 - [ ] décision de Paul consignée dans ADR-0020
 - [ ] tickets `deferred` dégelés ou `dropped` selon la décision
 - [ ] emplacement d'Authentik décidé par Paul (repris de T-213)
-- [ ] D11 tranché le 2026-11-18 : CP sur la VM lab ; le rapport dit que la porte évalue OpenChoreo en mono-cluster (ADR-0020 amendé)
-- [ ] C1 à C7 mesurés avec preuves
-- [ ] C2 différentiel : surcoût d'OpenChoreo par rapport au plain sur la même VM ≤ 4 Gio de requests et ≤ 25 pods
+- [ ] emplacement du CP confirmé par Paul (D11 par défaut : VM lab) avec la mesure C2 sur OKE de T-487 et celle de la VM lab
+- [ ] C1, C5 et C6 repris du rapport de la porte 1 (T-488), sans nouvelle mesure
+- [ ] C2 différentiel : surcoût d'OpenChoreo par rapport au chemin du bras K sur la même VM ≤ 4 Gio de requests et ≤ 25 pods
+- [ ] C3 : bundle de sécurité retiré ou reconstruction scriptée amd64 ≤ 2 h par patch (T-366)
 - [ ] C4 « jour 2 » : montée d'un patch avec reconstruction du bundle amd64, et CP reconstruit depuis Git sur VM vide, apps Ready (T-031)
-- [ ] C5 chiffré : « abandonner » si le plain passe la même suite `_checks` avec ≥ 30 % de lignes et de tickets propres au moteur en moins
-- [ ] C6 : au moins 2 capacités d'OpenChoreo utilisées par les 5 intentions et absentes du plain (ex. release épinglée par environnement, cellule isolée par défaut, statut lu par API)
-- [ ] C7 : part du catalogue kube-ops couverte (T-050), mesurée pour les deux moteurs ; défaut : OpenChoreo couvre au moins autant d'apps que le plain
-- [ ] horloge par voie, en heures d'agent, depuis ses propres prérequis (OpenChoreo : T-364 `done` ; plain : T-363 `done`) ; l'attente d'un MANDAT n'est pas comptée
-- [ ] ordre de mesure croisé : 3 intentions OpenChoreo d'abord, 2 plain d'abord ; banc T-044 exécuté pour les deux moteurs
-- [ ] repli : si la VM lab n'est pas Ready le 2026-11-25, la porte est reportée (2026-12-11) ; jamais de mesure sur OKE
+- [ ] C7 : part du catalogue kube-ops couverte (T-050), mesurée pour les deux chemins
+- [ ] règle de routage « `apps/<app>/app.yaml` existe → OpenChoreo, sinon kube-ops » appliquée sans erreur par un agent sur 10 demandes mêlées
+- [ ] part des PR applicatives de kube-ops sur 90 jours qui touchent une app A, B ou C, mesurée (lecture de l'historique)
+- [ ] horloge en heures d'agent depuis T-364 `done` ; l'attente d'un MANDAT n'est pas comptée
 
 ## Notes
 Constats G1-G4 de la revue Fable, acceptés (arbitrage Fable, 2026-11-18) ; T-140 retiré des dépendances.
+
+Recadré par ADR-0025 (2026-11-18) : la porte unique devient deux portes. La règle « jamais de mesure sur OKE » est levée pour la porte 1 ; C1, C5 et C6 viennent du banc A/B (T-488). Le comparateur plain devient le chemin kube-ops reproduit (T-212).

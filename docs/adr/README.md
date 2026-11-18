@@ -34,6 +34,7 @@ exécutables, pas par des approbations.
 | [0022](0022-harness-environnements-agents.md) | Harness et environnements de dev des agents | PROPOSÉ |
 | [0023](0023-routage-des-modeles.md) | Routage des modèles par tâche (3 règles) | PROPOSÉ |
 | [0024](0024-art-anterieur-maintenabilite.md) | Art antérieur et maintenabilité (recherche bornée, cliquet de qualité) | PROPOSÉ |
+| [0025](0025-validation-en-deux-portes.md) | Validation en deux portes : valeur pour les agents sur OKE, puis exploitation hybride (amende 0003 et 0020) | PROPOSÉ |
 
 Ces ADR ne changent rien au cluster. Un ADR passe d'**PROPOSÉ** à **ACTÉ** par la fusion de la PR qui le modifie,
 approuvée par Paul (`docs/adr/` fait partie du noyau protégé, ADR-0002). Un ADR acté n'est pas réécrit : il est
