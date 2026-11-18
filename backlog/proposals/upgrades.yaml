@@ -1,0 +1,296 @@
+# Propositions de tickets — domaine UPGRADES (montées de version automatisées).
+# Recherche : docs/research/UPGRADES.md. ADR proposé : "NEW-UPGRADES" (Montées de version automatisées).
+# Les faits web non vérifiés sont marqués [E] dans la recherche ; revérifier avant de démarrer chaque ticket.
+
+- key: UPG-1
+  title: "Renovate durci : catégories, âge minimal, limites de PR, dashboard, labels"
+  phase: P0
+  adr: ["NEW-UPGRADES"]
+  depends_on: ["T-002"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "renovate"
+  scope: ".github/renovate.json"
+  intent: "Réécrire la config Renovate selon la politique par catégorie : internalChecksFilter strict, minimumReleaseAge par catégorie, prConcurrentLimit 4 et prHourlyLimit 2, dashboard, labels upgrade:<catégorie>, vulnerabilityAlerts, groupes, règle enabled false pour OpenChoreo. Fichier du noyau (ADR-0002) : Paul approuve."
+  done:
+    - "renovate-config-validator passe en CI sur la nouvelle config"
+    - "dry-run Renovate (LOG_LEVEL debug) montre la catégorie et l'âge retenus pour une image, un chart, une action, un fichier versions.env"
+    - "aucune règle d'automerge sur 0.x, noyau, ni apps stateful"
+    - "rattrapage initial en approbation par le dashboard, groupé par catégorie"
+  notes: "Absorbe le volet Renovate de T-064. Les digests d'apps restent AUTO mais passent par la porte UPG-5."
+  absorbs: ["T-064"]
+
+- key: UPG-2
+  title: "Renovate auto-hébergé avec GitHub App (CI déclenchée, postUpgradeTasks)"
+  phase: P0
+  adr: ["NEW-UPGRADES"]
+  depends_on: ["UPG-1", "T-068"]
+  class: REVUE + MANDAT
+  velocity: true
+  parallel_lane: "renovate"
+  scope: ".github/workflows/renovate.yml"
+  intent: "Exécuter Renovate en Action planifiée avec un jeton d'App GitHub, pour que les PR déclenchent la CI et que appgen render tourne en postUpgradeTasks. Créer l'App et ses secrets est un geste de Paul (nouvelle identité)."
+  done:
+    - "PR Renovate de test : ci-ok se déclenche et generated/ est régénéré dans la même PR"
+    - "geste MANDAT décrit par noms (App, permissions minimales, secret), jamais de valeur"
+    - "allowedCommands limite postUpgradeTasks à appgen"
+
+- key: UPG-3
+  title: "upgrade-gate : classification exécutable des PR de montée"
+  phase: P1
+  adr: ["NEW-UPGRADES"]
+  depends_on: ["UPG-1", "T-002", "T-072"]
+  class: AUTONOME + REVUE
+  velocity: true
+  parallel_lane: "porte"
+  scope: "tools/upgrades/, tests/upgrades/, .github/workflows/ci.yaml (câblage, REVUE)"
+  intent: "Script et check requis qui lit le diff d'une PR, déduit catégorie, type de montée, classe de donnée, registre, et refuse l'automerge si une règle « jamais » s'applique. Sortie JSON typée (règle, champ, correction)."
+  done:
+    - "un test de refus par règle transverse (0.x, noyau, stateful sans sauvegarde, registre inconnu, securityExceptions)"
+    - "check upgrade-gate requis sur main et visible dans ci-ok"
+    - "la politique est un fichier de données (tools/upgrades/policy.yaml) couvert par le noyau"
+
+- key: UPG-4
+  title: "Garde d'image : arm64, registre autorisé, signature cosign, provenance"
+  phase: P1
+  adr: ["NEW-UPGRADES", "0006"]
+  depends_on: ["UPG-3"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "supply-chain"
+  scope: "tools/upgrades/image_guard.py, tests/upgrades/"
+  intent: "Pour chaque digest nouveau : manifeste linux/arm64 présent, registre dans la liste, cosign verify si l'éditeur figure dans signed-publishers, attestation de provenance rapportée en information."
+  done:
+    - "image sans arm64 : refus typé en CI sur un cas réel ou simulé"
+    - "éditeur signé avec signature invalide : refus ; éditeur non signé : perte de l'AUTO seulement"
+    - "aucune clé ni jeton dans le dépôt (identités keyless en variables du check)"
+
+- key: UPG-5
+  title: "Porte de merge des apps : dev, preuve PASS, promotion automatique, revert automatique"
+  phase: P1
+  adr: ["NEW-UPGRADES", "0004", "0011"]
+  depends_on: ["UPG-3", "T-003", "T-005", "T-065"]
+  class: AUTONOME + REVUE
+  velocity: true
+  parallel_lane: "porte"
+  scope: ".github/workflows/, tools/appgen/ (promote --auto), tools/upgrades/"
+  intent: "Chaîner PR Renovate -> ci-ok -> merge -> release en development -> app-status RUNTIME PASS -> PR de promotion fusionnée -> preuve production ; en échec, PR de revert automatique et résumé dans la PR d'origine."
+  done:
+    - "preuve OKE datée : un bump de digest d'une app A traverse dev puis prod sans humain"
+    - "échec volontaire : revert automatique, production inchangée, fiche d'incident"
+    - "un git revert conserve les releases historiques (job release-history vert)"
+  notes: "T-065 reste en place (CronJob de santé et revert) et devient prérequis ; ce ticket n'en reprend que l'enchaînement spécifique aux montées."
+
+- key: UPG-6
+  title: "File sérialisée des montées en development et garde de budget"
+  phase: P1
+  adr: ["NEW-UPGRADES", "0004"]
+  depends_on: ["UPG-5", "T-004", "T-009"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "porte"
+  scope: ".github/workflows/, tools/upgrades/"
+  intent: "Une seule montée en dev à la fois (concurrency group), ≤ 2 apps, refus de démarrer si les requests dépassent 70 % ; le surcoût transitoire d'un rolling update sur un nœud unique est pris en compte."
+  done:
+    - "deux PR simultanées : la seconde attend, preuve dans les journaux CI"
+    - "montée refusée avec cause typée BUDGET quand le seuil est dépassé (simulé)"
+
+- key: UPG-7
+  title: "bump-versions : recalcul de versions.env (digest OCI, sha256) pour les PR Renovate"
+  phase: P1
+  adr: ["NEW-UPGRADES"]
+  depends_on: ["UPG-2"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "plateforme"
+  scope: "platform/install/versions.env, tools/oke/, tools/upgrades/bump_versions.py"
+  intent: "Annoter versions.env (# renovate:) et fournir l'outil qui recalcule digest OCI et sha256 du .tgz après un bump de version, pour que Renovate ouvre des PR complètes pour cert-manager, ESO, kgateway, Gateway API, CNPG."
+  done:
+    - "PR Renovate de test sur cert-manager : versions.env cohérent (helm pull vérifié) sans geste humain"
+    - "OPENCHOREO_* explicitement exclu (renvoie à UPG-10)"
+    - "tests de refus : digest ou sha256 incohérent"
+
+- key: UPG-8
+  title: "Répétition de montée plateforme sur k3d (N-1 vers N)"
+  phase: P1
+  adr: ["NEW-UPGRADES", "0002"]
+  depends_on: ["UPG-7", "T-002"]
+  class: AUTONOME + REVUE
+  velocity: true
+  parallel_lane: "plateforme"
+  scope: "tests/upgrade-k3d/, .github/workflows/k3d-integration.yml (REVUE)"
+  intent: "Job CI qui installe la version courante de chaque opérateur plateforme, applique la PR (version suivante), rejoue les suites vap, gitops et argo-escalation. C'est la porte des opérateurs ; l'application OKE reste au coordinateur."
+  done:
+    - "job déclenché par les PR touchant versions.env, résultat PASS/FAIL typé"
+    - "limite k3d ≠ OKE écrite dans la PR et dans le résumé de preuve"
+    - "une régression simulée (chart cassé) fait échouer le job"
+
+- key: UPG-9
+  title: "Veille des releases par agent : résumés typés et alerte de fin de support"
+  phase: P1
+  adr: ["NEW-UPGRADES", "0012"]
+  depends_on: ["UPG-1"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "veille"
+  scope: "docs/reference/versions.md, .agents/skills/release-watch/, tâche planifiée"
+  intent: "Tâche hebdomadaire et déclenchée par PR : lit releases et avis de sécurité des composants listés, écrit un résumé à champs fermés (BREAKING, CRD, dépréciation, sécurité, impact sur nos fichiers) en commentaire de PR ou issue release-watch ; alerte 60 jours avant fin de support."
+  done:
+    - "exemple réel sur une PR Renovate : résumé joint, champs fermés valides"
+    - "test : un changelog contenant une consigne d'injection n'est pas exécuté ni recopié hors champs"
+    - "docs/reference/versions.md liste composant, version, support, source de release"
+
+- key: UPG-10
+  title: "Runbook et répétition de montée OpenChoreo (une mineure, CRD, bundle)"
+  phase: P2
+  adr: ["NEW-UPGRADES"]
+  depends_on: ["UPG-8", "T-001", "UPG-9"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "openchoreo"
+  scope: "docs/runbooks/upgrade-openchoreo.md, tools/upgrades/crd_diff.py, docs/reference/openchoreo/"
+  intent: "Procédure : dernier patch, une mineure à la fois, diff des CRD, apply serveur puis helm dans l'ordre des plans, compatibilité du bundle (security/bundle.lock), mise à jour de docs/reference/openchoreo/. Répétition sur k3d ; application sur OKE par Paul/coordinateur."
+  done:
+    - "répétition k3d d'un patch de la mineure courante, PASS daté"
+    - "script de diff de CRD qui liste ajouts, retraits et changements de schéma"
+    - "check qui refuse un bump de chart sans bundle compatible (échec avant écriture)"
+    - "liste de mise à jour des pages de docs/reference/openchoreo/ faite dans la PR"
+  absorbs: ["T-064"]
+  notes: "Reprend le volet OpenChoreo de T-064. Gestes MANDAT : reconstruction du bundle, application sur OKE."
+
+- key: UPG-11
+  title: "Reconstruction du security bundle par version de chart (procédure et suivi amont)"
+  phase: P2
+  adr: ["NEW-UPGRADES"]
+  depends_on: ["UPG-10"]
+  class: MANDAT
+  velocity: false
+  parallel_lane: "openchoreo"
+  scope: "dépôt privé du bundle (hors dépôt), docs/SECURITY-BUNDLE.md (sans détail sensible)"
+  intent: "Décrire côté public, sans détail de sécurité, la liste de contrôle pour reconstruire un bundle à chaque patch/mineure et le suivi de l'amont pour le plan de retrait du bundle (migration vers chart officiel)."
+  done:
+    - "geste de Paul décrit par noms : version cible, release du bundle, mise à jour de security/bundle.lock"
+    - "veille UPG-9 signale la publication du correctif amont ; ticket de retrait créé quand elle a lieu"
+    - "aucun détail de la coordination privée dans le dépôt public"
+
+- key: UPG-12
+  title: "Montées stateful : précondition de sauvegarde fraîche et restauration prouvée"
+  phase: P2
+  adr: ["NEW-UPGRADES", "0008"]
+  depends_on: ["UPG-3", "T-026", "T-027"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "stateful"
+  scope: "tools/upgrades/, golden-paths/_checks/, tools/appgen/"
+  intent: "Le gate exige une sauvegarde < 24 h (et restauration prouvée < 7 j pour minor) lue dans app-status avant toute montée B/C, CNPG ou PostgreSQL ; majeure PostgreSQL ou migration de schéma = MANDAT avec plan de retour par restauration."
+  done:
+    - "PR de montée sur app B sans sauvegarde fraîche : refus typé FRESH_BACKUP_MISSING"
+    - "montée patch d'une base de test avec sauvegarde fraîche : passe et preuve datée"
+    - "majeure PG : le gate force MANDAT et exige le plan de restauration"
+
+- key: UPG-13
+  title: "Runbook et preflight de montée Kubernetes OKE (nœud unique)"
+  phase: P2
+  adr: ["NEW-UPGRADES", "0003", "0004"]
+  depends_on: ["T-001", "T-009"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "k8s-os"
+  scope: "docs/runbooks/upgrade-oke.md, tools/oke/preflight-upgrade.sh"
+  intent: "Procédure : plan de contrôle puis pool, versions offertes par la région, coupure planifiée du nœud unique ou surge si le quota A1 le permet, PVC OCI et domaine de disponibilité, annulation. Preflight lecture seule (santé, budget, sauvegardes, PDB bloquants, compatibilité des opérateurs avec la version cible)."
+  done:
+    - "preflight rejoué en lecture seule sur OKE, sortie PASS/FAIL datée"
+    - "durée de coupure et capacité A1 mesurées ou marquées NOT_TESTED avec raison"
+    - "liste des charts/opérateurs à compatibilité vérifiée avant la version cible"
+    - "geste MANDAT : fenêtre et exécution décrites par noms"
+  absorbs: ["T-064"]
+  notes: "Reprend le volet OKE de T-064."
+
+- key: UPG-14
+  title: "Runbook et preflight de montée Talos (homelab)"
+  phase: P3
+  adr: ["NEW-UPGRADES", "0003"]
+  depends_on: ["T-030", "UPG-13"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "k8s-os"
+  scope: "docs/runbooks/upgrade-talos.md (référence homelab-infra), tools/"
+  intent: "Procédure de montée Talos et Kubernetes par l'API day-2 avec image Factory, jamais par remplacement de disque ; sauvegarde etcd et Velero/CNPG vérifiées, image précédente, accès console ; l'agent prépare et vérifie, ne détient pas le talosconfig."
+  done:
+    - "preflight lecture seule documenté et rejouable par le coordinateur"
+    - "lien explicite vers talos-bootstrap.md de homelab-infra ; aucune divergence de procédure"
+    - "geste MANDAT décrit sans identifiant"
+
+- key: UPG-15
+  title: "Fenêtres de maintenance déclaratives (mandat ponctuel de Paul)"
+  phase: P3
+  adr: ["NEW-UPGRADES", "0002"]
+  depends_on: ["UPG-13", "UPG-14"]
+  class: REVUE + MANDAT
+  velocity: false
+  parallel_lane: "k8s-os"
+  scope: "ops/maintenance-windows.yaml, tools/upgrades/window_check.py, tests/upgrades/"
+  intent: "Fichier du noyau où Paul déclare composant, version, créneau et conditions d'abandon ; l'exécutant n'agit que dans une fenêtre existante et vérifie le preflight. Transforme un MANDAT répété en approbation unique par montée."
+  done:
+    - "test : une opération hors fenêtre ou sans preflight PASS est refusée"
+    - "ops/ ajouté au noyau de CODEOWNERS et à la liste de l'ADR-0002 (test T-007)"
+    - "une fenêtre à blanc rejouée avec preuve datée"
+
+- key: UPG-16
+  title: "Providers et outils Tofu : plan en artefact et refus des ressources payantes"
+  phase: P2
+  adr: ["NEW-UPGRADES", "0009"]
+  depends_on: ["UPG-1", "T-009"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "k8s-os"
+  scope: "règles Renovate terraform et mise, workflow de plan, politique conftest (homelab-infra ou labo)"
+  intent: "Les PR de provider ouvrent un tofu plan joint en artefact et une politique qui refuse tout changement de ressource hors Always Free ; jamais d'automerge ; verrou .terraform.lock.hcl régénéré en postUpgradeTasks."
+  done:
+    - "PR de provider de test : plan joint, lock régénéré, politique PASS ou FAIL typé"
+    - "plan avec ressource payante simulée : FAIL"
+    - "apply reste MANDAT (état Tofu)"
+
+- key: UPG-17
+  title: "OpenSSF Scorecard et durcissement des workflows du dépôt"
+  phase: P2
+  adr: ["NEW-UPGRADES"]
+  depends_on: ["UPG-1"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "supply-chain"
+  scope: ".github/workflows/scorecard.yml, .github/workflows/*"
+  intent: "Scorecard hebdomadaire sur le dépôt, résultats en SARIF ; corriger Token-Permissions et Pinned-Dependencies ; Branch-Protection faible assumé (0 approbation) et documenté."
+  done:
+    - "score publié et daté ; écarts expliqués"
+    - "tous les workflows : permissions minimales et actions épinglées par SHA"
+    - "aucun pull_request_target (vérifié par grep en CI)"
+
+- key: UPG-18
+  title: "Kyverno verifyImages pour les éditeurs qui signent (Audit puis Enforce)"
+  phase: P2
+  adr: ["NEW-UPGRADES", "0006"]
+  depends_on: ["T-020", "UPG-4"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "supply-chain"
+  scope: "platform/kyverno/"
+  intent: "Politique verifyImages limitée à la liste signed-publishers, d'abord en Audit sur OKE, puis Enforce après une période sans faux positif ; exceptions nominatives (ADR-0006 §8)."
+  done:
+    - "test de refus k3d : image signée par une mauvaise identité rejetée"
+    - "preuve OKE datée en Audit, rapport des écarts"
+    - "mémoire Kyverno mesurée contre le budget (sinon VAP seulement, voir ADR-0006)"
+
+- key: UPG-19
+  title: "Tableau de dette de versions et indicateurs de l'ADR"
+  phase: P2
+  adr: ["NEW-UPGRADES", "0011"]
+  depends_on: ["UPG-9", "UPG-5"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "veille"
+  scope: "docs/reference/versions.md, tools/upgrades/report.py"
+  intent: "Générer l'inventaire courant vs dernier, âge, horizon de support, et les indicateurs (part sans humain, délai détection vers prod, taux de revert) ; publier dans le statut périodique."
+  done:
+    - "rapport généré par CI à date fixe, sans édition à la main"
+    - "alerte quand un composant est à moins de 60 jours de la fin de support"
