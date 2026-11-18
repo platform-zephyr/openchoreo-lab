@@ -1,5 +1,5 @@
 # Objets plateforme du labo, Git -> Argo (APP-CONTRACT §5). Ils ont été appliqués une première fois par
-# tools/oke/install.sh (étapes 7, 9 et 10, dans l'ordre exigé) ; Argo les ADOPTE (ServerSideApply, tracking
+# tools/oke/install.sh (étapes 0, 7, 9 et 10, dans l'ordre exigé ; 0 = socle cluster platform/baseline/, T-494) ; Argo les ADOPTE (ServerSideApply, tracking
 # par annotation) puis en devient l'unique écrivain.
 # Prune jamais demandé (synchro manuelle sans prune) : couvre les kinds OpenChoreo (CCT, CPT, CRT,
 # ClusterTrait) dont la suppression casserait les releases, les VAP (une PR de suppression ne doit
@@ -10,7 +10,7 @@
 # install/manifests/40-openchoreo-env.yaml (Environment, DeploymentPipeline, ClusterTrait health-probes),
 # et platform/authz/ (projet dédié lab-authz : le projet lab-platform bloque tout kind Authz*).
 # Projet lab-platform (changement PRIVILÉGIÉ). Les kinds cluster-scoped sont NOMMÉS dans l'AppProject
-# (revue B2) : un fichier ajouté sous policies/ ou data/ avec un autre nom (ex. VAP baseline-* de kube-ops,
+# (revue B2) : un fichier ajouté sous policies/, data/ ou baseline/ avec un autre nom (ex. VAP ou CCNP non listée,
 # Namespace kube-system) est refusé par Argo à la synchronisation. Les kinds APPLICATIFS (Component...)
 # relèvent du projet lab-o (generated/), pas de celui-ci.
 apiVersion: argoproj.io/v1alpha1
@@ -27,7 +27,7 @@ spec:
     path: platform
     directory:
       recurse: true
-      include: "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}"
+      include: "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,baseline/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}"
   destination:
     server: https://kubernetes.default.svc
     # Destination explicite (le projet lab-platform n'a pas lab-argocd) ; chaque objet porte son namespace.

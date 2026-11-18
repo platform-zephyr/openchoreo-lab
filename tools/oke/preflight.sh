@@ -36,14 +36,23 @@ else
   warn "metrics-server absent : mesures par l'API summary du kubelet (tools/oke/measure.sh)"
 fi
 
-echo "== Baseline kube-ops #1620 attendue"
+echo "== Socle cluster (install.sh --step 0, T-494 ; copies de kube-ops #1620/#1629 sous platform/baseline/)"
 for v in baseline-pod-hardening baseline-automount-token baseline-image-digest; do
   if kubectl get validatingadmissionpolicy "$v" >/dev/null 2>&1; then ok "VAP $v"; else block "VAP $v absente"; fi
+  if kubectl get validatingadmissionpolicybinding "$v" >/dev/null 2>&1; then ok "VAPB $v"; else block "VAPB $v absente"; fi
 done
 for p in allow-egress-unisolated deny-imds; do
   if kubectl get ciliumclusterwidenetworkpolicy "$p" >/dev/null 2>&1; then ok "CCNP $p"; else block "CCNP $p absente"; fi
 done
-if kubectl -n kube-system get ds cilium >/dev/null 2>&1; then ok "Cilium présent"; else block "Cilium absent"; fi
+if ds="$(kubectl -n kube-system get ds cilium -o json 2>/dev/null)"; then
+  if jq -e '.status.desiredNumberScheduled > 0 and .status.numberReady == .status.desiredNumberScheduled' <<<"$ds" >/dev/null; then
+    ok "Cilium présent et prêt ($(jq -r '.spec.template.spec.containers[0].image | sub("@.*"; "")' <<<"$ds"))"
+  else block "Cilium présent mais pas prêt (numberReady != desiredNumberScheduled)"; fi
+  chain="$(kubectl -n kube-system get configmap cilium-config -o json 2>/dev/null \
+    | jq -r '.data | "\(.["cni-chaining-target"] // "-") \(.["cni-exclusive"] // "-")"')" || chain=""
+  if [[ "$chain" == "oci false" ]]; then ok "Cilium en chaînage OCI VCN-native (cni-chaining-target=oci, cni-exclusive=false)"
+  else block "Cilium hors chaînage OCI attendu (cilium-config : '$chain', attendu 'oci false')"; fi
+else block "Cilium absent : tools/oke/install.sh --step 0 --apply"; fi
 # Conflit C1 : la CCNP allow-all neutralise le default-deny egress des namespaces d'essai.
 ccnp="$(kubectl get ciliumclusterwidenetworkpolicy allow-egress-unisolated -o json)" || ccnp='{}'
 sel="$(jq -c '.spec.endpointSelector.matchExpressions // []' <<<"$ccnp")"
@@ -58,9 +67,10 @@ crds="$(kubectl get crd -o name)" || { block "liste des CRD illisible"; crds="";
 grep -E 'gateway\.networking\.k8s\.io|cert-manager\.io|external-secrets\.io|kgateway\.dev|openchoreo\.dev|argoproj\.io|cnpg\.io' <<<"$crds" || echo "(aucune)"
 # Inventaire « avant essai » pour uninstall.sh --delete-crds (revue I2) : écrit UNE fois, et seulement si
 # aucune étape n'a encore été appliquée (sinon il contiendrait les CRD de l'essai). Fichier local, pas le cluster.
+# L'étape 0 (socle cluster : CRD Cilium) n'en fait pas partie : ses CRD restent dans l'inventaire, donc conservées.
 mkdir -p "$STATE_DIR"
 if [[ -f "$STATE_DIR/crds-before.txt" ]]; then ok "inventaire CRD d'avant essai déjà présent ($STATE_DIR/crds-before.txt)"
-elif [[ -s "$STATE_DIR/steps.log" ]]; then warn "étapes déjà appliquées : pas d'inventaire CRD d'avant essai ; uninstall.sh --delete-crds conservera les CRD"
+elif grep -qv ' étape 0 appliquée$' "$STATE_DIR/steps.log" 2>/dev/null; then warn "étapes déjà appliquées : pas d'inventaire CRD d'avant essai ; uninstall.sh --delete-crds conservera les CRD"
 elif [[ -n "$crds" ]]; then printf '%s\n' "$crds" > "$STATE_DIR/crds-before.txt"; ok "inventaire CRD d'avant essai écrit ($STATE_DIR/crds-before.txt)"; fi
 
 echo "== Namespaces"

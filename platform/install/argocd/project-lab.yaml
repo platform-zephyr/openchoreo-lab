@@ -42,11 +42,21 @@ spec:
     - {group: openchoreo.dev, kind: ClusterResourceType, name: cnpg-lab-db}
     - {group: openchoreo.dev, kind: ClusterTrait, name: persistent-volume-claim}
     - {group: openchoreo.dev, kind: ClusterTrait, name: health-probes}
-    # VAP du labo seulement (platform/policies) ; jamais baseline-* (kube-ops).
+    # VAP du labo (platform/policies).
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cluster-agent-scope}
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cell-pod-hardening}
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cluster-agent-scope}
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cell-pod-hardening}
+    # Socle cluster OKE (T-494, platform/baseline/ : copies de kube-ops #1620/#1629, posées par install.sh
+    # --step 0) : un seul Argo sur OKE (lab-argocd), qui les adopte. Noms exacts, aucun glob.
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: baseline-pod-hardening}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: baseline-automount-token}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: baseline-image-digest}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: baseline-pod-hardening}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: baseline-automount-token}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: baseline-image-digest}
+    - {group: cilium.io, kind: CiliumClusterwideNetworkPolicy, name: deny-imds}
+    - {group: cilium.io, kind: CiliumClusterwideNetworkPolicy, name: allow-egress-unisolated}
     # Un seul Namespace : lab-pg (platform/data/lab-pg-namespace.yaml).
     - {group: "", kind: Namespace, name: lab-pg}
   namespaceResourceWhitelist:

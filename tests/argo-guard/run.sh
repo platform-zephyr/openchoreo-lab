@@ -347,5 +347,33 @@ else
   printf 'FAIL %-28s l app témoin n est pas synchronisée (%s)\n' app-temoin-synchronisee "$n_after"; fail=$((fail + 1))
 fi
 
+# 34. Socle cluster (T-494) : platform/baseline/ est synchronisé par lab-platform, mais seuls les 8 objets nommés
+#     passent. Une CCNP ou une VAP de plus (nom non listé) dans baseline/ : refus S1.
+d="$(fresh baseline-ccnp-extra)"
+cat > "$d/platform/baseline/zz-allow-all.yaml" <<'EOF2'
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata: {name: allow-all-egress}
+spec: {endpointSelector: {}, egress: [{toEntities: [all]}]}
+EOF2
+check baseline-ccnp-hors-liste refus "S1 CiliumClusterwideNetworkPolicy/allow-all-egress cluster-scoped absent .*\(lab-platform\)" "$d"
+d="$(fresh baseline-vapb-extra)"
+cat > "$d/platform/baseline/zz-vapb.yaml" <<'EOF2'
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata: {name: baseline-pod-hardening-relax}
+spec: {policyName: baseline-pod-hardening, validationActions: [Warn]}
+EOF2
+check baseline-vapb-hors-liste refus "S1 ValidatingAdmissionPolicyBinding/baseline-pod-hardening-relax cluster-scoped absent" "$d"
+# 34b. Même nom qu'un objet du socle, mais dans generated/ (PR applicative) : refus (lab-o n'a aucun kind cluster-scoped).
+d="$(fresh gen-ccnp)"
+cat > "$d/$G/zz-ccnp.yaml" <<'EOF2'
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata: {name: deny-imds}
+spec: {endpointSelector: {matchLabels: {none: none}}, egressDeny: []}
+EOF2
+check gen-ccnp-deny-imds refus "S1 CiliumClusterwideNetworkPolicy/deny-imds cluster-scoped absent .*\(lab-o\)" "$d"
+
 echo "argo-guard : $pass PASS, $fail FAIL"
 (( fail == 0 ))

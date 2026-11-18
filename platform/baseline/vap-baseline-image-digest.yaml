@@ -1,0 +1,53 @@
+# SOURCE (copie versionnée, T-494) : dépôt public SmadjaPaul/kube-ops, PR #1620,
+# commit 1ecb02f8da18ca986aa5178633b1e97c9ac4ed93, fichier k8s/components/baseline-vap/image-digest.yaml.
+# Licence MIT (NOTICE). Sous ce bloc : contenu amont NON modifié (contrôle : tools/oke/baseline-source.sh).
+# Appliqué par tools/oke/install.sh --step 0 AVANT tools/oke/preflight.sh, puis adopté par Argo CD
+# (Application lab-platform, synchro MANUELLE). Toute modification : PR ici, écart à kube-ops justifié.
+# Images par digest (@sha256:) dans les namespaces de domaine. Warn/Audit d'abord :
+# les charts (hindsight) et les images tag-based existantes doivent etre epinglees
+# avant de passer en Deny (PR de suivi).
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: baseline-image-digest
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+      - apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+      - apiGroups: ["batch"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["jobs"]
+  variables:
+    - name: podSpec
+      expression: "has(object.spec.template) ? object.spec.template.spec : object.spec"
+    - name: allContainers
+      expression: >-
+        (has(variables.podSpec.containers) ? variables.podSpec.containers : []) +
+        (has(variables.podSpec.initContainers) ? variables.podSpec.initContainers : [])
+  validations:
+    - expression: "variables.allContainers.all(c, c.image.contains('@sha256:'))"
+      message: "container images must be pinned by digest (@sha256:) in this namespace (baseline)."
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: baseline-image-digest
+spec:
+  policyName: baseline-image-digest
+  validationActions: [Warn, Audit]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [auth, backstage, hindsight]
