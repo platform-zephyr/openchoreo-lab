@@ -1,0 +1,55 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: cr-evil}
+rules: []
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: cm-outside, namespace: kube-system}
+data: {a: b}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: cm-inside, namespace: dp-demo}
+data: {a: b}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dp-ok
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    platform.smadja.dev/cell: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dp-privileged
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
+    platform.smadja.dev/cell: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: kube-evil}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: rb-ok, namespace: dp-demo}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: lab-cluster-agent-cell}
+subjects:
+  - {kind: ServiceAccount, name: cluster-agent-dataplane, namespace: openchoreo-data-plane}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: rb-admin, namespace: dp-demo}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: cluster-admin}
+subjects:
+  - {kind: ServiceAccount, name: cluster-agent-dataplane, namespace: openchoreo-data-plane}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: role-in-cell, namespace: dp-demo}
+rules: []

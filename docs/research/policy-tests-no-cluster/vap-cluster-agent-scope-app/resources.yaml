@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: own-ns, namespace: dp-demo}
+data: {a: b}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: other-ns, namespace: kube-system}
+data: {a: b}
+---
+apiVersion: v1
+kind: Namespace
+metadata: {name: dp-new}
