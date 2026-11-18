@@ -1,7 +1,7 @@
 ---
 id: T-466
 title: "Durcissement de l'usine : plafonds de tours, étape Verdict, trailers always(), branche REST, prompt, outils étroits, job report"
-status: in-progress
+status: done
 phase: P0
 adr: [0021, 0022]
 depends_on: [T-313]

@@ -1,7 +1,7 @@
 ---
 id: T-423
 title: "Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps)"
-status: in-progress
+status: done
 phase: P1
 adr: [0024]
 depends_on: [T-414, T-001]

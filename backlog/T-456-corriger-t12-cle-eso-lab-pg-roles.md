@@ -30,5 +30,3 @@ platform/resource-types/cnpg-lab-db.yaml, platform/policies/vap-cluster-agent-sc
 
 ## Notes
 Issu de l'étude T-452 (`docs/research/K3D-REACTIVATION.md` §2) et de la décision de Paul du 2026-11-18. Mode dev : merge après `ci-ok` ; preuve par dispatch manuel de `k3d-integration` sur la branche.
-
-Reste : pousser la branche, dispatcher `k3d-integration` (suites `k3d` et `vap`) et consigner T12a-e et V1-P04/P05b-e PASS datés (runtime NOT_TESTED : k3s ne démarre pas dans le conteneur de l'agent, 2026-11-18).
