@@ -1,69 +1,9 @@
 #!/usr/bin/env bash
-# Cree/met a jour le ruleset GitHub sur main : PR obligatoire, check "ci-ok" requis, revue des code owners (CODEOWNERS :
-# zones sensibles = approbation de Paul ; apps/** et generated/** libres), file de fusion native (merge_group : ci-ok rejoué sur le dernier état de main, sans rebase manuel), pas de force push, pas de suppression.
-# L'admin du depot (Paul) peut contourner en mode "pull_request" (merge explicite) ; un compte agent (role Write) ne le peut pas.
-# Par defaut : affiche la charge utile (aucun appel reseau en ecriture). Ecriture seulement avec --apply.
-# Usage : tools/apply-branch-protection.sh [--apply] [owner/repo]
-# Prerequis pour --apply : gh authentifie avec des droits d'administration du depot.
+# Enveloppe conservée pour ses citations (T-400, ADR-0002, docs) : la charge utile vit désormais dans
+# .github/rulesets/main-dev.json et le script dans tools/github/apply.sh (T-430).
+# Mode dev (arbitrage 7) : revue des code owners DÉSACTIVÉE (require_code_owner_review=false) ; bypass Admin en mode
+# pull_request. La revue des code owners revient avec main-final.json (T-400, FINAL0), jamais avant.
+# Par défaut : affiche la charge utile (aucune écriture). --apply : crée/met à jour le ruleset (jeton admin, geste de Paul).
+# Usage : tools/apply-branch-protection.sh [--apply|--check] [owner/repo]
 set -euo pipefail
-
-APPLY=0
-REPO=""
-for arg in "$@"; do
-  case "$arg" in
-    --apply) APPLY=1 ;;
-    -*) echo "option inconnue : $arg" >&2; exit 2 ;;
-    *) REPO="$arg" ;;
-  esac
-done
-if [ -z "$REPO" ]; then
-  REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
-fi
-
-PAYLOAD="$(cat <<JSON
-{
-  "name": "main-protection",
-  "target": "branch",
-  "enforcement": "active",
-  "conditions": {"ref_name": {"include": ["refs/heads/main"], "exclude": []}},
-  "bypass_actors": [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "pull_request"}],
-  "rules": [
-    {"type": "non_fast_forward"},
-    {"type": "deletion"},
-    {"type": "pull_request", "parameters": {
-      "required_approving_review_count": 0,
-      "dismiss_stale_reviews_on_push": true,
-      "require_code_owner_review": true,
-      "require_last_push_approval": false,
-      "required_review_thread_resolution": false
-    }},
-    {"type": "merge_queue", "parameters": {
-      "check_response_timeout_minutes": 30,
-      "grouping_strategy": "ALLGREEN",
-      "max_entries_to_build": 5,
-      "max_entries_to_merge": 5,
-      "merge_method": "SQUASH",
-      "min_entries_to_merge": 1,
-      "min_entries_to_merge_wait_minutes": 1
-    }},
-    {"type": "required_status_checks", "parameters": {
-      "strict_required_status_checks_policy": false,
-      "required_status_checks": [{"context": "ci-ok"}]
-    }}
-  ]
-}
-JSON
-)"
-
-if [ "$APPLY" -eq 0 ]; then
-  echo "# Dry-run pour $REPO. Relancer avec --apply pour creer le ruleset."
-  echo "$PAYLOAD"
-  exit 0
-fi
-
-ID="$(gh api "repos/$REPO/rulesets" --jq '.[] | select(.name=="main-protection") | .id')"
-if [ -n "$ID" ]; then
-  echo "$PAYLOAD" | gh api --method PUT "repos/$REPO/rulesets/$ID" --input -
-else
-  echo "$PAYLOAD" | gh api --method POST "repos/$REPO/rulesets" --input -
-fi
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/github/apply.sh" dev "$@"

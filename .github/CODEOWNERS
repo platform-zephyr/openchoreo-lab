@@ -11,6 +11,9 @@
 # CI et protection du dépôt
 /.github/ @SmadjaPaul
 /tools/apply-branch-protection.sh @SmadjaPaul
+/tools/github/ @SmadjaPaul
+/.github/rulesets/ @SmadjaPaul
+/tests/github-config/ @SmadjaPaul
 
 # Mandat, règles des agents, décisions
 /missions/ @SmadjaPaul

@@ -61,4 +61,4 @@ Le pin est la seule lecture du cluster, faite par un humain ou un opérateur, ja
 - `validate-crd.sh` : validation kubeconform du rendu (CRD OpenChoreo ; aperçus et Helm avec les schémas externes).
 - `fetch-ext-schemas.sh` : schémas JSON externes de datreeio/CRDs-catalog, commit et sha256 épinglés.
 - `yamllint.yaml` : configuration yamllint (appelée explicitement).
-- `apply-branch-protection.sh` : ruleset GitHub sur `main` (`ci-ok` requis). Dry-run par défaut, `--apply` pour créer.
+- `apply-branch-protection.sh` : enveloppe de `github/apply.sh dev` (ruleset GitHub sur `main`, `ci-ok` requis, revue des code owners désactivée en dev). Affichage par défaut, `--check` (dérive, lecture seule), `--apply` (Paul, jeton admin). Charge utile : `.github/rulesets/main-dev.json`. Test hors ligne : `tests/github-config/run.sh`.
