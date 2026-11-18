@@ -6,13 +6,13 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 18 |
+| `in-progress` | 19 |
 | `todo` | 131 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 25 |
 | `dropped` | 27 |
-| **Total** | **249** |
+| **Total** | **250** |
 
 ## En cours (`in-progress`)
 
@@ -35,6 +35,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-466](T-466-durcissement-usine-verdict-prompt.md) | Durcissement de l'usine : plafonds de tours, étape Verdict, trailers always(), branche REST, prompt… | 8/10 | Premier critère ouvert : run réel (RUNTIME, preuve datée) : un dispatch de 2 issues ou plus montre le Verdict, le contrôle des trailers après un échec de l'agent, la branche retrouvée par REST et le commentaire `report` sur… | — |
 | [T-467](T-467-garde-de-recouvrement-et-disjoncteur-de-quota.md) | Garde de recouvrement des périmètres et disjoncteur de quota Max pour le planificateur de l'usine | 4/5 | Premier critère ouvert : preuve RUNTIME datée : un dispatch de deux issues en recouvrement s'arrête au job `plan` sans job `dev` ; un | — |
 | [T-473](T-473-vue-status-du-backlog.md) | Vue d'état du backlog : fait, en cours, bloqué, prêt (backlog/STATUS.md généré) | 3/5 | Premier critère ouvert : brancher `python3 tools/backlog/status.py --check` dans la CI (job `backlog` de `ci.yaml`, REVUE, point chaud : PR dédiée, sérialisée avec T-460) et dans `tools/dev/check` / `ci-map.tsv` | — |
+| [T-474](T-474-trailers-injectes-par-hook-git.md) | Trailers de commit injectés par un hook git du workflow (Ticket, Model, Effort, Escalated-from, Cla… | 6/8 | Premier critère ouvert : run réel (RUNTIME, preuve datée) : un dispatch montre l'étape `hooks` verte, des commits de l'agent avec les 5 trailers et `check-trailers` PASS | — |
 | [T-476](T-476-score-de-priorite-et-skill-orchestrateur.md) | Score de priorité du backlog (priority.py) et skill orchestrate-backlog | 4/6 | Reste : critères 5 et 6 (branchement CI hors périmètre de cette PR, T-475 modifie `ci.yaml` en parallèle ; mesure sur lots réels). | — |
 
 ## Bloqué (`blocked`)

@@ -10,6 +10,8 @@
 # Gouverneur (T-311) : kill-switch factory/PAUSE, matrice max-parallel 3 (factory/config.yaml), dispatch manuel du pilote.
 # T-467 : disjoncteur de quota factory/LIMIT.json (tools/factory/ledger.py) et garde de recouvrement des perimetres
 # (tools/factory/overlap.py) dans plan ; re-controle et detection de la limite dans chaque job dev ; job breaker.
+# T-474 : trailers Ticket, Model, Effort, Escalated-from, Claude-Session injectes par un hook git installe hors du depot
+# (tools/factory/commit-trailers.sh) avant l'agent ; identite noreply imposee au job ; check-trailers reste le juge final.
 # Sécurité : déclencheur restreint à l'acteur propriétaire (une issue publique ne suffit pas), concurrence par issue,
 # show_full_output seulement si l'entrée `debug` est vraie (dépôt public : les journaux sont publics), pas de secret autre que le jeton Claude.
 # docs/AGENT-RUNNERS.md : mise en route.
@@ -148,6 +150,12 @@ jobs:
     concurrency:
       group: claude-agent-issue-${{ matrix.issue }}
       cancel-in-progress: false
+    # T-474 : identite noreply pour tout commit du job (l'environnement prime sur user.name/user.email de git config).
+    env:
+      GIT_AUTHOR_NAME: Claude
+      GIT_AUTHOR_EMAIL: noreply@anthropic.com
+      GIT_COMMITTER_NAME: Claude
+      GIT_COMMITTER_EMAIL: noreply@anthropic.com
     permissions:
       contents: write
       pull-requests: write
@@ -218,6 +226,7 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
       - name: Ticket et périmètre pour les hooks (AGENT_TICKET_ID, AGENT_TICKET_SCOPE ; jamais LAB_COORDINATOR_SESSION)
+        id: ticket
         if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         env:
           ISSUE: ${{ matrix.issue }}
@@ -225,18 +234,32 @@ jobs:
           # T-331 : .claude/hooks/pretool-scope-guard.sh lit ces variables. Issue sans ticket (github_issue) : pas de limite de périmètre.
           rc=0
           tools/factory/run-ticket.sh ticket-env "$ISSUE" >ticket-env.out || rc=$?
-          if [ "$rc" -eq 0 ]; then cat ticket-env.out >>"$GITHUB_ENV"; elif [ "$rc" -eq 3 ]; then echo "::warning::aucun ticket backlog pour l'issue ${ISSUE} : garde de périmètre inactive"; else exit "$rc"; fi
+          if [ "$rc" -eq 0 ]; then cat ticket-env.out >>"$GITHUB_ENV"; elif [ "$rc" -eq 3 ]; then echo "::warning::aucun ticket backlog pour l'issue ${ISSUE} : garde de périmètre inactive ; sans Ticket, le hook des trailers (T-474) refuse de s'installer"; else exit "$rc"; fi
           rm -f ticket-env.out
+      - name: Hook git des trailers hors du depot (T-474 ; Ticket, Model, Effort, Escalated-from, Claude-Session)
+        id: hooks
+        # Sans if: always() : hook non installe => etape claude sautee, Verdict rouge (agent_error).
+        if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
+        env:
+          MODEL: ${{ inputs.model }}
+          EFFORT: ${{ inputs.effort }}
+          ESCALATED_FROM: ${{ inputs.escalated_from }}
+          CLAUDE_SESSION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # Valeurs du workflow (entrees, URL du run) et AGENT_TICKET_ID (etape precedente, run-ticket.sh ticket-env) ;
+          # aucun secret. Le hook lit ses valeurs dans son repertoire, jamais dans l'environnement de l'agent.
+          d="$RUNNER_TEMP/factory-git-hooks"
+          TICKET_ID="${AGENT_TICKET_ID:-}" tools/factory/commit-trailers.sh install "$d"
+          # Repertoire et fichiers a root, sans ecriture : l'agent (utilisateur runner, sans sudo) ne peut pas les changer.
+          sudo chown -R root:root "$d"
+          git config core.hooksPath "$d"
+          # GIT_CONFIG_* prime sur les fichiers de configuration : un `git config core.hooksPath` de l'agent est sans effet.
+          { echo "GIT_CONFIG_COUNT=1"; echo "GIT_CONFIG_KEY_0=core.hooksPath"; echo "GIT_CONFIG_VALUE_0=${d}"; } >>"$GITHUB_ENV"
       - id: claude
         if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         # T-466 : l'action fait echouer son etape si num_turns depasse --max-turns, meme apres une session reussie
         # (run 44313706955 : 79 tours pour 60, PR fusionnee). Le statut du job est decide par l'etape Verdict.
         continue-on-error: true
-        env:
-          GIT_AUTHOR_NAME: Claude
-          GIT_AUTHOR_EMAIL: noreply@anthropic.com
-          GIT_COMMITTER_NAME: Claude
-          GIT_COMMITTER_EMAIL: noreply@anthropic.com
         uses: anthropics/claude-code-action@469588f42e6b1e94cd14ad09dccfeaec772ce0fd # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -253,7 +276,7 @@ jobs:
             --effort ${{ inputs.effort }}
             --max-turns ${{ needs.plan.outputs.max_turns }}
             --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3 tools/*),Bash(python3 tests/*),Bash(python3 -I tools/*),Bash(python3 -I tests/*),Bash(python3 -m unittest:*),Bash(python3 -I -m unittest:*),Bash(tools/dev/check:*),Bash(tests/*),Bash(bash tests/*),Bash(git:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh search:*),Bash(gh pr merge --auto --squash:*),Bash(factory/pause-check.sh:*),Bash(yamllint:*),Bash(shellcheck:*)"
-            --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Si factory/PAUSE existe sur origin/main, ne lance aucun merge automatique (factory/pause-check.sh) et arrête-toi. Aucun accès cluster ni secret. Ne lis jamais l'environnement (env, printenv, os.environ) : toutes les valeurs utiles sont dans ce prompt. Branche : claude/issue-${{ matrix.issue }}-<slug court>, rien d'autre. Chaque commit porte les trailers Ticket: T-NNN, Model: ${{ inputs.model }}, Effort: ${{ inputs.effort }}, Escalated-from: ${{ inputs.escalated_from }} (si non vide) et exactement Claude-Session: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} , et l'e-mail noreply@anthropic.com. Remplis le modèle .github/pull_request_template.md (statuts ; durée, tours et coût sont publiés par le workflow en commentaire : écris NOT_PROVEN) ; le corps de la PR contient Closes #${{ matrix.issue }}. Une PR par issue, périmètre de fichiers de l'issue seulement ; Mode dev (arbitrage 7) : tous les chemins du périmètre de l'issue sont autorisés, noyau compris (.github/ inclus), sauf STATE.md et backlog/ROADMAP.md ; la PR est fusionnée après ci-ok (arme l'auto-merge avec gh pr merge --auto --squash). Après l'auto-merge, termine la session : n'attends pas la CI ni la fusion. N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
+            --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Si factory/PAUSE existe sur origin/main, ne lance aucun merge automatique (factory/pause-check.sh) et arrête-toi. Aucun accès cluster ni secret. Ne lis jamais l'environnement (env, printenv, os.environ) : toutes les valeurs utiles sont dans ce prompt. Branche : claude/issue-${{ matrix.issue }}-<slug court>, rien d'autre. Un hook git (T-474) ajoute à chaque commit les trailers Ticket, Model, Effort, Escalated-from et Claude-Session et impose l'e-mail noreply@anthropic.com : ne les écris pas, ne contourne aucun hook (ni --no-verify, ni core.hooksPath, ni --author). Remplis le modèle .github/pull_request_template.md (statuts ; durée, tours et coût sont publiés par le workflow en commentaire : écris NOT_PROVEN) ; le corps de la PR contient Closes #${{ matrix.issue }}. Une PR par issue, périmètre de fichiers de l'issue seulement ; Mode dev (arbitrage 7) : tous les chemins du périmètre de l'issue sont autorisés, noyau compris (.github/ inclus), sauf STATE.md et backlog/ROADMAP.md ; la PR est fusionnée après ci-ok (arme l'auto-merge avec gh pr merge --auto --squash). Après l'auto-merge, termine la session : n'attends pas la CI ni la fusion. N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
       - name: Detection de la limite d'usage Max (T-467)
         id: quota
         if: always() && steps.claude.outputs.execution_file != ''

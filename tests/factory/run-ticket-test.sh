@@ -242,7 +242,8 @@ w = claude["with"]
 prompt = w["prompt"]
 sysp = w["claude_args"]
 assert "claude/issue-${{ matrix.issue }}-" in prompt and "Closes #${{ matrix.issue }}" in prompt
-assert "Claude-Session: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" in sysp
+# T-474 : les trailers (Claude-Session compris) sont injectes par le hook git, plus par la memoire de l'agent.
+assert "hook git (T-474)" in sysp and "--no-verify" in sysp and "core.hooksPath" in sysp
 assert "Ne lis jamais l'environnement" in sysp and "n'attends pas la CI" in sysp
 tools = sysp.split('--allowedTools "', 1)[1].split('"', 1)[0].split(",")
 assert "Bash(python3:*)" not in tools, "python3 libre interdit"
