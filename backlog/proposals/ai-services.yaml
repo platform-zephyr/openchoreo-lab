@@ -1,0 +1,178 @@
+# Propositions du domaine « Services IA et identité/audit des IA » (ADR proposé : NEW-AI, voir docs/research/AI-SERVICES.md §9)
+- key: AI-1
+  title: "Spike gVisor sur Talos (homelab) : runsc réellement utilisé"
+  phase: P2
+  adr: ["NEW-AI"]
+  depends_on: ["T-030"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "sandbox"
+  scope: "docs/research/, platform/ai-sandbox/ (brouillon), tests/"
+  intent: "Prouver sur le homelab qu'un pod runtimeClassName gvisor tourne sous runsc (extension siderolabs/gvisor), mesurer surcoût et incompatibilités."
+  done:
+    - "RuntimeClass gvisor + pod de test : preuve que le shim runsc exécute le pod (pas seulement l'objet RuntimeClass), datée"
+    - "mesure CPU/mémoire/latence d'E/S vs runc ; liste des syscalls refusés pour une image type LibreChat"
+    - "verdict PASS/FAIL/NOT_TESTED/BLOCKED pour arm64 et pour OKE (nœud personnalisé) consigné"
+  notes: "MANDAT : mise à jour du schematic Talos (maintenance du nœud). OKE géré : installer runsc exige un nœud personnalisé, à qualifier séparément (AI-10)."
+- key: AI-2
+  title: "Composant plateforme ai-gateway (agentgateway) sur k3d avec fournisseur factice"
+  phase: P2
+  adr: ["NEW-AI"]
+  depends_on: ["T-002", "T-023"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ai-gateway"
+  scope: "platform/ai-gateway/, tests/k3d/, apps/agentgateway/NOTES.md"
+  intent: "Déployer agentgateway comme composant de plateforme (namespace lab-ai-gateway), image par digest, avec un fournisseur LLM factice pour tester sans clé réelle ni FQDN."
+  done:
+    - "k3d : requête OpenAI-compatible via le gateway vers le fournisseur factice, clé absente ou invalide → 401"
+    - "budget en tokens dépassé → blocage prouvé ; allowedModels respecté"
+    - "pod durci, arm64 vérifié, tracing OTLP émis ; NOTES.md mis à jour (cause 6 tranchée)"
+  notes: "Reprend la config kube-ops sans ses valeurs. Choix du digest : Paul (NOTES.md). Fournisseur réel (FQDN) seulement après le gate Cilium (T-021)."
+- key: AI-3
+  title: "Schéma et appgen : déclaration ai {models, mcp, budget} et clé virtuelle"
+  phase: P2
+  adr: ["NEW-AI", "0005", "0014"]
+  depends_on: ["AI-2", "T-023", "T-010"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "appgen"
+  scope: "docs/schema/, docs/APP-CONTRACT.md, tools/appgen/, tests/"
+  intent: "Ajouter le bloc ai: au contrat : appgen génère ExternalSecret de clé virtuelle, OPENAI_BASE_URL, egress vers le gateway, labels ai=true et agent-id."
+  done:
+    - "refus appgen : ai avec egress public-internet ou FQDN de fournisseur, modèle ou MCP hors allowlist, secret LLM nommé *_API_KEY"
+    - "app de test ai: sur k3d : clé générée sans geste humain, appel via le gateway réussi, appel direct refusé"
+    - "forme d'egress {platform: ai-gateway} ajoutée au CPT (PR 1 + pin, cf. APP-CONTRACT)"
+  notes: "Introduit l'archétype G « service IA » (à nommer dans ADR-0005)."
+- key: AI-4
+  title: "Admission : sandbox gVisor et egress gateway obligatoires pour ai=true"
+  phase: P2
+  adr: ["NEW-AI", "0006"]
+  depends_on: ["AI-1", "AI-3", "T-020"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "admission"
+  scope: "platform/kyverno/, platform/policies/, tests/k3d/"
+  intent: "Refuser à l'admission un pod ai=true sans runtimeClassName gvisor ou avec un egress hors gateway ; refuser le placement sur un data plane sans gVisor prouvé."
+  done:
+    - "tests VAP/Kyverno : pod ai=true runc → refus ; NetworkPolicy élargie → refus ; exception nominative générée seulement via securityExceptions"
+    - "capabilities du data plane expose gvisor: proven|absent et appgen s'y réfère"
+  notes: "Noyau (platform/policies) : MANDAT de relecture de Paul selon ADR-0002."
+- key: AI-5
+  title: "Identité des agents : client Authentik par agent, inventaire et coupe-circuit"
+  phase: P1
+  adr: ["NEW-AI", "0007", "0002"]
+  depends_on: ["T-068", "T-024"]
+  class: REVUE + MANDAT
+  velocity: false
+  parallel_lane: "identité-agents"
+  scope: "docs/AGENT-IDENTITY.md, platform/identity/, platform/authz/, tests/mcp/"
+  intent: "Une identité par agent (agent-id) : client_credentials Authentik, rôle OpenChoreo reader/operator, chemin OpenBao borné ; GitHub App pour Git ; exercice de révocation chronométré."
+  done:
+    - "inventaire agent-id → surfaces → expiration, alerte avant échéance"
+    - "test : un agent ne lit aucune valeur de secret ni de clé de fournisseur (politique)"
+    - "exercice de coupe-circuit chronométré, preuve datée"
+    - "essai JWT de ServiceAccount K8s en client_assertion (sans secret stocké) : verdict"
+  notes: "MANDAT : création des identités (ADR-0002.3). Authentik Enterprise exclu."
+  absorbs: ["T-068"]
+- key: AI-6
+  title: "Audit des IA : journal gateway corrélé (qui, outil, coût)"
+  phase: P3
+  adr: ["NEW-AI", "0011"]
+  depends_on: ["AI-2", "AI-5"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "observabilité-ia"
+  scope: "platform/ai-gateway/, platform/observability/ (si présent), docs/AGENT-ACCESS.md, tests/"
+  intent: "Journaliser chaque appel LLM/outil avec agent_id, modèle, tokens, outil MCP, décision ; calcul de coût par barème versionné ; corrélation avec l'audit OpenChoreo et OpenBao."
+  done:
+    - "appel de test retrouvé avec agent_id, tokens, outil et trace_id"
+    - "rapport de coût par agent/app/jour (barème en Git) et alerte de budget"
+    - "aucun contenu de prompt stocké par défaut ; décision de Paul consignée si activé"
+- key: AI-7
+  title: "Allowlist MCP et gateway MCP : authz par outil, épinglage, lecture seule"
+  phase: P3
+  adr: ["NEW-AI", "0002"]
+  depends_on: ["AI-2", "AI-5"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "mcp"
+  scope: "platform/ai-gateway/mcp-allowlist.yaml, tools/, tests/mcp/, docs/reference/"
+  intent: "Tous les MCP derrière le gateway : allowlist (serveur, digest, hash des descriptions d'outils, outils permis), authz CEL lecture seule, MCP OpenChoreo en reader."
+  done:
+    - "CI : serveur ou description d'outil modifié non déclaré → rouge"
+    - "test : outils create_/update_/delete_ refusés par le gateway pour tout agent ; list_/get_ passent"
+    - "serveur tiers de test exécuté en sandbox sans secret, egress limité"
+  notes: "Rend exécutable la règle « pas de MCP en écriture » d'AGENTS.md. Complète T-006 (accès MCP depuis le cloud)."
+- key: AI-8
+  title: "Règles et banc d'injection de prompt : skills et contexte externes"
+  phase: P3
+  adr: ["NEW-AI", "0012"]
+  depends_on: ["T-044", "AI-7"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "contexte"
+  scope: ".agents/skills/platform-guardrails/, docs/, tests/"
+  intent: "Documenter et tester : contenu externe = donnée ; skills externes copiés par PR et épinglés au commit ; règle du triangle (non fiable + secret/écriture + egress libre)."
+  done:
+    - "jeu de prompts d'injection joué en CI contre add-app/fix-app : aucun appel sortant ni écriture hors périmètre"
+    - "procédure d'import d'un skill externe (PR, pin, revue) documentée"
+  notes: "Classe REVUE pour la partie platform-guardrails (noyau)."
+- key: AI-9
+  title: "Bac d'exécution éphémère (agent-sandbox) pour le code lancé par les agents"
+  phase: P4
+  adr: ["NEW-AI"]
+  depends_on: ["AI-1", "AI-4"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "sandbox"
+  scope: "platform/ai-sandbox/, tests/k3d/"
+  intent: "Installer kubernetes-sigs/agent-sandbox (version épinglée) et un SandboxTemplate durci dans lab-sandbox-* : sans token de SA, egress fermé, TTL, volume jetable."
+  done:
+    - "SandboxClaim créé puis nettoyé (claim, sandbox, volume) ; arm64 vérifié"
+    - "claim refusé s'il demande env, volume ou egress hors template"
+  notes: "Pattern kube-ops mastra-sandbox. Hors cluster (Cloudflare Sandbox) : option v2, MANDAT."
+- key: AI-10
+  title: "Qualification OKE : gVisor sur nœud arm64 géré, sinon repli et placement"
+  phase: P4
+  adr: ["NEW-AI", "0003"]
+  depends_on: ["AI-1", "T-009", "T-021"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "oke-ia"
+  scope: "docs/research/, platform/ai-sandbox/, tests/"
+  intent: "Dire si runsc s'installe sur le nœud A1 (nœud personnalisé) ; sinon, interdire les services ai: sur OKE et consigner le repli (PSA, seccomp, hostUsers: false)."
+  done:
+    - "verdict daté PASS/FAIL/BLOCKED d'un pod gvisor sur OKE"
+    - "budget Always Free mesuré avec le gateway ; capabilities OKE mis à jour"
+  notes: "Hypothèse : VM A1 sans virtualisation imbriquée [E], donc Kata/Firecracker exclus. Toute action sur OKE reste MANDAT."
+- key: AI-11
+  title: "Agents OpenChoreo (SRE, FinOps, portail) : spike via le gateway, désactivés par défaut"
+  phase: P4
+  adr: ["NEW-AI"]
+  depends_on: ["AI-2", "AI-6", "T-030"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "agents-openchoreo"
+  scope: "docs/reference/openchoreo/mcp-ai-agents.md, platform/ (brouillon), tests/"
+  intent: "Vérifier si l'agent SRE accepte une URL de base vers le gateway ; l'activer sur k3d avec fournisseur factice et clé virtuelle ; mesurer l'empreinte ; décider pour FinOps et portail."
+  done:
+    - "lecture de la doc SRE/FinOps/portail v1.3 : URL de base configurable (oui/non) tranchée"
+    - "si oui : RCA déclenchée sur k3d, appel visible dans le journal du gateway avec agent_id, budget bas appliqué"
+    - "si non : agents désactivés, ticket amont ouvert, aucune clé en clair"
+    - "empreinte CPU/mémoire mesurée vs budget OKE"
+  notes: "MANDAT : clé de fournisseur réelle et budget mensuel."
+- key: AI-12
+  title: "Premier service IA de référence (LibreChat ou équivalent) de bout en bout"
+  phase: P5
+  adr: ["NEW-AI", "0013"]
+  depends_on: ["AI-3", "AI-4", "AI-6", "AI-7"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "apps-ia"
+  scope: "apps/, recipes/, tests/"
+  intent: "Déployer un service IA réel sous gVisor, via le gateway, avec OIDC, budget, audit et un MCP en lecture seule, pour valider l'archétype."
+  done:
+    - "preuve runtime datée : gVisor actif, appel via gateway journalisé, clé révoquée → coupure"
+    - "tentative d'injection via sortie MCP : sans effet hors périmètre"
+  notes: "MANDAT : clé de fournisseur réelle, coût."
