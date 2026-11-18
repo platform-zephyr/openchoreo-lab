@@ -1,0 +1,251 @@
+# Propositions du domaine « homelab » (recherche du 2026-11-18, docs/research/HOMELAB-CAPACITY-DATAPLANE.md).
+# Champs `stage` et `model` ajoutés au format FORMAT.md à la demande de Paul.
+- key: HOME-0
+  title: "Mesures du homelab avant dimensionnement (lecture seule)"
+  phase: P0
+  adr: ["0003", "0017"]
+  depends_on: []
+  class: AUTONOME + MANDAT
+  stage: S0
+  model: sonnet
+  velocity: true
+  parallel_lane: "hybride"
+  scope: "docs/state/homelab-capacity.yaml, docs/research/"
+  intent: "Relever p95 sur 14 jours du CPU et de la RAM de la VM kube-ops, usage NVMe et miroir HDD, température Tctl, plafond ARC ZFS ; fixer le budget RAM/CPU/disque des VM."
+  done:
+    - "tableau daté (p50/p95/pic) CPU, RAM, disque, Tctl ; sources Prometheus et commandes de lecture"
+    - "budget 64 Gio versionné avec seuils d'alerte 80 %"
+    - "décision chiffrée : taille cible de la VM kube-ops et de la VM lab"
+  notes: "MANDAT = Paul lance les commandes sur l'hôte Proxmox (l'agent n'y a pas accès). Aucune IP ni nom d'hôte dans le dépôt public."
+
+- key: HOME-1
+  title: "VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops)"
+  phase: P1
+  adr: ["0003"]
+  depends_on: ["HOME-0", "HOME-13"]
+  class: MANDAT
+  stage: S0
+  model: sonnet
+  velocity: false
+  parallel_lane: "hybride"
+  scope: "dépôt homelab-infra (hors de ce dépôt) : seconde instance du module talos ; ici : demande exacte et critères"
+  intent: "Créer une VM Talos mono-nœud (6 vCPU, 8 Gio puis 16, disque système 64 Gio, volume de données NVMe + HDD) avec ses propres secrets machine, sans kube-proxy, Cilium, extension gVisor et qemu-guest-agent ; kubeconfig distribué par Doppler."
+  done:
+    - "plan OpenTofu ARC montrant uniquement des créations (aucun changement de la VM kube-ops)"
+    - "nœud Ready, preuve runtime datée, kubeconfig lab dans Doppler sans valeur affichée"
+    - "poids CPU (cpuunits) et cpulimit posés ; RAM de la VM kube-ops inchangée tant que HOME-0 n'a pas conclu"
+  notes: "Racine proxmox existante ou racine dédiée proxmox-lab : décision de Paul. L'agent de ce dépôt prépare la demande ; l'application se fait dans homelab-infra via ARC."
+
+- key: HOME-2
+  title: "Isolation réseau de la VM lab (UniFi, pare-feu)"
+  phase: P1
+  adr: ["0003"]
+  depends_on: ["HOME-1"]
+  class: MANDAT
+  stage: S0
+  model: sonnet
+  velocity: false
+  parallel_lane: "hybride"
+  scope: "dépôt homelab-infra terraform/unifi (hors de ce dépôt)"
+  intent: "Le lab sort vers Internet mais n'atteint ni l'hôte Proxmox, ni le NAS, ni le réseau de gestion ; accès admin par le chemin NetBird existant."
+  done:
+    - "règles versionnées ; test depuis un pod lab : Internet OK, hôte Proxmox et LAN de gestion refusés, preuve datée"
+    - "aucune règle ne contourne une NetworkPolicy"
+
+- key: HOME-3
+  title: "Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stockage)"
+  phase: P1
+  adr: ["0003", "0014"]
+  depends_on: ["HOME-1", "HOME-2", "T-001"]
+  class: REVUE + MANDAT
+  stage: S1
+  model: opus
+  velocity: false
+  parallel_lane: "socle-lab"
+  scope: "platform/lab-bootstrap/, clusters/homelab/"
+  intent: "Installer par Git le socle lab : Gateway API épinglée à la version exigée par Cilium (relire la compatibilité kgateway), ESO avec ClusterSecretStore propre (jamais doppler-cluster), Kyverno en audit puis enforce (T-020), Argo CD lab, stockage local sans Longhorn, CNPG."
+  done:
+    - "Argo lab Synced/Healthy, preuve datée"
+    - "une ExternalSecret vers un store autre que lab-store est refusée (test)"
+    - "versions épinglées, compatibilité Gateway API / Cilium / kgateway documentée"
+    - "amorçage fail-closed (même exigence que T-001)"
+  notes: "MANDAT : amorçage Argo par un humain (jeton ESO) comme sur OKE. Réutilise l'Argo d'essai lab-argocd (D4)."
+  absorbs: ["T-213"]
+
+- key: HOME-4
+  title: "OpenChoreo CP + DP co-localisés sur la VM lab et ClusterDataPlane homelab"
+  phase: P1
+  adr: ["0003", "0020"]
+  depends_on: ["HOME-3", "T-061", "HOME-5"]
+  class: REVUE + MANDAT
+  stage: S1
+  model: opus
+  velocity: false
+  parallel_lane: "hybride"
+  scope: "platform/install/, clusters/homelab/, docs/architecture/MULTI-DATAPLANE.md"
+  intent: "Installer le CP et le DP OpenChoreo sur la VM lab (agent en cluster, aucun chemin réseau externe), enregistrer ClusterDataPlane homelab, créer Environments development et production, livrer une app A."
+  done:
+    - "agent connecté, clientCA correct, preuve datée"
+    - "app A Ready + PASS runtime sur le homelab (critère d'échec ADR-0020 §3 : 3 jours)"
+    - "mesure des requests du CP et du DP sur la VM lab pour C2"
+    - "procédure de déplacement du CP vers OKE (nouvelle URL d'agent, nouveau clientCA) rédigée, non exécutée"
+  notes: "Remplace le cœur de T-030 ; T-030 reste pour un DP OKE distant. MANDAT : enrôlement (CA, secrets)."
+  absorbs: ["T-030"]
+
+- key: HOME-5
+  title: "Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno"
+  phase: P1
+  adr: ["0003"]
+  depends_on: ["T-214"]
+  class: AUTONOME
+  stage: S1
+  model: sonnet
+  velocity: true
+  parallel_lane: "contrat-appgen"
+  scope: "clusters/homelab/, docs/schema/capabilities.schema.json, tools/appgen/"
+  intent: "Étendre le schéma (enum de clusters, arch amd64|arm64, availability always, gvisor proven|absent, profils) ; appgen refuse ce que le cluster ne déclare pas."
+  done:
+    - "un test par refus (arch absente, stockage absent)"
+    - "placement par défaut homelab (ADR-0003 §4) couvert par test"
+    - "availability: scheduled supprimé du contrat"
+
+- key: HOME-6
+  title: "Test de reprise du cluster lab (redémarrage de la VM, agent coupé) et critère C4 révisé"
+  phase: P2
+  adr: ["0003", "0020"]
+  depends_on: ["HOME-4"]
+  class: AUTONOME + MANDAT
+  stage: S3
+  model: sonnet
+  velocity: false
+  parallel_lane: "hybride"
+  scope: "tests/, docs/architecture/MULTI-DATAPLANE.md"
+  intent: "Prouver 3 reprises sans action : redémarrage de la VM lab, pod agent arrêté 10 min, et coupure NetBird 10 min si un DP OKE existe ; apps Ready après chaque reprise."
+  done:
+    - "3 coupures, délai de reprise mesuré, preuve datée par coupure"
+    - "kube-ops inchangé pendant l'essai (aucune alerte nouvelle)"
+  notes: "MANDAT : redémarrage de la VM. Remplace le test de coupure nocturne de T-031."
+  absorbs: ["T-031"]
+
+- key: HOME-7
+  title: "Runners ARC sur le cluster lab pour la CI du dépôt (sans Docker, éphémères)"
+  phase: P3
+  adr: ["0002", "0017"]
+  depends_on: ["HOME-3", "T-215", "T-145"]
+  class: REVUE + MANDAT
+  stage: I8
+  model: opus
+  velocity: true
+  parallel_lane: "agents"
+  scope: "platform/lab-runners/, .github/workflows/"
+  intent: "Scale set ARC éphémère pour les jobs qui lisent le cluster lab (preuve runtime PostSync, kubeconform, Kyverno CLI) ; k3d reste sur les runners GitHub (T-002). Dépôt public : jamais de PR de fork sur un runner auto-hébergé."
+  done:
+    - "runners éphémères, GitHub App à portée minimale, groupe limité aux branches du dépôt, aucun secret de production monté"
+    - "plafond de concurrence et cpulimit ; arrêt si Tctl > seuil"
+    - "test : une PR de fork ne démarre aucun job sur le runner"
+  notes: "Risque principal : exécution de code de PR sur le matériel domestique. MANDAT : GitHub App et groupe de runners."
+
+- key: HOME-8
+  title: "Garde-fous de capacité du homelab : quotas lab-*, alertes RAM/NVMe/Tctl, budget versionné"
+  phase: P2
+  adr: ["0017"]
+  depends_on: ["HOME-0", "HOME-3"]
+  class: AUTONOME + REVUE
+  stage: S3
+  model: sonnet
+  velocity: false
+  parallel_lane: "coût"
+  scope: "docs/state/homelab-capacity.yaml, platform/lab-bootstrap/quotas/, tools/cost/"
+  intent: "Un ResourceQuota par namespace lab-*, une alerte ntfy à 80 % (RAM VM, NVMe, Tctl) et une sortie JSON homelab-capacity.v1 PASS/FAIL/NOT_TESTED lue par le lint."
+  done:
+    - "dépassement simulé = FAIL typé et alerte ntfy"
+    - "un agent ne relève jamais un plafond (ADR-0017 §7) : test de refus"
+
+- key: HOME-9
+  title: "Sandboxes gVisor et vcluster jetables pour les agents sur le cluster lab"
+  phase: P3
+  adr: ["0018"]
+  depends_on: ["HOME-3", "HOME-8"]
+  class: AUTONOME + REVUE
+  stage: I7
+  model: sonnet
+  velocity: true
+  parallel_lane: "sandbox"
+  scope: "platform/ai-sandbox/, tests/"
+  intent: "Reprendre le pattern agent-sandbox de kube-ops dans le cluster lab (amd64, extension gVisor déjà éprouvée) et ajouter 2 vcluster jetables au plus, avec TTL, sans token de SA, egress fermé."
+  done:
+    - "pod gvisor exécuté par runsc, preuve datée"
+    - "vcluster créé puis détruit sans résidu ; plafond 2 ; mesure RAM réelle remplaçant l'estimation"
+  notes: "Rend le spike gVisor sur OKE (arm64, non vérifié) non bloquant : le placement ai=true est homelab."
+
+- key: HOME-10
+  title: "OpenBao sur le cluster lab (variante de T-022) : Raft local, snapshot hors site, drill"
+  phase: P2
+  adr: ["0014"]
+  depends_on: ["HOME-3", "T-022"]
+  class: AUTONOME + MANDAT
+  stage: I2
+  model: opus
+  velocity: false
+  parallel_lane: "secrets"
+  scope: "docs/storage/, platform/openbao/"
+  intent: "Qualifier OpenBao sur le lab au lieu d'OKE : un seul volume local, auto-unseal hors cluster, snapshot chiffré hors Oracle ; OKE (s'il sert) lit Doppler."
+  done:
+    - "drill perte + restauration daté avant toute migration"
+    - "clé d'auto-unseal et clés de récupération : MANDAT Paul (Doppler + hors ligne)"
+    - "pas de nouveau volume OCI"
+  absorbs: ["T-022"]
+
+- key: HOME-11
+  title: "Vérifier la limite A1 en PAYG et le risque de facturation (preuve Cost Analysis)"
+  phase: P0
+  adr: ["0017"]
+  depends_on: ["T-140"]
+  class: MANDAT
+  stage: S2
+  model: sonnet
+  velocity: false
+  parallel_lane: "coût"
+  scope: "docs/state/free-tier.yaml, docs/research/"
+  intent: "Relire la page Oracle Always Free (hôte à autoriser), relever la colonne gratuit de « Limits, Quotas and Usage », puis, si Paul le décide, un nœud de 1 OCPU / 6 Go au-delà de 2/12 pendant 48 h avec Cost Analysis = 0 ; consigner la valeur 2/12 ou 4/24 avec source et date."
+  done:
+    - "valeur retenue, URL, date de lecture, prochaine revue dans le registre (lint 90 jours)"
+    - "quota OCI du dépôt cohérent avec la valeur retenue ; aucune montée sans MANDAT"
+  notes: "Discordance 2/12 vs 4/24 de T-140 tranchée ici. Pire cas facturé ≈ 28 USD/mois [estimé]."
+  absorbs: ["T-140"]
+
+- key: HOME-12
+  title: "Plan OKE à deux nœuds 2/12 (conditionnel) : pool, volumes, IP de pods"
+  phase: P4
+  adr: ["0003", "0017"]
+  depends_on: ["HOME-11", "HOME-4"]
+  class: MANDAT
+  stage: I3
+  model: opus
+  velocity: false
+  parallel_lane: "socle-oke"
+  scope: "dépôt homelab-infra terraform/oracle-a1 (hors de ce dépôt) ; ici : décision et mesures"
+  intent: "Seulement si HOME-11 conclut gratuit ET Paul demande une app sur OKE : second nœud 2/12 par redimensionnement du pool, libération des volumes de drill (D5), nomenclature remesurée, DP OKE et exception de flux OKE → homelab."
+  done:
+    - "second nœud Ready sans remplacement du premier, 2 × 31 IP de pods mesurées"
+    - "bloc : 0 volume orphelin, total ≤ 200 Gio"
+    - "exception de flux écrite par Paul (D13) avant tout agent OKE"
+  notes: "Différé tant qu'aucune app OKE n'est demandée."
+
+- key: HOME-13
+  title: "Amender ADR-0003, 0017, 0020, TARGET-ARCHITECTURE, MULTI-DATAPLANE et DECISIONS-OPEN (texte de la recherche)"
+  phase: P0
+  adr: ["0003", "0017", "0020"]
+  depends_on: []
+  class: MANDAT
+  stage: S0
+  model: opus
+  velocity: true
+  parallel_lane: "gouvernance"
+  scope: "docs/adr/, docs/architecture/"
+  intent: "Porter dans une PR (noyau, approbation de Paul) les amendements du §5 de docs/research/HOMELAB-CAPACITY-DATAPLANE.md : CP sur la VM lab pendant la porte, homelab 24 h/24, C2 et C4 réécrits, D1 reformulé, D11 à D14 ajoutées."
+  done:
+    - "PR unique, un tour de revue, décisions D11-D14 listées pour Paul"
+    - "aucun ticket ne cite encore « Talos éteint la nuit » ou « CP sur OKE » comme prérequis"
+  notes: "Fusionnable avec T-061 (acter les ADR) pour ne pas multiplier les gestes de Paul."
+  absorbs: ["T-213", "T-211"]
