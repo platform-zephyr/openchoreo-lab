@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # verify.sh : critères de sortie de la Phase B, étape par étape (docs/PHASE-B.md §2). Étapes 1-5 et
 # --security exécutées sur OKE le 2026-11-17 (journal $STATE_DIR/verify.log) ; 6 et suivantes NON exécutées.
-# Usage : tools/oke/verify.sh --step N (N = 0..12 ou 6b)   |   tools/oke/verify.sh --security   |   --all
+# Usage : tools/oke/verify.sh --step N (N = 0..12 ou 6b)   |   tools/oke/verify.sh --security   |   --all [--with-portal]
+# --all : sans --with-portal, l'étape 6b (portail, opt-in comme install.sh) n'est PAS exécutée : une ligne NOT_TESTED
+# (ni PASS, ni FAIL, ni BLOCKED : le jalon n'est pas rendu « non validable » par un portail non installé, T-487).
 # Étape 0 (socle cluster, T-494) : Cilium en chaînage OCI, VAP/VAPB baseline-*, CCNP deny-imds et
 # allow-egress-unisolated, identiques à Git (kubectl diff --server-side : dry-run, rien n'est persisté).
 # Lecture seule, sauf : `kubectl apply --dry-run=server` (rien n'est persisté) et, pour --security,
@@ -16,7 +18,17 @@ set -euo pipefail
 # shellcheck source=security-bundle.sh
 . "$(dirname "${BASH_SOURCE[0]}")/security-bundle.sh"
 
-MODE="${1:-}" ; N="${2:-}"
+MODE="${1:-}" ; N="" ; WITH_PORTAL=0
+case "$MODE" in
+  --step) N="${2:-}"; shift 2 || true;;
+  *) shift || true;;
+esac
+for a in "$@"; do
+  case "$a" in
+    --with-portal) [[ "$MODE" == --all ]] || die "--with-portal n'a de sens qu'avec --all"; WITH_PORTAL=1;;
+    *) die "argument inconnu : $a";;
+  esac
+done
 guard_context
 mkdir -p "$STATE_DIR"
 FAILS=0 BLOCKS=0
@@ -560,8 +572,16 @@ security() {
 case "$MODE" in
   --step) declare -F "v$N" >/dev/null || die "étape inconnue : $N"; "v$N";;
   --security) security;;
-  --all) for n in 0 1 2 3 4 5 6 6b 7 8 9 10 11; do "v$n"; done; security;;
-  *) die "usage : $0 --step N | --security | --all";;
+  --all)
+    for n in 0 1 2 3 4 5 6 6b 7 8 9 10 11; do
+      if [[ "$n" == 6b && "$WITH_PORTAL" != 1 ]]; then
+        res NOT_TESTED B6b-portal "étape 6b (portail Backstage) non exécutée : portail non demandé (--with-portal ou --step 6b)"
+        continue
+      fi
+      "v$n"
+    done
+    security;;
+  *) die "usage : $0 --step N | --security | --all [--with-portal]";;
 esac
 log "FAIL=$FAILS BLOCKED=$BLOCKS (journal : $STATE_DIR/verify.log)"
 (( BLOCKS == 0 )) || log "JALON NON VALIDABLE : au moins un contrôle est BLOCKED (voir le journal)."
