@@ -15,7 +15,7 @@
     "effort": {"enum": ["low", "medium", "high", "xhigh", "max"]},
     "escalated_from": {"type": ["string", "null"]},
     "status": {"enum": ["PASS", "FAIL", "NOT_TESTED", "BLOCKED"]},
-    "failure": {"enum": ["model_mismatch"]},
+    "failure": {"enum": ["model_mismatch", "no_branch"]},
     "branch": {"type": ["string", "null"]},
     "num_turns": {"type": "integer", "minimum": 0},
     "duration_ms": {"type": "integer", "minimum": 0},

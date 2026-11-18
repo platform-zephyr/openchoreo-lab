@@ -81,7 +81,7 @@ else ko "ecart de modele non detecte"; fi
 wf="$ROOT/.github/workflows/claude-agent.yml"
 if grep -qE '^ *show_full_output: \$\{\{ inputs\.debug \}\}$' "$wf" && ! grep -qE '^ *show_full_output: *true' "$wf"; then ok "show_full_output seulement via l'entree debug"; else ko "show_full_output non borne a l'entree debug"; fi
 grep -qE '^ *debug:' "$wf" && grep -A4 -E '^ *debug:' "$wf" | grep -q 'default: false' && ok "debug faux par defaut" || ko "debug doit etre faux par defaut"
-eq "secrets : jeton Claude et identite de l'executant (T-304) seulement" "$(grep -o 'secrets\.[A-Z_]*' "$wf" | sort -u | tr '\n' ' ')" "secrets.CLAUDE_CODE_OAUTH_TOKEN secrets.FACTORY_GH_TOKEN "
+eq "secrets : jeton Claude et identite de l'executant (T-304) seulement" "$(grep -o 'secrets\.[A-Z_]*' "$wf" | sort -u | tr '\n' ' ')" "secrets.APP_ID secrets.APP_PRIVATE_KEY secrets.CLAUDE_CODE_OAUTH_TOKEN secrets.FACTORY_GH_TOKEN "
 if grep -qE '^  issues:|label_trigger' "$wf"; then ko "declencheur par label encore present"; else ok "declencheur par label retire"; fi
 # shellcheck disable=SC2016
 if grep -q -- '--model \${{ inputs.model }}' "$wf" && grep -q -- '--effort \${{ inputs.effort }}' "$wf" \

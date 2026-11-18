@@ -100,6 +100,10 @@ for d in res.get("permission_denials") or []:
     den.append(name + (":" + cmd[0] + (" " + cmd[1] if len(cmd) > 1 else "") if name == "Bash" and cmd else ""))
 out["permission_denials"] = den
 obs, req = out["model_observed"], out["model_requested"]
+if out["status"] == "PASS" and not out["branch"]:
+    # Un run sans branche ne livre rien : jamais un PASS (essai T-304 : trois runs verts sans PR).
+    out["status"] = "NOT_TESTED"
+    out["failure"] = "no_branch"
 if obs and not obs.startswith(req):
     out["status"] = "FAIL"
     out["failure"] = "model_mismatch"
