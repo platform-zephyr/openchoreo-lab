@@ -32,7 +32,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-458](T-458-ancre-gitops-k3d-obsolete.md) | Réparer l'ancre obsolète de gitops-k3d (correction G1 déjà dans main) | 0/3 | Premier critère ouvert : ancre réparée, la suite va au-delà de T-DEPLOY | — |
 | [T-460](T-460-parite-ci-check.md) | Parité ci.yaml ↔ tools/dev/check : ci-map.tsv et test de parité (SL-6) | 2/3 | Reste (critère 2) : forme littérale `--only` (le workflow utilise `CHECK_ONLY=<étapes> tools/dev/check --static --strict`), jobs `hooks` et `quality-coverage` non convertis ; issue 66 à fermer après relecture. | [#66](https://github.com/platform-zephyr/openchoreo-lab/issues/66) |
 | [T-466](T-466-durcissement-usine-verdict-prompt.md) | Durcissement de l'usine : plafonds de tours, étape Verdict, trailers always(), branche REST, prompt… | 8/10 | Premier critère ouvert : run réel (RUNTIME, preuve datée) : un dispatch de 2 issues ou plus montre le Verdict, le contrôle des trailers après un échec de l'agent, la branche retrouvée par REST et le commentaire `report` sur… | — |
-| [T-467](T-467-garde-de-recouvrement-et-disjoncteur-de-quota.md) | Garde de recouvrement des périmètres et disjoncteur de quota Max pour le planificateur de l'usine | 3/5 | Premier critère ouvert : câblage dans `.github/workflows/claude-agent.yml` selon la section « Câblage à faire » — NOT_TESTED (fichier | — |
+| [T-467](T-467-garde-de-recouvrement-et-disjoncteur-de-quota.md) | Garde de recouvrement des périmètres et disjoncteur de quota Max pour le planificateur de l'usine | 4/5 | Premier critère ouvert : preuve RUNTIME datée : un dispatch de deux issues en recouvrement s'arrête au job `plan` sans job `dev` ; un | — |
 | [T-473](T-473-vue-status-du-backlog.md) | Vue d'état du backlog : fait, en cours, bloqué, prêt (backlog/STATUS.md généré) | 3/5 | Premier critère ouvert : brancher `python3 tools/backlog/status.py --check` dans la CI (job `backlog` de `ci.yaml`, REVUE, point chaud : PR dédiée, sérialisée avec T-460) et dans `tools/dev/check` / `ci-map.tsv` | — |
 
 ## Bloqué (`blocked`)
@@ -184,9 +184,9 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-437](T-437-durcir-executant-environnement.md) | Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteu… | T-313 (in-progress), T-431 (todo) | — |
 | [T-439](T-439-essai-dependency-review.md) | Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation) | T-431 (todo) | — |
 | [T-443](T-443-attestations-provenance-releases.md) | Attestations de provenance et releases immuables (quand une image ou une archive est construite) | T-402 (todo), T-400 (todo) | — |
-| [T-461](T-461-indicateur-d-evasions.md) | Indicateur d'évasions de la CI : tools/dev/ci-escapes.py et ligne « Preuve locale » (SL-7) | T-460 (in-progress) | — |
+| [T-461](T-461-indicateur-d-evasions.md) | Indicateur d'évasions de la CI : tools/dev/ci-escapes.py et ligne « Preuve locale » (SL-7) | T-460 (in-progress) | [#75](https://github.com/platform-zephyr/openchoreo-lab/issues/75) |
 | [T-465](T-465-nuit-check-complet.md) | Contrôle nocturne : check --full --k3d, dérive amont, évasions, alerte (SL-11) | T-461 (todo), T-451 (in-progress), T-452 (in-progress) | — |
-| [T-470](T-470-devcontainer-fichiers-alignes-lock.md) | Devcontainer : fichiers alignés sur le lock (sans build) | T-332 (in-progress) | — |
+| [T-470](T-470-devcontainer-fichiers-alignes-lock.md) | Devcontainer : fichiers alignés sur le lock (sans build) | T-332 (in-progress) | [#74](https://github.com/platform-zephyr/openchoreo-lab/issues/74) |
 | [T-471](T-471-mesure-check-static-1vcpu.md) | Mesure de check --static sous 1 vCPU et 1 GiB | T-470 (todo) | — |
 | [T-472](T-472-build-periodique-devcontainer.md) | Build périodique du devcontainer hors ci-ok | T-470 (todo) | — |
 
