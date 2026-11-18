@@ -1,26 +1,181 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "T-120 / ADR-0016 / docs/research/UPGRADES.md section 2. Fichier du noyau (ADR-0002) : seul Paul le modifie.",
+    "Aucun automerge tant que la porte des apps (T-124) n'est pas prouvee : automerge=false partout, y compris digests d'actions et d'apps.",
+    "Rattrapage initial : dependencyDashboardApproval=true, chaque PR s'ouvre en cochant sa case dans le dashboard."
+  ],
   "extends": ["config:recommended", "docker:pinDigests", "helpers:pinGitHubActionDigests"],
+  "timezone": "Europe/Paris",
+  "schedule": ["* 0-5 * * *"],
+  "dependencyDashboard": {
+    "enabled": true,
+    "title": "Dependency Dashboard (montees de version, ADR-0016)"
+  },
+  "dependencyDashboardApproval": true,
+  "internalChecksFilter": "strict",
+  "prCreation": "not-pending",
   "minimumReleaseAge": "14 days",
+  "prConcurrentLimit": 4,
+  "prHourlyLimit": 2,
+  "automerge": false,
   "labels": ["dependencies"],
+  "vulnerabilityAlerts": {
+    "description": "Une CVE contourne l'age minimal et le planning, jamais la porte de preuve : pas d'automerge.",
+    "labels": ["security"],
+    "minimumReleaseAge": null,
+    "schedule": ["at any time"],
+    "dependencyDashboardApproval": false,
+    "automerge": false
+  },
   "packageRules": [
     {
-      "description": "Digests d'images des apps : mise a jour automatique (pas de changement de version majeure)",
+      "description": "Apps, par defaut (profil stateful, conservateur : une app nouvelle est stateful tant qu'elle n'est pas listee en stateless ci-dessous). Ages 7/14/30 j ; un digest de meme tag n'a pas d'horodatage de release : age nul.",
       "matchFileNames": ["apps/**/app.yaml"],
-      "matchUpdateTypes": ["digest"],
-      "automerge": true
+      "matchDepTypes": ["image"],
+      "addLabels": ["upgrade:app-stateful"],
+      "automerge": false,
+      "matchUpdateTypes": ["patch"],
+      "minimumReleaseAge": "7 days"
     },
     {
-      "description": "Versions d'images et de charts : revue humaine",
       "matchFileNames": ["apps/**/app.yaml"],
-      "matchUpdateTypes": ["minor", "major", "patch"],
+      "matchDepTypes": ["image"],
+      "matchUpdateTypes": ["minor"],
+      "minimumReleaseAge": "14 days"
+    },
+    {
+      "matchFileNames": ["apps/**/app.yaml"],
+      "matchDepTypes": ["image"],
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "30 days"
+    },
+    {
+      "matchFileNames": ["apps/**/app.yaml"],
+      "matchDepTypes": ["image"],
+      "matchUpdateTypes": ["digest"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Apps stateless (profil stateless dans app.yaml) : ages 3/7/14 j, digest sans age. Liste a tenir a jour par PR REVUE quand une app stateless est ajoutee.",
+      "matchFileNames": [
+        "apps/echo-demo/app.yaml",
+        "apps/idp-e2e/app.yaml",
+        "apps/ntfy/app.yaml",
+        "apps/searxng/app.yaml",
+        "apps/whoami/app.yaml"
+      ],
+      "matchDepTypes": ["image"],
+      "addLabels": ["upgrade:app-stateless"],
+      "matchUpdateTypes": ["patch"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "matchFileNames": [
+        "apps/echo-demo/app.yaml",
+        "apps/idp-e2e/app.yaml",
+        "apps/ntfy/app.yaml",
+        "apps/searxng/app.yaml",
+        "apps/whoami/app.yaml"
+      ],
+      "matchDepTypes": ["image"],
+      "matchUpdateTypes": ["minor"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "matchFileNames": [
+        "apps/echo-demo/app.yaml",
+        "apps/idp-e2e/app.yaml",
+        "apps/ntfy/app.yaml",
+        "apps/searxng/app.yaml",
+        "apps/whoami/app.yaml"
+      ],
+      "matchDepTypes": ["image"],
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "14 days"
+    },
+    {
+      "matchFileNames": [
+        "apps/echo-demo/app.yaml",
+        "apps/idp-e2e/app.yaml",
+        "apps/ntfy/app.yaml",
+        "apps/searxng/app.yaml",
+        "apps/whoami/app.yaml"
+      ],
+      "matchDepTypes": ["image"],
+      "matchUpdateTypes": ["digest"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Charts Helm tiers des apps (archetype E) : 7/14/30 j ; digest sans age.",
+      "matchFileNames": ["apps/**/app.yaml"],
+      "matchDepTypes": ["chart"],
+      "addLabels": ["upgrade:chart"],
+      "matchUpdateTypes": ["patch"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "matchFileNames": ["apps/**/app.yaml"],
+      "matchDepTypes": ["chart"],
+      "matchUpdateTypes": ["minor"],
+      "minimumReleaseAge": "14 days"
+    },
+    {
+      "matchFileNames": ["apps/**/app.yaml"],
+      "matchDepTypes": ["chart"],
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "30 days"
+    },
+    {
+      "matchFileNames": ["apps/**/app.yaml"],
+      "matchDepTypes": ["chart"],
+      "matchUpdateTypes": ["digest"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Actions GitHub (.github/ = noyau) : 14 j pour tout type, y compris digest (un digest qui bouge sur un tag epingle est suspect) ; 1 PR groupee par semaine (lundi).",
+      "matchManagers": ["github-actions"],
+      "addLabels": ["upgrade:actions"],
+      "groupName": "actions GitHub",
+      "minimumReleaseAge": "14 days",
+      "schedule": ["* 0-5 * * 1"]
+    },
+    {
+      "description": "Images de base et outils CI/dev (devcontainer, requirements d'appgen, pyproject) : 3 j, groupes.",
+      "matchFileNames": [".devcontainer/**", "tools/appgen/requirements.txt", "pyproject.toml"],
+      "addLabels": ["upgrade:tooling"],
+      "groupName": "outils CI et dev",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Plateforme : operateurs et charts epingles dans versions.env (cert-manager, ESO, kgateway, Gateway API, Argo CD, CNPG, Kyverno). 14 j ; une PR par composant ; versions.env porte aussi digest et sha256 : la PR est incomplete tant que l'outil bump-versions (T-126) n'existe pas, d'ou le label.",
+      "matchFileNames": ["platform/install/versions.env", "platform/kyverno/install/versions.env"],
+      "addLabels": ["upgrade:platform", "needs-bump-versions"],
+      "minimumReleaseAge": "14 days"
+    },
+    {
+      "description": "Majeures de la plateforme et des apps stateful : MANDAT, jamais en groupe, toujours par case du dashboard.",
+      "matchFileNames": ["platform/**", "apps/**"],
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["class:mandat"],
+      "dependencyDashboardApproval": true,
       "automerge": false
     },
     {
-      "description": "Actions GitHub : digest seulement",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["digest"],
-      "automerge": true
+      "description": "OpenChoreo : aucun bump par Renovate (bundle de securite prive a reconstruire, SECURITY-BUNDLE.md ; une mineure a la fois par veille et PR preparee par agent).",
+      "matchPackageNames": ["/openchoreo/"],
+      "enabled": false
+    },
+    {
+      "description": "Jamais d'automerge : versions 0.x.",
+      "matchCurrentVersion": "/^v?0\\./",
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Jamais d'automerge : noyau ADR-0002 (.github/, platform/install/argocd/, docs/adr/, security/).",
+      "matchFileNames": [".github/**", "platform/install/argocd/**", "docs/adr/**", "security/**"],
+      "automerge": false
     }
   ],
   "customManagers": [
@@ -31,7 +186,8 @@
       "matchStrings": [
         "image:\\s*(?<depName>[^\\s:@]+):(?<currentValue>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
       ],
-      "datasourceTemplate": "docker"
+      "datasourceTemplate": "docker",
+      "depTypeTemplate": "image"
     },
     {
       "description": "Charts Helm OCI dans apps/*/app.yaml (version et digest)",
@@ -40,7 +196,48 @@
       "matchStrings": [
         "repo:\\s*oci://(?<registryUrl>[^\\s]+)\\s*\\n\\s*name:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*version:\\s*(?<currentValue>[^\\s]+)"
       ],
-      "datasourceTemplate": "docker"
+      "datasourceTemplate": "docker",
+      "depTypeTemplate": "chart"
+    },
+    {
+      "description": "Charts OCI de platform/install/versions.env (cert-manager, ESO, kgateway) : variable *_CHART puis *_VERSION",
+      "customType": "regex",
+      "managerFilePatterns": ["/^platform/install/versions\\.env$/"],
+      "matchStrings": [
+        "(?:CERT_MANAGER|ESO|KGATEWAY)_CHART=\"oci://(?<depName>[^\"]+)\"\\n(?:[A-Z_]+=\"[^\"]*\"\\n)*?[A-Z_]+_VERSION=\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "docker",
+      "depTypeTemplate": "platform-chart"
+    },
+    {
+      "description": "Charts Helm classiques de platform/install/versions.env (Argo CD, CNPG) : *_REPO, *_CHART, *_VERSION",
+      "customType": "regex",
+      "managerFilePatterns": ["/^platform/install/versions\\.env$/"],
+      "matchStrings": [
+        "(?:ARGOCD|CNPG)_REPO=\"(?<registryUrl>[^\"]+)\"\\n[A-Z_]+_CHART=\"(?<depName>[^\"]+)\"\\n[A-Z_]+_VERSION=\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "helm",
+      "depTypeTemplate": "platform-chart"
+    },
+    {
+      "description": "CRD Gateway API (version de release GitHub) dans platform/install/versions.env",
+      "customType": "regex",
+      "managerFilePatterns": ["/^platform/install/versions\\.env$/"],
+      "matchStrings": ["GW_CRDS_VERSION=\"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubernetes-sigs/gateway-api",
+      "depTypeTemplate": "platform-crd"
+    },
+    {
+      "description": "Chart Kyverno dans platform/kyverno/install/versions.env",
+      "customType": "regex",
+      "managerFilePatterns": ["/^platform/kyverno/install/versions\\.env$/"],
+      "matchStrings": [
+        "KYVERNO_CHART_REPO=\"(?<registryUrl>[^\"]+)\"\\nKYVERNO_CHART_VERSION=\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "helm",
+      "depNameTemplate": "kyverno",
+      "depTypeTemplate": "platform-chart"
     }
   ],
   "postUpgradeTasks": {
