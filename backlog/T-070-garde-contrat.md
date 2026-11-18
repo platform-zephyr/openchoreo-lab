@@ -20,7 +20,7 @@ github_issue: null
 Mettre en œuvre la vérification d'ADR-0001 et le versionnage d'ADR-0005 §3.
 
 ## Périmètre de fichiers
-tools/, tests/, .github/workflows/
+tools/contract-guard/, docs/schema/app.schema.json, tests/contract-guard/, .github/workflows/ci.yaml (job du garde ; couplé à tools/dev/check et ci-map.tsv), tools/dev/check, tools/dev/ci-map.tsv
 
 ## Critères de fin
 - [ ] CI : rupture de schéma sans changement de version → refus
