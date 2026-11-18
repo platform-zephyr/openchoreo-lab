@@ -91,7 +91,7 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | Étape | haiku | sonnet | opus | humain |
 |---|---|---|---|---|
 | S0 | 2 | 4 | 0 | 1 |
-| S1 | 0 | 34 | 3 | 0 |
+| S1 | 0 | 33 | 3 | 0 |
 | S2 | 1 | 4 | 3 | 0 |
 | S3 | 0 | 13 | 0 | 0 |
 | PORTE | 0 | 0 | 1 | 0 |
@@ -119,7 +119,7 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | [T-434](T-434-gestes-organisation-paul.md) | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | 0 | gouvernance | MANDAT | haiku/medium |  | 0 |
 | [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | 1 | gouvernance | AUTONOME | haiku/medium |  | 0 |
 
-## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (37 tickets)
+## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (36 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
@@ -138,7 +138,6 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenChoreo) | 0 | tests-fixtures | AUTONOME | sonnet/high | oui | 0 |
 | [T-435](T-435-k3d-ok-requis.md) | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | 0 | ci | REVUE | sonnet/high |  | 37 |
 | [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | 0 | securite | REVUE | opus/high |  | 0 |
-| [T-452](T-452-reactiver-les-suites-k3d-quand-et-comment.md) | Réactiver les suites k3d : quand et sous quelle forme (étude) | 0 | ci | AUTONOME | sonnet/high |  | 0 |
 | [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 46 |
 | [T-366](T-366-bundle-multi-arch-installateur-lab.md) | Bundle de sécurité multi-arch et installateur pour le cluster lab | 1 | socle-lab | REVUE + MANDAT | opus/high | oui | 40 |
 | [T-003](T-003-env-development-promotion.md) | Environment `development`, promotion vers `production`, pins de release par environnement | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 31 |
