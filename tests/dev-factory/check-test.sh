@@ -53,6 +53,42 @@ cp tools/dev/toolchain.lock "$W/lock.bad-pip"
 sed -i 's/^YAMLLINT_VERSION=.*/YAMLLINT_VERSION=0.0.1/' "$W/lock.bad-pip"
 expect "concordance refuse un pip modifié" 1 env LOCK="$W/lock.bad-pip" "$CONC"
 
+# SL-2 (T-454) : empreintes linux-amd64 et outils de la VM cloud.
+cp tools/dev/toolchain.lock "$W/lock.bad-amd64"
+sed -i 's/^HELM_AMD64_SHA256=.*/HELM_AMD64_SHA256=pas-une-empreinte/' "$W/lock.bad-amd64"
+expect "concordance refuse une empreinte amd64 invalide" 1 env LOCK="$W/lock.bad-amd64" "$CONC"
+out_has "  … nomme HELM_AMD64_SHA256" 'HELM_AMD64_SHA256'
+
+cp tools/dev/toolchain.lock "$W/lock.same-arch"
+sed -i 's/^YQ_AMD64_SHA256=.*/YQ_AMD64_SHA256=cf0a663d8e4e00bb61507c5237b95b45a6aaa1fbedac77f4dc8abdadd5e2b745/' "$W/lock.same-arch"
+expect "concordance refuse une empreinte amd64 égale à l'arm64" 1 env LOCK="$W/lock.same-arch" "$CONC"
+
+grep -v '^KUBECONFORM_VERSION=' tools/dev/toolchain.lock >"$W/lock.no-version"
+expect "concordance refuse une empreinte amd64 sans version" 1 env LOCK="$W/lock.no-version" "$CONC"
+
+cp tools/dev/toolchain.lock "$W/lock.bad-ruff"
+sed -i 's/^RUFF_VERSION=.*/RUFF_VERSION=0.0.1/' "$W/lock.bad-ruff"
+expect "concordance refuse un ruff différent de ci.yaml" 1 env LOCK="$W/lock.bad-ruff" "$CONC"
+out_has "  … nomme RUFF_VERSION" 'RUFF_VERSION'
+
+cp tools/dev/toolchain.lock "$W/lock.extra-amd64"
+printf 'NEWTOOL_VERSION=1.0.0\nNEWTOOL_AMD64_SHA256=%064d\n' 1 >>"$W/lock.extra-amd64"
+expect "concordance refuse une clé amd64 non lue par cloud-setup.sh" 1 env LOCK="$W/lock.extra-amd64" "$CONC"
+out_has "  … nomme NEWTOOL_AMD64_SHA256" 'NEWTOOL_AMD64_SHA256'
+
+# doctor : sortie non nulle si un outil requis manque (PATH vide de ces outils, dossier vide), 0 si tout est présent.
+mkdir -p "$W/emptybin" "$W/fakebin"
+expect "doctor : outils requis absents donne rc 1" 1 env PATH="/usr/bin:/bin" CLOUD_BIN_DIR="$W/emptybin" "$PWD/tools/dev/doctor"
+out_has "  … liste outil par outil (absent)" '^helm +absent'
+for t in helm kubeconform actionlint gitleaks shellcheck ruff yq pre-commit; do
+  printf '#!/bin/sh\nexit 0\n' >"$W/fakebin/$t"
+  chmod +x "$W/fakebin/$t"
+done
+expect "doctor : outils présents mais version illisible donne rc 1" 1 env PATH="/usr/bin:/bin" CLOUD_BIN_DIR="$W/fakebin" "$PWD/tools/dev/doctor"
+expect "doctor --tool : outil absent donne rc 1" 1 env PATH="/usr/bin:/bin" CLOUD_BIN_DIR="$W/emptybin" "$PWD/tools/dev/doctor" --tool helm
+expect "doctor : option inconnue donne rc 2" 2 "$PWD/tools/dev/doctor" --bogus
+expect "cloud-setup : option inconnue donne rc 2" 2 "$PWD/tools/dev/cloud-setup.sh" --bogus
+
 # ---- 2. check ----
 expect "check sans argument : usage" 2 "$CHECK"
 expect "check option inconnue" 2 "$CHECK" --bogus

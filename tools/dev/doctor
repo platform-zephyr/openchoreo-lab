@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# doctor : état des outils de contrôle, outil par outil (SL-2, T-454). Lecture seule : aucun réseau, aucune installation.
+# Pour chaque outil requis : présent (version = épingle de tools/dev/toolchain.lock), écart (présent, autre version),
+# absent. Les outils facultatifs sont listés pour information et ne font jamais échouer la commande.
+#
+# Usage : tools/dev/doctor [--strict] [--tool NOM]
+#   --strict     un écart de version devient une erreur (sinon : avertissement, code 0)
+#   --tool NOM   ne contrôle que cet outil (silencieux sauf erreur ; sert à tools/dev/cloud-setup.sh : idempotence)
+# Code de sortie : 0 si tous les outils requis sont présents ; 1 si au moins un manque (ou un écart avec --strict) ;
+# 2 usage incorrect. Variables : CLOUD_BIN_DIR (défaut ~/.local/bin, placé en tête du PATH le temps de la commande).
+# Aucun secret ; sortie sans valeur sensible.
+set -uo pipefail
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOCK="${LOCK:-$SELF_DIR/toolchain.lock}"
+BIN_DIR="${CLOUD_BIN_DIR:-$HOME/.local/bin}"
+export PATH="$BIN_DIR:$PATH"
+
+STRICT=0
+ONLY=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --strict) STRICT=1 ;;
+    --tool) ONLY="${2:-}"; [[ -n "$ONLY" ]] || { echo "doctor: --tool demande un nom" >&2; exit 2; }; shift ;;
+    -h | --help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; exit 0 ;;
+    *) echo "doctor: option inconnue : $1" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+lockval() { sed -n "s/^$1=//p" "$LOCK" | head -n1; }
+
+# Version installée de l'outil (sans préfixe « v »), vide si l'outil ne répond pas.
+installed_version() {
+  local out=""
+  case "$1" in
+    helm) out="$(helm version --template '{{.Version}}' 2>/dev/null)" ;;
+    kubeconform) out="$(kubeconform -v 2>/dev/null)" ;;
+    actionlint) out="$(actionlint -version 2>/dev/null | head -n1)" ;;
+    gitleaks) out="$(gitleaks version 2>/dev/null)" ;;
+    shellcheck) out="$(shellcheck --version 2>/dev/null | sed -n 's/^version: //p')" ;;
+    ruff) out="$(ruff --version 2>/dev/null | sed 's/^ruff //')" ;;
+    yq) out="$(yq --version 2>/dev/null | sed 's/.*version //')" ;;
+    pre-commit) out="$(pre-commit --version 2>/dev/null | sed 's/^pre-commit //')" ;;
+    kubectl) out="$(kubectl version --client -o json 2>/dev/null | jq -r '.clientVersion.gitVersion' 2>/dev/null)" ;;
+    jq) out="$(jq --version 2>/dev/null)"; out="${out#jq-}" ;;
+    gh) out="$(gh --version 2>/dev/null | head -n1 | awk '{print $3}')" ;;
+    python3) out="$(python3 --version 2>/dev/null | awk '{print $2}')" ;;
+    yamllint) out="$(yamllint --version 2>/dev/null | awk '{print $2}')" ;;
+    *) out="" ;;
+  esac
+  out="${out%%+*}"
+  printf '%s' "${out#v}"
+}
+
+# Version épinglée dans le lock (sans préfixe « v » ; jq-1.8.2 devient 1.8.2).
+pinned_version() {
+  local key
+  case "$1" in
+    helm) key=HELM_VERSION ;; kubeconform) key=KUBECONFORM_VERSION ;; actionlint) key=ACTIONLINT_VERSION ;;
+    gitleaks) key=GITLEAKS_VERSION ;; shellcheck) key=SHELLCHECK_VERSION ;; ruff) key=RUFF_VERSION ;;
+    yq) key=YQ_VERSION ;; pre-commit) key=PRECOMMIT_VERSION ;; kubectl) key=KUBECTL_VERSION ;;
+    jq) key=JQ_VERSION ;; gh) key=GH_VERSION ;; yamllint) key=YAMLLINT_VERSION ;;
+    *) return 0 ;;
+  esac
+  local v
+  v="$(lockval "$key")"
+  v="${v#jq-}"
+  printf '%s' "${v#v}"
+}
+
+REQUIRED=(helm kubeconform actionlint gitleaks shellcheck ruff yq pre-commit)
+OPTIONAL=(kubectl jq gh python3 yamllint)
+
+n_ok=0 n_gap=0 n_missing=0
+
+report() { # NOM REQUIS(oui|non)
+  local t="$1" req="$2" have want where
+  if ! command -v "$t" >/dev/null 2>&1; then
+    if [[ "$req" == oui ]]; then
+      printf '%-12s absent      requis    (épinglé %s)\n' "$t" "$(pinned_version "$t")"
+      n_missing=$((n_missing + 1))
+    else
+      printf '%-12s absent      facultatif\n' "$t"
+    fi
+    return 0
+  fi
+  have="$(installed_version "$t")"
+  want="$(pinned_version "$t")"
+  where="$(command -v "$t")"
+  if [[ -z "$have" ]]; then
+    printf '%-12s illisible   %s (la version ne s'"'"'affiche pas)\n' "$t" "$where"
+    [[ "$req" == oui ]] && n_missing=$((n_missing + 1))
+  elif [[ -z "$want" || "$have" == "$want" ]]; then
+    printf '%-12s présent     %-10s %s\n' "$t" "$have" "$where"
+    n_ok=$((n_ok + 1))
+  else
+    printf '%-12s écart       %-10s épinglé %s (%s)\n' "$t" "$have" "$want" "$where"
+    n_gap=$((n_gap + 1))
+  fi
+}
+
+if [[ -n "$ONLY" ]]; then
+  command -v "$ONLY" >/dev/null 2>&1 || exit 1
+  have="$(installed_version "$ONLY")"
+  [[ -n "$have" && "$have" == "$(pinned_version "$ONLY")" ]]
+  exit $?
+fi
+
+[[ -r "$LOCK" ]] || { echo "doctor: lock illisible : $LOCK" >&2; exit 2; }
+echo "== doctor : $(uname -m), lock $(basename "$LOCK"), PATH en tête : $BIN_DIR"
+echo "-- requis"
+for t in "${REQUIRED[@]}"; do report "$t" oui; done
+echo "-- facultatifs (information)"
+for t in "${OPTIONAL[@]}"; do report "$t" non; done
+printf -- '-- présents à la bonne version=%s écart=%s requis manquants=%s\n' "$n_ok" "$n_gap" "$n_missing"
+if [[ "$n_missing" -gt 0 ]]; then
+  echo "RESULT: FAIL (outil requis manquant ; installer avec tools/dev/cloud-setup.sh)"
+  exit 1
+elif [[ "$n_gap" -gt 0 && "$STRICT" == 1 ]]; then
+  echo "RESULT: FAIL (écart de version, --strict)"
+  exit 1
+fi
+echo "RESULT: PASS"

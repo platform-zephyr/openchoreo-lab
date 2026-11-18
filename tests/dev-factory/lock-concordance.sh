@@ -3,6 +3,9 @@
 #  - chaque clé du lock figure dans le Dockerfile avec la même valeur ;
 #  - chaque ARG *_VERSION / *_SHA256 du Dockerfile figure dans le lock ;
 #  - chaque clé du lock qui figure aussi dans l'env de ci.yaml a la même valeur ;
+#  - SL-2 (T-454) : chaque clé <OUTIL>_AMD64_SHA256 est une empreinte valide, a sa <OUTIL>_VERSION dans le lock et est
+#    lue par tools/dev/cloud-setup.sh ; les outils propres à la VM cloud (RUFF_*, PRECOMMIT_*) sont absents du Dockerfile
+#    par conception, RUFF_VERSION = ruff== de ci.yaml ; doctor couvre les mêmes outils ;
 #  - les paquets pip (yamllint, PyYAML, jsonschema) sont identiques dans le Dockerfile, ci.yaml (yamllint, PyYAML)
 #    et tools/appgen/requirements.txt (PyYAML, jsonschema).
 # Usage : tests/dev-factory/lock-concordance.sh      (LOCK, DF, CI, REQ surchargeables : sert aux cas négatifs)
@@ -12,6 +15,8 @@ LOCK="${LOCK:-tools/dev/toolchain.lock}"
 DF="${DF:-.devcontainer/Dockerfile}"
 CI="${CI:-.github/workflows/ci.yaml}"
 REQ="${REQ:-tools/appgen/requirements.txt}"
+SETUP="${SETUP:-tools/dev/cloud-setup.sh}"
+DOCTOR="${DOCTOR:-tools/dev/doctor}"
 fails=0
 ko() { printf 'FAIL %s\n' "$1"; fails=$((fails + 1)); }
 
@@ -26,8 +31,24 @@ done <"$LOCK"
 
 pip_name() { case "$1" in YAMLLINT) echo yamllint ;; PYYAML) echo PyYAML ;; JSONSCHEMA) echo jsonschema ;; *) return 1 ;; esac; }
 
+# Clés propres à la VM cloud (linux-amd64) : hors Dockerfile (arm64), contrôlées par les règles SL-2 ci-dessous.
+cloud_only() { [[ "$1" == *_AMD64_SHA256 || "$1" == RUFF_* || "$1" == PRECOMMIT_* ]]; }
+
 for k in "${!lock[@]}"; do
   v="${lock[$k]}"
+  if cloud_only "$k"; then
+    grep -Fq "$k" "$SETUP" || ko "$k : clé non lue par $SETUP"
+    if [[ "$k" == *_AMD64_SHA256 ]]; then
+      [[ "$v" =~ ^[0-9a-f]{64}$ ]] || ko "$k : empreinte invalide"
+      tool="${k%_AMD64_SHA256}"
+      [[ -n "${lock[${tool}_VERSION]:-}" ]] || ko "$k : ${tool}_VERSION absente du lock"
+      [[ "$v" != "${lock[${tool}_SHA256]:-}" ]] || ko "$k : identique à l'empreinte arm64 (${tool}_SHA256)"
+    fi
+    if [[ "$k" == RUFF_VERSION ]]; then
+      grep -Fq "\"ruff==$v\"" "$CI" || ko "$k : 'ruff==$v' absent de ci.yaml"
+    fi
+    continue
+  fi
   if [[ "$k" == *_SHA256 && ! "$v" =~ ^[0-9a-f]{64}$ ]]; then ko "$k : empreinte invalide"; fi
   base="${k%_VERSION}"
   if [[ "$k" == *_VERSION ]] && p="$(pip_name "$base")"; then
@@ -50,6 +71,12 @@ done
 while IFS= read -r k; do
   [[ -n "${lock[$k]:-}" ]] || ko "$k : ARG du Dockerfile absent du lock"
 done < <(sed -n 's/^ARG \([A-Z0-9_]*_\(VERSION\|SHA256\)\)=.*/\1/p' "$DF")
+
+# Chaque outil requis de doctor a sa version épinglée dans le lock et son installation dans cloud-setup.sh.
+for t in helm kubeconform actionlint gitleaks shellcheck ruff yq pre-commit; do
+  grep -Eq "(^|[^a-z-])${t}\)" "$DOCTOR" || ko "$t : absent de $DOCTOR"
+  grep -Eq "^    ${t}\)" "$SETUP" || ko "$t : installation absente de $SETUP"
+done
 
 if [[ "$fails" -gt 0 ]]; then
   printf 'TOOLCHAIN-LOCK: FAIL (%s)\n' "$fails"
