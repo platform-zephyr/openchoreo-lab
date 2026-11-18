@@ -56,6 +56,21 @@ if grep -Eq '^FROM python:[^@ ]+@sha256:[0-9a-f]{64}$' "$DF"; then ok "image de 
 dl="$(grep -cE 'curl -fsSL[Oo]' "$DF")"; ver="$(grep -c 'sha256sum -c' "$DF")"
 if [[ "$dl" -gt 0 && "$dl" -eq "$ver" ]]; then ok "chaque téléchargement ($dl) a un sha256sum -c ($ver)"; else ko "téléchargements $dl / vérifications sha256 $ver"; fi
 
+# Multi-arch (T-470) : TARGETARCH, aucune architecture imposée, empreintes par architecture = lock (sans réseau).
+# Le verdict amd64 BLOCKED (empreinte absente du lock) est reporté tel quel : il n'est pas un PASS.
+if grep -Fxq 'ARG TARGETARCH' "$DF"; then ok "Dockerfile : ARG TARGETARCH"; else ko "Dockerfile sans ARG TARGETARCH"; fi
+if grep -Eq -- '--platform' "$DJ" || grep -Eq 'linux/arm64' <(grep -v '^#' "$DF"); then
+  ko "architecture imposée (--platform ou linux/arm64) dans devcontainer.json ou le Dockerfile"
+else
+  ok "aucune architecture imposée (amd64 et arm64 construisibles)"
+fi
+if "$PWD/tests/dev-factory/lock-concordance.sh" >"$W/conc" 2>&1; then
+  ok "concordance lock = Dockerfile : $(tail -n2 "$W/conc" | tr '\n' ' ')"
+else
+  ko "concordance lock = Dockerfile (tests/dev-factory/lock-concordance.sh)"
+  sed 's/^/      | /' "$W/conc"
+fi
+
 # Concordance avec ci.yaml pour les outils déjà épinglés dans la CI (version et sha256).
 for tool in HELM KUBECONFORM YQ GITLEAKS ACTIONLINT; do
   v="$(sed -n "s/^  ${tool}_VERSION: \"\\(.*\\)\"/\\1/p" "$CI")"
