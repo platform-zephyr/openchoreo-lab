@@ -111,6 +111,14 @@ else
   sed 's/^/      | /' "$W/precommit"
 fi
 
+# Indicateur d'évasions de la CI (SL-7, T-461) : hors ligne, lecture seule.
+if "$PWD/tests/dev-factory/ci-escapes-test.sh" >"$W/escapes" 2>&1; then
+  ok "ci-escapes : $(tail -n1 "$W/escapes")"
+else
+  ko "ci-escapes (tests/dev-factory/ci-escapes-test.sh)"
+  sed 's/^/      | /' "$W/escapes"
+fi
+
 if [[ "$fails" -gt 0 ]]; then
   printf 'DEV-FACTORY-STATIC: FAIL (%s)\n' "$fails"
   exit 1
