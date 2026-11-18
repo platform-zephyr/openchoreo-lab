@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# setup : installe les hooks git locaux (SL-4, T-459). Idempotent : relancer ne change rien.
+# Installe les hooks pre-commit et pre-push du framework `pre-commit` d'après .pre-commit-config.yaml, puis lance
+# tools/dev/doctor (lecture seule) pour lister les outils manquants (tools/dev/cloud-setup.sh les installe).
+# Aucun réseau, aucun secret, aucun sudo. Le hook n'embarque pas --no-verify : il ne le contourne jamais.
+#
+# Usage : tools/dev/setup [--check]
+#   --check   ne modifie rien : vérifie que les hooks pre-commit et pre-push sont installés (rc 1 sinon)
+# Codes : 0 hooks installés ; 1 hooks absents (--check) ou outil manquant ; 2 usage ou prérequis (pre-commit absent,
+# core.hooksPath défini).
+set -uo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT" || exit 2
+CHECK=0
+case "${1:-}" in
+  "") ;;
+  --check) CHECK=1 ;;
+  -h | --help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; exit 0 ;;
+  *) echo "setup: option inconnue : $1" >&2; exit 2 ;;
+esac
+export PATH="$HOME/.local/bin:$PATH"
+
+hooks_dir="$(git rev-parse --git-path hooks)"
+installed() { grep -q 'pre-commit' "$hooks_dir/$1" 2>/dev/null; }
+
+if [[ "$CHECK" -eq 1 ]]; then
+  rc=0
+  for h in pre-commit pre-push; do
+    if installed "$h"; then echo "PASS hook $h installé"; else echo "FAIL hook $h absent (tools/dev/setup)"; rc=1; fi
+  done
+  exit "$rc"
+fi
+
+command -v pre-commit >/dev/null 2>&1 || { echo "setup: pre-commit absent (tools/dev/cloud-setup.sh --only pre-commit)" >&2; exit 2; }
+if [[ -n "$(git config --get core.hooksPath 2>/dev/null)" ]]; then
+  echo "setup: core.hooksPath est défini, pre-commit refuse d'installer ; le retirer d'abord" >&2
+  exit 2
+fi
+pre-commit install --hook-type pre-commit --hook-type pre-push || exit 2
+"$ROOT/tools/dev/setup" --check || exit 1
+echo "-- outils (doctor)"
+"$ROOT/tools/dev/doctor"
