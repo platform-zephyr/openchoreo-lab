@@ -1,6 +1,6 @@
 # STATE — OpenChoreo Lab (HANDOFF / reprise sans mémoire conversationnelle)
 
-Dernière mise à jour : 2026-11-17 ~20:45Z (§1b et §1c : 2026-11-18, consensus n°2). Lire ensuite `missions/MISSION.md` (règles et autorisations de Paul). — reprise du coordinateur : `docs/state/HANDOFF-COORDINATEUR.md` ; prochaines étapes : `backlog/NEXT.md` (2026-11-18 soir : exécutant prouvé de bout en bout, T-304 fait ; prérequis du pilote restants dans NEXT.md).
+Dernière mise à jour : 2026-11-17 ~20:45Z (§1b et §1c : 2026-11-18, consensus n°2 ; §4-§6 et §9 : 2026-11-18, T-001). Lire ensuite `missions/MISSION.md` (règles et autorisations de Paul). — reprise du coordinateur : `docs/state/HANDOFF-COORDINATEUR.md` ; prochaines étapes : `backlog/NEXT.md` (2026-11-18 soir : exécutant prouvé de bout en bout, T-304 fait ; prérequis du pilote restants dans NEXT.md).
 **Objectif** : un IDP OpenChoreo 1.3.3 réellement utilisable sur le cluster OKE `oracle-a1` ; premier jalon attendu = un service `whoami` créé et livré de bout en bout PAR la plateforme (intention → app.yaml → appgen → PR → CI → merge → Argo CD → OpenChoreo → pod Ready → HTTP 200 → modification → rollback Git), avec PREUVE RUNTIME DATÉE sur OKE (pas seulement k3d). Pas de nouvelle étude.
 **Règle de preuve** : PASS = preuve runtime datée. k3d ≠ OKE. Statique ≠ runtime. NOT_TESTED / BLOCKED ne sont jamais des PASS.
 
@@ -38,7 +38,7 @@ Mesures OKE (18:31Z, méthode MAX de 3 échantillons) : requests de tous les pod
 
 ## 4. PR et branches
 - openchoreo-lab `main` protégé (ruleset : PR + `ci-ok`, **0 approbation** : n'est PAS une frontière de sécurité). Mergées : #1-#7, #9-#15 (+ le présent handoff).
-- **PR #8 `feat/oke-remediation-cp-values`** : OUVERTE, CI verte (tête `30ecead`). Contient : remédiation de la revue (P1-P3), VAP corrigées par un vrai API server, projets Argo séparés (preuve 20 PASS), `uninstall.sh` sûr, corrections appgen/contrat (137 tests), preuves GitOps k3d. **À FUSIONNER SEULEMENT après** intégration de l'installation fail-closed (voir §6) — sinon `install.sh` sur `main` pourrait installer le chart non corrigé.
+- **PR #8 `feat/oke-remediation-cp-values`** : **FUSIONNÉE (squash)** le 2026-11-17 21:24:53Z, commit `071992c` sur `main`, `ci-ok` vert sur la tête `9056f47` (21:24:39Z). Contient : remédiation de la revue (P1-P3), VAP corrigées par un vrai API server, projets Argo séparés (preuve 20 PASS), `uninstall.sh` sûr, corrections appgen/contrat (137 tests), preuves GitOps k3d, **et l'installation fail-closed** (`tools/oke/security-bundle.sh`, `install.sh`, `verify.sh`, `security/bundle.lock`, `docs/SECURITY-BUNDLE.md`, `tests/security-bundle/`). Suivi : T-001 (le diff de #8 portait des chemins locaux et des IPv4 que la garde T-303 signale ; dette soldée sur `main` par #58, T-450).
 - kube-ops (brouillons, NON mergés, décisions de Paul) : #1629 (correctif C1), #1630 (blueprints Authentik, clé de signature existante réutilisée). Worktrees temporaires créés dans kube-ops pour ces deux PR : lister avec `git -C <kube-ops> worktree list` et les retirer quand les PR sont fusionnées.
 - Dépôt privé `platform-zephyr/openchoreo-lab-security` : bundle de sécurité (en cours de construction).
 
@@ -46,13 +46,13 @@ Mesures OKE (18:31Z, méthode MAX de 3 échantillons) : requests de tous les pod
 | Flux | Statut |
 |---|---|
 | Phase 2 k3d partagé `openchoreo` : RBAC strict + contrôleur corrigé + post-renderer + whoami sous moindre privilège + permissions effectives après install/upgrade | EN COURS (fichiers locaux uniquement, ne rien publier) |
-| Security bundle minimal et temporaire (dépôt privé, `security/bundle.lock`, `helm_secure`, refus de rollback non durci, tests de refus) | EN COURS |
+| Security bundle minimal et temporaire (dépôt privé, `security/bundle.lock`, `helm_secure`, refus de rollback non durci, tests de refus) | LIVRÉ dans `main` par la PR #8 (bundle 1.0.1 utilisé aux étapes OKE 6-9) |
 | A2 Argo (20 PASS), A3 VAP+uninstall (91+59 PASS), GitOps whoami k3d, corrections générateur (137 tests), Kyverno statique (97 tests CLI), architecture, étude stockage, étude migration Authentik | LIVRÉS et intégrés |
 | IDP utilisable (préparation) : `docs/IDP-USABLE.md` (chemin, 3 trous, rôles agents, checklist 6b), `tests/idp-demo/run.sh` (DRY_RUN, lecture seule cluster), corrections statiques authz/IDENTITY/PORTAL | PR DRAFT `feat/idp-usable` : statique seulement, **rien d'exécuté sur OKE** |
 Ne pas relancer de flux déjà livrés ; vérifier `ListAgents` d'abord.
 
 ## 6. Prochaines actions EXACTES (dans l'ordre)
-1. Attendre les rapports (phase 2 ; bundle). Quand le bundle est prêt : vérifier que le diff PUBLIC est neutre (grep des mots sensibles), `git add` seulement `tools/oke/security-bundle.sh`, `tools/oke/install.sh`, `tools/oke/verify.sh`, `security/`, `docs/SECURITY-BUNDLE.md`, `tests/security-bundle/`, pousser sur la branche PR #8, CI verte, **fusionner #8 (squash)**.
+1. FAIT (2026-11-17 21:24Z) : PR #8 fusionnée (squash) avec l'installation fail-closed. Reste de T-001 : vérifier le diff public de #8 avec les motifs propres au propriétaire (secret CI `LEAK_GUARD_EXTRA_PATTERNS` non défini, geste de Paul) ; voir `backlog/T-001-integrer-pr8-security-bundle.md`.
 2. Hygiène du working tree AVANT de fusionner/tirer `main` : des fichiers non suivis peuvent dupliquer des fichiers déjà sur `main` (docs/architecture, docs/identity-migration, docs/storage, docs/KYVERNO-POLICY-CONTRACT.md, platform/kyverno, tests/kyverno, tests/storage, clusters/README.md). **Ne supprimer AUCUN fichier non suivi** sans avoir vérifié (a) qu'il est IDENTIQUE à sa version sur `origin/main` (`git diff --no-index` ou `git show origin/main:<fichier>`) et (b) qu'aucun agent actif ne le modifie (`ListAgents`) ; en cas de doute, ne rien supprimer et fusionner autrement (worktree propre).
 3. Étapes OKE 6 → 9 puis 11 (sans 10) avec `install.sh` fail-closed, budget automatique, `verify.sh --step N` après chaque étape (preuves datées). Revérifier le gate dans `OKE-EXEC.md` (dossier de notes de l'agent OKE, emplacement dans le handoff privé) avant d'agir. Rouvrir le bastion si besoin (§2).
 4. Passer `lab-apps` en synchro automatique (`automated: {prune: false, selfHeal: true}`, `allowEmpty: true` seulement pour lab-apps) par petite PR, après validation k3d (APP-CONTRACT §5-§6).
@@ -72,7 +72,7 @@ Environnement local (chemins précis dans le handoff privé) : Colima profil `op
 ## 9. Vérification de reprise (à faire EN PREMIER après une compaction ; ne modifie PAS OKE)
 1. Retrouver le handoff privé (commande du §1) et le lire.
 2. `ListAgents` : repérer les agents actifs (phase 2 k3d, security bundle) ; ne PAS en recréer ; leurs résultats arrivent par notification.
-3. `git worktree list` (ce dépôt et kube-ops), `git status --short`, `git log --oneline -3` sur la branche courante, `gh pr list` (PR #8 ouverte ?).
+3. `git worktree list` (ce dépôt et kube-ops), `git status --short`, `git log --oneline -3` sur la branche courante, `gh pr list` (PR #8 : fusionnée le 2026-11-17).
 4. Security bundle : `gh repo view platform-zephyr/openchoreo-lab-security` (privé ?), état du clone local, présence de `security/bundle.lock` et de `docs/SECURITY-BUNDLE.md` dans ce dépôt, empreinte conforme au lock.
 5. Préconditions OKE en LECTURE SEULE : `oci ce cluster list` (cluster `ACTIVE`), session bastion encore valide (sinon rouvrir via le script), `tools/oke/preflight.sh` (aucune écriture), état des étapes dans §3.
-6. Reprendre ensuite les deux flux en cours, intégrer, fusionner la PR #8, puis les installations OKE autorisées. Pas de nouvelle étude ; ne pas redemander les décisions déjà enregistrées (§7).
+6. Reprendre ensuite les flux en cours, intégrer, puis les installations OKE autorisées (PR #8 déjà fusionnée). Pas de nouvelle étude ; ne pas redemander les décisions déjà enregistrées (§7).
