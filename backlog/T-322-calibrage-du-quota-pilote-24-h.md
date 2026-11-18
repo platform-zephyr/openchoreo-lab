@@ -4,7 +4,7 @@ title: "Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et 
 status: todo
 phase: P0
 adr: [0017, 0021]
-depends_on: [T-008, T-302, T-303, T-304, T-305, T-306, T-311, T-313, T-326, T-330, T-413]
+depends_on: [T-008, T-302, T-303, T-304, T-305, T-306, T-311, T-313, T-326, T-330, T-411, T-413]
 class: AUTONOME + MANDAT
 velocity: true
 lane: agents
@@ -46,3 +46,5 @@ Liste figée du pilote (20) : T-002, T-214, T-332, T-050, T-325, T-337, T-365, T
 Liste refaite (arbitrage Fable, 2026-11-18) : T-041 et T-070 sortent (chevauchement, P7) ; T-326 devient prérequis (P6) ; T-072, T-025 et T-074 (AUTONOME, sans cluster) entrent.
 
 T-413 ajouté aux prérequis (intégration 5, 2026-11-18) : T-214 (liste figée) en dépend. T-411 et T-414 (S0) sont recommandés avant l'heure 0 : décision de Paul (backlog/INTEGRATION-5.md).
+
+Arbitrage du coordinateur (2026-11-18) : T-411 (skill d'art antérieur, demande explicite de Paul) devient un prérequis du pilote ; T-414 (cliquet qualité) avance en parallèle.

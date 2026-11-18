@@ -9,8 +9,8 @@ class: REVUE
 velocity: true
 lane: agents-harness
 stage: S0
-model: claude-haiku-5-5
-effort: medium
+model: claude-sonnet-5-5
+effort: high
 routing: R2-texte
 github_issue: null
 ---

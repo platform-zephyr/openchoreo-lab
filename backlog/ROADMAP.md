@@ -47,7 +47,7 @@ Gestes purement humains (aucun agent) : [T-301](T-301-reecriture-de-l-historique
 
 Pilote de **24 h à N=3** en dispatch manuel ([T-322](T-322-calibrage-du-quota-pilote-24-h.md)) : coût par ticket, % de quota 5 h et hebdomadaire, concurrence cloud ; puis paliers 6 et 10 décidés par Paul. Il ne dépend ni de T-215 ni du ruleset (FINAL0), ni de T-061/T-061b (actés par la fusion de la PR #48). Moteur horaire d'Atlas/homelab-infra en pause pendant les 24 h.
 
-### Prérequis : S0 minimal (7 tickets)
+### Prérequis : S0 minimal (8 tickets)
 
 | Ticket | Titre | Vague | Classe | Modèle |
 |---|---|---|---|---|
@@ -57,6 +57,7 @@ Pilote de **24 h à N=3** en dispatch manuel ([T-322](T-322-calibrage-du-quota-p
 | [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 1 | REVUE | sonnet/high |
 | [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 2 | REVUE + MANDAT | sonnet/high |
 | [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 2 | REVUE | sonnet/high |
+| [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 2 | REVUE | sonnet/high |
 | [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 3 | MANDAT | sonnet/high |
 
 ### Liste figée du pilote (20 tickets, aucun autre lancement pendant le pilote)
@@ -96,7 +97,7 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 
 | Étape | haiku | sonnet | opus | humain |
 |---|---|---|---|---|
-| S0 | 3 | 12 | 1 | 1 |
+| S0 | 2 | 13 | 1 | 1 |
 | S1 | 0 | 37 | 3 | 0 |
 | S2 | 1 | 4 | 3 | 0 |
 | S3 | 0 | 13 | 0 | 0 |
@@ -128,8 +129,8 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 | [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 1 | ci | REVUE | sonnet/high | oui | 17 |
 | [T-431](T-431-reglages-depot-actions-securite.md) | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 1 | gouvernance | REVUE + MANDAT | sonnet/high | oui | 5 |
 | [T-301](T-301-reecriture-de-l-historique-et-purge.md) | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | 1 | gouvernance | MANDAT | humain/none |  | 0 |
+| [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 2 | agents-harness | REVUE | sonnet/high | oui | 5 |
 | [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 2 | ci | REVUE + MANDAT | sonnet/high | oui | 4 |
-| [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 2 | agents-harness | REVUE | haiku/medium | oui | 4 |
 | [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 2 | agents | REVUE | sonnet/high |  | 4 |
 | [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | 2 | gouvernance | AUTONOME | haiku/medium |  | 0 |
 | [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 3 | gouvernance | MANDAT | sonnet/high |  | 3 |
