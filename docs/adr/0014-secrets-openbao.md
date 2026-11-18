@@ -1,4 +1,4 @@
-# ADR-0014 — Secrets : OpenBao comme coffre de la plateforme, Doppler réduit aux racines
+# ADR-0014 — Secrets : OpenBao pour les secrets internes, Doppler pour les primitives externes
 Statut : PROPOSÉ · Date : 2026-11-18 · Décideur : Paul
 Décisions liées : D-2026-11-14-05, D-2026-11-15-10 (homelab-infra, secrets écrits par Tofu dans Doppler), ADR-0006,
 ADR-0007, ADR-0008, ADR-0009 ; `docs/architecture/DECISIONS-OPEN.md` D2, `docs/storage/OPENBAO-DOPPLER-ESO.md`
@@ -24,8 +24,16 @@ ADR-0007, ADR-0008, ADR-0009 ; `docs/architecture/DECISIONS-OPEN.md` D2, `docs/s
    la valeur manque, `app-status.v1` passe à BLOCKED avec la cause typée `secret-missing` et le chemin exact. L'humain
    la dépose une fois dans OpenBao (UI/CLI authentifiée par Authentik OIDC, politique limitée à `apps/*`). Ni Doppler,
    ni PR, ni valeur dans une conversation.
-4. **Doppler reste pour les racines** : jetons de bootstrap (ESO→OpenBao si besoin, Crossplane, ARC), secrets écrits
-   par Tofu pour le socle, et sauvegarde des clés de récupération d'OpenBao (en plus d'une copie hors ligne).
+4. **Frontière nette entre deux coffres** (précision de Paul, 2026-11-18) :
+
+   | Coffre | Contient | Qui écrit | Exemples |
+   |---|---|---|---|
+   | **Doppler** — secrets **externes, primitives de la plateforme** | tout secret dont la plateforme a besoin pour exister ou pour parler à un fournisseur, et qui ne peut pas être généré par elle | Paul (MANDAT) ou une root Tofu via ARC | clé d'auto-unseal / de récupération d'OpenBao, jeton Cloudflare (Access, tunnel), jetons R2, jeton admin Authentik de la plateforme, GitHub App, jeton ESO→OpenBao si besoin |
+   | **OpenBao** — secrets **internes** | tout secret né dans la plateforme ou propre à une app | la plateforme (générés) ; un humain pour une valeur d'app fournie | mots de passe de bases, secrets clients OIDC, jetons entre services, clés de chiffrement d'app, clé d'API tierce propre à une app (`provided`) |
+
+   Règle de décision : **si la plateforme peut le générer ou s'il ne sert qu'à une app, il va dans OpenBao ; s'il
+   conditionne le démarrage de la plateforme ou son accès à un fournisseur, il va dans Doppler.** Aucun secret
+   n'est dans les deux. ESO lit Doppler **seulement** pour les namespaces de plateforme, jamais pour une cellule d'app.
 5. **Accès par politique** : chaque cellule ne lit que `apps/<app>/<env>/*` ; les agents n'ont **aucune** lecture de
    valeur (seulement la présence d'une clé, pour le diagnostic) ; audit OpenBao activé.
 6. **Placement et exploitation, à qualifier par un spike** : OpenBao sur **OKE** (toujours allumé, à côté du control
@@ -39,6 +47,8 @@ ADR-0007, ADR-0008, ADR-0009 ; `docs/architecture/DECISIONS-OPEN.md` D2, `docs/s
   dépendance critique des **nouveaux** déploiements (les pods en cours gardent leurs Secrets).
 - La root Tofu `doppler/generated-app-secrets` n'a plus de nouvelles entrées ; migration des secrets existants app par
   app, au fil des migrations kube-ops.
+- CI : refus d'un `ClusterSecretStore` Doppler référencé depuis une cellule d'app ; inventaire des clés Doppler restreint
+  aux primitives (liste fermée, revue à chaque ajout).
 
 ## Alternatives écartées
 - **Doppler pour tout** (actuel) : secret posé avant chaque déploiement.
