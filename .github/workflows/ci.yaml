@@ -49,7 +49,7 @@ jobs:
         run: python3 -m pip install --disable-pip-version-check "yamllint==1.38.0"
       - name: yamllint (tools/dev/check)
         # Parite ci.yaml <-> tools/dev/check (T-460) : tools/dev/ci-map.tsv, tests/dev-factory/ci-parity.sh.
-        run: CHECK_ONLY="yamllint" tools/dev/check --static --strict
+        run: tools/dev/check --static --only yamllint --strict
 
   appgen:
     runs-on: ubuntu-24.04-arm
@@ -63,7 +63,7 @@ jobs:
       - name: Dependances appgen (figees)
         run: python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt
       - name: Validation, tests, derive et registre des identites (tools/dev/check)
-        run: CHECK_ONLY="appgen-validate,appgen-unittest,appgen-check,identities-lint" tools/dev/check --static --strict
+        run: tools/dev/check --static --only appgen-validate,appgen-unittest,appgen-check,identities-lint --strict
 
   crd-schema:
     runs-on: ubuntu-24.04-arm
@@ -118,7 +118,7 @@ jobs:
       - name: Detection de secrets (historique complet, regles par defaut, valeurs masquees ; tools/dev/check)
         # L'etape gitleaks de check utilise une config explicite (regles par defaut seulement) : .gitleaks.toml (garde
         # T-303, appliquee a l'arbre par le job leak-guard) ferait echouer sur l'historique deja publie.
-        run: CHECK_ONLY="gitleaks" tools/dev/check --static --strict
+        run: tools/dev/check --static --only gitleaks --strict
 
   leak-guard:
     # Garde de donnees sensibles du depot public (T-303) : OCID Oracle, IPv4 non documentaire, e-mail hors noreply,
@@ -141,7 +141,7 @@ jobs:
       - name: Tests (cas negatifs et positifs, absence de valeur en sortie, motif propre absent ; tools/dev/check)
         # Sans le secret : les tests fixent eux-memes les motifs dont ils ont besoin. Le shellcheck de ces scripts est
         # porte par l'etape shellcheck de check (job platform).
-        run: CHECK_ONLY="leak-guard" tools/dev/check --static --strict
+        run: tools/dev/check --static --only leak-guard --strict
       - name: Garde sur l'arbre (motifs generiques + motifs du proprietaire si le secret existe)
         # Le secret n'est expose qu'a cette etape (jamais aux tests, jamais aux PR de fork).
         env:
@@ -163,7 +163,7 @@ jobs:
           tar -xzf "actionlint_${ACTIONLINT_VERSION}_linux_arm64.tar.gz" actionlint
           sudo install -m 0755 actionlint /usr/local/bin/actionlint
       - name: actionlint (tools/dev/check)
-        run: CHECK_ONLY="actionlint" tools/dev/check --static --strict
+        run: tools/dev/check --static --only actionlint --strict
 
   charts:
     # Charts Helm locaux : aucun pour l'instant (le parcours helm pointe des charts OCI externes).
@@ -215,7 +215,7 @@ jobs:
       # Les tests sur VRAI Argo (tests/argo-escalation/run.sh) exigent un cluster jetable : hors CI, preuve
       # archivee dans tests/argo-escalation/RESULTS.md (docs/ARGO-ESCALATION.md).
       - name: Controles plateforme (tools/dev/check)
-        run: CHECK_ONLY="yamllint-platform,shellcheck,argo-guard-rules,argo-guard-negative,cell-cpt" tools/dev/check --static --strict
+        run: tools/dev/check --static --only yamllint-platform,shellcheck,argo-guard-rules,argo-guard-negative,cell-cpt --strict
 
   platform-render:
     # Rendus Helm epingles (PSA, 0 PVC/LB, images par digest), security bundle fail-closed, gardes de uninstall.sh
@@ -265,7 +265,7 @@ jobs:
         # (option prevue par le script ; sha256 reverifie par fetch_chart) ; check fixe ARGO_GUARD_CHART_CACHE lui-meme.
         env:
           SECURITY_BUNDLE_CHART_CACHE: ${{ github.workspace }}/../phaseb/charts
-        run: CHECK_ONLY="security-bundle,render-check,uninstall-guards,kubeconform-platform" tools/dev/check --static --strict
+        run: tools/dev/check --static --only security-bundle,render-check,uninstall-guards,kubeconform-platform --strict
 
   release-history:
     # Les releases historiques (generated/**/releases) sont append-only : un revert ne doit pas les supprimer.
@@ -278,11 +278,12 @@ jobs:
       - name: Aucune release historique supprimee
         env:
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
-        run: CHECK_ONLY="release-history" tools/dev/check --static --strict
+        run: tools/dev/check --static --only release-history --strict
 
   dev-factory:
     # Outillage de la Development Factory (tools/dev, .devcontainer, tests/dev-factory) : statique, sans cluster ni secret.
-    # Le conteneur ARM64 n'est pas construit en CI (docs/DEV-FACTORY.md) ; ici : shellcheck, yamllint, JSON, tests du garde-fou.
+    # Le conteneur ARM64 n'est pas construit en CI (docs/DEV-FACTORY.md) ; ici : shellcheck, yamllint, JSON, tests du garde-fou,
+    # parite ci.yaml <-> check et tests de l'usine (tests/factory, T-475 : ~10 s, hors chemin critique platform-render).
     runs-on: ubuntu-24.04-arm
     env:
       SHELLCHECK_VERSION: "v0.11.0"
@@ -297,21 +298,27 @@ jobs:
       - name: Outils (versions figees, archives verifiees par sha256)
         run: |
           set -euo pipefail
-          python3 -m pip install --disable-pip-version-check "yamllint==1.38.0"
+          python3 -m pip install --disable-pip-version-check "yamllint==1.38.0" "PyYAML==6.0.2"
           cd "$RUNNER_TEMP"
           curl -fsSLO "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
           echo "${SHELLCHECK_SHA256}  shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz" | sha256sum -c -
           tar -xJf "shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
           sudo install -m 0755 "shellcheck-${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
           shellcheck --version | head -2
+          # gitleaks : tests/factory/gestes-test.sh passe le document genere a leak-guard (sinon NOT_TESTED, refuse par --strict).
+          curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" | sha256sum -c -
+          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          # jq : image du runner (tools/factory/gestes.sh).
+          jq --version
       - name: yamllint de .devcontainer
         # tools/dev est couvert par l'etape yamllint de check (job yamllint), ses scripts par l'etape shellcheck (job platform).
         run: yamllint -c tools/appgen/yamllint.yaml .devcontainer
-      - name: Tests statiques (garde-fou negatif, pins, montages, devcontainer.json ; tools/dev/check)
-        run: CHECK_ONLY="dev-factory-static,devcontainer-json" tools/dev/check --static --strict
-      - name: Parite ci.yaml <-> tools/dev/check (tools/dev/ci-map.tsv)
-        # Etape de check a ajouter (hors perimetre de T-460) : le test est lance ici directement.
-        run: tests/dev-factory/ci-parity.sh
+      - name: Tests statiques, parite ci.yaml <-> check, tests de l'usine (tools/dev/check)
+        # dev-factory-static (garde-fou negatif, pins, montages), devcontainer.json, ci-parity (tools/dev/ci-map.tsv),
+        # factory (tests/factory/*-test.sh : executant, gouverneur, gestes, ledger, recouvrement, cablage T-467).
+        run: tools/dev/check --static --only dev-factory-static,devcontainer-json,ci-parity,factory --strict
 
   backlog:
     # Tickets backlog/T-*.md : en-tete, graphe, etapes, model/effort (tools/backlog/check.py, ADR-0012, ADR-0023). Stdlib seule.
@@ -323,8 +330,10 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-      - name: Tests et controle des tickets (tools/dev/check)
-        run: CHECK_ONLY="backlog-unittest,backlog" tools/dev/check --static --strict
+      - name: Tests, controle des tickets et fraicheur de backlog/STATUS.md (tools/dev/check)
+        # backlog-status (T-473) : python3 tools/backlog/status.py --check, rc 1 si STATUS.md est perime
+        # (regenerer : python3 -B tools/backlog/status.py --write).
+        run: tools/dev/check --static --only backlog-unittest,backlog,backlog-status --strict
 
   lint-code:
     # ADR-0024, T-413 : ruff (bogues F,B,E9 bloquants ; jeu complet en avertissement) et shellcheck -S warning sur tous les *.sh versionnes.
@@ -351,12 +360,12 @@ jobs:
           sudo install -m 0755 "shellcheck-${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
           shellcheck --version | head -2
       - name: "ruff, classe bogue (F, B, E9), 0 erreur (tools/dev/check)"
-        run: CHECK_ONLY="ruff-bugs" tools/dev/check --static --strict
+        run: tools/dev/check --static --only ruff-bugs --strict
       - name: ruff, jeu complet (avertissement, ligne de base QA-4)
         continue-on-error: true
         run: ruff check --statistics tools tests
       - name: shellcheck -S warning sur tous les scripts versionnes (tools/dev/check)
-        run: CHECK_ONLY="shellcheck-all" tools/dev/check --static --strict
+        run: tools/dev/check --static --only shellcheck-all --strict
 
   quality:
     # ADR-0024, T-414 : cliquet de maintenabilite (tools/quality/check.py contre baseline.json). Rapide : aucun test.
@@ -371,7 +380,7 @@ jobs:
       - name: Installer les outils (versions figees)
         run: python3 -m pip install --disable-pip-version-check "ruff==0.16.9" "radon==6.0.1" "mypy==2.3.1"
       - name: Cliquet (tests, aucune degradation, seuils durs sur le code neuf ; tools/dev/check)
-        run: CHECK_ONLY="quality" tools/dev/check --static --strict
+        run: tools/dev/check --static --only quality --strict
 
   quality-coverage:
     # ADR-0024, T-414 : plancher de couverture (appgen.py >= 85 %, diff >= 80 %) et artefact quality.v1.json date.
@@ -389,19 +398,12 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt \
             "ruff==0.16.9" "radon==6.0.1" "mypy==2.3.1" "coverage==7.17.3"
-      - name: Tests sous couverture (appgen, backlog, identites)
-        run: |
-          coverage run -m unittest discover -s tests/appgen
-          coverage run -a -m unittest discover -s tests/backlog
-          coverage run -a -m unittest discover -s tests/identities
-          coverage json -o coverage.json
-      - name: Plancher de couverture, diff et quality.v1.json
+      - name: Tests sous couverture, plancher, diff et quality.v1.json (tools/dev/check)
+        # Etape coverage de check : tests appgen, backlog, identites sous coverage, puis tools/quality/check.py avec
+        # --base origin/main (fetch-depth 0 : PR, file de fusion et main) ; QUALITY_OUTPUT garde quality.v1.json.
         env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          base=()
-          if [ -n "$BASE_REF" ]; then base=(--base "origin/$BASE_REF"); fi
-          python3 tools/quality/check.py --coverage-json coverage.json --output quality.v1.json "${base[@]}"
+          QUALITY_OUTPUT: quality.v1.json
+        run: tools/dev/check --static --only coverage --strict
       - name: Publier quality.v1.json
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -409,6 +411,23 @@ jobs:
           name: quality-v1
           path: quality.v1.json
           if-no-files-found: ignore
+      # T-421 : une ligne quality.v1 par merge sur main, publiee en artefact `quality-history-<sha>` (90 jours). Aucune
+      # ecriture sur main (ni commit ni PR) : la consolidation (rapport T-323) lira les artefacts. Informatif : les deux
+      # etapes ont continue-on-error, ne tournent qu'au push sur main et ne changent jamais le verdict du job ni de ci-ok.
+      - name: Historique quality.v1 (apres merge sur main, T-421, non bloquant)
+        id: history
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: python3 -B tools/quality/history.py --report quality.v1.json --history quality-history.jsonl
+      - name: Publier la ligne quality-history (apres merge sur main, T-421, non bloquant)
+        if: steps.history.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quality-history-${{ github.sha }}
+          path: quality-history.jsonl
+          retention-days: 90
+          if-no-files-found: error
 
   agent-trailers:
     # T-313 : une PR d'agent (branche claude/issue-* (usine ; la branche du coordinateur, historique non conforme, est exclue) ou agent/*, ou auteur = bot de l'executant) n'a que des commits en
@@ -449,12 +468,9 @@ jobs:
           set -euo pipefail
           python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt "yamllint==1.38.0"
           command -v jq >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq jq; }
-      # Miroir des etapes settings et hooks de check (tools/dev/ci-map.tsv) : CHECK_ONLY serait herite par le check --fast
-      # que lance le hook Stop teste ici ; un drapeau --only de check (hors perimetre de T-460) leverait l'obstacle.
-      - name: Hooks (cas autorises et refuses)
-        run: tests/hooks/run.sh
-      - name: Hooks vs settings.json
-        run: tests/hooks/settings.test.sh
+      # Etapes settings et hooks de check (T-460) : --only n'est pas transmis au check --fast que lance le hook Stop teste.
+      - name: Hooks (cas autorises et refuses) et hooks vs settings.json (tools/dev/check)
+        run: tools/dev/check --static --only settings,hooks --strict
 
   ci-ok:
     # Check requis par la protection de branche : echoue si un job amont n'est pas en success.

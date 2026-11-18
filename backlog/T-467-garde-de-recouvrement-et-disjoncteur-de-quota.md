@@ -166,4 +166,4 @@ Le schéma `docs/schema/mission-result.v1.json` (hors périmètre) n'a ni `statu
 
 Constat sur le run réel `44313706955` : `overlap.py --tickets 66,67` refuse le lot (T-460 et T-462 partagent
 `tests/dev-factory/`). Les tests `tests/factory/*` ne sont lancés par aucun job CI (`ci.yaml` est un fichier chaud, hors
-périmètre) : suite à ouvrir.
+périmètre) : suite T-475 (étape `factory` de `tools/dev/check`, job `dev-factory`, STATIC PASS 2026-11-18).

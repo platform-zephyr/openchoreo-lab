@@ -115,6 +115,31 @@ out_has "  … verdict INCOMPLET, pas PASS" '^RESULT: INCOMPLET'
 if grep -Eq '^PASS ' "$W/out"; then ko "un outil absent ne doit jamais apparaître PASS"; else ok "aucune ligne PASS pour les outils absents"; fi
 expect "outil absent avec --strict : rc 3" 3 env PATH="$W/bin" CHECK_ONLY=shellcheck "$CHECK" --static --strict
 expect "outil absent + un FAIL : rc 1 (FAIL prioritaire)" 1 env PATH="$W/bin" CHECK_ONLY=shellcheck,toolchain-lock LOCK="$W/lock.bad-version" "$CHECK" --static --strict
+# --only (forme de la CI, T-460) : sélection identique à CHECK_ONLY, prioritaire, jamais transmise aux processus enfants.
+expect "check --only : un contrôle PASS" 0 "$CHECK" --static --only toolchain-lock
+out_has "  … seul le contrôle demandé" '^PASS +toolchain-lock'
+if grep -Eq '^(PASS|FAIL|NOT_TESTED) +(shellcheck|yamllint|gitleaks) ' "$W/out"; then ko "--only : un contrôle non demandé a tourné"; else ok "--only : aucun autre contrôle"; fi
+expect "check --only=a : forme avec =" 0 "$CHECK" --static --only=toolchain-lock
+expect "check --only sans liste : usage (rc 2)" 2 "$CHECK" --static --only
+expect "check --only prime sur CHECK_ONLY" 0 env CHECK_ONLY=shellcheck "$CHECK" --static --only toolchain-lock
+if grep -Eq '^(PASS|FAIL|NOT_TESTED) +shellcheck ' "$W/out"; then ko "--only doit primer sur CHECK_ONLY"; else ok "  … CHECK_ONLY ignoré"; fi
+# Non-héritage : un `check --list` lancé par un contrôle (ci-parity, hook Stop) voit toutes les étapes.
+n_all="$("$CHECK" --list | wc -l)"
+n_child="$(env CHECK_ONLY=toolchain-lock "$CHECK" --list | wc -l)"
+if [[ "$n_child" -eq 1 ]]; then ok "CHECK_ONLY sélectionne au niveau 1 (--list : 1 étape)"; else ko "CHECK_ONLY sans effet sur --list ($n_child)"; fi
+if grep -q '^unset CHECK_ONLY$' "$CHECK" && [[ "$n_all" -gt 30 ]]; then ok "check retire CHECK_ONLY de l'environnement des enfants ($n_all étapes au total)"; else ko "CHECK_ONLY reste hérité par les enfants"; fi
+# Preuve à l'exécution : ci-parity relance `check --list` ; si CHECK_ONLY était hérité, la liste n'aurait qu'une étape
+# et la parité échouerait (étapes inexistantes).
+if python3 -c 'import yaml' >/dev/null 2>&1; then
+  expect "CHECK_ONLY non hérité : ci-parity (check --list imbriqué) PASS" 0 env CHECK_ONLY=ci-parity "$CHECK" --static --strict
+  out_has "  … ci-parity PASS" '^PASS +ci-parity '
+else
+  printf 'NOT_TESTED non-héritage de CHECK_ONLY : PyYAML absent\n'
+fi
+"$CHECK" --list >"$W/list.all"
+for n in backlog-status ci-parity factory; do
+  if grep -qx "$n" "$W/list.all"; then ok "étape $n dans --list (T-475)"; else ko "étape $n absente de --list"; fi
+done
 expect "CHECK_SKIP : exclu = NOT_TESTED" 0 env CHECK_ONLY=toolchain-lock CHECK_SKIP=toolchain-lock "$CHECK" --static
 out_has "  … exclu (CHECK_SKIP)" '^NOT_TESTED +toolchain-lock .*exclu'
 # Contrôles portés par un ticket futur : tant que le script manque, NOT_TESTED (jamais PASS).
@@ -477,7 +502,7 @@ if grep -Eq '^git --config [^ ]+ --redact --no-banner --log-level warn \.$' "$W/
 if [[ "$(cat "$W/gl.cfg")" == $'[extend]\nuseDefault = true' ]]; then ok "  … config = règles par défaut seules (pas .gitleaks.toml)"; else ko "  … config inattendue"; fi
 # Depuis T-460 le job `secrets` appelle l'étape `gitleaks` de check (plus de commande inline) : on vérifie l'appel
 # strict dans ci.yaml ET que l'appel gitleaks de check (git --config, useDefault) est celui testé ci-dessus.
-if grep -q 'CHECK_ONLY="gitleaks" tools/dev/check --static --strict' .github/workflows/ci.yaml \
+if grep -q 'tools/dev/check --static --only gitleaks --strict' .github/workflows/ci.yaml \
   && grep -q 'gitleaks git --config' tools/dev/check && grep -q 'useDefault = true' tools/dev/check; then ok "  … job secrets de ci.yaml = étape gitleaks de check (strict)"; else ko "  … ci.yaml n'appelle plus l'étape gitleaks de check, ou check a changé d'appel"; fi
 expect "gitleaks : trouvaille = FAIL rc 1" 1 env CHECK_ONLY=gitleaks FAKE_FAIL=gitleaks "$MINI" tools/dev/check --static
 out_has "  … FAIL gitleaks" '^FAIL +gitleaks '

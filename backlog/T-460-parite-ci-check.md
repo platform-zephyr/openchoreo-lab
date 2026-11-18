@@ -25,10 +25,12 @@ tools/dev/ci-map.tsv, tests/dev-factory/ci-parity.sh, .github/workflows/ci.yaml,
 
 ## Critères de fin
 - [x] `tools/dev/ci-map.tsv` et `tests/dev-factory/ci-parity.sh` avec cas négatifs (job sans étape locale, étape orpheline)
-- [ ] jobs de `ci.yaml` appelant `check --only <étapes> --strict`, `ci-ok` inchangé
+- [x] jobs de `ci.yaml` appelant `check --only <étapes> --strict`, `ci-ok` inchangé (STATIC PASS 2026-11-18, T-475 : 15 jobs
+  en mode `check` sous la forme `tools/dev/check --static --only <étapes> --strict`, `hooks` et `quality-coverage`
+  compris, plus aucun `miroir` ; `CHECK_ONLY=` refusé par `tests/dev-factory/ci-parity.sh` ; `needs` de `ci-ok` inchangé)
 - [x] le critère 3 de T-332 est prouvé (même commande en CI et en local) : 12 jobs convertis, PR #70 (agent T-460, issue 66), run CI 44315526142, 18 checks verts dont `ci-ok`, 2026-11-18
 
 ## Notes
 Issu de `docs/research/SHIFT-LEFT-DEV-ENV.md` §5. Mode dev : merge après `ci-ok`.
 
-Reste (critère 2) : forme littérale `--only` (le workflow utilise `CHECK_ONLY=<étapes> tools/dev/check --static --strict`), jobs `hooks` et `quality-coverage` non convertis ; issue 66 à fermer après relecture.
+Reste : run CI vert de la PR T-475 (critère 2 prouvé en STATIC seulement), puis `status: done` ; issue 66 à fermer après relecture. LOCAL-ONLY restants : `guard-check`, `toolchain-lock`, `check-selftest`, `identities` (raisons dans `ci-map.tsv`).

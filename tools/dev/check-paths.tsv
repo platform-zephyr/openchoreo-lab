@@ -9,6 +9,8 @@ guard-check	tools/dev/*,.devcontainer/*
 toolchain-lock	tools/dev/*,.devcontainer/*,.github/workflows/ci.yaml,tests/dev-factory/*
 dev-factory-static	tools/dev/*,.devcontainer/*,tests/dev-factory/*
 check-selftest	tools/dev/*,tests/dev-factory/*
+ci-parity	tools/dev/*,tests/dev-factory/*,.github/workflows/ci.yaml
+factory	tools/factory/*,tests/factory/*,.github/workflows/*,backlog/*,tools/backlog/*,docs/GESTES-PAUL.md,.claude/hooks/*
 devcontainer-json	.devcontainer/*
 shellcheck	*.sh,tools/dev/*
 shellcheck-all	*.sh
@@ -17,6 +19,7 @@ yamllint-platform	platform/*,tools/oke/*,tests/argo-guard/*,tests/argo-escalatio
 actionlint	.github/*
 gitleaks	*
 backlog	backlog/*,docs/adr/*,docs/review/*,tools/backlog/*,.github/CODEOWNERS
+backlog-status	backlog/*,tools/backlog/*
 backlog-unittest	backlog/*,tools/backlog/*,tests/backlog/*
 identities-lint	docs/state/*,tools/backlog/*,tests/identities/*
 ruff-bugs	*.py

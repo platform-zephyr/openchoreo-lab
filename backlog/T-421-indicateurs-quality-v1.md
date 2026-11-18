@@ -35,6 +35,9 @@ Le rapport de l'usine T-323 est différé après la porte : la section qualité 
 Fait : `docs/schema/quality.v1.json` (versionné, champs fermés, aucune valeur secrète) ; `tools/quality/history.py` (ajoute shellcheck, % docstrings et fichiers touchés, valide, refuse une ligne invalide, ignore un commit déjà présent) ; première ligne dans `docs/state/quality-history.jsonl` ; `tests/quality/test_history.py` (cas négatifs). Commande : `python3 tools/quality/check.py --output q.json && python3 tools/quality/history.py --report q.json`.
 
 Reste :
-- écrire la ligne automatiquement à chaque merge sur `main` (étape de workflow : `ci.yaml` est hors périmètre de cette session ; ticket de suite côté `.github/`) ;
+- écrire la ligne automatiquement à chaque merge sur `main` : étape branchée par T-475 (job `quality-coverage`, push sur
+  `main` seulement, `continue-on-error`) ; la ligne part en artefact `quality-history-<sha>` (90 jours), pas dans Git.
+  NOT_TESTED tant qu'aucun push sur `main` n'a suivi la fusion de T-475 ; la consolidation des artefacts dans
+  `docs/state/quality-history.jsonl` relève du rapport T-323 ;
 - relier aux indicateurs de livraison (revert, itérations CI par PR) : `touched_files` est prêt, la jointure attend T-323 ;
 - section qualité (tendance 4 semaines) du rapport hebdomadaire T-323, différé après la porte.
