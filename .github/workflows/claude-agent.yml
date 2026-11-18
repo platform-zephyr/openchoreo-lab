@@ -7,7 +7,7 @@
 # ce dépôt seulement). Déploiement = merge puis Argo CD ; la preuve runtime reste au coordinateur.
 # Gouverneur (T-311) : kill-switch factory/PAUSE, matrice max-parallel 3 (factory/config.yaml), dispatch manuel du pilote.
 # Sécurité : déclencheur restreint à l'acteur propriétaire (une issue publique ne suffit pas), concurrence par issue,
-# pas de show_full_output (dépôt public : les journaux sont publics), pas de secret autre que le jeton Claude.
+# show_full_output seulement si l'entrée `debug` est vraie (dépôt public : les journaux sont publics), pas de secret autre que le jeton Claude.
 # docs/AGENT-RUNNERS.md : mise en route.
 name: claude-agent
 on:
@@ -35,6 +35,11 @@ on:
         required: false
         default: ""
         type: string
+      debug:
+        description: "Journaux complets de l'agent (depot public : seulement pour un essai sans donnee sensible)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -128,6 +133,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Identité de l'exécutant (mode dev, T-304) : jeton fin avec la permission workflows ; ses PR déclenchent la CI.
           github_token: ${{ secrets.FACTORY_GH_TOKEN }}
+          show_full_output: ${{ inputs.debug }}
           prompt: "Traite l'issue #${{ matrix.issue }} de ce dépôt (lis-la avec gh issue view ${{ matrix.issue }}) selon AGENTS.md."
           base_branch: main
           branch_prefix: "claude/"
