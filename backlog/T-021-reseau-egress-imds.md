@@ -6,6 +6,8 @@ phase: P2
 adr: [0006, 0003]
 depends_on: [T-002, T-030]
 class: AUTONOME + MANDAT
+velocity: false
+lane: securite
 github_issue: null
 ---
 # T-021 — Egress déclaré (FQDN Cilium) et IMDS refusé dans toutes les cellules

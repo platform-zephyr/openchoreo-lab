@@ -4,8 +4,10 @@ title: "Kyverno en Enforce sur le golden path, exceptions générées"
 status: todo
 phase: P2
 adr: [0006]
-depends_on: [T-002, T-009, T-030]
+depends_on: [T-002, T-030]
 class: AUTONOME
+velocity: false
+lane: securite
 github_issue: null
 ---
 # T-020 — Kyverno en Enforce sur le golden path, exceptions générées

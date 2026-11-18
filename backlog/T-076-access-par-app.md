@@ -4,8 +4,10 @@ title: "Application Cloudflare Access générée par app (Crossplane)"
 status: todo
 phase: P2
 adr: [0010, 0009]
-depends_on: [T-029, T-028]
+depends_on: [T-028, T-029]
 class: AUTONOME
+velocity: false
+lane: exposition
 github_issue: null
 ---
 # T-076 — Application Cloudflare Access générée par app (Crossplane)

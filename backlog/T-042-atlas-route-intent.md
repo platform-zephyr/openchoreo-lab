@@ -6,6 +6,8 @@ phase: P4
 adr: [0012, 0013]
 depends_on: [T-041]
 class: REVUE + MANDAT
+velocity: false
+lane: connaissance
 github_issue: null
 ---
 # T-042 — Atlas : entrée de catalogue et skill de routage d'intention

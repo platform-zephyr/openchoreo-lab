@@ -4,8 +4,10 @@ title: "Secrets `generate` et `provided` via OpenBao + ESO, statut `secret-missi
 status: todo
 phase: P2
 adr: [0014, 0011]
-depends_on: [T-022, T-005, T-060]
+depends_on: [T-005, T-022, T-060]
 class: AUTONOME + REVUE + MANDAT
+velocity: false
+lane: secrets
 github_issue: null
 ---
 # T-023 — Secrets `generate` et `provided` via OpenBao + ESO, statut `secret-missing`

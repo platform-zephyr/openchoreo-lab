@@ -6,6 +6,8 @@ phase: P1
 adr: [0005]
 depends_on: [T-001, T-002]
 class: AUTONOME
+velocity: true
+lane: contrat-appgen
 github_issue: null
 ---
 # T-010 — Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4)

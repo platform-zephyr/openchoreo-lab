@@ -4,8 +4,10 @@ title: "Spike OpenBao : placement, stockage, déscellement, sauvegarde"
 status: todo
 phase: P2
 adr: [0014]
-depends_on: [T-009]
+depends_on: []
 class: AUTONOME + MANDAT
+velocity: false
+lane: secrets
 github_issue: null
 ---
 # T-022 — Spike OpenBao : placement, stockage, déscellement, sauvegarde

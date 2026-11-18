@@ -6,6 +6,8 @@ phase: P0
 adr: [0002]
 depends_on: []
 class: REVUE
+velocity: true
+lane: ci
 github_issue: null
 ---
 # T-007 — Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002

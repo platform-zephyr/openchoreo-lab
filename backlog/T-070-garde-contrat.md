@@ -6,6 +6,8 @@ phase: P1
 adr: [0001, 0005]
 depends_on: [T-002]
 class: REVUE
+velocity: true
+lane: ci
 github_issue: null
 ---
 # T-070 — Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/`

@@ -6,6 +6,8 @@ phase: P2
 adr: [0008]
 depends_on: [T-002]
 class: AUTONOME
+velocity: false
+lane: contrat-appgen
 github_issue: null
 ---
 # T-025 — Classe de donnée dans le contrat et labels `data-class` (G8)

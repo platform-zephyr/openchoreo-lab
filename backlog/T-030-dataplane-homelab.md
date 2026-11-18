@@ -6,6 +6,8 @@ phase: P0
 adr: [0003]
 depends_on: [T-001]
 class: REVUE + MANDAT
+velocity: false
+lane: hybride
 github_issue: null
 ---
 # T-030 — Enregistrer le homelab comme `ClusterDataPlane` (chemin NetBird L4)

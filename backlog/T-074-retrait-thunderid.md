@@ -6,6 +6,8 @@ phase: P1
 adr: [0007]
 depends_on: [T-001]
 class: AUTONOME
+velocity: false
+lane: contrat-appgen
 github_issue: null
 ---
 # T-074 — Retirer ThunderID du contrat et des capacités ; Authentik seul

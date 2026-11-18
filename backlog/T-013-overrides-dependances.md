@@ -6,6 +6,8 @@ phase: P1
 adr: [0005, 0004]
 depends_on: [T-003]
 class: AUTONOME
+velocity: false
+lane: contrat-appgen
 github_issue: null
 ---
 # T-013 — Surcharges par environnement (G12)

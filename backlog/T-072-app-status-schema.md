@@ -6,6 +6,8 @@ phase: P0
 adr: [0011]
 depends_on: [T-001]
 class: AUTONOME
+velocity: true
+lane: preuve
 github_issue: null
 ---
 # T-072 — Schéma `app-status.v1` et `_checks` en sortie JSON stable

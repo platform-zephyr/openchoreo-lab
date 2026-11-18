@@ -4,8 +4,10 @@ title: "Preuve runtime automatique après sync (Job PostSync + publication)"
 status: todo
 phase: P0
 adr: [0011]
-depends_on: [T-072, T-003]
+depends_on: [T-003, T-072]
 class: AUTONOME + REVUE + MANDAT
+velocity: true
+lane: preuve
 github_issue: 51
 ---
 # T-005 — Preuve runtime automatique après sync (Job PostSync + publication)

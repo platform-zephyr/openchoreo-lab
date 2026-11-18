@@ -6,6 +6,8 @@ phase: P2
 adr: [0001, 0008, 0013]
 depends_on: [T-025, T-026]
 class: AUTONOME
+velocity: false
+lane: contrat-appgen
 github_issue: null
 ---
 # T-067 — `appgen retire` : retrait d'une app avec export des données

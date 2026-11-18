@@ -4,8 +4,10 @@ title: "Sauvegarde des bases : CNPG → R2 par préfixe"
 status: todo
 phase: P2
 adr: [0008, 0009]
-depends_on: [T-025, T-023, T-030]
+depends_on: [T-023, T-025, T-030]
 class: AUTONOME + MANDAT
+velocity: false
+lane: donnees
 github_issue: null
 ---
 # T-026 — Sauvegarde des bases : CNPG → R2 par préfixe

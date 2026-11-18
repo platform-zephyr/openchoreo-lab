@@ -4,8 +4,10 @@ title: "Retrait progressif des chemins kube-ops, app par app"
 status: todo
 phase: P5
 adr: [0001, 0008]
-depends_on: [T-051, T-050]
+depends_on: [T-050, T-051]
 class: MANDAT
+velocity: false
+lane: migration
 github_issue: null
 ---
 # T-052 — Retrait progressif des chemins kube-ops, app par app

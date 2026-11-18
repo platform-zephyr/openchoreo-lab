@@ -6,6 +6,8 @@ phase: P1
 adr: [0005]
 depends_on: [T-010]
 class: AUTONOME
+velocity: false
+lane: contrat-appgen
 github_issue: null
 ---
 # T-011 — Archétype D : `spec.kind: worker | cronjob` (G1)
