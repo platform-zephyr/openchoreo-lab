@@ -31,3 +31,5 @@ tools/appgen/appgen.py, tools/oke/argo_guard.py (garde du noyau, CODEOWNERS), .g
 
 ## Notes
 Origine : mission « accélérer la CI pré-merge » du 2026-11-18. Les workflows ont été optimisés à part : coupe de `platform` en `platform` + `platform-render`, cache des charts, k3d filtré sur PR et lancé après le merge. `argo_guard.py` est une garde du noyau : classe REVUE, même en mode dev. Ne pas changer les dumpers YAML (`safe_dump`), car la sortie de `generated/` doit rester identique à l'octet.
+
+Avancement (2026-11-18) : run `ci` 44295354121 (PR #59) : `platform` 23 s et `appgen` 14 s (avant : 85-95 s et 35 s). Reste : (a) premier `hit` du cache des charts de `platform-render` non relevé ; (b) alerte des échecs k3d : décision D-4 prise (lecture par le dispatcher T-314 + ticket de backlog `fix-k3d-<suite>`), implémentation à la fin de S1 (T-452).

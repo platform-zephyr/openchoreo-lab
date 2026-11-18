@@ -36,3 +36,5 @@ Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas néc
 Reste : critère 4 exige un run GitHub réel (NOT_TESTED, aucun run possible depuis cette session). `development` : le bootstrap ne l'invente plus si `platform/` le fournit (STATIC, yq 4.54.3 testé avec un faux manifeste). `docs/research/GITHUB-CONFIG.md` est absent du dépôt : la règle « pas de merge_group » est consignée dans le workflow et `docs/CI-K3D.md`.
 
 Décision de Paul (2026-11-18, D-3) : ce ticket se ferme par un lancement manuel vert de `k3d-integration` sur `main` après les corrections T-456 à T-458, pas par un run sur PR.
+
+Décision de Paul (2026-11-18, D-3) déjà notée ci-dessus. Corrections préalables : T-456 (clé ESO, défaut réel de l'archétype B), T-457 (B-09 en KNOWN_FAIL au niveau du cas), T-458 (ancre de gitops-k3d). Fermeture : lancement manuel vert de `k3d-integration` sur `main` (`gh workflow run k3d-integration.yml`). Les suites k3d ne tournent plus automatiquement.

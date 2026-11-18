@@ -15,6 +15,15 @@ Principe (T-313) : `workflow_dispatch` lancé par Paul (issues, modèle, effort 
 5. Test : issue « modèle Tâche pour un agent » sur `apps/echo-demo` (modification triviale), lancée par dispatch. Vérifier : branche
    `claude/*`, PR ouverte, `ci-ok` lancé sur la PR (le jeton de l'App déclenche la CI ; un GITHUB_TOKEN standard ne le ferait pas).
 
+## Identité de l'exécutant (T-304, prouvée le 2026-11-18)
+- GitHub App d'organisation (secrets `APP_ID` et `APP_PRIVATE_KEY`, permissions Contents, Pull requests, Issues, Workflows en écriture) : un jeton
+  d'installation est généré à chaque run (`actions/create-github-app-token`) et passé à `claude-code-action` (`github_token`). L'App officielle
+  Claude n'a que la lecture des workflows ; un jeton fin personnel ne peut pas écrire dans le dépôt d'une organisation. Repli : `FACTORY_GH_TOKEN`.
+- `actions/checkout` du job de l'agent : `persist-credentials: false` (sinon le `GITHUB_TOKEN` persisté prime et le push d'un fichier de workflow
+  est refusé ; issue amont anthropics/claude-code-action#1510).
+- Jamais l'App dans `bypass_actors`. Entrée du registre : `docs/state/identities.yaml`. Remplacée ou réduite à FINAL0 (T-215).
+- Diagnostic : `-f debug=true` (journaux complets, dépôt public : issue sans donnée sensible seulement) ; `mission-result` liste les outils refusés.
+
 ## Exécutant minimal (T-313)
 - Entrées : `tickets` (20 au plus), `model`, `effort`, `escalated_from`. Passées à `claude_args` (`--model`, `--effort`, `--max-turns`).
 - Plafonds (`tools/factory/run-ticket.sh limits`) : Opus 90 min et 150 tours ; Sonnet et Haiku 45 min et 60 tours ; `effort: max` refusé hors Opus.
