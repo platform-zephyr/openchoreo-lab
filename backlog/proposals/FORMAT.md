@@ -17,3 +17,10 @@ Un fichier YAML par domaine : `backlog/proposals/<domaine>.yaml`, liste de ticke
   notes: "facultatif"
   absorbs: ["T-065"]         # tickets existants remplacés ou modifiés (facultatif), avec explication dans notes
 ```
+
+## Compatibilité avec `tools/backlog/check.py`
+
+Les propositions ne sont pas des tickets : `check.py` ne les lit pas (il ne lit que `backlog/T-*.md`). Le coordinateur
+reporte `scope` dans `## Périmètre de fichiers` (chemins ou globs séparés par des virgules, sinon le ticket actif est
+refusé) et fixe `model`, `effort` et `routing` selon ADR-0023 (IDs complets : `claude-haiku-5-5`, `claude-sonnet-5-5`,
+`claude-opus-5-5`, ou `human` avec `effort: none`). Le champ `scope` d'une proposition doit donc rester une liste de chemins.
