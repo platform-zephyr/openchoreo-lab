@@ -15,6 +15,11 @@ This product includes software adapted from:
   .agents/skills/openchoreo-platform-engineer-gitops, openchoreo-developer-gitops,
   migrate-to-openchoreo, openchoreo-setup, diagnose-app (from verify-and-debug.md),
   promote-or-rollback (from promote.md). No upstream script or asset is copied.
+- mattpocock/skills (https://github.com/mattpocock/skills), commit 5863806dd4e15c63174bee4e7515a4256792ecfa
+  MIT License, Copyright (c) 2026 Matt Pocock. Vendored skills (source and modifications in each file header):
+  .agents/skills/mattpocock-tdd, mattpocock-diagnosing-bugs, mattpocock-code-review, mattpocock-research,
+  mattpocock-grilling, mattpocock-writing-for-agents. No upstream script is copied.
+  (Full MIT text in LICENSES/MIT-mattpocock-skills.txt.)
 - [only if copied] VizzleTF/homelab (https://github.com/VizzleTF/homelab)
   MIT License, Copyright (c) 2024-2026 VizzleTF. ApplicationSet template adapted from
   argocd/appsets/apps-appset.yaml. (Full MIT text in LICENSES/MIT-VizzleTF.txt.)
