@@ -5,10 +5,13 @@ destructrices restent contrôlés. La séparation est imposée par GitHub, pas p
 
 ## Ce qui est imposé (ruleset `main-protection`, `tools/apply-branch-protection.sh`)
 - PR obligatoire, check `ci-ok` requis, pas de force push, pas de suppression de `main`.
-- **Revue des code owners exigée** (`.github/CODEOWNERS`) : toute PR qui touche `platform/`, `tools/`, `tests/`, `.github/`,
-  `security/`, `clusters/`, `docs/schema/`, `AGENTS.md`, `.agents/`, `missions/` exige l'approbation de Paul. Un agent ne
-  peut donc pas modifier la CI, les politiques, le RBAC, les droits Argo ni les garde-fous seul.
-- Libres (PR + `ci-ok` verte suffisent) : `apps/**`, `generated/**`, `docs/` hors schéma. C'est le golden path applicatif.
+- **Revue des code owners exigée sur le seul noyau de confiance** (`.github/CODEOWNERS`, ADR-0002 du 2026-11-18) :
+  CI (`.github/`), mandat et règles (`missions/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `docs/adr/`), sécurité amont
+  (`security/`), droits des agents et frontière GitOps (`platform/authz/`, `platform/cluster-agent/`,
+  `platform/install/argocd/`, `argo_guard`), VAP (`platform/policies/`) et leurs tests. Un agent ne peut donc pas
+  élargir ses propres droits, affaiblir la CI ni réécrire une décision seul.
+- Libres (PR + `ci-ok` verte suffisent) : tout le reste, y compris `platform/` hors noyau (types, traits, Kyverno,
+  environments), `tools/appgen`, `golden-paths/`, `.agents/`. Une PR qui touche `platform/` doit avoir la CI k3d verte.
 - La CI refuse déjà : suppression de release historique (`release-history`), Application/projet Argo hors périmètre
   (`argo_guard`), secrets (`gitleaks`), rendus Helm sans PSA restricted.
 
