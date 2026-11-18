@@ -23,7 +23,7 @@ Ajouter une suite de tests sans toucher `.github/` : un registre (noyau pour les
 .github/workflows/, tests/registry.yaml
 
 ## Critères de fin
-- [ ] registre + job générique
+- [x] registre + job générique
 - [ ] ajout d'une suite non-garde sans revue prouvé
 
 ## Notes

@@ -1,0 +1,21 @@
+# Registre des suites libres (T-216, ADR-0002). Lu par le job générique `.github/workflows/suites.yaml`.
+# Ajouter une suite = ajouter une entrée ici + son script sous tests/<dossier>/ : aucun changement dans `.github/`.
+# Ce fichier et les dossiers de tests ne sont pas des chemins du noyau (`.github/CODEOWNERS`) : PR + `suites-ok` suffisent.
+#
+# Noyau : les suites de garde (scripts exécutés par un job requis par `ci-ok`, tests protégés par CODEOWNERS) restent
+# déclarées dans `.github/workflows/ci.yaml` (revue de Paul). Le job refuse ici toute entrée dont `run` tombe sur un
+# chemin protégé par `.github/CODEOWNERS` : une suite de garde ne peut pas passer par la voie libre.
+#
+# Champs d'une entrée :
+#   name    identifiant unique (minuscules, chiffres, tiret) ;
+#   runner  `bash` ou `python3` ;
+#   run     chemin relatif d'un fichier existant `tests/<dossier>/<...>` (aucun `..`) ;
+#   timeout minutes, facultatif (défaut 10, maximum 30).
+# Contraintes de contenu : aucun secret, aucun cluster, aucun accès réseau supposé (job en lecture seule, sans secret).
+version: 1
+suites: []
+# Exemple :
+#  - name: mon-test
+#    runner: bash
+#    run: tests/mon-test/run.sh
+#    timeout: 5

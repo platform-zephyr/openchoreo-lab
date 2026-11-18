@@ -1,0 +1,133 @@
+# Suites libres par registre (T-216, ADR-0002). Lit tests/registry.yaml : ajouter une suite ne demande aucun changement ici.
+# Permissions minimales, aucun secret, actions epinglees par SHA de commit. Les suites de garde (noyau) restent dans ci.yaml.
+# Le job suites-ok agrege le resultat ; le rendre requis (ci-ok ou ruleset) est un geste du noyau, hors T-216.
+name: suites
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: suites-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04-arm
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Installer PyYAML (version figee)
+        run: python3 -m pip install --disable-pip-version-check "PyYAML==6.0.2"
+      - name: Valider le registre et produire la matrice
+        id: plan
+        shell: python3 {0}
+        run: |
+          import json, os, re, sys, yaml
+          errors = []
+          reg = yaml.safe_load(open("tests/registry.yaml", encoding="utf-8")) or {}
+          if reg.get("version") != 1:
+              errors.append("version doit valoir 1")
+          suites = reg.get("suites") or []
+          if not isinstance(suites, list):
+              errors.append("suites doit etre une liste")
+              suites = []
+          protected = []
+          for line in open(".github/CODEOWNERS", encoding="utf-8"):
+              line = line.strip()
+              if line and not line.startswith("#"):
+                  protected.append(line.split()[0].lstrip("/"))
+          def is_protected(path):
+              for p in protected:
+                  if p.endswith("/") and path.startswith(p):
+                      return True
+                  if path == p:
+                      return True
+              return False
+          names, matrix = set(), []
+          for i, s in enumerate(suites):
+              if not isinstance(s, dict):
+                  errors.append(f"entree {i} : objet attendu")
+                  continue
+              name, runner, run = s.get("name"), s.get("runner"), s.get("run")
+              timeout = s.get("timeout", 10)
+              tag = f"entree {i} ({name})"
+              if not (isinstance(name, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", name)):
+                  errors.append(f"{tag} : name invalide")
+              elif name in names:
+                  errors.append(f"{tag} : name en double")
+              names.add(name)
+              if runner not in ("bash", "python3"):
+                  errors.append(f"{tag} : runner doit etre bash ou python3")
+              if not (isinstance(run, str) and re.fullmatch(r"tests/[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+", run)) or ".." in str(run):
+                  errors.append(f"{tag} : run doit etre tests/<dossier>/<fichier> sans '..'")
+                  continue
+              if not os.path.isfile(run):
+                  errors.append(f"{tag} : fichier absent : {run}")
+              if is_protected(run):
+                  errors.append(f"{tag} : {run} est protege par CODEOWNERS (suite de garde) : a declarer dans ci.yaml, pas ici")
+              if not (isinstance(timeout, int) and not isinstance(timeout, bool) and 1 <= timeout <= 30):
+                  errors.append(f"{tag} : timeout entre 1 et 30")
+                  continue
+              matrix.append({"name": name, "runner": runner, "run": run, "timeout": timeout})
+          if errors:
+              for e in errors:
+                  print(f"FAIL registre : {e}", file=sys.stderr)
+              sys.exit(1)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"matrix={json.dumps({'include': matrix}, separators=(',', ':'))}\n")
+              f.write(f"count={len(matrix)}\n")
+          print(f"registre valide : {len(matrix)} suite(s)")
+
+  run:
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 35
+    name: suite ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Lancer la suite
+        # Valeurs de matrice deja validees par `plan` ; passees par l'environnement, jamais interpolees dans le script.
+        env:
+          SUITE_RUNNER: ${{ matrix.runner }}
+          SUITE_RUN: ${{ matrix.run }}
+          SUITE_TIMEOUT: ${{ matrix.timeout }}
+        run: timeout "${SUITE_TIMEOUT}m" "$SUITE_RUNNER" "$SUITE_RUN"
+
+  suites-ok:
+    if: always()
+    needs: [plan, run]
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Verdict agrege
+        env:
+          PLAN: ${{ needs.plan.result }}
+          RUN: ${{ needs.run.result }}
+        run: |
+          # `run` est ignore (skipped) quand le registre est vide : seul plan doit alors etre vert.
+          if [ "$PLAN" != "success" ] || { [ "$RUN" != "success" ] && [ "$RUN" != "skipped" ]; }; then
+            echo "FAIL suites : plan=$PLAN run=$RUN" >&2
+            exit 1
+          fi
+          echo "PASS suites : plan=$PLAN run=$RUN"
