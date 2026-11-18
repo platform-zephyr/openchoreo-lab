@@ -32,6 +32,32 @@ Principe (T-313) : `workflow_dispatch` lancé par Paul (issues, modèle, effort 
 - Sortie : `mission-result.v1` (`docs/schema/mission-result.v1.json`), archivé en artefact ; le résumé du job affiche `total_cost_usd` et `num_turns`. Ni prompt ni sortie d'outil.
 - Tests : `tests/factory/run-ticket-test.sh`. Le job `agent-trailers` de `ci.yaml` (dans `needs` de `ci-ok`) exécute `check-trailers origin/main..HEAD` sur les PR de branche `claude/*` ou `agent/*` ou du bot de l'exécutant. Après chaque run, le workflow poste en commentaire de la PR une ligne (modèle observé, tours, coût, durée, refus de permission) avec le jeton de l'App ; si la sortie `branch_name` est vide, il retrouve la PR `claude/*` ou `agent/*` qui cite l'issue.
 
+## Garde de recouvrement et disjoncteur de quota (T-467)
+État : outils et tests livrés (STATIC) ; câblage dans `claude-agent.yml` à faire (section « Câblage à faire » de
+`backlog/T-467-*.md`). Tant que ce câblage n'est pas fusionné, rien ne bloque un lot : lancer la garde à la main avant
+le dispatch.
+- **Recouvrement** : `python3 -I tools/factory/overlap.py --tickets "101,102,103"` (issues ou `T-NNN`). Lit le
+  `## Périmètre de fichiers` de chaque ticket (rattaché par `github_issue:`) avec l'analyseur du dispatcher
+  (`tools/backlog/admission.py`). Code 4 : deux tickets se recoupent, lot refusé. Code 3 : une référence sans ticket ou
+  sans périmètre exploitable dans un lot de plus d'un ticket, lot refusé. Fichiers chauds : `.github/workflows/ci.yaml`,
+  `.github/CODEOWNERS`, `tools/dev/check`, `tools/dev/ci-map.tsv`, `AGENTS.md` ; `ci.yaml`, `ci-map.tsv` et `check`
+  sont couplés par le test de parité (T-460) : toucher l'un compte pour les trois. Remède : lancer l'un après la fusion
+  de l'autre.
+- **Disjoncteur de quota** (abonnement Max : un seul jeton, fenêtre de 5 h commune à tous les jobs) :
+  - `ledger.py detect --execution-file <sortie de l'action> --state <LIMIT.json>` ouvre le disjoncteur (code 11) si le
+    message final de la session est en erreur (`is_error`) et porte une forme officielle du message de limite
+    ([doc « Usage limits »](https://code.claude.com/docs/en/errors) : `You've hit your session limit · resets 3:45pm`,
+    `weekly limit · resets Mon 12:00am`, `Opus limit`, `Sonnet limit`). Les throttles (429, 529,
+    `Server is temporarily limiting requests`) et le texte d'un agent qui cite le message ne déclenchent rien.
+  - `ledger.py gate --state factory/LIMIT.json --model <modèle>` : `limited=true|false` pour le planificateur, code 11
+    si le lot ne doit pas partir. Une limite Opus ou Sonnet ne bloque que sa famille de modèles ; toute autre limite
+    bloque tout.
+  - Une fois câblé : `plan` n'émet pas de matrice si `factory/LIMIT.json` est sur `main` ; chaque job `dev` re-contrôle `main`
+    et les artefacts `factory-limit-*` des jobs frères du même run avant de lancer l'agent.
+  - Reprise : manuelle (T-326). Au reset annoncé (`resume_at`), Paul fusionne une PR qui supprime
+    `factory/LIMIT.json` (`ledger.py reset --state factory/LIMIT.json`). Relevé `/usage` : geste de Paul.
+- Tests : `tests/factory/overlap-test.sh`, `tests/factory/ledger-test.sh` (hors ligne, sans secret).
+
 ## Garde-fous
 - Déclencheur limité à l'acteur `SmadjaPaul` ; les bots et utilisateurs sans écriture sont refusés par l'action.
 - Les issues publiques sont des entrées non fiables : seul le contenu relu par Paul avant le label doit être suivi.

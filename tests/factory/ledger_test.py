@@ -3,6 +3,7 @@ import json
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -98,6 +99,115 @@ class LedgerTest(unittest.TestCase):
         self.assertFalse(ledger.classify_message("tests passed"))
         r = {"limit": {"message": "weekly limit reached, resets 9am"}}
         self.assertEqual(ledger.reset_time(r, now).isoformat(), "2026-11-19T09:00:00+00:00")
+
+
+def execution(path, result_text, is_error=True, subtype="success", jsonl=False):
+    """Sortie de claude-code-action : init, un tour d'agent, puis le message final `result`."""
+    msgs = [{"type": "system", "subtype": "init", "model": "claude-sonnet-5-5"},
+            {"type": "assistant", "message": {"content": [{"type": "text", "text": "travail"}]}},
+            {"type": "result", "subtype": subtype, "is_error": is_error, "num_turns": 3, "result": result_text}]
+    text = "\n".join(json.dumps(m) for m in msgs) if jsonl else json.dumps(msgs)
+    Path(path).write_text(text, encoding="utf-8")
+    return Path(path)
+
+
+class DisjoncteurDeQuotaTest(unittest.TestCase):
+    """T-467 : detection de la limite d'usage Max dans la sortie d'un run, et blocage du planificateur."""
+
+    NOW = "2026-11-18T10:00:00Z"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.state = self.dir / "factory" / "LIMIT.json"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_detect(self, exe, *extra):
+        return ledger.main(["detect", "--execution-file", str(exe), "--state", str(self.state),
+                            "--now", self.NOW, *extra])
+
+    def test_formes_officielles(self):
+        # https://code.claude.com/docs/en/errors, section « Usage limits ».
+        cases = {"You've hit your session limit · resets 3:45pm": "session",
+                 "You've hit your weekly limit · resets Mon 12:00am": "weekly",
+                 "You\u2019ve hit your Opus limit · resets 3:45pm": "opus",
+                 "You've hit your Sonnet limit · resets 3:45pm": "sonnet",
+                 "Claude AI usage limit reached|1795010400": "usage"}
+        for text, kind in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(ledger.limit_kind(text), kind)
+
+    def test_throttles_et_quota_ne_sont_pas_confondus(self):
+        for text in ("API Error: Rate limit reached", "Server is temporarily limiting requests",
+                     "Request rejected (429)", "API Error: Repeated 529 Overloaded errors",
+                     "You've hit your monthly spend limit", "tests passed"):
+            with self.subTest(text=text):
+                self.assertIsNone(ledger.limit_kind(text))
+
+    def test_detect_ouvre_le_disjoncteur_session(self):
+        exe = execution(self.dir / "exec.json", "You've hit your session limit · resets 3:45pm")
+        self.assertEqual(self.run_detect(exe, "--issue", "66", "--model", "claude-sonnet-5-5"), ledger.EXIT_OPEN)
+        info = json.loads(self.state.read_text())
+        self.assertEqual((info["state"], info["kind"], info["resume"]), ("open", "session", "manual"))
+        self.assertEqual(info["resume_at"], "2026-11-18T15:45:00+00:00")
+        self.assertEqual(info["ticket_issue"], 66)
+        self.assertEqual(ledger.check(self.state), ledger.EXIT_OPEN)
+
+    def test_detect_jsonl_et_reset_hebdomadaire(self):
+        # 2026-11-18 est un mercredi : « Mon 12:00am » = lundi 23 novembre 00:00 UTC.
+        exe = execution(self.dir / "exec.jsonl", "You've hit your weekly limit · resets Mon 12:00am", jsonl=True)
+        self.assertEqual(self.run_detect(exe), ledger.EXIT_OPEN)
+        self.assertEqual(json.loads(self.state.read_text())["resume_at"], "2026-11-23T00:00:00+00:00")
+
+    def test_reset_dans_le_fuseau_du_message_et_epoch(self):
+        now = datetime(2026, 11, 18, 10, 0, tzinfo=UTC)
+        r = {"limit": {"message": "You've hit your session limit · resets 3pm (Europe/Paris)"}}
+        self.assertEqual(ledger.reset_time(r, now).isoformat(), "2026-11-18T14:00:00+00:00")
+        r = {"limit": {"message": "Claude AI usage limit reached|1795010400"}}
+        self.assertEqual(ledger.reset_time(r, now), datetime.fromtimestamp(1795010400, UTC))
+        r = {"limit": {"message": "weekly limit · resets Wed 9am"}}  # deja passe aujourd'hui : semaine suivante
+        self.assertEqual(ledger.reset_time(r, now).isoformat(), "2026-11-25T09:00:00+00:00")
+
+    def test_detect_negatifs_aucune_ecriture(self):
+        cases = {
+            "succes": ("Livre : PR #70", False),
+            "succes qui cite le message": ("Ticket T-467 : detecter « You've hit your session limit »", False),
+            "throttle serveur": ("API Error: Rate limit reached", True),
+            "surcharge": ("API Error: Repeated 529 Overloaded errors", True),
+            "compte rendu long en erreur": ("You've hit your session limit " + "x" * 700, True),
+        }
+        for name, (text, is_error) in cases.items():
+            with self.subTest(name=name):
+                exe = execution(self.dir / "exec.json", text, is_error=is_error)
+                self.assertEqual(self.run_detect(exe), 0)
+                self.assertFalse(self.state.exists())
+        (self.dir / "vide.json").write_text("", encoding="utf-8")
+        self.assertEqual(self.run_detect(self.dir / "vide.json"), 0)
+        self.assertFalse(self.state.exists())
+
+    def test_gate_planificateur(self):
+        out = self.dir / "github_output"
+        env = {"GITHUB_OUTPUT": str(out)}
+        with unittest.mock.patch.dict("os.environ", env):
+            self.assertEqual(ledger.main(["gate", "--state", str(self.state)]), 0)
+            exe = execution(self.dir / "exec.json", "You've hit your session limit · resets 3:45pm")
+            self.run_detect(exe)
+            self.assertEqual(ledger.main(["gate", "--state", str(self.state)]), ledger.EXIT_OPEN)
+        self.assertEqual(out.read_text().splitlines(), ["limited=false", "limited=true"])
+
+    def test_limite_de_famille_ne_bloque_que_sa_famille(self):
+        exe = execution(self.dir / "exec.json", "You've hit your Opus limit · resets 3:45pm")
+        self.assertEqual(self.run_detect(exe, "--model", "claude-opus-5-5"), ledger.EXIT_OPEN)
+        self.assertEqual(ledger.check(self.state, "claude-opus-5-5"), ledger.EXIT_OPEN)
+        self.assertEqual(ledger.check(self.state, "claude-sonnet-5-5"), 0)
+        self.assertEqual(ledger.check(self.state), ledger.EXIT_OPEN)  # modele inconnu : sens sur
+
+    def test_etat_illisible_reste_ouvert(self):
+        self.state.parent.mkdir(parents=True)
+        self.state.write_text("{pas du json", encoding="utf-8")
+        self.assertEqual(ledger.check(self.state, "claude-sonnet-5-5"), ledger.EXIT_OPEN)
 
 
 if __name__ == "__main__":
