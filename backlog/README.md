@@ -60,3 +60,7 @@ commande, test ou preuve runtime datée), `## Notes` (facultatif).
 5. Un ticket bloqué passe `blocked` avec une ligne `Bloqué par :` dans `## Notes`.
 
 Outils : `tools/backlog/seed.py` (génération initiale, à remplacer par l'édition directe des tickets), `check.py` (en-têtes, graphe, routage ; tests : `python3 -m unittest discover -s tests/backlog`), `roadmap.py` (ROADMAP.md).
+
+## Identités et secrets (T-306)
+
+Toute création d'identité ou de secret (jeton, clé, client OIDC, kubeconfig, accès à un coffre) ajoute une entrée dans `docs/state/identities.yaml` **dans la même PR** : nom, rôle, portée, propriétaire, dates, `dev: true|false`, coffre, consommateurs. Jamais de valeur, d'IP, d'hôte interne ni d'e-mail. Le lint `tools/backlog/identities_lint.py` (job `appgen` de la CI) refuse tout champ de valeur et toute chaîne ressemblant à un secret.

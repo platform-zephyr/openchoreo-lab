@@ -63,6 +63,8 @@
 /ops/ @SmadjaPaul
 /tools/metrics/ @SmadjaPaul
 /docs/state/free-tier.yaml @SmadjaPaul
+/docs/state/identities.yaml @SmadjaPaul
+/docs/schema/identities.v1.json @SmadjaPaul
 # Identités humaines et secrets de plateforme (ADR-0007, ADR-0014)
 /users/ @SmadjaPaul
 /groups/ @SmadjaPaul

@@ -1,0 +1,135 @@
+# Registre des identités et secrets (T-306, schéma docs/schema/identities.v1.json).
+# Contient des NOMS, rôles et dates. JAMAIS de valeur, d'IP, d'hôte interne ni d'e-mail (fichier public).
+# Règle : toute création d'identité ou de secret ajoute une entrée dans la MÊME PR. `dev: true` = créé en mode
+# développement (sécurité allégée), à faire tourner ou supprimer à FINAL0 (T-400) puis à FINAL.
+# `created_is_estimate: true` : date d'inscription au registre, date réelle de création inconnue.
+# Lint : python3 -I tools/backlog/identities_lint.py (refuse valeur, jeton connu, entropie, IP, e-mail, hôte, date absente).
+version: 1
+identities:
+  - name: abonnement-claude-jeton
+    kind: jeton
+    role: authentifie les sessions Claude Code des agents cloud sur l'abonnement
+    scope: exécution des agents dans le dépôt
+    owner: paul
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2027-02-18
+    dev: true
+    vault: github
+    consumers: [workflow-agent-claude]
+  - name: executant-identite-github
+    kind: identite
+    role: compte ou App de l'exécutant qui ouvre les PR, avec la permission workflows
+    scope: dépôt openchoreo-lab ; Contents, Pull requests et Workflows en écriture
+    owner: paul
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2027-02-18
+    dev: true
+    vault: github
+    consumers: [executant-cloud, workflow-agent-claude]
+    note: la permission workflows est retirée à FINAL0 (voir docs/AGENT-IDENTITY.md).
+  - name: doppler-acces-elargi
+    kind: acces
+    role: accès Doppler élargi de la phase de développement
+    scope: configs de développement et d'infrastructure ; lecture et écriture
+    owner: paul
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2026-12-18
+    dev: true
+    vault: doppler
+    consumers: [executant-cloud, eso-lab]
+    note: à resserrer en un jeton par consommateur et par config (docs/research/IDENTITY-SECRETS.md).
+  - name: eso-lab-jeton
+    kind: jeton
+    role: jeton d'External Secrets Operator pour lire le coffre depuis le cluster du lab
+    scope: cluster du lab ; lecture seule ; namespaces de plateforme
+    owner: plateforme
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2027-02-18
+    dev: true
+    vault: doppler
+    consumers: [eso-lab]
+  - name: lab-kubeconfig
+    kind: kubeconfig
+    role: kubeconfig d'administration du cluster du lab
+    scope: cluster du lab ; droits d'administrateur
+    owner: paul
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2026-12-18
+    dev: true
+    vault: doppler
+    consumers: [executant-local]
+    note: jamais remis à un agent cloud (docs/CLOUD-AGENTS.md).
+  - name: talos-secrets-machine-lab
+    kind: secret
+    role: secrets machine Talos du lab (PKI, jeton d'amorçage, clé de chiffrement etcd)
+    scope: cluster du lab ; noms seulement ici
+    owner: paul
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2027-05-18
+    dev: true
+    vault: etat-opentofu
+    consumers: [executant-local]
+  - name: agent-lecteur-oidc
+    kind: identite
+    role: client OIDC lecteur des agents, jeton de 15 minutes par client_credentials
+    scope: API et MCP OpenChoreo ; lecture seule
+    owner: plateforme
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2027-02-18
+    dev: false
+    vault: authentik
+    consumers: [executant-cloud]
+    note: voir docs/AGENT-ACCESS.md et docs/IDENTITY.md.
+  - name: agent-operateur-oidc
+    kind: identite
+    role: client OIDC opérateur, émis pour la durée d'un mandat
+    scope: releasebinding en développement ; écriture bornée
+    owner: plateforme
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2027-02-18
+    dev: false
+    vault: authentik
+    consumers: [executant-cloud]
+  - name: portail-clients-oidc
+    kind: secret
+    role: secrets des clients OIDC du portail (utilisateur et service)
+    scope: portail Backstage ; synchro du catalogue
+    owner: plateforme
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2027-02-18
+    dev: false
+    vault: doppler
+    consumers: [portail]
+  - name: agents-app-github
+    kind: identite
+    role: GitHub App des agents (jeton d'installation d'une heure)
+    scope: dépôt openchoreo-lab ; Contents et Pull requests en écriture, Metadata en lecture
+    owner: paul
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2027-02-18
+    dev: false
+    vault: github
+    consumers: [executant-cloud]
+    note: proposition de docs/AGENT-IDENTITY.md ; entrée à confirmer à la création réelle.
+  - name: acces-mcp-service-token
+    kind: jeton
+    role: service token Cloudflare Access devant l'hôte MCP
+    scope: hôte MCP ; lecture seule
+    owner: paul
+    created: 2026-11-18
+    created_is_estimate: true
+    rotate_by: 2027-02-18
+    dev: false
+    vault: cloudflare
+    consumers: [executant-cloud]
+    note: proposition de docs/CLOUD-AGENTS.md ; entrée à confirmer à la création réelle.
