@@ -1,0 +1,21 @@
+name: Tâche pour un agent
+description: Demande exécutée par un agent de développement (label agent:dev posé par Paul)
+labels: []
+body:
+  - type: textarea
+    id: intent
+    attributes:
+      label: Intention
+      description: Ce que l'agent doit livrer (une PR). Pas de secret.
+    validations: {required: true}
+  - type: input
+    id: scope
+    attributes:
+      label: Périmètre de fichiers
+      description: Chemins que l'agent peut modifier (ex. apps/searxng, generated/**)
+    validations: {required: true}
+  - type: textarea
+    id: done
+    attributes:
+      label: Critères de fin
+      description: Commandes de test et résultat attendu
