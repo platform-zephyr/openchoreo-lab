@@ -265,16 +265,35 @@ expect_deny T03d "cluster-agent : create ClusterRole refusé (VAP)" \
   as_agent create clusterrole t-evil --verb=get --resource=pods --dry-run=server
 expect_deny T03e "cluster-agent : create Namespace hors dp-* refusé (VAP)" \
   'lab-cluster-agent-scope: objet cluster-scoped interdit' as_agent create namespace t-evil-ns --dry-run=server
-expect_ok T03f "cluster-agent : create Namespace dp-* admis" \
-  'created \(server dry run\)' as_agent create namespace dp-t-allowed --dry-run=server
+# R3 de lab-cluster-agent-scope exige les labels PSA + cell sur tout Namespace dp-* écrit par l'agent (T-469).
+ns_dp() {
+  as_agent create --dry-run=server -f - <<'EOF'
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dp-t-allowed
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    platform.smadja.dev/cell: restricted
+EOF
+}
+expect_ok T03f "cluster-agent : create Namespace dp-* (labels PSA + cell) admis" \
+  'created \(server dry run\)' ns_dp
 expect_deny T03g "cluster-agent : écriture dans kube-system refusée (VAP)" \
   'lab-cluster-agent-scope: le cluster-agent ne peut pas écrire' \
   as_agent create configmap t-evil -n kube-system --dry-run=server
 expect_deny T03h "cluster-agent : Secret dans lab-pg refusé (VAP)" \
   'lab-cluster-agent-scope: le cluster-agent ne peut pas écrire secrets' \
   as_agent create secret generic t-evil -n lab-pg --from-literal=k=v --dry-run=server
-expect_ok T03i "cluster-agent : Job dans lab-pg admis (kind du CRT)" \
-  'created \(server dry run\)' as_agent create job t-ok -n lab-pg --image="$DIGEST_IMG" --dry-run=server -- true
+# R6 : seul le gabarit du CRT cnpg-lab-db passe (nom -pg-init, sans jeton SA, secretKeyRef lab-pg-superuser).
+# Témoin repris de tests/vap/run.sh V1-P08 (T-469).
+job_crt() {
+  printf '{"apiVersion":"batch/v1","kind":"Job","metadata":{"name":"t-ok-pg-init"},"spec":{"template":{"spec":{"restartPolicy":"OnFailure","automountServiceAccountToken":false,"securityContext":{"runAsNonRoot":true,"runAsUser":26,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"psql","image":"%s","securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}},"env":[{"name":"PGPASSWORD","valueFrom":{"secretKeyRef":{"name":"lab-pg-superuser","key":"password"}}}]}]}}}}' "$DIGEST_IMG" \
+    | as_agent -n lab-pg create --dry-run=server -f -
+}
+expect_ok T03i "cluster-agent : Job conforme au gabarit du CRT dans lab-pg admis" \
+  'created \(server dry run\)' job_crt
 expect_deny T03j "identité applicative (SA default de la cellule) : create ClusterRole refusé" \
   'forbidden|lab-cluster-agent-scope' \
   kubectl --as="system:serviceaccount:$NA:default" create clusterrole t-evil --verb=get --resource=pods --dry-run=server
