@@ -1,6 +1,6 @@
 # Identités, secrets et migration Doppler : recherche
 Statut : **PROPOSITION de recherche**, rien n'est appliqué, aucun cluster ni Doppler touché. Date : 2026-11-18.
-Tags : [S] lu dans un fichier cité · [NV] non vérifié, à prouver par un spike · [D] décision de Paul (2026-11-18).
+Tags : [S] lu dans un fichier cité · [NV] non vérifié, à prouver par un spike · [V AAAA-MM-JJ + URL] vérifié en ligne le 2026-11-18 (`VERIFICATION-2026-11-18.md`) · [D] décision de Paul (2026-11-18).
 Aucune valeur, aucun identifiant de compte ici : on décrit des mécanismes et des catégories. Le dépôt est public.
 
 ## 1. Conclusion
@@ -55,7 +55,7 @@ lu par un seul consommateur (passerelle) ; sinon une clé `provided` par app, av
 - Politiques générées depuis le dépôt (`appgen` liste les cellules, un réconciliateur applique) : jamais à la main ;
   le chemin `sys/*` n'est écrit que par `bao-config`.
 - Création sans lecture : `capabilities = ["create","update"]` sur `kv/data/...`, `["read","list"]` sur `kv/metadata/...`.
-  Génération : `cas=0` donne l'idempotence (un second passage échoue proprement) ; politique de mots de passe côté OpenBao [NV : endpoint de génération].
+  Génération : `cas=0` donne l'idempotence (un second passage échoue proprement) ; politique de mots de passe côté OpenBao [V 2026-11-18 + https://openbao.org/api-docs/system/policies-password/ : `GET /sys/policies/password/:name/generate` renvoie `{"password": …}`].
 - Audit : périphérique d'audit vers stdout (valeurs hachées), collecté ; alertes §7.
 
 ## 3. Golden paths utilisateur
@@ -83,7 +83,7 @@ Accès aux apps : `identity.groups` de chaque `app.yaml` (ADR-0007) ∩ groupes 
 |---|---|---|
 | 1. Désactiver | PR `status: disabled` → blueprint `is_active: false`, `groups: []` | AUTONOME sur demande de Paul ou alerte |
 | 2. Révoquer sessions et jetons | Job `identity-offboard` (jeton API Authentik à droits bornés : sessions, jetons, refresh) | AUTONOME, déclenché par l'étape 1 |
-| 3. Sessions locales des apps | cookies d'app non révoqués par l'IdP : durée maximale déclarée par app ; liste produite par le Job [NV : back-channel logout Authentik] | rapport |
+| 3. Sessions locales des apps | cookies d'app non révoqués par l'IdP : durée maximale déclarée par app ; liste produite par le Job [V 2026-11-18 + https://docs.goauthentik.io/add-secure-apps/providers/oauth2/frontchannel_and_backchannel_logout/ : le fournisseur OAuth2/OIDC d'Authentik gère le *back-channel logout* (authentik ≥ 2025.8.0, en préversion à cette date) mais **l'application doit elle-même le prendre en charge** ; la liste des apps sans support reste donc à produire] | rapport |
 | 4. Données personnelles | rapport par app : comptes OIDC créés, données de l'utilisateur ; conservation 30 j puis purge | purge = **MANDAT** (irréversible, ADR-0008) |
 | 5. Suppression du compte | PR `state: absent` + retrait de `users/<id>.yaml` ; PII effacées dans Authentik seul | MANDAT |
 
@@ -93,14 +93,14 @@ Expiration `expires:` : un job quotidien ouvre la PR de désactivation à l'éch
 
 ### 3.3 Blueprints : où ils tournent
 Authentik de production est géré par kube-ops (`apps-*.yaml` sous `k8s/infrastructure/auth/authentik/extra/blueprints`, `!Env` pour les secrets [S]).
-Cible : **une seule PR kube-ops (MANDAT)** qui monte un second ConfigMap `lab-blueprints` (`blueprints.configMaps` du chart [NV]) alimenté depuis
+Cible : **une seule PR kube-ops (MANDAT)** qui monte un second ConfigMap `lab-blueprints` (`blueprints.configMaps` du chart [V 2026-11-18 + https://raw.githubusercontent.com/goauthentik/helm/main/charts/authentik/values.yaml : liste de ConfigMaps montés, seules les clés se terminant par `.yaml` sont découvertes ; `blueprints.secrets` existe aussi ; Authentik rescanne le répertoire toutes les 60 min par défaut, https://docs.goauthentik.io/docs/customize/blueprints/]) alimenté depuis
 ce dépôt ; ensuite aucune PR kube-ops par utilisateur ou par app. Les secrets clients viennent d'OpenBao via ESO (`!Env`), plus de Doppler.
 
 ## 4. Identité des IA
 - Une identité logique par **usage × exécutant** (`identities/agents/<id>.yaml`, sans valeur) : surface (GitHub App, client Authentik,
   rôle OpenChoreo), durée, propriétaire, échéance, secrets accessibles (catégories). CI : propriétaire et échéance obligatoires.
 - Authentik : un `client_credentials` par usage, jeton 15 min, claim `client_id` (`docs/IDENTITY.md` §2). Pour les agents *in-cluster*,
-  préférer un JWT fédéré (`client_assertion` d'un jeton de SA) : plus de secret statique [NV en OSS].
+  préférer un JWT fédéré (`client_assertion` d'un jeton de SA) : plus de secret statique [V 2026-11-18 + https://docs.goauthentik.io/add-secure-apps/providers/oauth2/machine_to_machine/ : `client_credentials` avec `client_assertion_type=…jwt-bearer`, source OAuth fédérée (JWKS), les jetons de ServiceAccount Kubernetes projetés sont explicitement pris en charge ; la page ne porte pas de marque Enterprise (version 2026.8 en préversion) : la disponibilité en OSS stable reste à prouver par un spike].
 - Le secret du client d'un agent *externe* (cloud, poste de Paul) reste en Doppler `agents` ; il n'est jamais lu par une cellule.
 - Coupe-circuit : supprimer la clé GitHub App, régénérer le secret du client, retirer la liaison authz (PR). Drill trimestriel.
 - Frontière : un agent ne crée pas de client, de clé ou de jeton (ADR-0002 §3). Création d'un client agent = MANDAT.
@@ -124,11 +124,10 @@ Cause principale : les secrets d'app vivent dans Doppler, donc un jeton par doma
 Total : **7 permanents** (≤ 8 avec la migration), 1 projet, 7 configs (vs ~50 / 8-10 / ≥ 8).
 - **Blast radius** : compromettre un cluster n'expose que sa config `*-runtime` ; compromettre un runner agent n'expose que `agents` ;
   `seal` et `root` ne sont jamais montés avec autre chose. Aucune cellule d'app n'a de jeton Doppler (CI : refus d'un store Doppler référencé hors namespaces de plateforme).
-- **Références Doppler** : Tofu écrit dans `iac-apply` et les configs `*-runtime` n'ont que des références vers lui, ce qui évite un jeton d'écriture par config [NV : résolution
-  des références pour un jeton de service ; à prouver avant d'adopter].
-- **Rotation** : TTL 90 j à la création [NV : expiration des jetons de service sur le plan gratuit] ; un jeton émis par Tofu, jamais écrit à la main ;
+- **Références Doppler** : Tofu écrit dans `iac-apply` et les configs `*-runtime` n'ont que des références vers lui, ce qui évite un jeton d'écriture par config [NV 2026-11-18 : introuvable dans la doc officielle ; des fils de la communauté Doppler indiquent qu'un jeton de service est limité à une seule config et que le contournement est une config qui référence les autres ; à prouver par un spike avant d'adopter, https://community.doppler.com/t/cross-project-service-tokens/773].
+- **Rotation** : TTL 90 j à la création [V 2026-11-18 + https://docs.doppler.com/docs/service-tokens : un jeton de service peut recevoir une expiration (jeton « éphémère » supprimé automatiquement), lecture seule par défaut, accès en écriture optionnel ; la doc lue ne distingue pas les plans, le plan Developer offre 50 jetons de service, https://www.doppler.com/pricing] ; un jeton émis par Tofu, jamais écrit à la main ;
   l'ancien est révoqué après preuve d'usage du nouveau. Livraison du jeton ESO au cluster : à qualifier (amorce Argo ou root ARC) : IDS-15.
-- **Jeton d'espace de travail** de la root `doppler` (crée projets, configs, jetons) : le plus dangereux ; la structure étant fixe, il n'est utilisé que sur MANDAT, jamais en continu [NV : plan gratuit].
+- **Jeton d'espace de travail** de la root `doppler` (crée projets, configs, jetons) : le plus dangereux ; la structure étant fixe, il n'est utilisé que sur MANDAT, jamais en continu [NV 2026-11-18 : la disponibilité d'un jeton d'espace de travail sur le plan gratuit n'est pas documentée sur les pages lues].
 - Chemin legacy kube-ops : ne pas y toucher ; la consolidation 46→19 de homelab-infra (#540) s'y applique jusqu'au retrait (T-052). La nouvelle plateforme n'y réutilise aucun jeton.
 
 ## 6. Migration Doppler → OpenBao
@@ -154,14 +153,14 @@ Total : **7 permanents** (≤ 8 avec la migration), 1 projet, 7 configs (vs ~50 
 6. **Bascule par app** (une PR, au moment où l'app entre dans la plateforme, T-052) : `secretStoreRef` → `openbao-apps`, même nom de Secret donc pas de redémarrage forcé ; retour = `git revert`.
 7. **Nettoyage** : clés X immédiatement (consommateur absent prouvé) ; clés G/O/T/L/I après 14 jours stables et preuve runtime de l'app ; suppression par Tofu (`prevent_destroy` : MANDAT) ;
    puis révocation des jetons devenus sans lecteur, puis suppression des projets vides. Pas d'export intermédiaire (contrat `docs/secrets.md` interdit `secrets download`) :
-   le retour arrière est l'historique de révision de Doppler [NV] et la copie vérifiée dans OpenBao.
+   le retour arrière est l'historique de révision de Doppler (**CORRIGÉ 2026-11-18** : l'historique avec « Rollback Changes » existe pour l'ajout, la modification et la suppression de secrets [V https://docs.doppler.com/docs/versioning.md], **mais le plan Developer ne conserve que 3 jours de journal d'activité** [V https://www.doppler.com/pricing] : la fenêtre de retour arrière est de 3 jours, pas indéfinie) et la copie vérifiée dans OpenBao.
 8. Garde finale en CI : l'inventaire Doppler (noms) **égale** la liste fermée des primitives ; un secret présent des deux côtés échoue.
 
 Pourquoi la bascule suit T-052 : les ExternalSecret legacy vivent dans kube-ops (128 fichiers [S]) ; les réécrire en bloc coûte plus qu'il ne rapporte. La copie peut précéder, la bascule suit l'app.
 
 ## 7. Audit
 - OpenBao : audit stdout (HMAC), alertes : lecture de `platform/*` par une identité hors `eso-*`/`portal`, usage d'un jeton `root`, `sealed`, rafale d'échecs d'auth, écriture hors `bao-config`.
-- Doppler : journal d'activité, relu à chaque rotation [NV : rétention du plan gratuit]. Authentik : événements (l'export est Enterprise ; collecte via les journaux du pod).
+- Doppler : journal d'activité, relu à chaque rotation [V 2026-11-18 + https://www.doppler.com/pricing : **3 jours** de rétention au plan Developer, 90 jours au plan payant ; relire plus souvent qu'à chaque rotation de 90 jours, ou exporter vers un webhook HTTPS/Slack (fonction listée dans https://docs.doppler.com/llms.txt)]. Authentik : événements (l'export est Enterprise ; collecte via les journaux du pod).
 - Rapport hebdomadaire « qui a lu quoi » (comptes par identité et par chemin, pas de valeurs) dans `docs/proofs/` ; `identity-inventory` (CI) échoue si un credential n'a pas de propriétaire et d'échéance.
 - Preuve de moindre privilège (tests de politique) : agent reader → 403 sur `kv/data`, déposant → 403 en lecture, cellule A → 403 sur `apps/B/*`.
 
@@ -175,7 +174,7 @@ Pourquoi la bascule suit T-052 : les ExternalSecret legacy vivent dans kube-ops 
 **ADR-0014 : amender**
 - §4 : ajouter « secret consommé hors cluster par un exécutant externe (agent, IaC) → Doppler » ; Doppler = **1 projet, ≤ 7 configs, ≤ 8 jetons, un jeton par consommateur × config** ; liste fermée de clés en CI.
 - §5 : auth Kubernetes (rôle par cellule en cible), OIDC pour humains, dépôt sans lecture, jetons 15 min / 1 h.
-- §6 : **trancher le seal** : seal statique avec clé dans Doppler `seal`, livrée par ESO, Secret lisible par le seul pod (levant le refus de `OPENBAO-DOPPLER-ESO.md` §2) ;
+- §6 : **trancher le seal** [V 2026-11-18 + https://openbao.org/docs/configuration/seal/static/ : le bloc `seal "static"` existe (clé de 32 octets AES-256-GCM-96, `current_key`/`previous_key` pour la rotation, valeurs `env://` ou `file://`) ; la doc l'avertit comme recommandé seulement quand une source de confiance existe déjà ; l'init avec un seal automatique renvoie des clés de *récupération*, pas de déscellement, https://openbao.org/docs/concepts/seal/] : seal statique avec clé dans Doppler `seal`, livrée par ESO, Secret lisible par le seul pod (levant le refus de `OPENBAO-DOPPLER-ESO.md` §2) ;
   clés de récupération hors ligne ; OCI KMS écarté tant que l'IMDS est interdit aux pods ; Transit sur homelab écarté (éteint la nuit).
 - §7 (nouveau) Migration : copie vérifiée, ombre, bascule par app, nettoyage à liste fermée, invariant « un secret n'existe qu'à un endroit ».
 
@@ -191,3 +190,8 @@ Pourquoi la bascule suit T-052 : les ExternalSecret legacy vivent dans kube-ops 
 `docs/adr/0002,0007,0009,0014`, `docs/IDENTITY.md`, `docs/storage/OPENBAO-DOPPLER-ESO.md`, `docs/research/HOMELAB-INFRA-REQUIREMENTS.md` §5-6, `docs/AGENT-ACCESS.md`,
 `docs/AGENT-IDENTITY.md`, `docs/architecture/DECISIONS-OPEN.md` D2, `backlog/T-022,023,024,066,068,074` ; homelab-infra `docs/secrets.md`, `docs/architecture/secret-store-decision.md`,
 `agent-identities.md`, `terraform/doppler/main.tf` ; kube-ops `k8s/infrastructure/auth/authentik/extra/blueprints/`, `controllers/*/externalsecret.yaml`.
+
+## Vérifications en ligne du 2026-11-18 (compléments)
+- **Auth Kubernetes d'OpenBao** [V 2026-11-18 + https://openbao.org/docs/auth/kubernetes/] : `token_reviewer_jwt` et `kubernetes_ca_cert` ; avec des jetons de pod de courte durée, une section dédiée décrit les compromis ; `disable_iss_validation` à contrôler.
+- **Backend PostgreSQL d'OpenBao** [V 2026-11-18 + https://openbao.org/docs/configuration/storage/postgresql/] : « production ready », **haute disponibilité prise en charge depuis OpenBao v2.7.0** (`ha_enabled`, table `openbao_ha_locks`), table `openbao_kv_store` créée automatiquement (`skip_create_table` pour un utilisateur sans droit de création), PostgreSQL ≥ 9.5, **tente SSL par défaut**. L'option « backend PostgreSQL du CNPG plateforme » d'ADR-0014 §3 est donc réaliste ; la dépendance circulaire (OpenBao dépend du CNPG, qui dépend de ses secrets) reste à trancher.
+- **Rôles gérés CNPG** [V 2026-11-18 + https://cloudnative-pg.io/docs/1.28/declarative_role_management/] : `spec.managed.roles` réconcilie les attributs *et les mots de passe* ; un `ALTER ROLE` manuel est annulé au cycle suivant ; sans `passwordSecret`, l'opérateur ne touche pas au mot de passe ; `disablePassword` met le mot de passe à NULL (erreur si les deux sont posés). La doc ne mentionne **pas explicitement la restauration** : le réalignement après restauration se déduit de la réconciliation périodique et reste à prouver. En version de développement, un nouveau CRD `DatabaseRole` (https://cloudnative-pg.io/docs/devel/declarative_role_management/) génère le mot de passe dans un Secret et le fait tourner ; il n'est réconcilié que sur changement de sa spec ou de son Secret, et `managed.roles` l'emporte en cas de conflit.

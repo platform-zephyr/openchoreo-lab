@@ -13,7 +13,7 @@ Sources : https://openchoreo.dev/docs/v1.3.x/platform-engineer-guide/modules/ove
 ## Alertes, incidents, RCA
 - Le trait `observability-alert-rule` crée des règles par composant ; paramètres d'environnement (`enabled`, canaux, `actions.incident.enabled`, `actions.incident.triggerAiRca`) dans `ReleaseBinding.traitEnvironmentConfigs`.
 - CRD : `ObservabilityAlertRule`, `ObservabilityAlertsNotificationChannel` (e-mail, webhook ; variables `${environment}`, `${componentId}`, `${incidentEnabled}`, `${triggerAiRca}`).
-- Alertes et incidents persistés (SQLite par défaut, PostgreSQL possible). L'RCA IA exige l'agent SRE et une clé LLM ; à activer seulement pour les alertes critiques (coût).
+- Alertes et incidents persistés (SQLite par défaut, PostgreSQL possible). L'RCA IA exige l'agent SRE et une clé LLM (OpenAI documenté ; `rca.llm.baseUrl` permet un endpoint compatible OpenAI, voir `mcp-ai-agents.md`) ; à activer seulement pour les alertes critiques (coût) [V 2026-11-18 + https://openchoreo.dev/docs/ai/sre-agent/].
 Source : https://openchoreo.dev/docs/v1.3.x/platform-engineer-guide/observability-alerting/
 
 ## Autres capacités

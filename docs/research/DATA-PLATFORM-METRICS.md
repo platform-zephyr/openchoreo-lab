@@ -7,7 +7,7 @@ issu de ma connaissance, à vérifier avant d'acter.
 - Premier objectif : **mesurer la plateforme elle-même** (DORA par agent, sécurité, maturité cloud native), pas bâtir
   une data platform généraliste. Le besoin tient dans quelques Mo par an : **Parquet partitionné + DuckDB**, sans
   Iceberg/Delta ni serveur. Un format de table se justifie quand plusieurs écrivains concurrents ou du time travel
-  apparaissent (non requis) [E].
+  apparaissent (non requis) [E : non revérifié].
 - **Phase 0 sans cluster** : un workflow GitHub Actions planifié ingère, calcule, publie une page statique et les
   Parquet. **Phase 1** (après T-030) : Garage + CronJob sur le homelab, jamais sur OKE (budget CPU, ADR-0003).
 - Restitution : **fichier statique dans Git/Pages** (source de vérité lisible par les agents) + quelques jauges poussées
@@ -19,12 +19,13 @@ issu de ma connaissance, à vérifier avant d'acter.
 | Source | Statut | Apport |
 |---|---|---|
 | github.com/cncf/cartografos (README, `reference/v4beta1/prologue.md`, `technology.md`) | [L] | 5 niveaux, 5 dimensions, capacités techniques par niveau |
-| maturitymodel.cncf.io, tag-app-delivery.cncf.io, dora.dev | NON LU : hôtes non autorisés dans la session | à autoriser, puis relire |
+| maturitymodel.cncf.io, dora.dev | [V 2026-11-18 + https://maturitymodel.cncf.io/ , https://dora.dev/guides/dora-metrics/ , https://dora.dev/guides/dora-metrics/history/] | CNMM : **5 niveaux Build, Operate, Scale, Improve, Adapt** ; version 4.0 (bêta, groupe Cartografos) : chaque niveau cadre d'abord le business et la technologie, puis **quatre piliers People, Process, Policy, Technology** (et non « 5 dimensions » comme lu dans le dépôt cartografos v4beta1 : à réconcilier) ; DORA : cinq métriques |
+| tag-app-delivery.cncf.io | NON RELU en ligne (lu via le dépôt GitHub) | |
 | github.com/cncf/tag-app-delivery (`platforms-maturity-model/README.md`) | [L] partiel | v1 d'oct. 2023 ; détail des critères non lu |
 | `docs/research/IDP-AGENTIC-BEST-PRACTICES.md` L39-40 | [L] | modèle plateformes : 5 aspects, 4 niveaux |
 | `kube-ops/docs/runbooks/observability-for-agents.md` | [L] | Grafana Cloud, label `cluster`, budget 8 000 séries/cluster, Alloy |
 | `homelab-infra` : « projet Data Platform / OKR » | [L] introuvable (`docs/`, `roadmap/`) | NON TROUVÉ ; ne rien en déduire |
-| OpenSSF Scorecard, SLSA, DORA 2024 (5 métriques), DuckDB, Garage/MinIO/SeaweedFS | [E] | connaissance générale, à confirmer |
+| OpenSSF Scorecard, SLSA, DORA (5 métriques), Garage, MinIO | [V 2026-11-18] | voir les lignes ci-dessous ; DuckDB et SeaweedFS : [E] non revérifiés |
 
 Modèle CNCF v4beta1 [L] : niveaux **Build, Operate, Scale, Improve, Adapt** ; dimensions **Business Outcomes, People,
 Process, Policy, Technology** ; pas de grille de notation formelle, évaluation par application, « ne retenir que le
@@ -43,18 +44,18 @@ Coûts LLM (journaux d'usage agents) ──────────────�
                                                   DuckDB (requêtes SQL) ─> metrics.json + index.html (Git/Pages)
                                                                       └─> jauges remote_write -> Grafana Cloud
 ```
-- **Stockage objet** (phase 1) : Garage (S3, léger, Rust ; AGPL) [E] sur le homelab, un volume Longhorn. MinIO
-  (édition communautaire en mode maintenance fin 2025) [E] et SeaweedFS (plus riche, plus lourd) écartés pour la
+- **Stockage objet** (phase 1) : Garage (S3, léger, Rust ; AGPL v3) [V 2026-11-18 + https://raw.githubusercontent.com/deuxfleurs-org/garage/main-v2/LICENSE ; https://garagehq.deuxfleurs.fr/ : binaire unique sans dépendance, réplication en 3 zones ; « Rust » non relu] sur le homelab, un volume Longhorn. MinIO
+  (**CORRIGÉ** : le dépôt `minio/minio` porte désormais la mention « THIS REPOSITORY IS NO LONGER MAINTAINED », avec AIStor Free/Enterprise comme alternatives, licence AGPL v3 [V 2026-11-18 + https://raw.githubusercontent.com/minio/minio/master/README.md] ; « mode maintenance fin 2025 » est dépassé) et SeaweedFS (plus riche, plus lourd) écartés pour la
   taille ; R2 reste le choix hors site (déjà utilisé, ADR-0008) pour la copie des données de classe `useful`.
 - **Partitionnement** : `source=<x>/dt=AAAA-MM-JJ/part-*.parquet` ; un fichier par jour et source (petits fichiers,
   compactés mensuellement). Bronze = réponses brutes filtrées (champs utiles uniquement) ; silver = événements
   normalisés ; gold = une ligne par (métrique, fenêtre, dimension).
 - **Idempotence** : clé naturelle (`pr_number`, `run_id`, `sha`) ; relecture à fenêtre glissante de 14 jours ;
   réécriture de la partition du jour, jamais de mise à jour en place.
-- **Où ça tourne** : phase 0, GitHub Actions `schedule` (gratuit pour un dépôt public ; minutes sinon à compter) [E] ;
+- **Où ça tourne** : phase 0, GitHub Actions `schedule` (gratuit pour un dépôt public ; privé : 12 $ de calcul inclus par mois au plan Free) [V 2026-11-18 + https://docs.github.com/en/billing/concepts/product-billing/github-actions] ;
   phase 1, CronJob dans `lab-data` (homelab, PSA restricted, egress `api.github.com` et `*.grafana.net` déclarés),
   déployé comme une app du golden path (archétype D, T-011) : pas de chemin spécial.
-- **Fréquence** : ingestion toutes les heures (rate limit GitHub : 5 000 req/h authentifié [E], largement suffisant),
+- **Fréquence** : ingestion toutes les heures (rate limit GitHub : **1 000 req/h par dépôt pour `GITHUB_TOKEN`** dans un workflow, 5 000 req/h pour un utilisateur authentifié par jeton [V 2026-11-18 + https://docs.github.com/en/actions/reference/limits pour le chiffre `GITHUB_TOKEN` ; le chiffre 5 000 pour un utilisateur n'a pas été relu : [E]] ; reste suffisant à une ingestion horaire, mais compter les pages),
   gold quotidien, rapport hebdomadaire. **Coût** : ~0 (Actions) puis < 100m CPU, < 256 Mi, quelques Mo de disque.
 - **Identité** : jeton GitHub en lecture seule limité au dépôt, livré par OpenBao/ESO (ADR-0014) ; jamais dans Git.
 
@@ -63,14 +64,14 @@ Dimensions communes : `agent` (déduit de l'auteur de PR / co-auteur Claude/Code
 `class` (AUTONOME/REVUE/MANDAT, lue dans l'en-tête de la PR ou du ticket), `app`, `cluster`, `env`.
 Fenêtres : 7 j et 30 j glissants. Un chiffre sans effectif (`n`) n'est pas publié ; sous n < 5, afficher « insuffisant ».
 
-### A. DORA adaptée aux agents (DORA 2024 : lead time, fréquence, taux d'échec, temps de reprise, + rework rate) [E]
+### A. DORA adaptée aux agents (cinq métriques [V 2026-11-18 + https://dora.dev/guides/dora-metrics/] : *change lead time*, *deployment frequency*, *failed deployment recovery time* (ex-MTTR, renommé en 2023), *change fail rate*, *deployment rework rate* (ajoutée en 2024) ; la page DORA 2025 « Year in review » existe mais n'a pas été lue)
 | Id | Métrique | Formule | Source |
 |---|---|---|---|
 | D1 | Fréquence de déploiement | nb de merges sur `apps/**` ou `platform/**` avec sync Argo Synced+Healthy / jour | GitHub merges + historique Argo |
 | D2 | Lead time des changements | médiane (sync Healthy − 1er commit de la PR) | commits PR + Argo |
 | D3 | Taux d'échec de changement | (merges suivis d'un revert, d'un `FAIL` runtime ou d'un hotfix < 24 h) / merges | GitHub + app-status.v1 |
-| D4 | MTTR (reprise après échec) | médiane (revert Healthy − détection FAIL) | app-status.v1 + Argo |
-| D5 | Rework rate | PR de correction d'une PR de l'agent < 7 j / PR fusionnées | GitHub (liens, titres `fix:`) |
+| D4 | Failed deployment recovery time (ex-MTTR ; reprise après échec) | médiane (revert Healthy − détection FAIL) | app-status.v1 + Argo |
+| D5 | Deployment rework rate (DORA : part des déploiements non planifiés réalisés pour corriger des bogues ; ici approximée par les PR de correction) | PR de correction d'une PR de l'agent < 7 j / PR fusionnées | GitHub (liens, titres `fix:`) |
 | D6 | Intention → PASS | médiane (1er message d'intention − 1er statut RUNTIME=PASS) ; part des intentions PASS sans humain | tickets/sessions + app-status.v1 |
 | D7 | Autonomie réelle | PR fusionnées sans revue humaine / PR fusionnées, par classe (cible ADR-0002) | GitHub reviews + CODEOWNERS |
 | D8 | Boucle CI | médiane durée `ci-ok` ; taux de CI rouge au 1er essai ; nb d'allers-retours | GitHub Actions |
@@ -81,9 +82,9 @@ seulement avec une preuve runtime datée. Les PR d'`INTERDIT`/`MANDAT` sont comp
 ### B. Maturité sécurité
 | Id | Métrique | Formule | Source |
 |---|---|---|---|
-| S1 | OpenSSF Scorecard | score global et par check (Branch-Protection, Code-Review, Pinned-Dependencies, Token-Permissions, SAST, Dependency-Update-Tool, Vulnerabilities) | `scorecard-action` ou API publique [E] |
+| S1 | OpenSSF Scorecard | score global et par check (Branch-Protection, Code-Review, Pinned-Dependencies, Token-Permissions, SAST, Dependency-Update-Tool, Vulnerabilities) | `scorecard-action` ou API publique [V 2026-11-18 + https://raw.githubusercontent.com/ossf/scorecard/main/docs/checks.md : les checks Branch-Protection, Code-Review, Pinned-Dependencies, Token-Permissions, SAST, Dependency-Update-Tool, Vulnerabilities existent] |
 | S2 | Couverture ADR-0006 | primitives avec preuve runtime fraîche (< 30 j) / 8 ; une ligne par primitive : pod durci, PSA, default-deny, digest, secrets, rien cluster-scoped, admission, exceptions | `tests/vap`, `tests/kyverno`, app-status |
-| S3 | Niveau SLSA du build | 0-3 : provenance générée (L1), signée par l'hébergeur (L2), build isolé non falsifiable (L3) | attestations GitHub (`gh attestation verify`) [E] |
+| S3 | Niveau SLSA du build | 0-3 : provenance générée (L1), signée par l'hébergeur (L2), build isolé non falsifiable (L3) | attestations GitHub (`gh attestation verify`) [V 2026-11-18 + https://docs.github.com/en/actions/concepts/security/artifact-attestations : **L2 seul** par défaut ; L3 exige des workflows réutilisables, voir UPGRADES.md] |
 | S4 | Images par digest | images `tag@sha256` / images déployées | manifestes `generated/` |
 | S5 | Exceptions actives | nb de `securityExceptions`, ancienneté médiane | `apps/*/app.yaml` |
 | S6 | Délai de correction CVE | médiane (fix mergé − alerte) par gravité | Dependabot/Renovate + GitHub |
@@ -151,7 +152,7 @@ Décisions liées : ADR-0002, ADR-0003, ADR-0006, ADR-0008, ADR-0011, ADR-0012
 ### Alternatives écartées
 - **Iceberg/Delta + catalogue** : surdimensionné pour quelques Mo, ajoute un service ; à revoir si volumétrie × 1000.
 - **ClickHouse/Postgres/Prometheus seul** : un serveur de plus ; Prometheus ne porte pas bien PR/lead time.
-- **MinIO / SeaweedFS** : MinIO en maintenance [E], SeaweedFS plus lourd ; Garage suffit.
+- **MinIO / SeaweedFS** : MinIO « no longer maintained » [V 2026-11-18], SeaweedFS plus lourd ; Garage suffit.
 - **Tout dans Grafana Cloud** : plafond de séries, pas de relecture facile par les agents, dépendance externe.
 - **Outil DORA clé en main (Four Keys, Backstage)** : modèle de données imposé, pas de notion d'agent ni de classe.
 
