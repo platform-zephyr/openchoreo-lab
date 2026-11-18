@@ -6,8 +6,8 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 28 |
-| `todo` | 123 |
+| `in-progress` | 29 |
+| `todo` | 122 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 33 |
@@ -30,6 +30,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | 4/4 | (ligne « Reste » absente) | — |
 | [T-332](T-332-commande-unique-tools-dev-check-static.md) | Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée | 1/3 | Reste aussi : les contrôles de T-303, T-306, T-330, T-331 s'activent seuls (NOT_TESTED tant que leur script manque). | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | Mesures du homelab avant dimensionnement (lecture seule) | 1/4 | Premier critère ouvert : tableau daté (p50/p95/pic) CPU, RAM, disque, Tctl ; sources Prometheus et commandes de lecture | — |
+| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, sto… | 3/5 | Premier critère ouvert : `docs/architecture/MULTI-DATAPLANE.md` §3 ne propose plus `availability: scheduled` (fichier hors périmètre de T-365) | — |
 | [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 3/4 | Premier critère ouvert : essai daté : un agent traite un ticket `complet` de test et rend une section valide (preuve STATIC dans la PR) | — |
 | [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 2/3 | Premier critère ouvert : coût en tokens d'une revue consigné (T-326) : plafond écrit, coût réel NOT_TESTED jusqu'au premier run | — |
 | [T-421](T-421-indicateurs-quality-v1.md) | Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine | 0/2 | Premier critère ouvert : schéma JSON versionné, une ligne par merge sur `main`, aucune valeur secrète | — |
@@ -63,7 +64,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 
 | Ticket | Score | Titre | Critères | Issue |
 |---|---|---|---|---|
-| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | 64 | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | 0/3 | — |
 | [T-060](T-060-residu-kgateway.md) | 14 | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | 0/2 | — |
 | [T-041](T-041-context-engineering.md) | 8 | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
 | [T-484](T-484-plancher-couverture-appgenlib.md) | 0 | Plancher de couverture : viser tools/appgen/appgenlib/ au lieu de la façade appgen.py | 0/3 | — |
@@ -96,7 +96,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-161](T-161-ai-2.md) | 9 | Composant plateforme ai-gateway (agentgateway) sur k3d avec fournisseur factice | T-002 (in-progress), T-023 (todo) | — |
 | [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | 8 | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenCh… | T-002 (in-progress), T-332 (in-progress) | — |
 | [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md) | 8 | Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi par chemins | T-002 (in-progress), T-216 (todo), T-332 (in-progress) | — |
-| [T-074](T-074-retrait-thunderid.md) | 8 | Retirer ThunderID du contrat et des capacités ; Authentik seul | T-025 (todo), T-365 (todo) | — |
+| [T-074](T-074-retrait-thunderid.md) | 8 | Retirer ThunderID du contrat et des capacités ; Authentik seul | T-025 (todo), T-365 (in-progress) | — |
 | [T-314](T-314-dispatcher-planifie-cron-15-min-et.md) | 7 | Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission | T-210 (in-progress), T-311 (in-progress), T-313 (in-progress) | — |
 | [T-075](T-075-sauvegarde-volumes.md) | 7 | Sauvegarde des volumes : spike VolSync/restic vs Velero/Kopia | T-025 (todo), T-364 (todo) | — |
 | [T-012](T-012-verify-contrat.md) | 7 | `spec.verify` : vérification fonctionnelle déclarée (G10) | T-005 (todo) | — |
@@ -117,7 +117,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-124](T-124-upg-5.md) | 2 | Porte de merge des apps : dev, preuve PASS, promotion automatique, revert automatique | T-003 (todo), T-005 (todo), T-122 (todo) | — |
 | [T-163](T-163-ai-4.md) | 2 | Admission : sandbox gVisor et egress gateway obligatoires pour ai=true | T-020 (todo), T-160 (todo), T-162 (todo) | — |
 | [T-166](T-166-ai-7.md) | 2 | Allowlist MCP et gateway MCP : authz par outil, épinglage, lecture seule | T-161 (todo), T-164 (todo) | — |
-| [T-402](T-402-garde-image-multi-arch.md) | 2 | Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64) | T-123 (todo), T-365 (todo) | — |
+| [T-402](T-402-garde-image-multi-arch.md) | 2 | Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64) | T-123 (todo), T-365 (in-progress) | — |
 | [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | 1 | Revue indépendante automatique avant merge (modèle différent, lecture seule) | T-002 (in-progress), T-313 (in-progress) | — |
 | [T-415](T-415-sous-agent-prior-art-scout.md) | 1 | Sous-agent `prior-art-scout` (lecture seule, budget borné) | T-411 (in-progress), T-341 (todo) | — |
 | [T-340](T-340-protocole-d-echec-et-de-reprise.md) | 1 | Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d'échec, skill `resume-ticket` | T-210 (in-progress), T-337 (todo) | — |
@@ -155,7 +155,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md) | 69 | VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops) | T-360 (in-progress) | — |
 | [T-362](T-362-isolation-reseau-de-la-vm-lab.md) | 68 | Isolation réseau de la VM lab (UniFi, pare-feu) | T-361 (todo) | — |
 | [T-363](T-363-socle-de-la-plateforme-sur-la.md) | 67 | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stocka… | T-361 (todo), T-362 (todo) | — |
-| [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md) | 57 | OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab | T-360 (in-progress), T-363 (todo), T-365 (todo), T-366 (todo) | — |
+| [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md) | 57 | OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab | T-360 (in-progress), T-363 (todo), T-365 (in-progress), T-366 (todo) | — |
 | [T-400](T-400-retrait-bypass-admin-ruleset.md) | 46 | Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation po… | T-007 (todo), T-215 (todo), T-435 (todo) | — |
 | [T-403](T-403-rotation-secrets-dev.md) | 45 | Rotation des secrets et identités créés en mode dev (FINAL0) | T-215 (todo) | — |
 | [T-404](T-404-jalon-final0.md) | 44 | Jalon FINAL0 : identité d'usine, contournement retiré, secrets de dev tournés, revue des code owner… | T-007 (todo), T-215 (todo), T-400 (todo), T-403 (todo) | — |
