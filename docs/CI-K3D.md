@@ -9,7 +9,7 @@ Workflow : `.github/workflows/k3d-integration.yml`. Non bloquant : l'agrégat `k
 - Aucun secret. Permissions `contents: read`. Preuves (`tests/<suite>/evidence`) et journal publiés en artefacts publics, rétention 14 jours. Les diagnostics n'affichent que des `describe` et des journaux, jamais de valeur de Secret.
 - `tools/k3d/ci-bootstrap.sh` installe OpenChoreo 1.3.3 minimal (étapes 1 à 9 de `tools/oke/install.sh`, mêmes charts, values et sha256 de `platform/install/versions.env`). Sans les gardes OKE, sans Cilium (NetworkPolicy de l'étape 2), sans Argo CD (étape 11), sans Backstage (`--set backstage.enabled=false`, comme l'étape 6).
 - Limite « chart sans security bundle » : la CI installe le chart OpenChoreo standard, SANS le security bundle exigé par `tools/oke/install.sh` (`docs/SECURITY-BUNDLE.md`). Un PASS en CI ne prouve pas l'installation durcie utilisée sur OKE. La limite est rappelée dans le résumé de chaque job `bootstrap=oc`.
-- Déclencheurs (`docs/research/CI-SPEED.md` §4) : sur PR, seulement avec le label `k3d` ou si la PR touche `platform/`, `tools/oke/`, `tools/k3d/`, `tools/appgen/`, `tests/{k3d,vap,argo-escalation,gitops-k3d}/` ou le workflow ; après le merge, à chaque push sur `main` (sans annulation) et chaque nuit (03:17 UTC), toutes les suites. Un échec post-merge rend le commit rouge sur `main` ; l'alerte par ticket reste à décider (T-451).
+- Déclencheur : **`workflow_dispatch` seulement** (décision de Paul, 2026-11-18). Aucune suite ne tourne sur PR, sur push ni la nuit : elles ne freinent pas les itérations des agents. Quand et comment les réactiver : `docs/research/K3D-REACTIVATION.md` (T-452, à arbitrer par Paul). Le texte de `docs/research/CI-SPEED.md` §4 (PR filtrée, push sur `main`, nuit) décrit l'état antérieur.
 - Pas de déclencheur `merge_group` : `k3d-integration` n'est pas un check requis. À ajouter seulement quand `k3d-ok` le devient (§6).
 - Audit API server (suite `vap`) : une sonde vérifie que `/var/log/lab-audit.log` reçoit des événements. Sinon les tests `AUD-*` sont NOT_TESTED (jamais PASS) et le résumé le dit.
 
@@ -17,16 +17,16 @@ Workflow : `.github/workflows/k3d-integration.yml`. Non bloquant : l'agrégat `k
 
 - Environnement `development` : `tools/k3d/ci-bootstrap.sh` ne l'invente PAS si `platform/` le fournit (recherche d'un `Environment` nommé `development`). Absent aujourd'hui : il est alors dérivé de `production` (bruyant, noté dans le résumé du job). La CI teste donc une plateforme légèrement différente d'OKE. TEMPORAIRE : issue #49 l'ajoutera au manifeste de plateforme ; le contournement s'éteint alors tout seul, puis retirer le bloc.
 
-## 3. Suites (résultats du run de référence, 2026-11-18)
+## 3. Suites (runs de référence 44287620940 et 44288812441, 2026-11-18)
 
 Statuts : PASS, FAIL (non bloquant, visible), KNOWN_FAIL (échec connu documenté, le test est exécuté et non contourné), NOT_TESTED (test non exécuté, à ne jamais lire comme PASS).
 
 | Suite | Cluster | Bootstrap | Statut | Détail |
 |---|---|---|---|---|
-| `vap` | `lab-sec-vap` (audit API server activé) | non | FAIL | 91 PASS, 1 FAIL : B-09 (écart kube-ops connu, `tests/vap/RESULTS.md`). AUD-* : PASS avec preuves d'audit réelles (40, 9, 1 événements). Job environ 1 min |
-| `argo-escalation` | `argo-esc` | non (installe Argo) | PASS | Job environ 23 min |
-| `k3d` | `openchoreo` | oui (environ 4 min) | FAIL | Bloque au test T12 / RRB `t-alpha-db` (voir §4). Job environ 11 min |
-| `gitops-k3d` (gardé dans la matrice, jamais retiré) | `gitops` | oui | KNOWN_FAIL | Le patch T-DEPLOY cherche l'ancre `isProduction: true` suivie de `---` dans `40-openchoreo-env.yaml`, que main a changée. T-ARGO-HEALTH est déjà FAIL connu. Job environ 4 min |
+| `vap` | `lab-sec-vap` (audit API server activé) | non | FAIL | 91 PASS, 1 FAIL : B-09 (écart kube-ops connu, `tests/vap/RESULTS.md`). AUD-* : PASS avec preuves d'audit réelles (40, 9, 1 événements). Job 1 min 11 s (PR) à 5 min 22 s (`main`) |
+| `argo-escalation` | `argo-esc` | non (installe Argo) | PASS | Job 23 min 22 s |
+| `k3d` | `openchoreo` | oui (environ 4 min) | FAIL | Bloque au test T12 / RRB `t-alpha-db` (voir §4). Job 8 min (bootstrap 81-89 s) |
+| `gitops-k3d` (gardé dans la matrice, jamais retiré) | `gitops` | oui | KNOWN_FAIL | Le patch T-DEPLOY cherche l'ancre `isProduction: true` suivie de `---` dans `40-openchoreo-env.yaml`, que main a changée. T-ARGO-HEALTH est déjà FAIL connu. La suite s'arrête après T-SWITCH (77 s) : un job vert n'est qu'un KNOWN_FAIL. Job 3 min 20 à 3 min 45 |
 
 Non lancé : `phase2-whoami` (absent d'`origin/main`, dépend du k3d partagé et d'une image locale seca1).
 
@@ -39,13 +39,7 @@ Non lancé : `phase2-whoami` (absent d'`origin/main`, dépend du k3d partagé et
 
 ## 5. Lancer à la main
 
-Depuis une branche, le workflow se déclenche par PR portant le label `k3d` :
-
-```
-gh pr edit <n> --add-label k3d
-```
-
-Une fois le fichier sur `main` :
+Seul déclencheur actif. Depuis n'importe quelle branche (le workflow est sur `main`) :
 
 ```
 gh workflow run k3d-integration.yml --ref <branche>
@@ -53,9 +47,13 @@ gh run watch <id>
 gh run view <id> --json jobs --jq '.jobs[]|"\(.name) \(.conclusion)"'
 ```
 
+Le label `k3d` sur une PR ne lance plus rien tant que le déclencheur `pull_request` est retiré.
+
 Les preuves : `gh run download <id> -n k3d-<suite>`.
 
 ## 6. Rendre requis (plan)
+
+Calendrier et forme proposés (nuit seule avant T-364, suite réduite requise à FINAL0) : `docs/research/K3D-REACTIVATION.md` §3.
 
 1. Corriger les FAIL et KNOWN_FAIL déclarés : B-09 (écart kube-ops), T12 (clé ESO), gitops (ancre du test, PR séparée sous `tests/`), issue #49 (retirer le contournement).
 2. Trois exécutions vertes consécutives de chaque suite retenue, sur `main`.
