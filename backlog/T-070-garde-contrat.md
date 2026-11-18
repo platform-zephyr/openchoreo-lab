@@ -29,3 +29,5 @@ tools/contract-guard/, docs/schema/app.schema.json, tests/contract-guard/, .gith
 
 ## Notes
 Sorti de la liste figée du pilote (arbitrage Fable, 2026-11-18) : périmètre trop large (chevauchement, constat P7).
+
+2026-11-18 — Le job CI `contract-guard` a tourné et passé (PR #137, `ci-ok` vert). Les cases « CI refuse » restent non cochées : elles exigent une PR de test volontairement fautive.
