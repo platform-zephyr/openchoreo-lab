@@ -49,3 +49,7 @@ Un ticket `in-progress` porte une ligne « Reste » : c'est son état réel, pas
 - Les agents ne lisent pas les dépôts tiers avec `gh api` ; `git ls-remote` et `curl` sur `raw.githubusercontent.com` fonctionnent. Art antérieur indisponible = `NOT_TESTED`, jamais « aucune trouvée ».
 - Un résultat n'est `PASS` qu'avec une preuve runtime datée ; STATIC n'est pas RUNTIME ; `NOT_TESTED` et `INCOMPLET` se disent.
 - Un sous-agent qui rend « terminé » sans preuve par critère : ticket `in-progress`, ligne « Reste », case non cochée.
+- Tester aussi hors root (`runuser -u nobody`), les runners ne sont pas root ; `jsonschema` à installer dans les jobs qui valident `mission-result.v1`.
+- PR d'agent rouge pour un vrai défaut (ex. cliquet de qualité) : ne pas pousser sur sa branche ; un agent local la reprend, livre par ta branche ; fermer la PR du bot. Échec réseau : relancer une fois (`rerun_failed_jobs`).
+- Les agents de l'usine ne mettent pas le ticket à jour : cocher les critères et régénérer `STATUS.md` après leur fusion.
+- Un refus d'une garde n'est jamais à contourner : le signaler.

@@ -1,105 +1,88 @@
-# Reprise du coordinateur (session cloud) — 2026-11-18, soir
+# Reprise du coordinateur (session cloud) — 2026-11-18, fin d'après-midi
 
-À lire en premier après une compaction ou par une nouvelle session coordinatrice. Ne contient aucun secret. Les prochaines étapes
-sont dans `backlog/NEXT.md` (tenu à la main). Dépôt PUBLIC : aucune IP, OCID, e-mail, hôte interne ni détail de faille nulle part.
+À lire en premier après une compaction ou par une nouvelle session coordinatrice. Ne contient aucun secret. Dépôt PUBLIC : aucune IP, OCID,
+e-mail, hôte interne ni détail de faille nulle part. **Point d'entrée opérationnel : le skill `orchestrate-backlog`** (`.agents/skills/`) ; ce
+document donne l'état, les décisions de Paul et les pièges. Les prochaines étapes : `backlog/NEXT.md` ; l'état de chaque ticket : `backlog/STATUS.md`
+(généré par `python3 tools/backlog/status.py --write`) ; l'ordre de travail : `python3 tools/backlog/priority.py --top 10`.
 
 ## Où on en est
-- **Mode dev** (arbitrage de Paul) : sécurité allégée, les agents fusionnent après `ci-ok`, revue des code owners suspendue jusqu'à
-  FINAL0. Seule compte la sécurité finale (FINAL0 puis FINAL). Plan : `docs/adr/` (0001-0024), `docs/review/CONSENSUS*.md`
-  (arbitrages de Paul en fin de fichier, ils priment), `FABLE-ARBITRAGE.md`, ordre dans `backlog/ROADMAP.md`.
-- **Fusionné dans `main`** : PR #54 (ADR), #55 (vague 1 de S0), #56 (CI plus rapide), #58 (quota, dette gitleaks, cliquet qualité),
-  #59, #60, #61, #62 (exécutant, T-451, T-455, études), #63 (essai de l'exécutant, fusionnée par le bot).
-- **PR ouverte : #64** (brouillon, branche `claude/cool-hamilton-r7aa5k`) : clôture de T-304, clôtures de tickets, T-459 à T-465, NEXT.md,
-  ce handoff. La fusionner dès que `ci-ok` est vert (voir « Procédure de fusion »).
-- **Exécutant prouvé de bout en bout (T-304, 2026-11-18)** : `claude-agent.yml` → jeton d'App → branche → PR par le bot → auto-merge →
-  file de fusion → fusion. Preuve : `backlog/evidence/T-304-essai-executant-2026-11-18.md`.
-- **Backlog** : 140 actifs, 0 erreur de `check.py`. Faits (`done`) : T-008, T-061/061b, T-072, T-302, T-304, T-306, T-326, T-330, T-413,
-  T-414, T-430, T-450, T-453, T-454, T-455. En cours (`in-progress`, avec ligne « Reste » dans le ticket) : T-002, T-210, T-303, T-305,
-  T-311, T-313, T-332, T-411, T-451, T-452.
-- **Agents de développement en cours au moment du handoff** (worktrees `.claude/worktrees/agent-*`, branches `worktree-agent-<id>`, non poussées) :
-  **T-331 hooks Claude Code** (branche `worktree-agent-a355401da01d8d28f`) : son rapport arrive à la session, l'intégrer comme ci-dessous.
-  Déjà intégré (2026-11-18, commit `158bfe2`) : le reste de T-313 (job `agent-trailers` dans `ci.yaml` et `ci-ok`, commentaire de PR avec modèle,
-  tours, coût, durée, refus ; résolution de la branche de l'agent ; tableau des runs dans la preuve de T-304). Non joué en vrai : tout dépend du
-  prochain dispatch. Constat : la sortie `branch_name` de l'action est vide quand l'agent ouvre lui-même sa PR (branche `agent/…`), d'où `no_branch` ;
-  le workflow retrouve maintenant la branche par la PR qui cite l'issue.
+- **Mode dev** (arbitrage de Paul) : sécurité allégée, les agents fusionnent après `ci-ok`, revue des code owners suspendue jusqu'à FINAL0.
+  Seule compte la sécurité finale (FINAL0 puis FINAL). Plan : `docs/adr/` (0001-0024), `docs/review/CONSENSUS*.md` (arbitrages de Paul en fin de
+  fichier, ils priment), `backlog/ROADMAP.md`.
+- **L'usine d'agents (`.github/workflows/claude-agent.yml`) est prouvée en vrai** : lot `86,87` (run 44338002716) = 2 agents en parallèle, les deux PASS
+  (28 et 17 tours, 0,51 $ et 0,37 $, aucun refus de permission), PR ouvertes par le bot (`openchoreo-worker`), auto-merge armé, fusion par la file.
+  Chaîne : plan (garde de recouvrement, disjoncteur de quota, PAUSE) → job `dev` (hook git des trailers, issue dans le prompt, plafonds de tours
+  et de coût) → Verdict → job `report`. Preuves datées dans `backlog/evidence/` et dans les lignes « Reste » de T-311, T-313, T-466, T-467, T-474, T-478.
+- **Fusionné aujourd'hui** (PR #64 à #91) : exécutant durci (T-466 Verdict, T-467 garde de recouvrement et disjoncteur, T-474 trailers par hook,
+  T-478 plafonds natifs), hooks Claude Code (T-331), pre-commit (T-459), CI consolidée (T-475 : `--only`, `status.py --check`, tests de l'usine,
+  historique de qualité), tests des outils backlog (T-418), identités (T-183), gestes de Paul (T-325), qualité (T-421, T-461), vue `STATUS.md` et score
+  de priorité (T-473, T-476), étude des usines existantes (T-477 : `docs/research/FACTORY-PRIOR-ART.md`), k3d (T-456, T-457, T-458 en partie).
+- **En file ou en cours au moment du handoff** : PR #89 (T-480, garde de taille des tickets, agent de l'usine, dans la file de fusion). Après sa
+  fusion et celle de la PR #90 (T-479, `stats.py`, déjà fusionnée), **cocher T-479 et T-480** (les agents de l'usine ne mettent pas le ticket à jour :
+  statut resté `todo`) puis régénérer `STATUS.md`.
+- **Backlog** : ~132 actifs, 0 erreur de `check.py`. Les `in-progress` portent chacun une ligne « Reste » (T-002, T-210, T-303, T-305, T-311, T-313,
+  T-332, T-411, T-451, T-452, T-458, T-460, T-461, T-466, T-467, T-470, T-478, T-479, T-480…).
 
 ## Reprise : ce qu'il faut faire en arrivant
-1. Lire `backlog/NEXT.md`. 2. `git fetch origin && git checkout claude/cool-hamilton-r7aa5k && git merge origin/main`.
-3. Vérifier la PR #64 (`ci-ok`) et la fusionner. 4. Intégrer les deux agents en cours. 5. Lancer la **vague A** de NEXT.md en parallèle
-(un sous-agent par ticket, voir « Brief type »), et le dispatch multi-issues de l'usine pour prouver T-311/T-313. 6. Mettre à jour les
-tickets, `NEXT.md`, `ROADMAP.md` (`python3 tools/backlog/roadmap.py`), pousser.
-Le modèle Sonnet suffit pour orchestrer ; déléguer à Opus les tickets R1-sensibles (authz, VAP, cluster-agent, secrets, FINAL) et les arbitrages.
+1. Charger le skill `orchestrate-backlog` ; lire ce document, `backlog/NEXT.md`, `backlog/STATUS.md`.
+2. `git fetch origin main && git checkout -B claude/cool-hamilton-r7aa5k origin/main` (la branche du coordinateur est supprimée à chaque fusion :
+   `delete_branch_on_merge` est actif ; la repousser recrée la branche).
+3. Vérifier la PR #89 (file de fusion) ; clôturer T-479 et T-480 ; relever le coût réel des runs avec `python3 tools/factory/stats.py` (T-479).
+4. Choisir le prochain lot avec `priority.py --top 10` et `overlap.py` ; **mélanger** : petits tickets en lot de sous-agents locaux Sonnet (rapide,
+   sans coût de démarrage), sujets longs ou sensibles à l'usine ou en Opus local.
+5. Arbitrer avant FINAL0 (ticket à créer) : le mode de permission de l'action (`auto` par défaut = `allowedTools` n'est pas une liste blanche stricte).
 
-## Procédure de fusion (outils de cette session)
-- Les outils GitHub MCP fonctionnent ; **GraphQL est bloqué** (`gh pr checks`, `gh pr view --json` échouent) : utiliser REST
-  (`gh api repos/platform-zephyr/openchoreo-lab/...`). L'API des secrets et des paramètres Actions est refusée par le proxy.
-- État de `ci-ok` d'un commit : `gh api "repos/platform-zephyr/openchoreo-lab/commits/<sha>/check-runs?per_page=50" --jq '[.check_runs[]|select(.name=="ci-ok")|.conclusion // "pending"]|first // "none"'`
-  (`none` tant que les autres jobs tournent). Surveillance : outil Monitor avec une boucle `until` (jamais `sleep` seul).
-- Fusionner une PR : `update_pull_request` (`draft: false`) puis `merge_pull_request` (`merge_method: squash`). Après un squash, la
-  branche `claude/cool-hamilton-r7aa5k` repart de `origin/main` : `git fetch origin main && git merge origin/main` puis continuer.
-  Le force-push est refusé par la session : ne jamais en faire.
-- Le ruleset impose la file de fusion (`merge_group`) : une PR d'agent avec auto-merge entre en file, la CI de la file tourne, puis fusion.
-- Une PR par lot de travail, créée en brouillon (règle de la session), corps = gabarit `.github/pull_request_template.md` + « Implémentations publiques consultées ».
+## Pièges résolus aujourd'hui (à ne pas redécouvrir)
+- **Tester aussi hors root** : la session coordinatrice est root, les runners ne le sont pas (fichiers en lecture seule non effaçables, permissions).
+  Reproduire avec `runuser -u nobody -- env HOME=/tmp/x bash tests/...` sur une copie (`git ls-files | cp --parents`).
+- **`tools/dev/check` affiche d'abord les lignes `FAIL`** des tests de l'usine (avant : les `PASS` suivants les noyaient). `jsonschema` doit être
+  installé dans les jobs qui valident `mission-result.v1` (job `dev-factory`).
+- **Le cliquet de qualité** (`python3 tools/quality/check.py`) refuse une fonction neuve de complexité > 15 et toute dégradation ruff/mypy : un agent
+  qui l'ignore voit sa PR rouge (cas : PR #84, corrigée par un agent local puis livrée par la branche du coordinateur). Le prompt de l'exécutant
+  impose maintenant de le lancer avant de livrer (T-478).
+- **Trailers de commit** : ne jamais compter sur le modèle ; `tools/factory/commit-trailers.sh` les injecte par hook git (T-474) ; `check-trailers`
+  juge. Un `git -c core.hooksPath=…` ou `commit-tree` reste un contournement possible (suite : durcir le garde Bash, T-331).
+- **Échecs réseau de la CI** (`platform-render` : téléchargement de chart `connection reset`) : relancer les jobs en échec **une fois**
+  (`actions_run_trigger` méthode `rerun_failed_jobs` avec l'id du run `ci` de la PR, trouvé par `gh api actions/runs?head_sha=…`).
+- **PR d'agent rouge pour un vrai défaut** : ne pas pousser sur sa branche ; un agent local reprend la branche (`git merge origin/claude/issue-…`),
+  corrige, livre par la branche du coordinateur ; fermer la PR du bot.
+- **Branche d'une PR fermée non supprimée** : le nom `claude/issue-<n>-<slug>` reste ; l'agent en choisit un autre au relancement (ok) ; sinon Paul la supprime.
+- **`STATUS.md` en conflit** entre branches d'agents : prendre « ours » puis `python3 -B tools/backlog/status.py --write`.
+- **Agents de recherche** : `git clone` d'un dépôt tiers est refusé ; un contournement (assembler la commande pour passer le filtre) a été refusé à
+  juste titre : un refus d'une garde n'est jamais à contourner, il se signale. WebFetch et `curl` sur `raw.githubusercontent.com` fonctionnent.
+- Détails de la procédure de fusion, d'intégration d'une branche d'agent, du brief type et de l'usine : voir le skill `orchestrate-backlog`
+  (§3 à §6) et `docs/AGENT-RUNNERS.md`.
 
-## Intégrer une branche d'agent
-1. `git merge --no-ff worktree-agent-<id>` dans `claude/cool-hamilton-r7aa5k`. Conflits connus : `.github/workflows/ci.yaml` (liste `needs` de
-   `ci-ok` : garder l'union), `backlog/README.md`, fichier du ticket (version la plus avancée).
-2. `python3 tools/backlog/check.py` (0 erreur), `python3 -m unittest discover -s tests/backlog`, `python3 tools/quality/check.py` (cliquet),
-   tests du ticket, `python3 tools/backlog/roadmap.py`, commit, `git push origin claude/cool-hamilton-r7aa5k`.
-3. **Ne jamais régénérer le backlog avec `tools/backlog/seed.py`** (statuts édités à la main ; seed.py sera retiré par T-419).
-4. Avant de pousser, lancer en local ce que la CI lance : `tools/dev/check --static --jobs 4` (outils : `tools/dev/cloud-setup.sh` puis
-   `tools/dev/doctor`), et `python3 tools/quality/check.py`. Le cliquet refuse tout code neuf trop complexe et toute dégradation d'un
-   fichier gelé (lignes, erreurs ruff/mypy) : garder les changements minimaux dans `tools/appgen/appgen.py` (1481 lignes max, ruff 8, mypy 12).
-
-## Brief type d'un sous-agent de développement (parallélisation)
-Un sous-agent par ticket, `isolation: worktree`, modèle = champ `model:` du ticket (Sonnet par défaut, Opus pour R1-sensible), en arrière-plan.
-Le brief contient : dépôt public (aucune valeur sensible) ; `git fetch origin && git merge origin/claude/cool-hamilton-r7aa5k` d'abord ;
-lire `AGENTS.md`, `backlog/README.md`, le ticket ; rester dans le périmètre ; charger le skill `prior-art` (art antérieur cité dans le commit) ;
-tests avec cas négatifs ; ne toucher ni `STATE.md` ni `ROADMAP.md` ; `check.py` à 0 erreur ; `done` seulement si chaque critère est prouvé,
-sinon `in-progress` avec les cases réellement cochées et une ligne « Reste » ; commit en français, auteur `noreply@anthropic.com`,
-trailers `Co-Authored-By: Claude <modèle> <noreply@anthropic.com>` et `Claude-Session: <url de la session>` ; ne pas pousser ;
-rendre compte (branche, commit, preuves, NOT_TESTED, gestes de Paul). Éviter deux tickets sur les mêmes fichiers dans une vague
-(`ci.yaml`, `tools/dev/check`, `AGENTS.md` sont des points chauds). Plafond pratique : 5 à 7 agents locaux en parallèle ; l'usine (matrice
-`max-parallel: 3`) s'y ajoute. Les agents ne peuvent pas lire les dépôts tiers avec `gh api` (refusé) : `git ls-remote` et `curl` sur
-`raw.githubusercontent.com` fonctionnent.
-
-## Usine 24/7 : lancer et comprendre l'exécutant
-- Lancer : `gh workflow run claude-agent.yml -f tickets="<issues>" -f model=claude-sonnet-5-5 -f effort=high` (`-f debug=true` pour les journaux
-  complets, jamais par défaut : journaux publics). Modèles : claude-haiku-5-5, claude-sonnet-5-5, claude-opus-5-5 ; efforts low…max (Sonnet ≤ xhigh).
-- Une issue = un agent = une branche `agent/…` ou `claude/…` = une PR ; le résultat de chaque run : artefact `mission-result-<issue>`
-  (modèle observé, tours, coût, `permission_denials` : noms d'outils seulement) ; un run sans branche sort `NOT_TESTED`. L'agent commente
-  l'issue avec son compte rendu. Garde-fous : `factory/PAUSE`, plafonds par modèle, ledger de quota `tools/factory/ledger.py`.
-- **Identité** : GitHub App `openchoreo-worker` (secrets `APP_ID`, `APP_PRIVATE_KEY`, jeton d'installation généré à chaque run, permission
-  `workflows`) ; repli `FACTORY_GH_TOKEN` ; jeton Claude `CLAUDE_CODE_OAUTH_TOKEN` (abonnement Max, `claude setup-token`, valable un an).
-  Registre : `docs/state/identities.yaml` (noms seulement).
-- **Pièges résolus** : (1) un jeton fin personnel ne peut pas écrire dans le dépôt d'une organisation → App d'organisation ; (2) `actions/checkout`
-  persiste le `GITHUB_TOKEN` dans un fichier `includeIf` que `claude-code-action` ne nettoie pas, il prime sur le jeton de l'App et le push d'un
-  fichier de workflow est refusé → `persist-credentials: false` (issue amont anthropics/claude-code-action#1510) ; (3) le prompt de l'exécutant est
-  aligné sur le mode dev ; outils autorisés : `gh issue view/comment`, `gh pr create/view/checks`, `gh pr merge --auto --squash`.
-- Preuves restantes de l'usine : dispatch de plusieurs issues en parallèle, `factory/PAUSE` posé, `check-trailers` dans `ci.yaml`, essai du skill
-  `prior-art` sur un ticket `complet` (T-311, T-313, T-411).
+## Usine : repères rapides
+- Lancer : `actions_run_trigger` (`claude-agent.yml`, `ref: main`, `inputs: {tickets: "<issues>", model: claude-sonnet-5-5, effort: high}`) ou
+  `gh workflow run`. Une issue = un agent = branche `claude/issue-<n>-<slug>` = une PR avec `Closes #<n>`. Prérequis : issue créée, `github_issue: <n>`
+  dans le ticket, fusionné dans `main` ; lot validé par `python3 tools/factory/overlap.py --tickets <n1>,<n2>`.
+- Plafonds (T-478) : Sonnet 3 $, Opus 6 $, Haiku 1 $ par run ; tours 100 (Sonnet/Haiku), 200 (Opus) ; `timeout-minutes` ≤ 55 hors Opus (jeton d'App 1 h).
+- Disjoncteur de quota (`factory/LIMIT.json`, jamais déclenché en vrai) et `factory/PAUSE` (désarmement d'un auto-merge déjà armé non prouvé) : à prouver.
+- Identité : GitHub App `openchoreo-worker` ; jeton Claude `CLAUDE_CODE_OAUTH_TOKEN` (Max, `claude setup-token`, un an) ; registre `docs/state/identities.yaml`.
+- Mesurer : `python3 tools/factory/stats.py --dir <artefacts mission-result>` ; ligne par run dans le commentaire de l'issue.
 
 ## Décisions de Paul à connaître (elles priment sur les anciens documents)
 - Control plane OpenChoreo sur le homelab (VM Talos « lab »), OKE optionnel ; mono-cluster pour la porte ; **pas de fork d'OpenChoreo** : tag stable
-  1.3.3 épinglé + couche « security bundle » privée et temporaire (sortie du bundle quand l'amont corrige ; `docs/SECURITY-BUNDLE.md`, ADR-0016/0020).
-- k3d **désactivé** (lancement manuel) pendant le dev : D-1 à D-6 acceptées (ADR-0002 §4 amendé, T-435 en FINAL0, T-339 réduit, réactivation
-  nocturne non bloquante à la fin de S1 avant T-364, alerte par le dispatcher T-314 sans issue GitHub, B-09 en KNOWN_FAIL, label `k3d` autorisé).
-  Corrections ouvertes : T-456 (clé ESO `lab-pg-roles/<nom>`, vrai défaut de l'archétype B), T-457, T-458. Étude : `docs/research/K3D-REACTIVATION.md`.
+  1.3.3 épinglé + couche « security bundle » privée et temporaire (`docs/SECURITY-BUNDLE.md`, ADR-0016/0020).
+- k3d **désactivé** (lancement manuel ou label `k3d`) pendant le dev : D-1 à D-6 (ADR-0002 §4 amendé, T-435 en FINAL0, réactivation nocturne à la fin de S1).
+  Triage des échecs préexistants de la suite `k3d` : T-469. Étude : `docs/research/K3D-REACTIVATION.md`.
 - Dev uniquement avec Claude (DeepSeek plus tard). Routage ADR-0023 : R1-sensible Opus, R2 texte Haiku + revue Sonnet, R3 Sonnet.
-- Setup de dev « shift-left » : `docs/research/SHIFT-LEFT-DEV-ENV.md` (niveaux L0-L6, commande unique `tools/dev/check` avec `--file`, `--fast`,
-  `--changed`, `--jobs`, reçu). Tickets restants : T-459 (pre-commit), T-460 (parité CI), T-461, T-462, T-463, T-464, T-465 ; SL-5 = T-331.
+- Setup « shift-left » : `docs/research/SHIFT-LEFT-DEV-ENV.md` (commande unique `tools/dev/check`, `tools/dev/setup` pour pre-commit).
 - Art antérieur obligatoire avant de coder (ADR-0024, skill `prior-art`) ; maintenabilité par le cliquet `tools/quality/check.py`.
-- Pas de réponse sur les sujets réseau/secrets dans le dépôt : ntfy, Doppler/OpenBao, etc. restent dans les ADR.
+- Backlog 100 % technique : le score de priorité (`priority.py`) ordonne ; tout sera traité.
 
 ## Gestes attendus de Paul
-Liste maintenue dans `backlog/NEXT.md` (section « Gestes de Paul ») : script de setup cloud (`tools/dev/cloud-setup.sh`), tag `core-baseline`
-(annoté, à signer avant FINAL0), réglages d'organisation GitHub (T-434, `docs/research/GITHUB-CONFIG.md` §7), dates du registre des identités,
-pause du moteur horaire Atlas pendant le pilote, `/usage` à 0/24/48 h, palier N et Max ou Ultra après le pilote, `lab.internal` fictif ou non,
-FINAL0 (Apps définitives T-215, retrait du contournement admin T-400).
+Liste maintenue dans `backlog/NEXT.md` : script de setup cloud (`tools/dev/cloud-setup.sh`), tag `core-baseline` (annoté, à signer avant FINAL0),
+réglages d'organisation GitHub (T-434), dates du registre des identités, pause du moteur horaire Atlas pendant le pilote, `/usage` à 0/24/48 h,
+palier N et Max ou Ultra après le pilote, `lab.internal` fictif ou non, hôte `awesomeclaude.ai` à autoriser si on veut lire ces pages, FINAL0
+(App définitive T-215, retrait du contournement admin T-400, signature du tag).
 
 ## Points de vigilance
-- `.claude/settings.json` (T-330) refuse `kubectl`, `helm`, `tofu`, la lecture d'identifiants, `env` et le push forcé dans ce dépôt.
-- Dépôt public : jamais de valeur sensible dans un commit, une PR, un journal ou un rapport ; la dette historique (anciennes valeurs dans l'historique
-  git) n'est purgée que par la réécriture d'historique de Paul (T-301). `leak-guard` (T-303) tourne en CI et en local (`tools/dev/leak-guard.sh`).
+- `.claude/settings.json` (T-330) et les hooks `.claude/hooks/` (T-331) refusent `kubectl`, `helm`, `tofu`, la lecture d'identifiants, `env`, le push forcé,
+  `--no-verify`. Dépôt public : jamais de valeur sensible dans un commit, une PR, un journal ou un rapport ; `leak-guard` tourne en CI et en local.
 - Ne pas désactiver ni contourner admission, PSA ou NetworkPolicy pour faire passer un test. Périmètre cluster : `openchoreo-*` et `lab-*`.
-- Un statut « PASS » exige une preuve runtime datée ; STATIC n'est pas RUNTIME ; k3d n'est pas OKE.
+- Un statut « PASS » exige une preuve runtime datée ; STATIC n'est pas RUNTIME ; k3d n'est pas OKE ; `NOT_TESTED` et `INCOMPLET` se disent.
+- Ne jamais régénérer le backlog avec `tools/backlog/seed.py` (obsolète). `STATE.md` et `ROADMAP.md` : seul le coordinateur les écrit.
+- Le force-push est refusé : ne jamais en faire ; une branche coordinateur repartie de `main` se réconcilie par `git merge -s ours FETCH_HEAD`
+  quand le dépôt distant l'a encore.
