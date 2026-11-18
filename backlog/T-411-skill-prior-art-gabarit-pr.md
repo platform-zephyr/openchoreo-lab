@@ -34,3 +34,5 @@ Proposition QA-1 (backlog/proposals/quality.yaml), intégrée (intégration 5, 2
 Dépend de T-313 : le gabarit `.github/pull_request_template.md` est créé par T-313. AGENTS.md est aussi touché par T-041 : le second fusionné rebase. Mode dev (arbitrage 7) : la revue des code owners est suspendue jusqu'à FINAL0 ; la protection de CODEOWNERS ne joue qu'à partir de là, la CI (`ci-ok`) reste la seule garde d'ici là.
 
 Routage R2 (ADR-0023) : Haiku `medium`, revue Sonnet en check requis (2 refus → Sonnet) ; ne touche ni l'en-tête du ticket ni backlog/proposals/. Le dispatcher relance en Sonnet si le diff réel sort du périmètre texte.
+
+Examen du 2026-11-18 : les trois premières cases restent prouvées par les fichiers. Reste : l'essai daté sur un ticket de niveau `complet`. La PR #63 (essai T-304) ne compte pas : un commentaire, section « Sans objet ». À faire : dispatcher un ticket de test `complet` et lire la section « Implémentations publiques consultées » rendue.
