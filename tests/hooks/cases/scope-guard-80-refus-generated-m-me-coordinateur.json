@@ -1,0 +1,16 @@
+{
+  "name": "refus generated/ même coordinateur",
+  "hook": "scope-guard",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "@ROOT@/generated/x.yaml"
+    },
+    "cwd": "@ROOT@"
+  },
+  "env": {
+    "LAB_COORDINATOR_SESSION": "1"
+  }
+}

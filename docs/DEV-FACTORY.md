@@ -64,6 +64,23 @@ La VM cloud n'a pas `helm`, `kubeconform`, `actionlint` ni `gitleaks` : sans eux
 puis lancer une session et y exécuter `tools/dev/doctor` (attendu : `RESULT: PASS`). Hôtes à autoriser en sortie pour le script :
 `get.helm.sh`, `github.com` et le CDN de téléchargement des releases GitHub.
 
+## Hooks git locaux : pre-commit et pre-push (SL-4, T-459)
+
+`tools/dev/setup` installe, une fois par clone, les hooks du framework `pre-commit` d'après `.pre-commit-config.yaml`
+(idempotent ; `--check` vérifie seulement ; il lance ensuite `tools/dev/doctor`). Tous les hooks sont `language: system` :
+aucun dépôt distant, aucun réseau, binaires de `toolchain.lock`.
+
+| Étape | Hooks |
+|---|---|
+| pre-commit (fichiers indexés) | `tools/dev/check --file` (ruff, yamllint, shellcheck, JSON, appgen validate), `gitleaks` sur l'index (`.gitleaks.toml`), `actionlint` si un workflow change, `backlog check` si `backlog/` change, cliquet `quality` si un `.py` de `tools/` ou `tests/` change |
+| pre-push | `tools/dev/check --static --changed` |
+
+Un outil absent donne `NOT_TESTED` côté `check` (jamais PASS) : lancer `tools/dev/doctor`. `git commit --no-verify` et `git push --no-verify`
+restent refusés par `.claude/settings.json` ; la configuration ne les utilise ni ne les propose.
+Preuve : `tests/dev-factory/precommit-test.sh` (dépôt temporaire ; cas négatifs ruff F821, YAML invalide, secret factice, shellcheck ;
+setup idempotent ; durée du commit propre). Mesuré le 2026-11-18 sur la VM cloud x86_64 : commit propre en 2,1 s environ (gitleaks inclus).
+Limite : le pre-push exécute le périmètre `--changed` ; la CI reste la preuve (`ci-ok`).
+
 ## Limites connues
 
 - Le processus Claude Code tourne sur l'hôte, dans le worktree : l'isolation couvre les **commandes** exécutées (`dev exec`), pas l'agent lui-même.

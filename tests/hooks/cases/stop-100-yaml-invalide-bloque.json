@@ -1,0 +1,16 @@
+{
+  "name": "yaml invalide : bloque",
+  "hook": "stop",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  "env": {
+    "CHECK_CHANGED_FILES": "apps/_hooktest/notes.yaml"
+  },
+  "fixture": {
+    "path": "apps/_hooktest/notes.yaml",
+    "content": "a: [1, 2\nb: : :\n"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "refus outil cluster : FOO=1 kubectl get nodes",
+  "hook": "bash-guard",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "FOO=1 kubectl get nodes"
+    }
+  }
+}

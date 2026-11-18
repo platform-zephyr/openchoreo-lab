@@ -1,0 +1,12 @@
+{
+  "name": "autorisé : git push --set-upstream origin claude/foo",
+  "hook": "bash-guard",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "git push --set-upstream origin claude/foo"
+    }
+  }
+}

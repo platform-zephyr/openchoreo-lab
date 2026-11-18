@@ -1,0 +1,48 @@
+# Hooks git locaux (SL-4, T-459 ; docs/research/SHIFT-LEFT-DEV-ENV.md §3.2). Installation : tools/dev/setup.
+# Tous les hooks sont `language: system` : aucun dépôt distant, aucun réseau, et les binaires sont ceux de
+# tools/dev/toolchain.lock (une seule liste d'outils). Les contrôles par fichier passent par `tools/dev/check --file`
+# (ruff, yamllint, shellcheck, JSON, appgen validate), pour ne pas dupliquer les options de la CI.
+# Un outil absent donne NOT_TESTED côté check (rc 0) : `tools/dev/doctor` dit lesquels manquent.
+# Interdit : contourner ces hooks (git commit --no-verify) ; .claude/settings.json le refuse.
+minimum_pre_commit_version: "3.0.0"
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+fail_fast: false
+repos:
+  - repo: local
+    hooks:
+      - id: check-file
+        name: tools/dev/check --file (ruff, yamllint, shellcheck, json, appgen)
+        language: system
+        entry: tools/dev/check --file
+        types_or: [python, yaml, json, shell]
+      - id: gitleaks
+        name: gitleaks (index)
+        language: system
+        pass_filenames: false
+        always_run: true
+        entry: gitleaks git --pre-commit --staged --redact --no-banner --config .gitleaks.toml
+      - id: actionlint
+        name: actionlint
+        language: system
+        files: '^\.github/workflows/.*\.ya?ml$'
+        entry: actionlint
+      - id: backlog
+        name: backlog check
+        language: system
+        files: '^backlog/'
+        pass_filenames: false
+        entry: python3 tools/backlog/check.py
+      - id: quality-ratchet
+        name: cliquet de maintenabilité
+        language: system
+        files: '^(tools|tests)/.*\.py$'
+        pass_filenames: false
+        entry: python3 tools/quality/check.py
+      - id: check-static
+        name: tools/dev/check --static --changed (pré-push)
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
+        entry: tools/dev/check --static --changed

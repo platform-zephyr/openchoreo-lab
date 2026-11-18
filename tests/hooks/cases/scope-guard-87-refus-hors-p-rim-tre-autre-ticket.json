@@ -1,0 +1,17 @@
+{
+  "name": "refus hors périmètre : autre ticket",
+  "hook": "scope-guard",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "@ROOT@/backlog/T-332-x.md"
+    },
+    "cwd": "@ROOT@"
+  },
+  "env": {
+    "AGENT_TICKET_SCOPE": ".claude/hooks/, .claude/settings.json, tests/hooks/",
+    "AGENT_TICKET_ID": "T-331"
+  }
+}

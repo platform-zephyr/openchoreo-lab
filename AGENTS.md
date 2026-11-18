@@ -8,6 +8,7 @@
 - Ne pas désactiver ni contourner une politique d'admission, la PSA ou une NetworkPolicy pour faire passer un test.
 - Périmètre cluster : namespaces `openchoreo-*` et `lab-*` uniquement.
 - Un résultat n'est « PASS » qu'avec une preuve runtime datée (PASS / FAIL / NOT_TESTED / BLOCKED). k3d ≠ OKE.
+- Local d'abord : avant `git push` ou `gh pr create`, lancer `tools/dev/check --static --changed` et reporter dans la PR le verdict, le niveau et le reçu. `NOT_TESTED` ou `INCOMPLET` n'est pas « PASS » : le dire. Un job CI rouge de niveau L2 ou moins est un défaut de l'environnement local à corriger.
 - Réponses en français, conclusion d'abord.
 - Avant de coder un ticket qui touche du code, un manifeste ou un workflow : charger `prior-art` (art antérieur borné, ADR-0024).
 - La PR contient la section « Implémentations publiques consultées » (format : `.github/pull_request_template.md`).

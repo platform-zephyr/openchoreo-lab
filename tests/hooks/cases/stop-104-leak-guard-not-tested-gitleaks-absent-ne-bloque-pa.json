@@ -1,0 +1,14 @@
+{
+  "name": "leak-guard NOT_TESTED (gitleaks absent) : ne bloque pas",
+  "hook": "stop",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  "env": {
+    "CHECK_CHANGED_FILES": "backlog/README.md",
+    "LEAK_GUARD_BIN": "/absent/gitleaks"
+  },
+  "fixture": null
+}

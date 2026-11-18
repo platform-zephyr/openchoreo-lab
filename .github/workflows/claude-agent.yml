@@ -133,6 +133,16 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
+      - name: Ticket et périmètre pour les hooks (AGENT_TICKET_ID, AGENT_TICKET_SCOPE ; jamais LAB_COORDINATOR_SESSION)
+        if: steps.pause.outputs.paused == 'false'
+        env:
+          ISSUE: ${{ matrix.issue }}
+        run: |
+          # T-331 : .claude/hooks/pretool-scope-guard.sh lit ces variables. Issue sans ticket (github_issue) : pas de limite de périmètre.
+          rc=0
+          tools/factory/run-ticket.sh ticket-env "$ISSUE" >ticket-env.out || rc=$?
+          if [ "$rc" -eq 0 ]; then cat ticket-env.out >>"$GITHUB_ENV"; elif [ "$rc" -eq 3 ]; then echo "::warning::aucun ticket backlog pour l'issue ${ISSUE} : garde de périmètre inactive"; else exit "$rc"; fi
+          rm -f ticket-env.out
       - id: claude
         if: steps.pause.outputs.paused == 'false'
         env:

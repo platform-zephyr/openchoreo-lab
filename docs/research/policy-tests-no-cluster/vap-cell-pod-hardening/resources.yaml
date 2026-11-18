@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Pod
+metadata: {name: ok-digest, namespace: dp-demo}
+spec:
+  containers:
+    - name: a
+      image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: bad-tag, namespace: dp-demo}
+spec:
+  containers:
+    - name: a
+      image: ghcr.io/example/app:latest
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: bad-priv, namespace: dp-demo}
+spec:
+  containers:
+    - name: a
+      image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+      securityContext: {privileged: true}
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: hostnet-outside-scope, namespace: other}
+spec:
+  hostNetwork: true
+  containers:
+    - name: a
+      image: ghcr.io/example/app:latest
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: bad-hostpath, namespace: lab-pg}
+spec:
+  volumes:
+    - {name: h, hostPath: {path: /etc}}
+  containers:
+    - name: a
+      image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: bad-hostnet, namespace: dp-demo}
+spec:
+  hostNetwork: true
+  containers:
+    - name: a
+      image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: bad-init-tag, namespace: dp-demo}
+spec:
+  initContainers:
+    - name: i
+      image: ghcr.io/example/app:1.0
+  containers:
+    - name: a
+      image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000001

@@ -1,0 +1,14 @@
+{
+  "name": "dépôt propre : laisse finir",
+  "hook": "stop",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  "env": {
+    "CHECK_CHANGED_FILES": "backlog/README.md"
+  },
+  "fixture": null,
+  "budget_seconds": 5
+}

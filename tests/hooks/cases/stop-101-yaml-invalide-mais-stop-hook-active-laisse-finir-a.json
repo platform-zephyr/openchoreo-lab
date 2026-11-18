@@ -1,0 +1,16 @@
+{
+  "name": "yaml invalide mais stop_hook_active : laisse finir (anti-boucle)",
+  "hook": "stop",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "Stop",
+    "stop_hook_active": true
+  },
+  "env": {
+    "CHECK_CHANGED_FILES": "apps/_hooktest/notes.yaml"
+  },
+  "fixture": {
+    "path": "apps/_hooktest/notes.yaml",
+    "content": "a: [1, 2\nb: : :\n"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "leak-guard FAIL : bloque",
+  "hook": "stop",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  "env": {
+    "CHECK_CHANGED_FILES": "backlog/README.md"
+  },
+  "fixture": null,
+  "needs": "gitleaks",
+  "leak_fixture": "apps/_hooktest/leak.txt"
+}

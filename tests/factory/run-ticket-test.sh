@@ -109,5 +109,50 @@ if [[ "$line" == *"claude-sonnet-5-5"* && "$line" == *"12 tours"* && "$line" == 
 else ko "ligne de commentaire de PR incorrecte : $line"; fi
 if grep -q 'run-ticket.sh comment' "$wf" && grep -q 'gh pr comment' "$wf" && grep -q 'steps.app.outputs.token' "$wf"; then ok "workflow : commentaire de PR via le jeton de l'App"; else ko "commentaire de PR non branche"; fi
 
+# 8. Variables des hooks (T-331) : ticket-env pose AGENT_TICKET_ID et AGENT_TICKET_SCOPE, jamais LAB_COORDINATOR_SESSION.
+"$RT" ticket-env T-331 >"$W/tenv"
+eq "ticket-env T-331 : identifiant" "$(sed -n 's/^AGENT_TICKET_ID=//p' "$W/tenv")" "T-331"
+eq "ticket-env T-331 : perimetre du ticket" "$(sed -n 's/^AGENT_TICKET_SCOPE=//p' "$W/tenv")" ".claude/hooks/,.claude/settings.json,tests/hooks/"
+if grep -q 'LAB_COORDINATOR_SESSION' "$W/tenv"; then ko "ticket-env pose LAB_COORDINATOR_SESSION"; else ok "ticket-env ne pose pas LAB_COORDINATOR_SESSION"; fi
+expect "ticket-env : ticket inconnu refuse (code 3)" 3 "$RT" ticket-env T-9999
+expect "ticket-env : issue sans ticket refusee (code 3)" 3 "$RT" ticket-env 987654321
+expect "ticket-env : reference invalide refusee (code 2)" 2 "$RT" ticket-env 'T-1;id'
+expect "ticket-env : reference absente refusee" 1 "$RT" ticket-env
+# Les variables produites pilotent vraiment le garde (chaine complete, hors tests/hooks/run.sh).
+guard="$ROOT/.claude/hooks/pretool-scope-guard.sh"
+run_guard() { # $1 = fichier, reste = environnement
+  local f="$1"
+  shift
+  printf '{"tool_input":{"file_path":"%s"},"cwd":"%s"}' "$f" "$ROOT" | env -u LAB_COORDINATOR_SESSION "$@" CLAUDE_PROJECT_DIR="$ROOT" "$guard"
+}
+scope_env=("$(grep '^AGENT_TICKET_ID=' "$W/tenv")" "$(grep '^AGENT_TICKET_SCOPE=' "$W/tenv")")
+expect "garde + ticket-env : fichier du perimetre autorise" 0 run_guard "$ROOT/tests/hooks/run.sh" "${scope_env[@]}"
+expect "garde + ticket-env : fichier du ticket autorise" 0 run_guard "$ROOT/backlog/T-331-hooks-deterministes-garde-de-perimetre-garde.md" "${scope_env[@]}"
+expect "garde + ticket-env : hors perimetre refuse" 2 run_guard "$ROOT/tools/appgen/appgen.py" "${scope_env[@]}"
+expect "garde + ticket-env : STATE.md refuse" 2 run_guard "$ROOT/STATE.md" "${scope_env[@]}"
+# Branchement du workflow : la variable est posee avant l'action, jamais LAB_COORDINATOR_SESSION.
+if python3 -I - "$wf" <<'PY'; then ok "workflow : ticket-env ecrit dans GITHUB_ENV avant l'action claude"; else ko "workflow : ticket-env mal branche"; fi
+import sys, yaml
+steps = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))["jobs"]["dev"]["steps"]
+t = next(i for i, s in enumerate(steps) if "ticket-env" in s.get("run", ""))
+c = next(i for i, s in enumerate(steps) if s.get("id") == "claude")
+assert t < c, "ticket-env doit preceder l'action"
+assert "GITHUB_ENV" in steps[t]["run"]
+assert steps[t]["if"] == "steps.pause.outputs.paused == 'false'"
+PY
+if grep -rn 'LAB_COORDINATOR_SESSION' "$ROOT/.github" "$RT" | grep -v '^[^:]*:[0-9]*:[[:space:]]*#' | grep -vq 'Jamais LAB_COORDINATOR_SESSION\|jamais LAB_COORDINATOR_SESSION\|reservee a la session'; then
+  ko "LAB_COORDINATOR_SESSION posee ou citee hors commentaire par l'executant"
+else ok "LAB_COORDINATOR_SESSION jamais posee par l'executant"; fi
+
+# 9. Branchement dans ci.yaml : job hooks appelle tests/hooks/run.sh, dans needs de ci-ok, jamais `skipped` au niveau du job.
+if python3 -I - "$ci" <<'PY'; then ok "ci.yaml : job hooks (tests/hooks/run.sh) branche dans ci-ok sans condition de job"; else ko "ci.yaml : job hooks mal branche"; fi
+import sys, yaml
+wf = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
+job = wf["jobs"]["hooks"]
+assert "if" not in job, "un if de job le rendrait skipped, donc ferait echouer ci-ok"
+assert "hooks" in wf["jobs"]["ci-ok"]["needs"]
+assert "tests/hooks/run.sh" in "\n".join(s.get("run", "") for s in job["steps"])
+PY
+
 if [[ "$fails" -gt 0 ]]; then printf '%s test(s) en echec\n' "$fails"; exit 1; fi
 echo "tous les tests de l'executant passent"

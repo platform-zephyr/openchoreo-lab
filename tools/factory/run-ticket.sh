@@ -8,6 +8,9 @@
 #   check-trailers <git-range>           -> code 1 si un commit n'a pas noreply@anthropic.com ou un trailer requis
 #   result <execution_file> <issue> <model> <effort> [escalated_from] [branch]
 #                                        -> JSON mission-result.v1 sur stdout, resume Markdown sur $GITHUB_STEP_SUMMARY
+#   ticket-env <T-NNN|issue>             -> lignes KEY=VALUE pour $GITHUB_ENV : AGENT_TICKET_ID et, si le ticket liste des chemins,
+#                                           AGENT_TICKET_SCOPE (lus par .claude/hooks/pretool-scope-guard.sh, T-331). Jamais
+#                                           LAB_COORDINATOR_SESSION (reservee a la session coordinatrice). Sans ticket : code 3.
 #   comment <mission-result.json>        -> une ligne pour le commentaire de PR : modele observe, tours, cout, duree, refus
 set -euo pipefail
 
@@ -120,6 +123,43 @@ if summ:
 PY
 }
 
+cmd_ticket_env() {
+  local ref="${1:?T-NNN ou numero issue requis}" root f
+  [[ "$ref" =~ ^T-[0-9]+$ || "$ref" =~ ^[0-9]+$ ]] || die "reference invalide : '$ref'"
+  root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  f="$(REF="$ref" ROOT="$root" python3 -I - <<'PY'
+import glob, os, re
+
+ref, root = os.environ["REF"], os.environ["ROOT"]
+for p in sorted(glob.glob(os.path.join(root, "backlog", "T-*.md"))):
+    tid = re.match(r"T-\d+", os.path.basename(p))
+    head = open(p, encoding="utf-8").read().split("\n---", 2)[0]
+    if tid and (ref == tid.group(0) or re.search(r"^github_issue: *%s *$" % re.escape(ref), head, re.M)):
+        print(p)
+        break
+PY
+)" || die "lecture des tickets impossible"
+  [[ -n "$f" ]] || { echo "run-ticket: aucun ticket pour '$ref'" >&2; return 3; }
+  F="$f" python3 -I - <<'PY'
+import os, re
+
+path = os.environ["F"]
+text = open(path, encoding="utf-8").read()
+print("AGENT_TICKET_ID=" + re.match(r"T-\d+", os.path.basename(path)).group(0))
+m = re.search(r"^## Périmètre de fichiers\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+items = []
+if m:
+    body = re.sub(r"\([^)]*\)", "", m.group(1).replace("\n", " "))
+    for raw in body.split(","):
+        it = raw.strip().strip("`").strip().rstrip(".")
+        # Seuls les chemins et globs passent ; la prose (« tag git », « paramètres du dépôt ») est ignorée.
+        if re.fullmatch(r"[A-Za-z0-9_.*/-]+", it) and ("/" in it or "." in it):
+            items.append(it)
+if items:
+    print("AGENT_TICKET_SCOPE=" + ",".join(items))
+PY
+}
+
 cmd_comment() {
   local file="${1:?mission-result.json requis}"
   python3 -I - "$file" <<'PY'
@@ -140,6 +180,7 @@ case "$sub" in
   claude-args) cmd_claude_args "$@" ;;
   check-trailers) cmd_check_trailers "$@" ;;
   result) cmd_result "$@" ;;
+  ticket-env) cmd_ticket_env "$@" ;;
   comment) cmd_comment "$@" ;;
-  *) die "usage : run-ticket.sh limits|effort|claude-args|check-trailers|result|comment ..." ;;
+  *) die "usage : run-ticket.sh limits|effort|claude-args|check-trailers|result|ticket-env|comment ..." ;;
 esac
