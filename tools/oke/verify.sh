@@ -352,8 +352,8 @@ v10() {
 
 v11() {
   expect_ok B11-argo "Argo CD Available" deploys_ok lab-argocd
-  expect_ok B11-projects "AppProjects lab-platform, lab-apps, lab-authz et lab-root présents" \
-    kubectl -n lab-argocd get appprojects.argoproj.io/lab-platform appprojects.argoproj.io/lab-apps appprojects.argoproj.io/lab-authz appprojects.argoproj.io/lab-root
+  expect_ok B11-projects "AppProjects lab-platform, lab-o, lab-authz et lab-root présents" \
+    kubectl -n lab-argocd get appprojects.argoproj.io/lab-platform appprojects.argoproj.io/lab-o appprojects.argoproj.io/lab-authz appprojects.argoproj.io/lab-root
   # Revue PR #8, P1 : `default` verrouillé (aucun dépôt, aucune destination, aucune whitelist, blacklist totale).
   expect_ok B11-default-locked "AppProject default verrouillé (0 dépôt, 0 destination, 0 whitelist)" bash -c \
     "kubectl -n lab-argocd get appproject default -o json | jq -e '.spec as \$s

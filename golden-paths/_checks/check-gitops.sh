@@ -17,7 +17,7 @@ fi
 # G2 : Argo CD a synchronisé la révision de origin/main.
 if has_crd applications.argoproj.io; then
   want="$(git -C "$REPO_ROOT" rev-parse origin/main 2>/dev/null || echo inconnu)"
-  for a in lab-crds lab-platform lab-apps; do
+  for a in lab-crds lab-platform "lab-o-$APP"; do
     s="$(k get applications.argoproj.io "$a" -n "$ARGOCD_NS" -o jsonpath='{.status.sync.status}/{.status.health.status}' 2>/dev/null || true)"
     r="$(k get applications.argoproj.io "$a" -n "$ARGOCD_NS" -o jsonpath='{.status.sync.revision}' 2>/dev/null || true)"
     if [ -z "$s" ]; then record BLOCKED G2 "Application Argo '$a' absente de $ARGOCD_NS"; continue; fi
@@ -59,8 +59,8 @@ expect G5 "ProjectReleaseBinding $APP-$ENV Ready" "$(cond projectreleasebindings
 
 # G6 : aucun objet applicatif hors Git (orphelins signalés par Argo).
 if has_crd applications.argoproj.io; then
-  orphans="$(k get applications.argoproj.io lab-apps -n "$ARGOCD_NS" \
+  orphans="$(k get applications.argoproj.io "lab-o-$APP" -n "$ARGOCD_NS" \
      -o jsonpath='{range .status.conditions[?(@.type=="OrphanedResourceWarning")]}{.message}{end}' 2>/dev/null || true)"
-  [ -z "$orphans" ] && record PASS G6 "aucun orphelin signalé par Argo lab-apps" || record FAIL G6 "orphelins : $orphans"
+  [ -z "$orphans" ] && record PASS G6 "aucun orphelin signalé par Argo lab-o-$APP" || record FAIL G6 "orphelins : $orphans"
 fi
 finish; exit $?

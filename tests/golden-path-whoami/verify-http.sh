@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # verify-http.sh : etat runtime de whoami sur OKE. LECTURE SEULE, aucune exposition publique.
 #
-# Controle : Argo CD lab-apps Synced/Healthy ; ReleaseBinding Ready ; ComponentRelease presente ;
+# Controle : Argo CD lab-o-whoami Synced/Healthy ; ReleaseBinding Ready ; ComponentRelease presente ;
 # pod Ready ; securityContext ; Service ClusterIP ; 0 PVC, 0 LoadBalancer, 0 route externe, 0 base ;
 # HTTP 200 sur /health et / via `kubectl port-forward` vers svc/whoami (tunnel local 127.0.0.1).
 #

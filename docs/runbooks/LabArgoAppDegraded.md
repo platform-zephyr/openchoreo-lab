@@ -5,8 +5,8 @@ class: REVUE
 signals:
   - "l'application Argo CD d'un namespace lab-* est Degraded ou Missing depuis 10 minutes"
 checks:
-  - "argocd app get lab-apps"
-  - "argocd app history lab-apps"
+  - "argocd app get lab-o-<app>"
+  - "argocd app history lab-o-<app>"
   - "kubectl get applications.argoproj.io -n argocd"
   - "git log -n 5 -- apps generated"
 allowed_actions:

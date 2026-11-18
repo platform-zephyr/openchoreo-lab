@@ -1,6 +1,6 @@
 # ntfy : notes de portage (golden path n°2, OKE stateless)
 
-Statut : `app.yaml` en `cluster: oke`, `profile: stateless`, rendu par `appgen` (`generated/namespaces/default/projects/ntfy`). Preuve runtime sur OKE : **NOT_TESTED** tant que la PR n'est pas mergée et synchronisée par `lab-apps`. Aucune route publique, aucun PVC, aucun secret, aucune credential réelle.
+Statut : `app.yaml` en `cluster: oke`, `profile: stateless`, rendu par `appgen` (`generated/namespaces/default/projects/ntfy`). Preuve runtime sur OKE : **NOT_TESTED** tant que la PR n'est pas mergée et synchronisée par `lab-o-ntfy` (ApplicationSet `lab-o`). Aucune route publique, aucun PVC, aucun secret, aucune credential réelle.
 
 ## Sources et preuves
 - kube-ops `origin/main` @ef50472 : `k8s/applications/catalog/ntfy/` (Deployment, PVC `ntfy-data` 1 Gi longhorn-fast, initContainer `bootstrap-admin`, HTTPRoute external + internal, CNP). Référence seulement : rien n'est repris tel quel.
@@ -27,6 +27,6 @@ Statut : `app.yaml` en `cluster: oke`, `profile: stateless`, rendu par `appgen` 
 Aucun. Pas de `secrets[]`, pas de `NTFY_AUTH_USERS`. Le secret kube-ops `APP_NTFY_ADMIN_PASSWORD` n'est pas utilisé.
 
 ## Preuves attendues (tests/golden-path-ntfy/)
-1. `verify-http.sh` (lecture seule, `KUBECONFIG` OKE) : Argo `lab-apps` Synced/Healthy, ReleaseBinding Ready, pod Ready, 0 PVC / 0 LoadBalancer / 0 route externe, HTTP 200 sur `/v1/health` via `port-forward`.
+1. `verify-http.sh` (lecture seule, `KUBECONFIG` OKE) : Argo `lab-o-ntfy` Synced/Healthy, ReleaseBinding Ready, pod Ready, 0 PVC / 0 LoadBalancer / 0 route externe, HTTP 200 sur `/v1/health` via `port-forward`.
 2. Changement : `make-change-pr.sh` ajoute `NTFY_LOG_LEVEL: DEBUG` ; le revert passe par `APP=ntfy MARKER=NTFY_LOG_LEVEL tests/golden-path-whoami/make-revert-pr.sh`.
 3. Après le premier déploiement : une 2e PR `pin-project ntfy` (avertissement d'`appgen check --base`).

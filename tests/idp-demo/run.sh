@@ -91,10 +91,10 @@ appgen_gate() { # validate + render + check (dérive = échec) ; sorties dans EV
   fi
 }
 
-# Périmètre Git attendu : apps/<nom>/, generated/ et l'entrée sources[] de lab-apps.yaml (gardée par argo_guard).
+# Périmètre Git attendu : apps/<nom>/, generated/ seulement : l'ApplicationSet lab-o crée l'Application lab-o-<nom> sans édition de platform/ (T-491).
 scope_guard() {
   local bad
-  bad="$(git status --porcelain | awk '{print $2}' | grep -Ev "^(apps/$NAME/|generated/|platform/install/argocd/apps/lab-apps.yaml$)" || true)"
+  bad="$(git status --porcelain | awk '{print $2}' | grep -Ev "^(apps/$NAME/|generated/)" || true)"
   [ -z "$bad" ] || die "modifications hors périmètre : $bad"
 }
 
@@ -144,7 +144,7 @@ cmd_pr() {
   [[ "$br" == idp-demo/$NAME-* ]] || die "branche courante '$br' : attendu idp-demo/$NAME-*"
   set_evid
   scope_guard
-  git add "apps/$NAME" generated platform/install/argocd/apps/lab-apps.yaml
+  git add "apps/$NAME" generated
   git commit -q -m "$NAME: $msg" -m "Co-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>"
   wet git push -q -u origin HEAD
   printf '%s\n' "Démonstration tests/idp-demo (intention $NAME, preuves dans $EVID)." \
@@ -182,15 +182,15 @@ cmd_observe() {
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "SHA de merge complet attendu"
   set_evid
   cluster_guard
-  # 1. Argo CD : l'Application lab-apps a synchronisé le SHA du merge (lecture).
+  # 1. Argo CD : l'Application lab-o-$NAME a synchronisé le SHA du merge (lecture).
   for ((i = 0; i < 40; i++)); do
-    argo_rev="$(k get applications.argoproj.io -n "$ARGOCD_NS" lab-apps -o jsonpath='{.status.sync.revision}{.status.sync.revisions[0]}' 2>/dev/null || true)"
+    argo_rev="$(k get applications.argoproj.io -n "$ARGOCD_NS" "lab-o-$NAME" -o jsonpath='{.status.sync.revision}{.status.sync.revisions[0]}' 2>/dev/null || true)"
     [ "$argo_rev" = "$sha" ] && break
     sleep 15
   done
-  local st; st="$(k get applications.argoproj.io -n "$ARGOCD_NS" lab-apps -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || true)"
+  local st; st="$(k get applications.argoproj.io -n "$ARGOCD_NS" "lab-o-$NAME" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || true)"
   if [ "$argo_rev" = "$sha" ]; then
-    rec ARGO-SYNC PASS "lab-apps révision = $sha ($st)"
+    rec ARGO-SYNC PASS "lab-o-$NAME révision = $sha ($st)"
   else
     rec ARGO-SYNC FAIL "révision '$argo_rev' != $sha après 10 min ($st)"; return 1
   fi

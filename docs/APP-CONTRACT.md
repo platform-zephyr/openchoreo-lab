@@ -257,20 +257,20 @@ Argo CD, applications fixes, écrites une fois :
 
 - `lab-crds` (wave -1, `ServerSideApply=true`) : CRD OpenChoreo v1.3.3 versionnées dans `gitops/crds/`. Les charts CP et DP sont installés avec `skipCrds`.
 - `lab-platform` (wave 0) : `platform-shared/` (CCT, CPT, CRT, ClusterTrait PVC, VAP), `namespaces/default/platform/` (Environment, DeploymentPipeline, DataPlane), `lab-pg/` (Namespace, Cluster CNPG, NetworkPolicy).
-- `lab-apps` (wave 1) : `namespaces/default/projects/`.
+- ApplicationSet `lab-o` (wave 1, T-491) : une Application `lab-o-<app>` par dossier de `namespaces/default/projects/` (app OKE stateless ; les autres sont dans `exclude`).
 - Health checks Lua des kinds OpenChoreo (ReleaseBinding, ProjectReleaseBinding, ResourceReleaseBinding, Component ; condition `Ready`) : `platform/install/argocd/health/values-openchoreo-health.yaml`, fragment de values du chart argo-cd (A5). Sans eux, Argo affiche `Healthy` sur un binding en échec.
 
 Deux AppProjects (correction de K8 dans E-revue) :
 
 - `lab-platform` : cluster-scoped `openchoreo.dev`, `admissionregistration`, Namespace `lab-pg`.
-- `lab-apps` : `openchoreo.dev` namespacé, destination `default` uniquement, **jamais `dp-*`**, `orphanedResources.warn: true`.
+- `lab-o` (ex `lab-apps`) : `openchoreo.dev` namespacé, destination `default` uniquement, **jamais `dp-*`**, `orphanedResources.warn: true`.
 
 ## 5. Propriété : un objet = un contrôleur
 
 | Objet | Unique propriétaire | Règle Argo |
 |---|---|---|
 | CRD, CCT, CPT, CRT, ClusterTrait, Environment, DeploymentPipeline, DataPlane, VAP | Git → Argo `lab-platform` | `prune: true`, selfHeal |
-| Project, Workload, SecretReference, ReleaseBinding (`releaseName` dans Git), ResourceReleaseBinding (`resourceRelease` dans Git) | Git → Argo `lab-apps` | prune, selfHeal. Retirer la **dernière** app vide l'Application : en `automated`, Argo refuse (« auto-sync will wipe out all resources », T-RETRAIT-1). Chemin retenu : `syncPolicy.automated.allowEmpty: true` sur `lab-apps` **seulement**, à poser en même temps que le passage en `automated` (aujourd'hui synchro manuelle : non bloquant). Pas d'app sentinelle. |
+| Project, Workload, SecretReference, ReleaseBinding (`releaseName` dans Git), ResourceReleaseBinding (`resourceRelease` dans Git) | Git → Argo `lab-o-<app>` | synchro automatique sans prune, selfHeal. Retirer la **dernière** app vide l'Application : en `automated`, Argo refuse (« auto-sync will wipe out all resources », T-RETRAIT-1). Chemin retenu : avec l'ApplicationSet `lab-o` (une Application par app), le retrait d'une app supprime son Application (`preserveResourcesOnDeletion: true`, NOT_TESTED) : plus de cas « Application vide ». Pas d'app sentinelle. |
 | ComponentRelease | Git (généré par appgen), immuable, **ajout seul** dans `releases/` | **`Prune=false,Delete=false`** (annotation émise par appgen) : un binding ne doit jamais pointer sur une release purgée. Garder le fichier dans Git évite l'OutOfSync permanent `requiresPruning` (T-PRUNE-STATUS). Purge = retrait du composant entier. |
 | Component, Resource | Git → Argo | **`Prune=false`** (annotation émise par appgen) : leurs finalizers suppriment les releases et les objets rendus (D[C], `component/controller_finalize.go`). Au retrait d'une app, ils restent et se suppriment par geste opérateur après la PR. |
 | ProjectReleaseBinding | Git ; `spec.projectRelease` absent de Git tant qu'il n'est pas épinglé | Champ initialisé une fois par le contrôleur, puis jamais avancé (`projectreleasebinding_types.go` l.31-36) [C], prouvé sur k3d (T-PIN-STALE). ServerSideApply : un champ absent de Git n'est pas comparé, **pas d'`ignoreDifferences`** (prouvé, C1). **Toute modification des paramètres du Project (quota, `pvcs`, egress, database) ou du CPT = 2 PR** : la PR 1 change `app.yaml` (nouvelle ProjectRelease, non adoptée) ; la PR 2 `appgen pin-project` écrit la pin, qu'Argo applique en SSA sans conflit (T-PIN-PRB). |

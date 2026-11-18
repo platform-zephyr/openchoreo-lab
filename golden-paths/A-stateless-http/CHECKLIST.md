@@ -14,7 +14,7 @@ Script : `CLUSTER_LABEL=k3d KUBE_CONTEXT=k3d-openchoreo golden-paths/_checks/run
 | ID | Preuve attendue |
 |---|---|
 | G1 | `appgen check` sans dérive |
-| G2 | Argo `lab-crds`, `lab-platform`, `lab-apps` : `Synced/Healthy`, révision = `origin/main` |
+| G2 | Argo `lab-crds`, `lab-platform`, `lab-o-<app>` : `Synced/Healthy`, révision = `origin/main` |
 | G3 | Component présent, `autoDeploy=false` |
 | G4 | `ReleaseBinding.spec.releaseName` du cluster = celui de Git ; ComponentRelease présente |
 | G5 | ReleaseBinding `ReleaseSynced`, `ResourcesReady`, `Ready` = True ; ProjectReleaseBinding `Ready` |

@@ -15,7 +15,7 @@ Règle de preuve : PASS = preuve runtime datée. k3d ≠ OKE. Statique ≠ runti
 | 3 | Demande = PR | `gh pr create` (skill `add-app`) ; `tests/idp-demo/run.sh plan|pr` | URL de PR | PASS (whoami, #23) |
 | 4 | CI | `ci.yaml` : yamllint, appgen, crd-schema, secrets, actionlint, platform (argo_guard, kubeconform), release-history, ci-ok | checks verts | PASS |
 | 5 | Merge | `gh pr merge --squash` ; classe AUTONOME ou REVUE (`platform-guardrails` §1) | SHA de merge | REVUE pour `cluster: oke` : accord de Paul |
-| 6 | GitOps | Argo CD `lab-apps` (révision = SHA du merge) | `status.sync.revision` | PASS (whoami) |
+| 6 | GitOps | Argo CD `lab-o-<app>` (ApplicationSet `lab-o` ; révision = SHA du merge) | `status.sync.revision` | PASS (whoami) |
 | 7 | Preuve runtime | `golden-paths/_checks/run-all.sh` (lecture seule, `CLUSTER_LABEL=oke`) | verdict PASS, digest W6, releaseName G4 | PASS (whoami) |
 | 8 | Modification | PR sur `apps/<nom>/app.yaml` (ex. `size`, AUTONOME) | même chaîne 4 à 7 | PASS (whoami, WHOAMI_NAME) |
 | 9 | Rollback | `git revert` du merge (PR), `release-history` gardée | revert merge + Argo + run-all PASS | PASS (whoami, #24) |
@@ -46,7 +46,7 @@ Preuves attendues (`summary.txt`, une ligne par étape) :
 | PLAN-INTENT, APPGEN-plan | gabarit `whoami` rempli, digest conservé, appgen validate/render/check | 0 dérive |
 | PR, CI | URL de PR, `gh pr checks` | tous les checks requis verts |
 | MERGE | SHA de merge, CONFIRM_MERGE_PR | accord de Paul tracé |
-| ARGO-SYNC | `lab-apps` révision = SHA | révision égale en moins de 10 min |
+| ARGO-SYNC | `lab-o-<app>` révision = SHA | révision égale en moins de 10 min |
 | RUNTIME | verdict `run-all.sh` (G4, W6, Ready, HTTP) | `PASS` (PARTIAL = à expliquer) |
 | RESIZE, APPGEN-resize, PR/CI/MERGE/ARGO-SYNC/RUNTIME | modification `size: medium` | `PASS` |
 | REVERT, ARGO-SYNC, RUNTIME | `git revert` du merge de `resize`, retour à `small` | `PASS` avec `size` d'origine |

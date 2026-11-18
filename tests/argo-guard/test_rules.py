@@ -72,11 +72,12 @@ class ProjectRules(unittest.TestCase):
         self.assertEqual(g.errs, [])
 
     def test_p2_lab_root(self):
-        ok = {"namespaceResourceWhitelist": [{"group": "argoproj.io", "kind": "Application"}],
+        ok = {"namespaceResourceWhitelist": [{"group": "argoproj.io", "kind": "Application"},
+                                             {"group": "argoproj.io", "kind": "ApplicationSet"}],
               "destinations": [{"namespace": "lab-argocd"}]}
         self.assertEqual(errs_of("rule_p2_lab_root", ok), [])
         self.assertEqual(errs_of("rule_p2_lab_root", None), [])
-        self.assertIn("seul kind Application", errs_of("rule_p2_lab_root", {**ok, "destinations": []})[0])
+        self.assertIn("kinds Application et ApplicationSet", errs_of("rule_p2_lab_root", {**ok, "destinations": []})[0])
         self.assertEqual(len(errs_of("rule_p2_lab_root", {**ok, "clusterResourceWhitelist": [{}]})), 1)
 
     def test_p2_lab_authz(self):
@@ -127,7 +128,10 @@ class ApplicationRules(unittest.TestCase):
 
     def test_a2_project(self):
         g = guard()
-        g.rule_a2_project(f"{G.ARGO}/apps/x.yaml", "x", "lab-apps")
+        g.rule_a2_project(f"{G.ARGO}/apps/x.yaml", "x", "lab-o")
+        self.assertIn("réservé à l'ApplicationSet lab-o", g.errs[0])  # aucune Application écrite à la main
+        g = guard()
+        g.rule_a2_project(f"{G.ARGO}/apps/x.yaml", "x", "lab-platform")
         self.assertEqual(g.errs, [])
         g.rule_a2_project(f"{G.ARGO}/apps/x.yaml", "x", "default")
         self.assertEqual(len(g.errs), 2)
@@ -139,14 +143,10 @@ class ApplicationRules(unittest.TestCase):
         self.assertEqual(g.errs, [])
 
     def test_a3_sources(self):
-        g = guard()
-        g.rule_a3_sources(REL, "x", "lab-platform", {"sources": []})
-        self.assertIn("sources multiples interdites", g.errs[0])
-        g = guard()
-        g.rule_a3_sources(REL, "lab-platform", "lab-platform", {})
-        self.assertEqual(g.errs, [])
-        g.rule_a3_sources(REL, "lab-apps", "lab-apps", {})  # délègue à check_lab_apps_sources
-        self.assertIn("sources[] absent ou vide", g.errs[0])
+        res = corpus.run_apps(G, f"{G.ARGO}/apps/x.yaml", corpus.app_obj("x", "lab-platform", sources=[]))
+        self.assertIn("sources multiples interdites", res["errs"][0])
+        res = corpus.run_apps(G, f"{G.ARGO}/apps/x.yaml", corpus.app_obj("x", "lab-platform", corpus.src("platform")))
+        self.assertEqual(res["errs"], [])
 
     def test_a3_source_kinds(self):
         for k in ("chart", "helm", "kustomize", "plugin"):
@@ -164,7 +164,7 @@ class ApplicationRules(unittest.TestCase):
 
     def test_a4_manual_sync(self):
         auto = {"syncPolicy": {"automated": {}}}
-        self.assertEqual(errs_of("rule_a4_manual_sync", "x", "lab-apps", auto), [])
+        self.assertEqual(errs_of("rule_a4_manual_sync", "x", "lab-o", auto), [])
         self.assertEqual(errs_of("rule_a4_manual_sync", "x", "lab-platform", {"syncPolicy": {}}), [])
         for proj in ("lab-platform", "lab-authz"):
             self.assertIn("A4", errs_of("rule_a4_manual_sync", "x", proj, auto)[0])
@@ -174,35 +174,41 @@ class ApplicationRules(unittest.TestCase):
             self.assertEqual(errs_of("rule_a3_platform_path", "x", "lab-platform", {"path": path}), [], path)
         for path in ("generated/x", "platformx", "platform/../x", G.ARGO, "platform/authz", ""):
             self.assertEqual(len(errs_of("rule_a3_platform_path", "x", "lab-platform", {"path": path})), 1, path)
-        self.assertEqual(errs_of("rule_a3_platform_path", "x", "lab-apps", {"path": "generated"}), [])
+        self.assertEqual(errs_of("rule_a3_platform_path", "x", "lab-o", {"path": "generated"}), [])
 
-    def test_lab_apps_source_origin(self):
-        ok = corpus.lab_src("w")
-        self.assertEqual(errs_of("rule_lab_apps_source_origin", 0, ok), [])
-        self.assertIn("sources[0].helm interdit", errs_of("rule_lab_apps_source_origin", 0, dict(ok, helm={}))[0])
-        self.assertIn("hors dépôt", errs_of("rule_lab_apps_source_origin", 0, dict(ok, repoURL="x"))[0])
-        self.assertIn("doit être main", errs_of("rule_lab_apps_source_origin", 0, dict(ok, targetRevision="dev"))[0])
+    def test_appset_ok_and_refusals(self):
+        specs = corpus.appset_specs()
+        rel = f"{G.ARGO}/apps/lab-apps.yaml"
+        tree = {f"{G.APPS_PATH}/projects/{a}/x.yaml": [] for a in ("w", "k3dapp")}
+        self.assertEqual(corpus.run_appset(G, rel, specs["ok"], tree), [])
+        for sid, o in specs.items():
+            if sid != "ok":
+                with self.subTest(sid):
+                    self.assertTrue(corpus.run_appset(G, rel, o, tree), sid)
 
-    def test_lab_apps_source_path(self):
-        pre = G.APPS_PATH + "/projects/"
-        g, seen = guard(), set()
-        g.rule_lab_apps_source_path(REL, 0, pre + "w", {"w"}, seen)
-        self.assertEqual(g.errs, [])
-        g.rule_lab_apps_source_path(REL, 1, pre + "w", {"w"}, seen)
-        self.assertIn("en double", g.errs[0])
-        for bad in ("", pre, pre + "w/x", pre + "..", "platform"):
-            g = guard()
-            g.rule_lab_apps_source_path(REL, 0, bad, {"w"}, set())
-            self.assertIn("seul", g.errs[0], bad)
+    def test_appset_location_and_name(self):
+        ok = corpus.appset_obj()
+        self.assertIn("O1", corpus.run_appset(G, "platform/x.yaml", ok)[0])
+        bad = dict(ok, metadata={"name": "evil"})
+        self.assertIn("O1", corpus.run_appset(G, f"{G.ARGO}/apps/x.yaml", bad)[0])
         g = guard()
-        g.rule_lab_apps_source_path(REL, 0, pre + "z", {"w"}, set())
-        self.assertIn("non OKE stateless", g.errs[0])
+        g.files = {}
+        g.check_appset(f"{G.ARGO}/apps/a.yaml", ok)
+        g.check_appset(f"{G.ARGO}/apps/b.yaml", ok)  # un second ApplicationSet
+        self.assertTrue(any("O1" in e for e in g.errs))
 
-    def test_lab_apps_source_directory(self):
-        self.assertEqual(errs_of("rule_lab_apps_source_directory", 0, {"recurse": True, "include": "*.yaml"}), [])
-        self.assertEqual(len(errs_of("rule_lab_apps_source_directory", 0, {})), 2)
-        self.assertIn("recurse", errs_of("rule_lab_apps_source_directory", 0, {"recurse": "true", "include": "*.yaml"})[0])
-        self.assertIn("include", errs_of("rule_lab_apps_source_directory", 0, {"recurse": True, "include": "*"})[0])
+    def test_o5_coverage_refuses_unexcluded_k3d_app(self):
+        rel = f"{G.ARGO}/apps/lab-apps.yaml"
+        tree = {f"{G.APPS_PATH}/projects/{a}/x.yaml": [] for a in ("w", "autre")}
+        errs = corpus.run_appset(G, rel, corpus.appset_obj(), tree)
+        self.assertEqual(len(errs), 1)
+        self.assertIn("O5 lab-o : app 'autre' non OKE stateless et non exclue", errs[0])
+
+    def test_appset_files_skip_excluded(self):
+        g = guard()
+        pre = G.APPS_PATH + "/projects/"
+        g.files = {f"{pre}w/a.yaml": [], f"{pre}w/sub/b.yaml": [], f"{pre}k3dapp/c.yaml": [], f"{pre}w/d.json": []}
+        self.assertEqual(g.appset_files(corpus.appset_obj()), {f"{pre}w/a.yaml", f"{pre}w/sub/b.yaml"})
 
 
 class SyncedRules(unittest.TestCase):

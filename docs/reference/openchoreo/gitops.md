@@ -29,7 +29,7 @@ Santé via les conditions des bindings (`Ready`, `Deployed`, `Synced`) ; surveil
 - Ne pas écrire dans le cluster pour un changement durable : la dérive se corrige par PR.
 
 ## Ce qu'un agent LLM doit savoir
-Dans ce labo : `apps/<nom>/app.yaml` -> `generated/` (tools/appgen) -> Argo CD (`lab-apps`) ; `platform/` -> Argo (`lab-platform`, wave 0) ; CRD (`lab-crds`). Les skills `add-app`, `fix-app`, `promote-or-rollback` portent le geste ; la doc OpenChoreo ne dit rien d'Argo CD.
+Dans ce labo : `apps/<nom>/app.yaml` -> `generated/` (tools/appgen) -> Argo CD (ApplicationSet `lab-o`, Applications `lab-o-<app>`) ; `platform/` -> Argo (`lab-platform`, wave 0) ; CRD (`lab-crds`). Les skills `add-app`, `fix-app`, `promote-or-rollback` portent le geste ; la doc OpenChoreo ne dit rien d'Argo CD.
 
 ## Écarts avec le dépôt
 - Arborescence : le dépôt n'utilise pas `namespaces/<ns>/projects/...` mais `generated/` produit par appgen ; équivalent fonctionnel.

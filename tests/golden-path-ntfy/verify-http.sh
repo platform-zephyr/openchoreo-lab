@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # verify-http.sh : etat runtime de ntfy (golden path n°2, stateless) sur OKE. LECTURE SEULE, aucune exposition.
 #
-# Controle : Argo lab-apps Synced/Healthy (+ revision) ; ReleaseBinding Ready ; ComponentRelease presente ;
+# Controle : Argo lab-o-ntfy Synced/Healthy (+ revision) ; ReleaseBinding Ready ; ComponentRelease presente ;
 # pod Ready ; securityContext PSA restricted ; Service ClusterIP ; 0 PVC, 0 LoadBalancer, 0 route externe, 0 base ;
 # variable NTFY_LOG_LEVEL (valeur attendue ou absente) ; HTTP 200 sur /v1/health via `kubectl port-forward`
 # vers svc/ntfy (tunnel local 127.0.0.1 : aucune route, aucun LoadBalancer).

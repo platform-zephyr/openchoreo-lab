@@ -119,7 +119,7 @@ expect_deny K03-tag 'lab-image-digest' sh -c "$(declare -f mkdeploy); mkdeploy t
 expect_deny K04-lb  'lab-service-exposure' kubectl -n dp-kyv create service loadbalancer lb --tcp=443 --as=$APP_SA
 expect_deny K04-np  'lab-service-exposure' kubectl -n dp-kyv create service nodeport np --tcp=80 --as=$APP_SA
 expect_ok   K04-cip kubectl -n dp-kyv create service clusterip cip --tcp=80 --as=$APP_SA
-expect_deny K06-crb 'lab-cluster-scoped-provenance' sh -c "kubectl create clusterrole kyv-app --verb=get --resource=pods --dry-run=client -o yaml | kubectl annotate --local -f - -o yaml argocd.argoproj.io/tracking-id=lab-apps:rbac.authorization.k8s.io/ClusterRole:/kyv-app | kubectl apply -f -"
+expect_deny K06-crb 'lab-cluster-scoped-provenance' sh -c "kubectl create clusterrole kyv-app --verb=get --resource=pods --dry-run=client -o yaml | kubectl annotate --local -f - -o yaml argocd.argoproj.io/tracking-id=lab-o-whoami:rbac.authorization.k8s.io/ClusterRole:/kyv-app | kubectl apply -f -"
 expect_deny K07-np  'lab-security-objects-guard' kubectl -n dp-kyv delete networkpolicy lab-default-deny --as=$APP_SA
 expect_deny K07-psa 'lab-security-objects-guard' kubectl label ns lab-kyvtest pod-security.kubernetes.io/enforce=privileged --overwrite
 expect_deny K08-lbl 'lab-egress-declared' kubectl label ns lab-kyvtest platform.smadja.dev/egress-isolated-

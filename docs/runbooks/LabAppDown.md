@@ -9,7 +9,7 @@ checks:
   - "golden-paths/_checks/run-all.sh --format json"
   - "kubectl get pods -n dp-<projet>-<app>-<env>"
   - "kubectl describe deployment -n dp-<projet>-<app>-<env>"
-  - "argocd app get lab-apps"
+  - "argocd app get lab-o-<app>"
 allowed_actions:
   - diagnose
   - open-pr

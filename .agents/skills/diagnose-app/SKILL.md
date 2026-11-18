@@ -27,8 +27,8 @@ export KUBECONFIG=<kubeconfig du labo>; K="kubectl --context ${KUBE_CONTEXT:?}"
    `python3 tools/appgen/appgen.py check`. Une PR non mergée est la cause la plus fréquente.
 2. **Argo CD** : la révision est-elle appliquée ?
    `$K get applications.argoproj.io -n argocd -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REV:.status.sync.revision` ;
-   détail : `$K get applications.argoproj.io lab-apps -n argocd -o jsonpath='{.status.operationState.message}{"\n"}{range .status.conditions[*]}{.type}: {.message}{"\n"}{end}'`.
-   Ordre des waves : `lab-crds` (−1), `lab-platform` (0), `lab-apps` (1). Un amont bloqué bloque l'aval.
+   détail : `$K get applications.argoproj.io lab-o-<app> -n argocd -o jsonpath='{.status.operationState.message}{"\n"}{range .status.conditions[*]}{.type}: {.message}{"\n"}{end}'`.
+   Ordre des waves : `lab-crds` (−1), `lab-platform` (0), ApplicationSet `lab-o` (1, une Application `lab-o-<app>` par app). Un amont bloqué bloque l'aval.
 3. **OpenChoreo** : le contrôleur a-t-il rendu ?
    `$K get components.openchoreo.dev,workloads.openchoreo.dev,componentreleases.openchoreo.dev,releasebindings.openchoreo.dev,projectreleasebindings.openchoreo.dev -n default | grep <app>` ;
    `$K get releasebindings.openchoreo.dev <app>-<env> -n default -o jsonpath='{range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{"\n"}{end}'`.

@@ -4,7 +4,8 @@
 #   - lab-platform : platform/** (privilégié) ; kinds NOMMÉS quand ils sont cluster-scoped ; fenêtre `deny`
 #                    permanente (manualSync: true) : un merge sur platform/** ne s'applique JAMAIS seul,
 #                    seulement par une synchro manuelle de l'opérateur (docs/GITOPS-TRUST-BOUNDARY.md) ;
-#   - lab-apps     : generated/namespaces/default (sortie de tools/appgen, PR APPLICATIVES) ; kinds
+#   - lab-o        : generated/namespaces/default (sortie de tools/appgen, PR APPLICATIVES), une Application par
+#                    app créée par l'ApplicationSet lab-o (projet littéral, T-491) ; kinds
 #                    OpenChoreo NAMESPACÉS applicatifs dans `default` ; AUCUN kind cluster-scoped, ni
 #                    Application, ni RBAC, ni Secret, ni NetworkPolicy ;
 #   - lab-authz    : platform/authz/ ; fenêtre `deny` permanente (manualSync: true) : AUCUNE synchro
@@ -50,7 +51,7 @@ spec:
     - {group: "", kind: Namespace, name: lab-pg}
   namespaceResourceWhitelist:
     # Objets plateforme namespacés seulement (manifests/40, platform/data). Les kinds APPLICATIFS
-    # (Project, Component, Workload...) relèvent de lab-apps.
+    # (Project, Component, Workload...) relèvent de lab-o.
     - {group: openchoreo.dev, kind: Environment}
     - {group: openchoreo.dev, kind: DeploymentPipeline}
     # NetworkPolicy : seulement celles de lab-pg, par nom (contrôle CI argo_guard S2, revue A1).
@@ -77,14 +78,14 @@ spec:
   orphanedResources:
     warn: true
 ---
-# AppProject `lab-apps` : SEUL projet des PR APPLICATIVES (apps/<nom>/app.yaml -> tools/appgen ->
+# AppProject `lab-o` (ex lab-apps, T-491) : SEUL projet des PR APPLICATIVES (apps/<nom>/app.yaml -> tools/appgen ->
 # generated/namespaces/default). Namespace `default` seulement, kinds OpenChoreo applicatifs listés un par
 # un, AUCUN kind cluster-scoped (liste vide = rien). Donc ni Application, ni AppProject, ni RBAC, ni
 # Namespace, ni VAP, ni Secret, ni ConfigMap, ni NetworkPolicy, ni type OpenChoreo (ComponentType...).
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: lab-apps
+  name: lab-o
   namespace: lab-argocd
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
@@ -145,7 +146,8 @@ spec:
     warn: true
 ---
 # AppProject `lab-root` (étape 11) : RÉSERVÉ à l'Application racine lab-root (root-application.yaml), qui
-# synchronise platform/install/argocd/apps/. Un seul kind : Application, dans lab-argocd seulement. Aucun
+# synchronise platform/install/argocd/apps/. Deux kinds : Application et ApplicationSet
+# (lab-o, T-491), dans lab-argocd seulement. Aucun
 # kind cluster-scoped, aucun AppProject. Les Application enfants déclarent elles-mêmes leur projet : Argo
 # refuse `default` (verrouillé) ; la CI (argo_guard A2) impose le couple Application -> projet -> chemin.
 apiVersion: argoproj.io/v1alpha1
@@ -165,5 +167,6 @@ spec:
   clusterResourceWhitelist: []
   namespaceResourceWhitelist:
     - {group: argoproj.io, kind: Application}
+    - {group: argoproj.io, kind: ApplicationSet}
   orphanedResources:
     warn: true

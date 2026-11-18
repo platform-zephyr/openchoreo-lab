@@ -8,7 +8,7 @@ license: Apache-2.0 (adapté de openchoreo/skills@cefd81b, voir l'en-tête)
 Adapted from openchoreo/skills@cefd81bc16b79bd2de0f6284e6fa06d6c15825b7:
 skills/openchoreo-platform-engineer-gitops/SKILL.md, references/recipes/author-componenttype.md,
 references/recipes/verify-and-recover-drift.md (Apache-2.0).
-Modifications : Flux remplacé par Argo CD (applications lab-crds / lab-platform / lab-apps, sync waves,
+Modifications : Flux remplacé par Argo CD (applications lab-crds / lab-platform / ApplicationSet lab-o, sync waves,
 ServerSideApply) ; arborescence platform/ du dépôt au lieu de platform-shared/ ; « copier et durcir, ne
 jamais éditer un défaut » ; postRenderValidations et allowedTraits obligatoires ; aucune écriture
 occ/kubectl/MCP, même au bootstrap ; scripts fetch-page.sh / extract-resources.sh non utilisés ;

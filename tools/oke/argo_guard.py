@@ -5,34 +5,34 @@ Usage : python3 -I tools/oke/argo_guard.py [racine du dépôt]
 Arbre contrôlé : platform/, generated/, apps/ (tout chemin qu'une Application du dépôt peut synchroniser ;
 les fichiers de tests/ ne sont jamais une source Argo, ce que la règle A3 impose). Sans cluster.
 Séparation PAR SOURCE (flux A2, docs/ARGO-ESCALATION.md) : lab-root (Application), lab-platform
-(platform/**), lab-apps (generated/namespaces/default), lab-authz (platform/authz), default verrouillé.
+(platform/**), lab-o (generated/namespaces/default), lab-authz (platform/authz), default verrouillé.
 Refuse :
   A1. une Application hors platform/install/argocd/apps/ (seule exception : l'Application racine
       platform/install/argocd/root-application.yaml, nom lab-root, projet lab-root, chemin apps/) ;
-  A2. une Application dont spec.project ∉ {lab-platform, lab-apps, lab-authz, lab-root} (donc jamais
+  A2. une Application dont spec.project ∉ {lab-platform, lab-o, lab-authz, lab-root} (donc jamais
       `default`) ; dans apps/, jamais lab-root ; lab-authz réservé à l'Application lab-authz (chemin
-      platform/authz), lab-apps à l'Application lab-apps (chemin generated/namespaces/default) ;
+      platform/authz), lab-o à l'ApplicationSet lab-o (aucune Application écrite à la main) ;
   A3. une Application `lab-platform` dont le chemin n'est pas sous platform/, ou vise
       platform/install/argocd/ ou platform/authz/ ; toute source multiple, Helm, plugin ou kustomize ;
-  A2/A3 lab-apps (sources[]) : l'Application `lab-apps` seulement, UNE source par app OKE (chemin exact
-      generated/namespaces/default/projects/<app>, app = apps/<app>/app.yaml cluster oke, profile stateless,
-      sans storage ni database), même dépôt, targetRevision main, directory.recurse true, include "*.yaml" ;
-      `source` unique et sources[] simultanés refusés ; les apps k3d (volumes) jamais ;
+  O1-O5 (ApplicationSet lab-o, T-491) : un seul, sous apps/ ; missingkey=error, preserveResourcesOnDeletion ;
+      UN générateur git `directories` (projects/*, dépôt du labo, main) ; modèle : projet et destination
+      LITTÉRAUX, ni templatePatch ; toute app non OKE stateless est exclue ; A3 : `sources[]` refusé ;
+      A2 : aucune Application écrite à la main dans le projet lab-o ;
   A4. une synchro `automated` sur un projet lab-authz ou lab-platform (synchro MANUELLE, flux A2) ;
-  P1. un AppProject hors des fichiers de bootstrap (project-lab.yaml : lab-platform, lab-apps, lab-authz,
+  P1. un AppProject hors des fichiers de bootstrap (project-lab.yaml : lab-platform, lab-o, lab-authz,
       lab-root ; project-default-locked.yaml : default) ; le projet `default` non verrouillé (listes
       vides, blacklist */*) ;
   P2. une whitelist `*` (group, kind ou name), un dépôt source ou une destination `*`, une entrée
-      cluster-scoped sans `name` ; lab-root autre que « Application dans lab-argocd » ; Application ou
-      AppProject dans les whitelists hors lab-root ; lab-apps avec un kind cluster-scoped, une destination
+      cluster-scoped sans `name` ; lab-root autre que « Application et ApplicationSet dans lab-argocd » ; Application ou
+      AppProject dans les whitelists hors lab-root ; lab-o avec un kind cluster-scoped, une destination
       autre que `default` ou un kind namespacé hors des kinds OpenChoreo applicatifs ;
   P3. lab-authz ou lab-platform sans sa fenêtre `deny` permanente (schedule `* * * * *`, 24h,
       applications `*`, manualSync: true), ou avec une fenêtre `allow` ;
-  G1. sous generated/namespaces/ un kind hors des kinds applicatifs de lab-apps ; sous generated/catalog/
+  G1. sous generated/namespaces/ un kind hors des kinds applicatifs de lab-o ; sous generated/catalog/
       un kind hors backstage.io ; ailleurs sous generated/, tout fichier YAML ;
   Z1. un kind authz OpenChoreo (AuthzRole, AuthzRoleBinding, ClusterAuthzRole*) hors platform/authz/, et
       dans platform/authz/ tout autre kind ou un nom hors `lab-*` ;
-  S1. dans les fichiers qu'une Application lab-platform ou lab-apps synchronise : un objet cluster-scoped
+  S1. dans les fichiers qu'une Application lab-platform ou lab-o synchronise : un objet cluster-scoped
       absent (kind ET nom) de clusterResourceWhitelist de SON projet, ou un kind namespacé hors whitelist /
       en blacklist ;
   S2. une NetworkPolicy synchronisée hors de la liste nommée de lab-pg, ou avec une règle « tout ouvrir »
@@ -51,15 +51,15 @@ import yaml
 SCAN = ("platform", "generated", "apps")
 ARGO = "platform/install/argocd"
 ROOT_APP = f"{ARGO}/root-application.yaml"
-LAB_PROJECTS = ("lab-platform", "lab-apps", "lab-authz", "lab-root")
+LAB_PROJECTS = ("lab-platform", "lab-o", "lab-authz", "lab-root")
 PROJECT_FILES = {f"{ARGO}/project-lab.yaml": set(LAB_PROJECTS),
                  f"{ARGO}/project-default-locked.yaml": {"default"}}
 ALLOWED_PROJECTS = set(LAB_PROJECTS)
-CHILD_PROJECTS = {"lab-platform", "lab-apps", "lab-authz"}
-SYNC_PROJECTS = ("lab-platform", "lab-apps")  # projets dont les objets synchronisés sont contrôlés (S1)
+CHILD_PROJECTS = {"lab-platform", "lab-o", "lab-authz"}
+SYNC_PROJECTS = ("lab-platform", "lab-o")  # projets dont les objets synchronisés sont contrôlés (S1)
 APPS_PATH = "generated/namespaces/default"
 REPO_URLS = {"https://github.com/platform-zephyr/openchoreo-lab", "https://github.com/platform-zephyr/openchoreo-lab.git"}
-# Kinds OpenChoreo applicatifs (sortie de tools/appgen) : seuls admis par lab-apps et sous generated/namespaces.
+# Kinds OpenChoreo applicatifs (sortie de tools/appgen) : seuls admis par lab-o et sous generated/namespaces.
 APP_KINDS = {"Project", "Component", "ComponentRelease", "Workload", "ReleaseBinding", "ProjectReleaseBinding",
              "Resource", "ResourceReleaseBinding", "SecretReference"}
 MANUAL_PROJECTS = ("lab-platform", "lab-authz")  # projets PRIVILÉGIÉS : synchro manuelle forcée (P3, A4)
@@ -104,6 +104,7 @@ class Guard:
     def __init__(self, root):
         self.root = root
         self.errs = []
+        self.appsets = []  # ApplicationSet lab-o lus (fichiers synchronisés, S1)
         self.files = {}  # chemin relatif -> liste d'objets
 
     def err(self, rel, msg):
@@ -165,7 +166,7 @@ class Guard:
         self.rule_p2_lab_authz(rel, projs.get("lab-authz"))
         for name in MANUAL_PROJECTS:
             self.rule_p3_deny_window(rel, name, projs.get(name))
-        self.rule_p2_lab_apps(rel, projs.get("lab-apps"))
+        self.rule_p2_lab_apps(rel, projs.get("lab-o"))
 
     def rule_p1_default_locked(self, d):
         """P1 : le projet `default` est verrouillé (listes vides, blacklists */*)."""
@@ -208,14 +209,15 @@ class Guard:
             self.err(rel, f"P2 {name} : {r.get('kind')} en whitelist (réservé à lab-root)")
 
     def rule_p2_lab_root(self, rel, root):
-        """P2 : lab-root n'admet que le kind Application dans lab-argocd."""
+        """P2 : lab-root n'admet que les kinds Application et ApplicationSet dans lab-argocd."""
         if root is None:
             return
         nw = root.get("namespaceResourceWhitelist") or []
         dst = root.get("destinations") or []
-        if root.get("clusterResourceWhitelist") or nw != [{"group": "argoproj.io", "kind": "Application"}] \
+        want = [{"group": "argoproj.io", "kind": "Application"}, {"group": "argoproj.io", "kind": "ApplicationSet"}]
+        if root.get("clusterResourceWhitelist") or nw != want \
                 or [x.get("namespace") for x in dst] != ["lab-argocd"]:
-            self.err(rel, "P2 lab-root : seul kind Application dans lab-argocd admis")
+            self.err(rel, "P2 lab-root : seuls les kinds Application et ApplicationSet dans lab-argocd admis")
 
     def rule_p2_lab_authz(self, rel, authz):
         """P2 : lab-authz n'admet que des kinds authz lab-* cluster-scoped, aucun kind namespacé."""
@@ -236,18 +238,18 @@ class Guard:
             self.err(rel, f"P3 {name} : fenêtre deny permanente exigée {DENY_WINDOW} (aucune allow)")
 
     def rule_p2_lab_apps(self, rel, apps_p):
-        """P2 : lab-apps sans kind cluster-scoped, kinds OpenChoreo applicatifs seuls, destination `default`."""
+        """P2 : lab-o sans kind cluster-scoped, kinds OpenChoreo applicatifs seuls, destination `default`."""
         if apps_p is None:
             return
         if apps_p.get("clusterResourceWhitelist") or apps_p.get("clusterResourceWhitelist") is None:
-            self.err(rel, "P2 lab-apps : clusterResourceWhitelist doit être POSÉE vide (aucun kind cluster-scoped)")
+            self.err(rel, "P2 lab-o : clusterResourceWhitelist doit être POSÉE vide (aucun kind cluster-scoped)")
         nw = apps_p.get("namespaceResourceWhitelist") or []
         if not nw or any(r.get("group") != "openchoreo.dev" or r.get("kind") not in APP_KINDS or "name" in r
                          for r in nw):
-            self.err(rel, f"P2 lab-apps : namespaceResourceWhitelist limitée aux kinds {sorted(APP_KINDS)}")
+            self.err(rel, f"P2 lab-o : namespaceResourceWhitelist limitée aux kinds {sorted(APP_KINDS)}")
         if [(x.get("server"), x.get("namespace")) for x in apps_p.get("destinations") or []] != \
                 [("https://kubernetes.default.svc", "default")]:
-            self.err(rel, "P2 lab-apps : seule destination admise : namespace default du cluster local")
+            self.err(rel, "P2 lab-o : seule destination admise : namespace default du cluster local")
 
     # --- Application ----------------------------------------------------------------------------------
     def check_apps(self):
@@ -258,11 +260,12 @@ class Guard:
             name = (d.get("metadata") or {}).get("name")
             proj = spec.get("project")
             if d["kind"] == "ApplicationSet":
-                self.err(rel, "A1 ApplicationSet interdit")
+                self.check_appset(rel, d)
                 continue
             self.rule_a1_location(rel, name, proj, spec)
             self.rule_a2_project(rel, name, proj)
-            self.rule_a3_sources(rel, name, proj, spec)
+            if "sources" in spec:  # A3 : un chemin par Application (lab-o passe par l'ApplicationSet)
+                self.err(rel, f"A3 Application '{name}' : sources multiples interdites")
             src = spec.get("source") or {}
             self.rule_a3_source_kinds(rel, name, src)
             self.rule_a2_authz_reserved(rel, name, proj, src)
@@ -290,15 +293,10 @@ class Guard:
         if in_apps and proj not in CHILD_PROJECTS:
             self.err(rel, f"A2 Application '{name}' : projet '{proj}' interdit dans apps/ "
                           f"({', '.join(sorted(CHILD_PROJECTS))})")
+        if proj == "lab-o":
+            self.err(rel, f"A2 Application '{name}' : projet lab-o réservé à l'ApplicationSet lab-o (T-491)")
         if rel != ROOT_APP and proj == "lab-root":
             self.err(rel, f"A2 Application '{name}' : projet lab-root réservé à {ROOT_APP}")
-
-    def rule_a3_sources(self, rel, name, proj, spec):
-        """A3 : sources[] multiples seulement pour lab-apps, qui a ses règles propres."""
-        if "sources" in spec and proj != "lab-apps":
-            self.err(rel, f"A3 Application '{name}' : sources multiples interdites hors lab-apps")
-        if proj == "lab-apps":
-            self.check_lab_apps_sources(rel, name, spec)
 
     def rule_a3_source_kinds(self, rel, name, src):
         """A3 : répertoire YAML seulement (ni chart, ni helm, ni kustomize, ni plugin)."""
@@ -330,7 +328,7 @@ class Guard:
             self.err(rel, f"A3 Application '{name}' : chemin '{path}' interdit au projet lab-platform")
 
     def oke_apps(self):
-        """Apps admises à lab-apps : apps/<nom>/app.yaml, cluster oke, stateless (ni volume, ni base)."""
+        """Apps admises à lab-o : apps/<nom>/app.yaml, cluster oke, stateless (ni volume, ni base)."""
         out = set()
         for rel, objs in self.files.items():
             parts = pathlib.PurePosixPath(rel).parts
@@ -343,53 +341,98 @@ class Guard:
                     out.add(parts[1])
         return out
 
-    def check_lab_apps_sources(self, rel, name, spec):
-        """A2/A3 (lab-apps) : Application `lab-apps` seulement, `sources[]` avec UNE source par app OKE stateless."""
-        if name != "lab-apps":
-            self.err(rel, f"A2 projet lab-apps réservé à l'Application lab-apps (Application '{name}')")
-        if "source" in spec:
-            self.err(rel, "A3 lab-apps : `source` unique interdit, sources[] exigé (une entrée par app OKE)")
-        srcs = spec.get("sources")
-        if not isinstance(srcs, list) or not srcs:
-            self.err(rel, "A3 lab-apps : sources[] absent ou vide")
-            return
-        oke, seen = self.oke_apps(), set()
-        for i, s in enumerate(srcs):
-            if not isinstance(s, dict):
-                self.err(rel, f"A3 lab-apps : sources[{i}] n'est pas un mapping")
-                continue
-            self.rule_lab_apps_source_origin(rel, i, s)
-            self.rule_lab_apps_source_path(rel, i, str(s.get("path", "")), oke, seen)
-            self.rule_lab_apps_source_directory(rel, i, s.get("directory") or {})
-
-    def rule_lab_apps_source_origin(self, rel, i, s):
-        """A3 : seules clés repoURL/targetRevision/path/directory ; dépôt du labo ; révision main."""
-        for k in sorted(set(s) - {"repoURL", "targetRevision", "path", "directory"}):
-            self.err(rel, f"A3 lab-apps : sources[{i}].{k} interdit (répertoire YAML seulement)")
-        if s.get("repoURL") not in REPO_URLS:
-            self.err(rel, f"A3 lab-apps : sources[{i}].repoURL '{s.get('repoURL')}' hors dépôt du labo")
-        if s.get("targetRevision") != "main":
-            self.err(rel, f"A3 lab-apps : sources[{i}].targetRevision doit être main")
-
-    def rule_lab_apps_source_path(self, rel, i, path, oke, seen):
-        """A2/A3 : chemin exact generated/namespaces/default/projects/<app>, app OKE stateless, sans doublon."""
-        prefix = APPS_PATH + "/projects/"
-        app = path[len(prefix):] if path.startswith(prefix) else ""
-        if not app or "/" in app or ".." in pathlib.PurePosixPath(path).parts:
-            self.err(rel, f"A2 lab-apps : sources[{i}].path '{path}' : seul {prefix}<app> est admis")
-        elif app not in oke:
-            self.err(rel, f"A2 lab-apps : sources[{i}].path '{path}' : app '{app}' non OKE stateless "
+    def check_appset(self, rel, d):
+        """O1-O5 : l'ApplicationSet `lab-o` est le seul admis ; une Application par app, projet et destination fixes."""
+        name, spec = (d.get("metadata") or {}).get("name"), d.get("spec") or {}
+        if name != "lab-o" or str(pathlib.PurePosixPath(rel).parent) != f"{ARGO}/apps" or self.appsets:
+            self.err(rel, f"O1 ApplicationSet '{name}' : seul `lab-o`, un exemplaire, sous {ARGO}/apps/ est admis")
+        self.appsets.append(d)
+        self.rule_o2_options(rel, spec)
+        excluded = self.rule_o3_generator(rel, spec)
+        self.rule_o4_template(rel, spec)
+        pre = APPS_PATH + "/projects/"  # O5 : toute app non OKE stateless est exclue (le générateur ne lit pas app.yaml)
+        for dirname in sorted({r[len(pre):].split("/")[0] for r in self.files if r.startswith(pre)} - self.oke_apps() - excluded):
+            self.err(rel, f"O5 lab-o : app '{dirname}' non OKE stateless et non exclue "
                           "(apps/<app>/app.yaml : cluster oke, profile stateless, sans storage ni database)")
-        if path in seen:
-            self.err(rel, f"A3 lab-apps : sources[{i}].path '{path}' en double")
-        seen.add(path)
 
-    def rule_lab_apps_source_directory(self, rel, i, dr):
-        """A3 : directory.recurse true et include "*.yaml"."""
-        if dr.get("recurse") is not True:
-            self.err(rel, f"A3 lab-apps : sources[{i}].directory.recurse doit être true")
-        if dr.get("include") != "*.yaml":
-            self.err(rel, f"A3 lab-apps : sources[{i}].directory.include doit être \"*.yaml\"")
+    def want(self, rel, ok, code, msg):  # exigence littérale : écart `<code> lab-o : <msg>` si `ok` est faux
+        if not ok:
+            self.err(rel, f"{code} lab-o : {msg}")
+
+    def only(self, rel, code, got, allowed, what):
+        """O2-O4 : aucune clé hors `allowed` (un champ inconnu pourrait réécrire le projet ou la destination)."""
+        for k in sorted(set(got) - set(allowed)):
+            self.err(rel, f"{code} lab-o : {what}.{k} interdit")
+
+    def rule_o2_options(self, rel, spec):
+        """O2 : goTemplate + missingkey=error (un paramètre absent échoue, jamais une valeur vide) ; preserve."""
+        self.want(rel, spec.get("goTemplate") is True and "missingkey=error" in (spec.get("goTemplateOptions") or []),
+                  "O2", "goTemplate: true et goTemplateOptions [missingkey=error] exigés")
+        self.want(rel, (spec.get("syncPolicy") or {}).get("preserveResourcesOnDeletion") is True,
+                  "O2", "syncPolicy.preserveResourcesOnDeletion: true exigé")
+        self.only(rel, "O2", spec, ("goTemplate", "goTemplateOptions", "syncPolicy", "generators", "template"), "spec")
+
+    def rule_o3_generator(self, rel, spec):
+        """O3 : UN générateur `directories` sur projects/*, dépôt du labo, main ; rend l'ensemble des exclusions."""
+        gens = spec.get("generators")
+        if not isinstance(gens, list) or len(gens) != 1 or not isinstance(gens[0], dict) \
+                or set(gens[0]) != {"git"} or not isinstance(gens[0]["git"], dict):
+            self.err(rel, "O3 lab-o : un seul générateur, de type git, est admis")
+            return set()
+        g = gens[0]["git"]
+        self.only(rel, "O3", g, ("repoURL", "revision", "directories", "requeueAfterSeconds"), "generators[0].git")
+        self.want(rel, g.get("repoURL") in REPO_URLS, "O3", f"git.repoURL '{g.get('repoURL')}' hors dépôt du labo")
+        self.want(rel, g.get("revision") == "main", "O3", "git.revision doit être main")
+        return self.rule_o3_directories(rel, g.get("directories"))
+
+    def rule_o3_directories(self, rel, dirs):
+        """O3 : une inclusion projects/*, des exclusions projects/<app> exactes ; rend les apps exclues."""
+        prefix = APPS_PATH + "/projects/"
+        includes, excluded = [], set()
+        for e in dirs if isinstance(dirs, list) else []:
+            path = str(e.get("path", "")) if isinstance(e, dict) else ""
+            if not isinstance(e, dict) or set(e) - {"path", "exclude"}:
+                self.err(rel, f"O3 lab-o : entrée directories invalide {e}")
+            elif e.get("exclude") is not True:
+                includes.append(path)
+            elif path.startswith(prefix) and path[len(prefix):] and not {"/", "*"} & set(path[len(prefix):]):
+                excluded.add(path[len(prefix):])
+            else:
+                self.err(rel, f"O3 lab-o : exclusion '{path}' : seul {prefix}<app> est admis")
+        if includes != [prefix + "*"]:
+            self.err(rel, f"O3 lab-o : une seule entrée d'inclusion, {prefix}*, est admise (trouvé {includes})")
+        return excluded
+
+    def rule_o4_template(self, rel, spec):
+        """O4 : modèle d'Application : nom préfixé, projet et destination LITTÉRAUX, source = dossier de l'app seulement."""
+        tpl = spec.get("template") or {}
+        ts = tpl.get("spec") or {}
+        self.want(rel, (tpl.get("metadata") or {}).get("name") == "lab-o-{{.path.basename}}",
+                  "O4", "template.metadata.name doit être lab-o-{{.path.basename}}")
+        self.want(rel, ts.get("project") == "lab-o", "O4", "template.spec.project doit être le littéral lab-o (jamais un paramètre)")
+        self.want(rel, ts.get("destination") == {"server": "https://kubernetes.default.svc", "namespace": "default"},
+                  "O4", "template.spec.destination doit être le littéral {server: https://kubernetes.default.svc, namespace: default}")
+        self.only(rel, "O4", ts, ("project", "source", "destination", "syncPolicy"), "template.spec")
+        self.want(rel, ((ts.get("syncPolicy") or {}).get("automated") or {}).get("prune") is not True,
+                  "O4", "syncPolicy.automated.prune: true interdit (finalizers Component/Resource)")
+        self.rule_o4_source(rel, ts.get("source") or {})
+
+    def rule_o4_source(self, rel, src):
+        """O4 : source = dépôt du labo, main, chemin {{.path.path}}, répertoire YAML récursif seulement."""
+        self.only(rel, "O4", src, ("repoURL", "targetRevision", "path", "directory"), "template.spec.source")
+        self.want(rel, src.get("repoURL") in REPO_URLS and src.get("targetRevision") == "main",
+                  "O4", "template.spec.source : dépôt du labo et targetRevision main littéraux exigés")
+        self.want(rel, src.get("path") == "{{.path.path}}", "O4", "template.spec.source.path doit être {{.path.path}}")
+        self.want(rel, src.get("directory") == {"recurse": True, "include": "*.yaml"},
+                  "O4", 'template.spec.source.directory doit être {recurse: true, include: "*.yaml"}')
+
+    def appset_files(self, appset):
+        """Fichiers synchronisés par les Applications de l'ApplicationSet lab-o : projects/<app>/**/*.yaml hors exclusions."""
+        pre = APPS_PATH + "/projects/"
+        gens = (appset.get("spec") or {}).get("generators") or []
+        ex = {str(e.get("path", ""))[len(pre):] for g in gens for e in ((g or {}).get("git") or {}).get("directories") or []
+              if isinstance(e, dict) and e.get("exclude") is True}
+        return {r for r in self.files if r.startswith(pre) and r.endswith(".yaml") and r[len(pre):].split("/")[0] not in ex}
 
     def synced(self, apps):
         """Fichiers que chaque projet contrôlé (SYNC_PROJECTS) synchronise, par Application."""
@@ -401,6 +444,8 @@ class Guard:
             for src in source_list(spec):
                 if "path" in src:
                     out[spec["project"]].update(self.files_of_source(src))
+        for appset in self.appsets:
+            out["lab-o"].update(self.appset_files(appset))
         return out
 
     def files_of_source(self, src):
@@ -445,7 +490,7 @@ class Guard:
             else:
                 self.err(rel, f"G1 {k}/{n} : chemin generated/ inconnu (namespaces/ ou catalog/)")
 
-    # --- Objets synchronisés par lab-platform / lab-apps ----------------------------------------------
+    # --- Objets synchronisés par lab-platform / lab-o ----------------------------------------------
     def check_synced(self, synced, proj_name, lab):
         """S1/S2/S3 sur chaque objet synchronisé par le projet `proj_name` (whitelists de son AppProject)."""
         for rel in sorted(synced):
@@ -504,7 +549,7 @@ def group_of(api_version):
 
 
 def source_list(spec):
-    """Sources d'une Application : `sources[]` (multi, lab-apps seulement) ou `source` (unique)."""
+    """Sources d'une Application : `sources[]` (refusé par A3, lu par prudence) ou `source` (unique)."""
     if "sources" in spec:
         return [s for s in (spec.get("sources") or []) if isinstance(s, dict)]
     return [spec.get("source") or {}]
