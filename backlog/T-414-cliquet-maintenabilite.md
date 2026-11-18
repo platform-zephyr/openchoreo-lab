@@ -1,7 +1,7 @@
 ---
 id: T-414
 title: "Cliquet de maintenabilité `tools/quality/check.py` + `baseline.json` (seuils durs sur le code neuf)"
-status: in-progress
+status: done
 phase: P0
 adr: [0024]
 depends_on: [T-413]
@@ -26,7 +26,7 @@ tools/quality/, tests/quality/, .github/workflows/ci.yaml, .github/CODEOWNERS
 - [x] test de dégradation : rendre une fonction plus complexe fait échouer le job (preuve datée) — 2026-11-18, local : `render_component` +1 branche donne `FAIL … complexité 47 > 46 (fonction gelée)` ; `tests/quality` (EndToEnd)
 - [x] test de non-régression : un refactor qui baisse une valeur passe sans toucher la ligne de base — `tests/quality` `test_refactor_passes_without_touching_baseline`, 2026-11-18 (11 tests OK)
 - [x] `baseline.json` et `tools/quality/` ajoutés à CODEOWNERS (un agent ne relâche pas un seuil seul) — `/tools/quality/` et `/tests/quality/`
-- [ ] temps du job < 3 min ; sortie `quality.v1.json` datée (cc_max, cc_p95, fichiers > 400 l, erreurs ruff et mypy, couverture)
+- [x] temps du job < 3 min ; sortie `quality.v1.json` datée (cc_max, cc_p95, fichiers > 400 l, erreurs ruff et mypy, couverture) — RUNTIME 2026-11-18 : run `ci` 44291535887 (PR #58), `quality` 16 s, `quality-coverage` 1 min 20 s, artefact `quality-v1` publié (cc_max 65, cc_p95 12, ruff 225, mypy 12, couverture appgen 88,3 %)
 
 ## Notes
 Proposition QA-4 (backlog/proposals/quality.yaml), intégrée (intégration 5, 2026-11-18). Dépendances : ruff, radon, coverage épinglés. Pas de seuil absolu immédiat : 9 fonctions et 3 fichiers le violeraient (rapport §B3).

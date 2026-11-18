@@ -89,5 +89,25 @@ if grep -q -- '--model \${{ inputs.model }}' "$wf" && grep -q -- '--effort \${{ 
   ok "model, effort, max-turns et timeout branches sur le workflow"
 else ko "arguments claude_args ou timeout non branches"; fi
 
+# 6. Branchement dans ci.yaml : job agent-trailers, appelle check-trailers, present dans needs de ci-ok, jamais `skipped` au niveau du job.
+ci="$ROOT/.github/workflows/ci.yaml"
+if python3 -I - "$ci" <<'PY'; then ok "ci.yaml : agent-trailers branche dans ci-ok sans condition de job"; else ko "ci.yaml : agent-trailers mal branche"; fi
+import sys, yaml
+wf = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
+job = wf["jobs"]["agent-trailers"]
+assert "if" not in job, "un if de job le rendrait skipped, donc ferait echouer ci-ok"
+assert "agent-trailers" in wf["jobs"]["ci-ok"]["needs"]
+steps = "\n".join(s.get("run", "") for s in job["steps"])
+assert "run-ticket.sh check-trailers origin/main..HEAD" in steps
+assert "claude/" in job["env"]["IS_AGENT_PR"] and "agent/" in job["env"]["IS_AGENT_PR"]
+PY
+
+# 7. Ligne de commentaire de PR : modele observe, tours, cout, duree ; aucun prompt.
+line="$("$RT" comment "$W/res.json")"
+if [[ "$line" == *"claude-sonnet-5-5"* && "$line" == *"12 tours"* && "$line" == *"0.432 USD"* && "$line" == *"93 s"* && "$line" != *"SECRET-PROMPT"* && "$(wc -l <<<"$line")" -eq 1 ]]; then
+  ok "ligne de commentaire de PR (une ligne, sans sortie d'outil)"
+else ko "ligne de commentaire de PR incorrecte : $line"; fi
+if grep -q 'run-ticket.sh comment' "$wf" && grep -q 'gh pr comment' "$wf" && grep -q 'steps.app.outputs.token' "$wf"; then ok "workflow : commentaire de PR via le jeton de l'App"; else ko "commentaire de PR non branche"; fi
+
 if [[ "$fails" -gt 0 ]]; then printf '%s test(s) en echec\n' "$fails"; exit 1; fi
 echo "tous les tests de l'executant passent"

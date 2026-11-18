@@ -39,3 +39,5 @@ Avancement (2026-11-18, STATIC) :
 - Critère 1 non coché : sur la VM cloud x86_64 sans Docker, `check --static` = 60 s, 13 PASS, 0 FAIL, 12 NOT_TESTED (actionlint, gitleaks, helm, kubeconform absents ; tests/leak-guard, identities, hooks absents du dépôt). Il reste à le passer avec tous les outils installés (CI ou conteneur) pour dater « < 3 min, 0 NOT_TESTED ».
 - Critère 3 non coché : reste que le job CI appelle `tools/dev/check --static --strict` et que le script d'environnement cloud (T-334) l'appelle ; `ci.yaml` n'est pas modifié ici (autre agent) et doit lire `toolchain.lock`.
 - Reste aussi : empreintes linux-amd64 dans `toolchain.lock` (VM cloud x86_64) ; les contrôles de T-303, T-306, T-330, T-331 s'activent seuls (NOT_TESTED tant que leur script manque).
+
+Reste (2026-11-18) : `tools/dev/check --static --jobs 4` dure 41 s (116 s en série) avec les outils de `cloud-setup.sh` ; 3 NOT_TESTED restent (`guard-check` hors conteneur de dev, étapes `identities` et `hooks` dont les scripts sont livrés par T-331). Critère 3 (même commande dans la CI et la VM cloud) : porté par T-460 (parité `ci.yaml` ↔ `check`).

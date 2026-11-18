@@ -421,10 +421,33 @@ jobs:
           path: quality.v1.json
           if-no-files-found: ignore
 
+  agent-trailers:
+    # T-313 : une PR d'agent (branche claude/issue-* (usine ; la branche du coordinateur, historique non conforme, est exclue) ou agent/*, ou auteur = bot de l'executant) n'a que des commits en
+    # noreply@anthropic.com avec les trailers Ticket, Model, Effort, Claude-Session (tools/factory/run-ticket.sh check-trailers).
+    # Le job tourne toujours et saute les etapes par condition : un job `skipped` ferait echouer ci-ok (regle ci-dessous).
+    runs-on: ubuntu-24.04-arm
+    env:
+      IS_AGENT_PR: ${{ github.event_name == 'pull_request' && (startsWith(github.head_ref, 'claude/issue-') || startsWith(github.head_ref, 'agent/') || github.actor == 'openchoreo-worker[bot]') }}
+    steps:
+      - name: Perimetre
+        run: echo "PR d'agent = $IS_AGENT_PR"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.IS_AGENT_PR == 'true'
+        with:
+          # Les commits de la PR, pas le commit de fusion synthetique (auteur github-actions).
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Trailers et e-mail noreply (origin/main..HEAD)
+        if: env.IS_AGENT_PR == 'true'
+        run: |
+          git fetch --no-tags origin main
+          tools/factory/run-ticket.sh check-trailers origin/main..HEAD
+
   ci-ok:
     # Check requis par la protection de branche : echoue si un job amont n'est pas en success.
     if: always()
-    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, platform-render, release-history, dev-factory, backlog, lint-code, quality, quality-coverage]
+    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, platform-render, release-history, dev-factory, backlog, lint-code, quality, quality-coverage, agent-trailers]
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Agregation
