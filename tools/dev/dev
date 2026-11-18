@@ -6,7 +6,7 @@
 # Usage :
 #   dev up <tâche>          crée ../wt-<tâche> (branche feat/<tâche> depuis origin/main) et démarre son conteneur
 #   dev exec <tâche> -- CMD  exécute CMD dans le conteneur de la tâche (ex. : dev exec <t> -- tools/dev/dev test)
-#   dev test                contrôles statiques sans cluster (dans l'environnement courant)
+#   dev test                = tools/dev/check --static --strict (contrôles statiques sans cluster)
 #   dev reset <tâche>       recrée le conteneur (worktree et caches conservés)
 #   dev destroy <tâche>     supprime conteneur + worktree SEULEMENT si propres et poussés (sinon refus)
 #   dev status              worktrees, conteneurs, branches feat/*, PR ouvertes (gh), état agents
@@ -174,64 +174,12 @@ cmd_exec() {
   $DOCKER exec -w "$WS_DIR" "$(cname "$t")" "$@"
 }
 
-# ---- dev test : contrôles statiques, sans cluster, sans secret ----
-FAILS=0
-run_step() { # NOM COMMANDE...
-  local name="$1"; shift
-  local log t0 t1 rc=0
-  log="$(mktemp "${TMPDIR:-/tmp}/dev-test.XXXXXX")"
-  t0="$(date +%s)"
-  "$@" >"$log" 2>&1 || rc=$?
-  t1="$(date +%s)"
-  if [[ "$rc" -eq 0 ]]; then
-    printf 'PASS  %-22s %4ss\n' "$name" "$((t1 - t0))"
-  else
-    FAILS=$((FAILS + 1))
-    printf 'FAIL  %-22s %4ss (rc=%s)\n' "$name" "$((t1 - t0))" "$rc"
-    tail -n 25 "$log" | sed 's/^/      | /'
-  fi
-  rm -f "$log"
-}
-
-# Les rendus et téléchargements de charts partagent un cache (volume) : sérialisés entre conteneurs.
-locked() {
-  local st="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}"
-  mkdir -p "$st"
-  if command -v flock >/dev/null 2>&1; then
-    flock -x -w 900 "$st/.dev-test.lock" "$@"
-  else
-    "$@"
-  fi
-}
-
+# ---- dev test : délègue à tools/dev/check --static (T-332), la même commande que la CI et l'environnement cloud ----
 cmd_test() {
   [[ $# -eq 0 ]] || die "usage : dev test"
   cd "$ROOT"
-  info "dev test : $(git rev-parse --short HEAD 2>/dev/null || echo '?') dans $ROOT"
-  run_step guard-check tools/dev/guard-check.sh
-  run_step shellcheck shellcheck -x -P SCRIPTDIR tools/dev/dev tools/dev/guard-check.sh tests/dev-factory/run.sh \
-    tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh
-  run_step devcontainer-json python3 -I -m json.tool .devcontainer/devcontainer.json
-  run_step dev-factory-static tests/dev-factory/run.sh
-  run_step yamllint yamllint -c tools/appgen/yamllint.yaml apps tools tests .github
-  run_step actionlint actionlint
-  run_step gitleaks gitleaks git --redact --no-banner --log-level warn .
-  run_step appgen-validate python3 tools/appgen/appgen.py validate
-  run_step appgen-check python3 tools/appgen/appgen.py check
-  run_step appgen-unittest python3 -m unittest discover -s tests/appgen
-  run_step argo-guard-rules python3 -I tools/oke/argo_guard.py .
-  run_step argo-guard-negative tests/argo-guard/run.sh
-  run_step release-history tests/release-history/check.sh
-  run_step cell-cpt tests/cell-cpt/run.sh
-  run_step security-bundle locked tests/security-bundle/run.sh
-  run_step render-check locked tools/oke/render-check.sh
-  run_step uninstall-guards locked env ARGO_GUARD_CHART_CACHE="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}/charts" tests/argo-guard/uninstall-guards.sh
-  run_step kubeconform-platform locked tools/oke/kubeconform-platform.sh
-  if [[ "$FAILS" -gt 0 ]]; then
-    printf 'RESULT: FAIL (%s étape(s) en échec)\n' "$FAILS"
-    exit 1
-  fi
-  printf 'RESULT: PASS\n'
+  # --strict : dans le conteneur de dev tous les outils sont présents, un NOT_TESTED y est une anomalie.
+  exec tools/dev/check --static --strict
 }
 
 cmd_reset() {
