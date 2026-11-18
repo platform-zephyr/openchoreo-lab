@@ -10,7 +10,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-import corpus  # noqa: E402
+import corpus
 
 GOLDEN = json.loads(gzip.decompress(pathlib.Path(__file__).with_name("golden.json.gz").read_bytes()))
 CURRENT = corpus.build()

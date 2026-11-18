@@ -154,70 +154,104 @@ class Guard:
         return projs
 
     def check_projects(self, projs):
+        """Orchestre les règles P1/P2/P3 ; l'ordre des écarts est celui de l'ancienne fonction monolithique."""
         rel = f"{ARGO}/project-lab.yaml"
-        d = projs.get("default")
-        if d is not None:
-            locked = all(not d.get(k) for k in ("sourceRepos", "destinations", "sourceNamespaces",
-                                                 "clusterResourceWhitelist", "namespaceResourceWhitelist"))
-            for k in ("clusterResourceBlacklist", "namespaceResourceBlacklist"):
-                locked = locked and any(r.get("group") == "*" and r.get("kind") == "*" for r in d.get(k) or [])
-            if not locked:
-                self.err(f"{ARGO}/project-default-locked.yaml", "P1 projet default non verrouillé "
-                         "(sourceRepos/destinations/whitelists vides et blacklists */* exigés)")
+        self.rule_p1_default_locked(projs.get("default"))
         for name in LAB_PROJECTS:
             s = projs.get(name)
-            if s is None:
-                continue
-            for repo in s.get("sourceRepos") or []:
-                if "*" in repo:
-                    self.err(rel, f"P2 {name} : sourceRepos '{repo}' joker")
-            for dst in s.get("destinations") or []:
-                if "*" in str(dst.get("server", "")) or "*" in str(dst.get("namespace", "")) or "*" in str(dst.get("name", "")):
-                    self.err(rel, f"P2 {name} : destination joker {dst}")
-            if s.get("sourceNamespaces"):
-                self.err(rel, f"P2 {name} : sourceNamespaces interdit")
-            for key in ("clusterResourceWhitelist", "namespaceResourceWhitelist"):
-                for r in s.get(key) or []:
-                    if r.get("group") == "*" or r.get("kind") == "*" or r.get("name") == "*":
-                        self.err(rel, f"P2 {name} : {key} joker {r}")
-                    if key == "clusterResourceWhitelist" and not r.get("name"):
-                        self.err(rel, f"P2 {name} : {key} sans nom {r}")
-                    if r.get("kind") in ("Application", "AppProject", "ApplicationSet") and name != "lab-root":
-                        self.err(rel, f"P2 {name} : {r.get('kind')} en whitelist (réservé à lab-root)")
-        root = projs.get("lab-root")
-        if root is not None:
-            nw = root.get("namespaceResourceWhitelist") or []
-            dst = root.get("destinations") or []
-            if root.get("clusterResourceWhitelist") or nw != [{"group": "argoproj.io", "kind": "Application"}] \
-                    or [x.get("namespace") for x in dst] != ["lab-argocd"]:
-                self.err(rel, "P2 lab-root : seul kind Application dans lab-argocd admis")
-        authz = projs.get("lab-authz")
-        if authz is not None:
-            for r in authz.get("clusterResourceWhitelist") or []:
-                if r.get("kind") not in AUTHZ_KINDS or not str(r.get("name", "")).startswith("lab-"):
-                    self.err(rel, f"P2 lab-authz : whitelist hors authz lab-* {r}")
-            if authz.get("namespaceResourceWhitelist") or not match(authz.get("namespaceResourceBlacklist") or [],
-                                                                    "x", "y"):
-                self.err(rel, "P2 lab-authz : aucun kind namespacé admis (blacklist */* exigée)")
+            if s is not None:
+                self.rule_p2_no_wildcards(rel, name, s)
+        self.rule_p2_lab_root(rel, projs.get("lab-root"))
+        self.rule_p2_lab_authz(rel, projs.get("lab-authz"))
         for name in MANUAL_PROJECTS:
-            wins = (projs.get(name) or {}).get("syncWindows") or []
-            if any(w.get("kind") == "allow" for w in wins) or not any(
-                    all(w.get(k) == v for k, v in DENY_WINDOW.items()) for w in wins):
-                self.err(rel, f"P3 {name} : fenêtre deny permanente exigée {DENY_WINDOW} (aucune allow)")
-        apps_p = projs.get("lab-apps")
-        if apps_p is not None:
-            if apps_p.get("clusterResourceWhitelist") or apps_p.get("clusterResourceWhitelist") is None:
-                self.err(rel, "P2 lab-apps : clusterResourceWhitelist doit être POSÉE vide (aucun kind cluster-scoped)")
-            nw = apps_p.get("namespaceResourceWhitelist") or []
-            if not nw or any(r.get("group") != "openchoreo.dev" or r.get("kind") not in APP_KINDS or "name" in r
-                             for r in nw):
-                self.err(rel, f"P2 lab-apps : namespaceResourceWhitelist limitée aux kinds {sorted(APP_KINDS)}")
-            if [(x.get("server"), x.get("namespace")) for x in apps_p.get("destinations") or []] != \
-                    [("https://kubernetes.default.svc", "default")]:
-                self.err(rel, "P2 lab-apps : seule destination admise : namespace default du cluster local")
+            self.rule_p3_deny_window(rel, name, projs.get(name))
+        self.rule_p2_lab_apps(rel, projs.get("lab-apps"))
+
+    def rule_p1_default_locked(self, d):
+        """P1 : le projet `default` est verrouillé (listes vides, blacklists */*)."""
+        if d is None:
+            return
+        locked = all(not d.get(k) for k in ("sourceRepos", "destinations", "sourceNamespaces",
+                                             "clusterResourceWhitelist", "namespaceResourceWhitelist"))
+        for k in ("clusterResourceBlacklist", "namespaceResourceBlacklist"):
+            locked = locked and any(r.get("group") == "*" and r.get("kind") == "*" for r in d.get(k) or [])
+        if not locked:
+            self.err(f"{ARGO}/project-default-locked.yaml", "P1 projet default non verrouillé "
+                     "(sourceRepos/destinations/whitelists vides et blacklists */* exigés)")
+
+    def rule_p2_no_wildcards(self, rel, name, s):
+        """P2 : ni dépôt, ni destination, ni whitelist à joker ; pas de sourceNamespaces."""
+        self.rule_p2_source_repos(rel, name, s)
+        self.rule_p2_destinations(rel, name, s)
+        if s.get("sourceNamespaces"):
+            self.err(rel, f"P2 {name} : sourceNamespaces interdit")
+        for key in ("clusterResourceWhitelist", "namespaceResourceWhitelist"):
+            for r in s.get(key) or []:
+                self.rule_p2_whitelist_entry(rel, name, key, r)
+
+    def rule_p2_source_repos(self, rel, name, s):
+        for repo in s.get("sourceRepos") or []:
+            if "*" in repo:
+                self.err(rel, f"P2 {name} : sourceRepos '{repo}' joker")
+
+    def rule_p2_destinations(self, rel, name, s):
+        for dst in s.get("destinations") or []:
+            if any("*" in str(dst.get(k, "")) for k in ("server", "namespace", "name")):
+                self.err(rel, f"P2 {name} : destination joker {dst}")
+
+    def rule_p2_whitelist_entry(self, rel, name, key, r):
+        if r.get("group") == "*" or r.get("kind") == "*" or r.get("name") == "*":
+            self.err(rel, f"P2 {name} : {key} joker {r}")
+        if key == "clusterResourceWhitelist" and not r.get("name"):
+            self.err(rel, f"P2 {name} : {key} sans nom {r}")
+        if r.get("kind") in ("Application", "AppProject", "ApplicationSet") and name != "lab-root":
+            self.err(rel, f"P2 {name} : {r.get('kind')} en whitelist (réservé à lab-root)")
+
+    def rule_p2_lab_root(self, rel, root):
+        """P2 : lab-root n'admet que le kind Application dans lab-argocd."""
+        if root is None:
+            return
+        nw = root.get("namespaceResourceWhitelist") or []
+        dst = root.get("destinations") or []
+        if root.get("clusterResourceWhitelist") or nw != [{"group": "argoproj.io", "kind": "Application"}] \
+                or [x.get("namespace") for x in dst] != ["lab-argocd"]:
+            self.err(rel, "P2 lab-root : seul kind Application dans lab-argocd admis")
+
+    def rule_p2_lab_authz(self, rel, authz):
+        """P2 : lab-authz n'admet que des kinds authz lab-* cluster-scoped, aucun kind namespacé."""
+        if authz is None:
+            return
+        for r in authz.get("clusterResourceWhitelist") or []:
+            if r.get("kind") not in AUTHZ_KINDS or not str(r.get("name", "")).startswith("lab-"):
+                self.err(rel, f"P2 lab-authz : whitelist hors authz lab-* {r}")
+        if authz.get("namespaceResourceWhitelist") or not match(authz.get("namespaceResourceBlacklist") or [],
+                                                                "x", "y"):
+            self.err(rel, "P2 lab-authz : aucun kind namespacé admis (blacklist */* exigée)")
+
+    def rule_p3_deny_window(self, rel, name, proj):
+        """P3 : fenêtre `deny` permanente exigée, aucune `allow` (projets privilégiés)."""
+        wins = (proj or {}).get("syncWindows") or []
+        if any(w.get("kind") == "allow" for w in wins) or not any(
+                all(w.get(k) == v for k, v in DENY_WINDOW.items()) for w in wins):
+            self.err(rel, f"P3 {name} : fenêtre deny permanente exigée {DENY_WINDOW} (aucune allow)")
+
+    def rule_p2_lab_apps(self, rel, apps_p):
+        """P2 : lab-apps sans kind cluster-scoped, kinds OpenChoreo applicatifs seuls, destination `default`."""
+        if apps_p is None:
+            return
+        if apps_p.get("clusterResourceWhitelist") or apps_p.get("clusterResourceWhitelist") is None:
+            self.err(rel, "P2 lab-apps : clusterResourceWhitelist doit être POSÉE vide (aucun kind cluster-scoped)")
+        nw = apps_p.get("namespaceResourceWhitelist") or []
+        if not nw or any(r.get("group") != "openchoreo.dev" or r.get("kind") not in APP_KINDS or "name" in r
+                         for r in nw):
+            self.err(rel, f"P2 lab-apps : namespaceResourceWhitelist limitée aux kinds {sorted(APP_KINDS)}")
+        if [(x.get("server"), x.get("namespace")) for x in apps_p.get("destinations") or []] != \
+                [("https://kubernetes.default.svc", "default")]:
+            self.err(rel, "P2 lab-apps : seule destination admise : namespace default du cluster local")
 
     # --- Application ----------------------------------------------------------------------------------
     def check_apps(self):
+        """Orchestre les règles A1-A4 par Application ; l'ordre des écarts est celui de l'ancienne fonction."""
         apps = []
         for rel, d in self.objects({"Application", "ApplicationSet"}):
             spec = d.get("spec") or {}
@@ -226,43 +260,74 @@ class Guard:
             if d["kind"] == "ApplicationSet":
                 self.err(rel, "A1 ApplicationSet interdit")
                 continue
-            in_apps = str(pathlib.PurePosixPath(rel).parent) == f"{ARGO}/apps"
-            if rel == ROOT_APP:
-                src = spec.get("source") or {}
-                if name != "lab-root" or proj != "lab-root" or src.get("path") != f"{ARGO}/apps" \
-                        or (src.get("directory") or {}).get("recurse"):
-                    self.err(rel, "A1 l'Application racine doit être lab-root, projet lab-root, chemin "
-                                  f"{ARGO}/apps sans récursion")
-            elif not in_apps:
-                self.err(rel, f"A1 Application '{name}' hors {ARGO}/apps/")
-            if proj not in ALLOWED_PROJECTS:
-                self.err(rel, f"A2 Application '{name}' : projet '{proj}' interdit (admis : {sorted(ALLOWED_PROJECTS)})")
-            if in_apps and proj not in CHILD_PROJECTS:
-                self.err(rel, f"A2 Application '{name}' : projet '{proj}' interdit dans apps/ "
-                              f"({', '.join(sorted(CHILD_PROJECTS))})")
-            if rel != ROOT_APP and proj == "lab-root":
-                self.err(rel, f"A2 Application '{name}' : projet lab-root réservé à {ROOT_APP}")
-            if "sources" in spec and proj != "lab-apps":
-                self.err(rel, f"A3 Application '{name}' : sources multiples interdites hors lab-apps")
-            if proj == "lab-apps":
-                self.check_lab_apps_sources(rel, name, spec)
+            self.rule_a1_location(rel, name, proj, spec)
+            self.rule_a2_project(rel, name, proj)
+            self.rule_a3_sources(rel, name, proj, spec)
             src = spec.get("source") or {}
-            for k in ("chart", "helm", "kustomize", "plugin"):
-                if k in src:
-                    self.err(rel, f"A3 Application '{name}' : source.{k} interdit (répertoire YAML seulement)")
-            path = str(src.get("path", ""))
-            if proj == "lab-authz":
-                if name != "lab-authz" or path != "platform/authz" or (src.get("directory") or {}).get("recurse"):
-                    self.err(rel, "A2 projet lab-authz réservé à l'Application lab-authz (chemin platform/authz)")
-            if proj in MANUAL_PROJECTS and (spec.get("syncPolicy") or {}).get("automated") is not None:
-                self.err(rel, f"A4 Application '{name}' ({proj}) : synchro automated interdite (sync MANUELLE)")
-            if proj == "lab-platform":
-                norm = pathlib.PurePosixPath(path)
-                if ".." in norm.parts or not (path == "platform" or path.startswith("platform/")) \
-                        or path.startswith((ARGO, "platform/authz")):
-                    self.err(rel, f"A3 Application '{name}' : chemin '{path}' interdit au projet lab-platform")
+            self.rule_a3_source_kinds(rel, name, src)
+            self.rule_a2_authz_reserved(rel, name, proj, src)
+            self.rule_a4_manual_sync(rel, name, proj, spec)
+            self.rule_a3_platform_path(rel, name, proj, src)
             apps.append((rel, d))
         return apps
+
+    def rule_a1_location(self, rel, name, proj, spec):
+        """A1 : Application sous apps/ ; seule exception, l'Application racine lab-root."""
+        if rel == ROOT_APP:
+            src = spec.get("source") or {}
+            if name != "lab-root" or proj != "lab-root" or src.get("path") != f"{ARGO}/apps" \
+                    or (src.get("directory") or {}).get("recurse"):
+                self.err(rel, "A1 l'Application racine doit être lab-root, projet lab-root, chemin "
+                              f"{ARGO}/apps sans récursion")
+        elif str(pathlib.PurePosixPath(rel).parent) != f"{ARGO}/apps":
+            self.err(rel, f"A1 Application '{name}' hors {ARGO}/apps/")
+
+    def rule_a2_project(self, rel, name, proj):
+        """A2 : projet admis ; apps/ jamais lab-root ; lab-root réservé à l'Application racine."""
+        in_apps = str(pathlib.PurePosixPath(rel).parent) == f"{ARGO}/apps"
+        if proj not in ALLOWED_PROJECTS:
+            self.err(rel, f"A2 Application '{name}' : projet '{proj}' interdit (admis : {sorted(ALLOWED_PROJECTS)})")
+        if in_apps and proj not in CHILD_PROJECTS:
+            self.err(rel, f"A2 Application '{name}' : projet '{proj}' interdit dans apps/ "
+                          f"({', '.join(sorted(CHILD_PROJECTS))})")
+        if rel != ROOT_APP and proj == "lab-root":
+            self.err(rel, f"A2 Application '{name}' : projet lab-root réservé à {ROOT_APP}")
+
+    def rule_a3_sources(self, rel, name, proj, spec):
+        """A3 : sources[] multiples seulement pour lab-apps, qui a ses règles propres."""
+        if "sources" in spec and proj != "lab-apps":
+            self.err(rel, f"A3 Application '{name}' : sources multiples interdites hors lab-apps")
+        if proj == "lab-apps":
+            self.check_lab_apps_sources(rel, name, spec)
+
+    def rule_a3_source_kinds(self, rel, name, src):
+        """A3 : répertoire YAML seulement (ni chart, ni helm, ni kustomize, ni plugin)."""
+        for k in ("chart", "helm", "kustomize", "plugin"):
+            if k in src:
+                self.err(rel, f"A3 Application '{name}' : source.{k} interdit (répertoire YAML seulement)")
+
+    def rule_a2_authz_reserved(self, rel, name, proj, src):
+        """A2 : le projet lab-authz est réservé à l'Application lab-authz (platform/authz, sans récursion)."""
+        if proj != "lab-authz":
+            return
+        if name != "lab-authz" or str(src.get("path", "")) != "platform/authz" \
+                or (src.get("directory") or {}).get("recurse"):
+            self.err(rel, "A2 projet lab-authz réservé à l'Application lab-authz (chemin platform/authz)")
+
+    def rule_a4_manual_sync(self, rel, name, proj, spec):
+        """A4 : pas de synchro `automated` sur un projet privilégié."""
+        if proj in MANUAL_PROJECTS and (spec.get("syncPolicy") or {}).get("automated") is not None:
+            self.err(rel, f"A4 Application '{name}' ({proj}) : synchro automated interdite (sync MANUELLE)")
+
+    def rule_a3_platform_path(self, rel, name, proj, src):
+        """A3 : lab-platform ne vise que platform/**, hors install/argocd et authz."""
+        if proj != "lab-platform":
+            return
+        path = str(src.get("path", ""))
+        norm = pathlib.PurePosixPath(path)
+        if ".." in norm.parts or not (path == "platform" or path.startswith("platform/")) \
+                or path.startswith((ARGO, "platform/authz")):
+            self.err(rel, f"A3 Application '{name}' : chemin '{path}' interdit au projet lab-platform")
 
     def oke_apps(self):
         """Apps admises à lab-apps : apps/<nom>/app.yaml, cluster oke, stateless (ni volume, ni base)."""
@@ -293,50 +358,66 @@ class Guard:
             if not isinstance(s, dict):
                 self.err(rel, f"A3 lab-apps : sources[{i}] n'est pas un mapping")
                 continue
-            for k in sorted(set(s) - {"repoURL", "targetRevision", "path", "directory"}):
-                self.err(rel, f"A3 lab-apps : sources[{i}].{k} interdit (répertoire YAML seulement)")
-            if s.get("repoURL") not in REPO_URLS:
-                self.err(rel, f"A3 lab-apps : sources[{i}].repoURL '{s.get('repoURL')}' hors dépôt du labo")
-            if s.get("targetRevision") != "main":
-                self.err(rel, f"A3 lab-apps : sources[{i}].targetRevision doit être main")
-            path = str(s.get("path", ""))
-            prefix = APPS_PATH + "/projects/"
-            app = path[len(prefix):] if path.startswith(prefix) else ""
-            if not app or "/" in app or ".." in pathlib.PurePosixPath(path).parts:
-                self.err(rel, f"A2 lab-apps : sources[{i}].path '{path}' : seul {prefix}<app> est admis")
-            elif app not in oke:
-                self.err(rel, f"A2 lab-apps : sources[{i}].path '{path}' : app '{app}' non OKE stateless "
-                              "(apps/<app>/app.yaml : cluster oke, profile stateless, sans storage ni database)")
-            if path in seen:
-                self.err(rel, f"A3 lab-apps : sources[{i}].path '{path}' en double")
-            seen.add(path)
-            dr = s.get("directory") or {}
-            if dr.get("recurse") is not True:
-                self.err(rel, f"A3 lab-apps : sources[{i}].directory.recurse doit être true")
-            if dr.get("include") != "*.yaml":
-                self.err(rel, f"A3 lab-apps : sources[{i}].directory.include doit être \"*.yaml\"")
+            self.rule_lab_apps_source_origin(rel, i, s)
+            self.rule_lab_apps_source_path(rel, i, str(s.get("path", "")), oke, seen)
+            self.rule_lab_apps_source_directory(rel, i, s.get("directory") or {})
+
+    def rule_lab_apps_source_origin(self, rel, i, s):
+        """A3 : seules clés repoURL/targetRevision/path/directory ; dépôt du labo ; révision main."""
+        for k in sorted(set(s) - {"repoURL", "targetRevision", "path", "directory"}):
+            self.err(rel, f"A3 lab-apps : sources[{i}].{k} interdit (répertoire YAML seulement)")
+        if s.get("repoURL") not in REPO_URLS:
+            self.err(rel, f"A3 lab-apps : sources[{i}].repoURL '{s.get('repoURL')}' hors dépôt du labo")
+        if s.get("targetRevision") != "main":
+            self.err(rel, f"A3 lab-apps : sources[{i}].targetRevision doit être main")
+
+    def rule_lab_apps_source_path(self, rel, i, path, oke, seen):
+        """A2/A3 : chemin exact generated/namespaces/default/projects/<app>, app OKE stateless, sans doublon."""
+        prefix = APPS_PATH + "/projects/"
+        app = path[len(prefix):] if path.startswith(prefix) else ""
+        if not app or "/" in app or ".." in pathlib.PurePosixPath(path).parts:
+            self.err(rel, f"A2 lab-apps : sources[{i}].path '{path}' : seul {prefix}<app> est admis")
+        elif app not in oke:
+            self.err(rel, f"A2 lab-apps : sources[{i}].path '{path}' : app '{app}' non OKE stateless "
+                          "(apps/<app>/app.yaml : cluster oke, profile stateless, sans storage ni database)")
+        if path in seen:
+            self.err(rel, f"A3 lab-apps : sources[{i}].path '{path}' en double")
+        seen.add(path)
+
+    def rule_lab_apps_source_directory(self, rel, i, dr):
+        """A3 : directory.recurse true et include "*.yaml"."""
+        if dr.get("recurse") is not True:
+            self.err(rel, f"A3 lab-apps : sources[{i}].directory.recurse doit être true")
+        if dr.get("include") != "*.yaml":
+            self.err(rel, f"A3 lab-apps : sources[{i}].directory.include doit être \"*.yaml\"")
 
     def synced(self, apps):
+        """Fichiers que chaque projet contrôlé (SYNC_PROJECTS) synchronise, par Application."""
         out = {p: set() for p in SYNC_PROJECTS}
         for _rel, a in apps:
             spec = a.get("spec") or {}
             if spec.get("project") not in SYNC_PROJECTS:
                 continue
             for src in source_list(spec):
-                if "path" not in src:
-                    continue
-                base = str(src["path"]).rstrip("/")
-                dr = src.get("directory") or {}
-                pats = expand_include(dr.get("include") or "*.yaml") if dr.get("include") else ["*.yaml", "*.yml", "*.json"]
-                for rel in self.files:
-                    if not rel.startswith(base + "/"):
-                        continue
-                    sub = rel[len(base) + 1:]
-                    if not dr.get("recurse") and "/" in sub:
-                        continue
-                    if any(fnmatch.fnmatch(sub, p) for p in pats):
-                        out[spec["project"]].add(rel)
+                if "path" in src:
+                    out[spec["project"]].update(self.files_of_source(src))
         return out
+
+    def files_of_source(self, src):
+        """Fichiers (chemins relatifs) qu'Argo lit pour une source `directory` (include, recurse)."""
+        base = str(src["path"]).rstrip("/")
+        dr = src.get("directory") or {}
+        pats = expand_include(dr.get("include") or "*.yaml") if dr.get("include") else ["*.yaml", "*.yml", "*.json"]
+        found = set()
+        for rel in self.files:
+            if not rel.startswith(base + "/"):
+                continue
+            sub = rel[len(base) + 1:]
+            if not dr.get("recurse") and "/" in sub:
+                continue
+            if any(fnmatch.fnmatch(sub, p) for p in pats):
+                found.add(rel)
+        return found
 
     # --- Authz ----------------------------------------------------------------------------------------
     def check_authz(self):
@@ -366,30 +447,40 @@ class Guard:
 
     # --- Objets synchronisés par lab-platform / lab-apps ----------------------------------------------
     def check_synced(self, synced, proj_name, lab):
-        cw = lab.get("clusterResourceWhitelist") or []
-        nw = lab.get("namespaceResourceWhitelist") or []
-        nb = lab.get("namespaceResourceBlacklist") or []
-        cb = lab.get("clusterResourceBlacklist") or []
+        """S1/S2/S3 sur chaque objet synchronisé par le projet `proj_name` (whitelists de son AppProject)."""
         for rel in sorted(synced):
             for d in self.files[rel]:
-                g, k = group_of(d.get("apiVersion", "")), d["kind"]
-                md = d.get("metadata") or {}
-                n, ns = str(md.get("name", "")), md.get("namespace")
-                if k in CLUSTER_KINDS:
-                    if not match(cw, g, k, n) or match(cb, g, k, n):
-                        self.err(rel, f"S1 {k}/{n} cluster-scoped absent de clusterResourceWhitelist ({proj_name})")
-                elif not nw or not match(nw, g, k) or match(nb, g, k):
-                    self.err(rel, f"S1 {k}/{n} namespacé non autorisé par l'AppProject {proj_name}")
-                if k == "NetworkPolicy":
-                    self.check_np(rel, ns, n, d.get("spec") or {})
-                if k == "Namespace" and n == "lab-pg":
-                    labels = md.get("labels") or {}
-                    for lk, lv in LAB_PG_LABELS.items():
-                        if labels.get(lk) != lv:
-                            self.err(rel, f"S3 Namespace lab-pg : label {lk}={lv} exigé (trouvé {labels.get(lk)!r})")
-                    for lk in ("pod-security.kubernetes.io/warn", "pod-security.kubernetes.io/audit"):
-                        if labels.get(lk) not in (None, "restricted"):
-                            self.err(rel, f"S3 Namespace lab-pg : {lk} doit rester restricted")
+                self.check_synced_object(rel, d, proj_name, lab)
+
+    def check_synced_object(self, rel, d, proj_name, lab):
+        g, k = group_of(d.get("apiVersion", "")), d["kind"]
+        md = d.get("metadata") or {}
+        n, ns = str(md.get("name", "")), md.get("namespace")
+        self.rule_s1_whitelist(rel, proj_name, lab, g, k, n)
+        if k == "NetworkPolicy":
+            self.check_np(rel, ns, n, d.get("spec") or {})
+        if k == "Namespace" and n == "lab-pg":
+            self.rule_s3_lab_pg_labels(rel, md.get("labels") or {})
+
+    def rule_s1_whitelist(self, rel, proj_name, lab, g, k, n):
+        """S1 : objet cluster-scoped (kind ET nom) ou namespacé admis par les whitelists/blacklists du projet."""
+        if k in CLUSTER_KINDS:
+            cw, cb = lab.get("clusterResourceWhitelist") or [], lab.get("clusterResourceBlacklist") or []
+            if not match(cw, g, k, n) or match(cb, g, k, n):
+                self.err(rel, f"S1 {k}/{n} cluster-scoped absent de clusterResourceWhitelist ({proj_name})")
+            return
+        nw, nb = lab.get("namespaceResourceWhitelist") or [], lab.get("namespaceResourceBlacklist") or []
+        if not nw or not match(nw, g, k) or match(nb, g, k):
+            self.err(rel, f"S1 {k}/{n} namespacé non autorisé par l'AppProject {proj_name}")
+
+    def rule_s3_lab_pg_labels(self, rel, labels):
+        """S3 : Namespace lab-pg avec ses labels PSA restricted / part-of / egress-isolated."""
+        for lk, lv in LAB_PG_LABELS.items():
+            if labels.get(lk) != lv:
+                self.err(rel, f"S3 Namespace lab-pg : label {lk}={lv} exigé (trouvé {labels.get(lk)!r})")
+        for lk in ("pod-security.kubernetes.io/warn", "pod-security.kubernetes.io/audit"):
+            if labels.get(lk) not in (None, "restricted"):
+                self.err(rel, f"S3 Namespace lab-pg : {lk} doit rester restricted")
 
     def check_np(self, rel, ns, name, spec):
         if (ns, name) not in ALLOWED_NP:
