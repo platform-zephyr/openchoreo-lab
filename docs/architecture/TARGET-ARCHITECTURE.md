@@ -114,7 +114,7 @@ Marqueurs : **[M]** mesuré (preuve datée), **[P]** publié (chart, documentati
 | Socle #1620 : Cilium chaining, CCNP `deny-imds` et `allow-egress-unisolated`, VAP baseline ×3, VAP anti-LoadBalancer | kube-ops `k8s/clusters/oracle-a1` | isolation réseau ; C1 corrigé par #1629 (label `platform.smadja.dev/egress-isolated`) | #1620 non mergée : la baseline vit hors Git |
 | StorageClass `oci-bv` (défaut OKE), quotas OCI | OKE / homelab-infra | `capabilities.yaml` | 50 Go minimum facturés par volume |
 | CRD cluster-scoped : Gateway API, cert-manager, ESO, `argoproj.io` (`crds.keep`) | premier installeur | versions compatibles | une désinstallation peut supprimer des CRD (bloquant n° 2 de la revue) |
-| `ClusterSecretStore doppler-cluster`, jeton Doppler | kube-ops | secrets de bootstrap | un jeton lit tout `cluster/prd` (ADR OKE §2) |
+| `ClusterSecretStore doppler-cluster`, jeton Doppler | kube-ops | secrets de bootstrap | portée du jeton à réduire (ADR OKE §2) |
 | Blueprints Authentik (clients OpenChoreo) | kube-ops (production protégée) | `docs/IDENTITY.md` §5 | changement d'IdP = PR kube-ops |
 | cloudflared, netbird-router | kube-ops `oracle-a1` | exposition, chemin des agents Talos | — |
 | Argo CD `oracle-a1` de kube-ops (`argocd`) et `lab-argocd` | les deux dépôts | — | deux Argo sur un nœud : 4 pods, 480 Mi en double (D4) |

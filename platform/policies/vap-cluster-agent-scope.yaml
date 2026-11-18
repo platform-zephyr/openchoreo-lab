@@ -10,10 +10,10 @@
 #   R3 un Namespace dp-* écrit par le cluster-agent garde PSA enforce restricted (ou baseline, exception
 #      appgen `podSecurity: baseline` par cellule), enforce-version latest et le label
 #      platform.smadja.dev/cell=restricted ; jamais de baisse restricted -> baseline (revue I6).
-# Couverture (revue B1, 2026-11-17) : CONNECT et sous-ressources (`*/*`). Le RBAC du chart DP 1.3.3 donne
-# pods/exec à l'agent sur tout le cluster : sans CONNECT, `kubectl exec --as=<agent> -n kube-system …`
-# échappait à la VAP. pods/exec, attach, portforward et proxy ne sont plus permis que dans dp-* ;
-# nodes/proxy (cluster-scoped) est refusé. Preuves : tools/oke/verify.sh --step 7 (B7-exec, B7-psa-lock).
+# Couverture (revue B1, 2026-11-17) : CONNECT et sous-ressources (`*/*`), en défense en profondeur du
+# RBAC (moindre privilège du cluster-agent). Refus de pods/exec hors dp-* : exec, attach, portforward et
+# proxy ne sont permis que dans dp-* ; nodes/proxy (cluster-scoped) est refusé.
+# Preuves : tools/oke/verify.sh --step 7 (B7-exec, B7-psa-lock).
 #   R4 (2026-11-17, flux RBAC) un RoleBinding écrit par l'agent référence ClusterRole/lab-cluster-agent-cell
 #      et a pour UNIQUE sujet le SA de l'agent (amorce de cellule, platform/cluster-agent/cell-rolebinding-cpt.yaml) ;
 #   R5 jamais de roles, clusterroles, clusterrolebindings, admissionregistration.*, CCNP, serviceaccounts/token

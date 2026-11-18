@@ -42,7 +42,7 @@
 ## Vérifié, sans écart bloquant
 
 - **VAP-1 (B1, I6).**
-  - Couverture : `operations: [CREATE, UPDATE, DELETE, CONNECT]` et `resources: ["*", "*/*"]` (l.40-42). `pods/exec` hors `dp-*` est refusé par la règle R2 (l.95-100), `nodes/proxy` par R1. `oldObject != null` est gardé à la création (l.69). Les variables qui lisent `object` ne sont évaluées que pour CREATE/UPDATE ou pour `jobs` (CEL paresseux). La baisse `restricted` → `baseline` est refusée en UPDATE (l.115).
+  - Couverture : `operations: [CREATE, UPDATE, DELETE, CONNECT]` et `resources: ["*", "*/*"]` (l.40-42). Les sous-ressources d'accès aux pods (dont `pods/exec`) sont refusées hors `dp-*` par la règle R2 (l.95-100), les sous-ressources de nœud par R1. `oldObject != null` est gardé à la création (l.69). Les variables qui lisent `object` ne sont évaluées que pour CREATE/UPDATE ou pour `jobs` (CEL paresseux). La baisse `restricted` → `baseline` est refusée en UPDATE (l.115).
   - Fonctionnement légitime de l'agent : le chart DP n'a ni Role ni lease ; le CPT `cell-restricted` pose les 3 labels exigés (l.70-75) ; les CCT interdisent Role et RoleBinding, donc R4 et R5 ne bloquent rien d'attendu.
   - `verify.sh` v7 ajoute `B7-exec`, `B7-psa-ok` et `B7-psa-lock`.
 - **Désinstallation (I1).** Rendus vérifiés : les 23 CRD d'ESO et les 6 de cert-manager portent `resource-policy: keep`. `release_keeps_crds` refuse la désinstallation tant que la release ESO installée sur OKE (sans `keep`) n'a pas été mise à jour (`--step 4 --apply`). `kgateway-crds` n'est jamais désinstallé sans `--delete-crds`. Le chart ESO n'a pas de dossier `crds/`. `refuse_if_argo` est présent dans `undo_7`, `undo_9` et `undo_10`.
