@@ -60,6 +60,9 @@
 /platform/project-types/ @SmadjaPaul
 # Consignes lues par tous les agents suivants (anti-injection persistante)
 /.agents/ @SmadjaPaul
+# Cliquet de maintenabilité (ADR-0024, T-414) : un agent ne relâche pas un seuil seul (ligne de base = noyau)
+/tools/quality/ @SmadjaPaul
+/tests/quality/ @SmadjaPaul
 # Backlog : le dispatcher recalcule les classes à partir des chemins
 /tools/backlog/ @SmadjaPaul
 # Fenêtres de maintenance, mesure de la plateforme, registre free tier

@@ -1,7 +1,7 @@
 ---
 id: T-414
 title: "Cliquet de maintenabilité `tools/quality/check.py` + `baseline.json` (seuils durs sur le code neuf)"
-status: todo
+status: in-progress
 phase: P0
 adr: [0024]
 depends_on: [T-413]
@@ -23,12 +23,14 @@ Interdire toute dégradation : par fichier et par fonction, complexité, longueu
 tools/quality/, tests/quality/, .github/workflows/ci.yaml, .github/CODEOWNERS
 
 ## Critères de fin
-- [ ] test de dégradation : rendre une fonction plus complexe fait échouer le job (preuve datée)
-- [ ] test de non-régression : un refactor qui baisse une valeur passe sans toucher la ligne de base
-- [ ] `baseline.json` et `tools/quality/` ajoutés à CODEOWNERS (un agent ne relâche pas un seuil seul)
+- [x] test de dégradation : rendre une fonction plus complexe fait échouer le job (preuve datée) — 2026-11-18, local : `render_component` +1 branche donne `FAIL … complexité 47 > 46 (fonction gelée)` ; `tests/quality` (EndToEnd)
+- [x] test de non-régression : un refactor qui baisse une valeur passe sans toucher la ligne de base — `tests/quality` `test_refactor_passes_without_touching_baseline`, 2026-11-18 (11 tests OK)
+- [x] `baseline.json` et `tools/quality/` ajoutés à CODEOWNERS (un agent ne relâche pas un seuil seul) — `/tools/quality/` et `/tests/quality/`
 - [ ] temps du job < 3 min ; sortie `quality.v1.json` datée (cc_max, cc_p95, fichiers > 400 l, erreurs ruff et mypy, couverture)
 
 ## Notes
 Proposition QA-4 (backlog/proposals/quality.yaml), intégrée (intégration 5, 2026-11-18). Dépendances : ruff, radon, coverage épinglés. Pas de seuil absolu immédiat : 9 fonctions et 3 fichiers le violeraient (rapport §B3).
 
 Le cliquet gèle les 9 fonctions de complexité > 20 ; T-214 les abaisse puis abaisse la ligne de base dans sa PR. Mode dev (arbitrage 7) : la revue des code owners est suspendue jusqu'à FINAL0 ; la protection de CODEOWNERS ne joue qu'à partir de là, la CI (`ci-ok`) reste la seule garde d'ici là.
+
+Livré (2026-11-18, local, STATIC) : `tools/quality/check.py`, `baseline.json` (23 fonctions gelées, ruff/mypy par fichier), `tests/quality/`, jobs `quality` et `quality-coverage` dans `ci-ok`. Choix : la ligne de base ne gèle que ce qui dépasse déjà un seuil ; les autres fonctions sont bornées par les seuils durs (15 / 80 / 600), pas par leur valeur actuelle. Reste : temps du job < 3 min mesuré en CI (local : cliquet < 1 s, tests sous couverture ≈ 40 s) et artefact `quality.v1.json` publié par la CI : NOT_TESTED.
