@@ -6,8 +6,8 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 23 |
-| `todo` | 129 |
+| `in-progress` | 24 |
+| `todo` | 128 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 28 |
