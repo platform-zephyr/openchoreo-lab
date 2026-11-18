@@ -1,0 +1,426 @@
+# Propositions de tickets — domaine HARNESS (environnements de dev des agents, harness engineering).
+# Recherche : docs/research/AGENT-HARNESS.md. ADR proposé : "NEW-HARNESS" (ADR-0021 dans le rapport, §5).
+# Champs ajoutés au format FORMAT.md : `stage` (S0..S3, I1..I8) et `model` suggéré (haiku | sonnet | opus ; DeepSeek = seulement après HAR-20).
+# Faits web non vérifiés : marqués [NV] dans la recherche ; revérifier avant de démarrer HAR-13, HAR-20.
+# Noyau (consensus décision 1) : .claude/, .github/, tools/backlog/, docs/adr/ => classe REVUE au moins.
+
+- key: HAR-0
+  title: "Réglages de projet `.claude/settings.json` : permissions deny, mode dontAsk, sandbox, plafonds de sortie"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["T-061"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "agents-harness"
+  scope: ".claude/settings.json, tests/hooks/settings.test.sh"
+  intent: "Premier réglage versionné : deny de kubectl/helm/oc/occ vers un cluster, de Read des .env et clés, de `curl|sh` et du push forcé ; sandbox activé avec allowUnsandboxedCommands=false ; bashOutputMaxChars ; aucun outil d'écriture cluster. Fichier du noyau : Paul approuve."
+  done:
+    - "`claude doctor` ne signale aucune entrée rejetée (preuve datée)"
+    - "test CI : le JSON est valide et ne contient aucune règle allow pour kubectl, helm, occ, curl, ssh"
+    - "cas négatif : un `kubectl get pods` lancé en session `-p --permission-mode dontAsk` est refusé (NOT_TESTED si la session cloud ne lit pas le fichier, à noter)"
+  notes: "La doc indique que ce fichier n'est lu qu'en session cloud à un seul dépôt, pas en thread de projet : la CI reste la garantie. Voir §2.1 du rapport."
+
+- key: HAR-1
+  title: "Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["HAR-0", "HAR-2"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "agents-harness"
+  scope: ".claude/hooks/, .claude/settings.json (section hooks), tests/hooks/"
+  intent: "PreToolUse Bash (refus des commandes cluster, curl|sh, --no-verify, push forcé), PreToolUse Edit|Write (refus hors périmètre du ticket, de generated/ et du noyau), PostToolUse (yamllint/appgen validate du fichier touché), Stop (`tools/dev/check --static`, exit 2 avec sortie en stderr), SessionStart (ticket, branche, dernier CI). Type `command` uniquement."
+  done:
+    - "tests/hooks/ : une entrée JSON par cas (autorisé et refusé) ; code de sortie attendu ; exécuté en CI"
+    - "le hook Stop bloque sur un yaml invalide et laisse finir sur un dépôt propre (preuve de session)"
+    - "aucun hook `prompt` ou `agent` pour une règle sans exception"
+    - "chaque hook s'exécute en moins de 5 s sur un dépôt propre (mesure datée)"
+  notes: "PostToolUse ne peut pas bloquer ; Stop est débloqué après 8 blocs consécutifs (CLAUDE_CODE_STOP_HOOK_BLOCK_CAP). Le périmètre vient de la section `Périmètre de fichiers` du ticket."
+
+- key: HAR-2
+  title: "Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: []
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "dev-factory"
+  scope: "tools/dev/check, tools/dev/toolchain.lock, tests/dev-factory/"
+  intent: "Une seule entrée pour la definition of done technique, sans Docker ni cluster pour --static (yamllint, appgen validate/check/unittest, kubeconform, gitleaks, shellcheck, tests unitaires). Un fichier toolchain.lock (versions + sha256) lu par le Dockerfile, ci.yaml et le script de l'environnement cloud."
+  done:
+    - "`tools/dev/check --static` passe sur main, en moins de 3 min, sans Docker (temps daté)"
+    - "test de concordance : toolchain.lock = Dockerfile = ci.yaml (cas négatif : une version modifiée fait échouer)"
+    - "le conteneur de dev, le job CI et la VM cloud appellent la même commande"
+  notes: "Remplace la dépendance de `dev test` à Colima/Mac. La VM cloud est x86_64, la CI arm64 : --static doit être indépendant de l'architecture."
+
+- key: HAR-3
+  title: "Durcir `claude-agent.yml` : outils étroits, dontAsk, budget, sortie JSON, aucun journal public"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["T-215", "T-145"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "ci"
+  scope: ".github/workflows/claude-agent.yml"
+  intent: "Remplacer Bash(python3:*) et Bash(git:*) par des motifs étroits (python3 tools/appgen/*, python3 -m unittest*, git diff|status|add|commit|checkout|push origin claude/*) ; --permission-mode dontAsk ; --max-budget-usd en plus de --max-turns ; --output-format json et résumé (coût, tours, résultat) dans le résumé du job sans transcription ; actions épinglées par SHA conservées."
+  done:
+    - "actionlint vert ; le workflow ne contient plus `python3:*` ni `git:*`"
+    - "essai réel : un agent traite une issue triviale et ouvre la PR avec le jeu d'outils réduit (run daté)"
+    - "le résumé du job affiche total_cost_usd et num_turns, aucune sortie d'outil"
+    - "une commande hors liste (ex. curl) est refusée dans le run, visible dans permission_denials"
+  notes: "Fichier du noyau (.github/). La doc de l'action déconseille Write et Bash(git:*) larges avec des entrées de tiers. Contrôler la version de l'option --max-budget-usd sur la version épinglée de l'action."
+
+- key: HAR-4
+  title: "Environnement Claude Code cloud « openchoreo-lab-agent » : script d'installation, réseau, secrets réseau"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["HAR-2"]
+  class: AUTONOME + MANDAT
+  velocity: true
+  parallel_lane: "agents-harness"
+  scope: "docs/AGENT-ENVIRONMENTS.md, tools/dev/cloud-setup.sh"
+  intent: "Documenter et écrire le script d'installation de l'environnement (outils depuis toolchain.lock en moins de 5 min pour être mis en cache, aucun secret), la liste d'hôtes autorisés minimale (GitHub, registres, docs Anthropic), les variables BASH_DEFAULT_TIMEOUT_MS et BASH_MAX_TIMEOUT_MS. Paul crée l'environnement dans l'interface ; aucun secret dans les variables (lisibles par tout utilisateur)."
+  done:
+    - "script idempotent, shellcheck vert, durée mesurée < 5 min (daté)"
+    - "session cloud de preuve : `tools/dev/check --static` passe, `check-tools` joint à la PR"
+    - "la PR décrit le geste exact de Paul (nom de l'environnement, hôtes), sans valeur"
+    - "limite écrite : la VM est x86_64, la preuve arm64 reste en CI"
+  notes: "Le script ne tourne pas à la reprise d'une VM inactive ; les processus lancés ne survivent pas à l'expiration."
+
+- key: HAR-5
+  title: "Dispatcher : détection du chevauchement de périmètres entre tickets en cours"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["T-210"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  scope: "tools/backlog/next.py, tests/backlog/"
+  intent: "Étendre `next.py` : un ticket prêt n'est proposé que si les globs de sa section `Périmètre de fichiers` ne recoupent ni ceux d'un ticket `in-progress` ni les `exclusive_resources` ; la section est exigée structurée (liste de globs)."
+  done:
+    - "test : deux tickets aux périmètres recoupés ne sont jamais proposés ensemble"
+    - "test : périmètres disjoints dans un même couloir sont proposés ensemble"
+    - "T-008 refuse un ticket sans globs exploitables"
+  notes: "Complète T-210 (couloirs) : le couloir est une heuristique, le glob est la preuve. Le hook HAR-1 applique ce même périmètre pendant l'exécution."
+
+- key: HAR-6
+  title: "Garde de fuite du dépôt public : gitleaks sur le diff et motifs d'information interne"
+  phase: P0
+  stage: S0
+  model: haiku
+  adr: ["NEW-HARNESS"]
+  depends_on: ["HAR-2"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "securite"
+  scope: "tools/dev/leak-guard.sh, tests/leak-guard/, .github/workflows/ci.yaml"
+  intent: "En plus de gitleaks : refuser dans les diffs, descriptions de PR et sorties d'agent les motifs internes (adresses privées RFC 1918, OCID Oracle, noms d'hôtes privés, jetons). Utilisé par le hook Stop, le job CI et le résumé de job."
+  done:
+    - "cas négatifs : une IP privée, un OCID factice et un jeton factice font échouer la garde"
+    - "cas positif : les adresses d'exemple documentaires (plages réservées) passent"
+    - "branchée dans ci.yaml et dans HAR-1 (Stop)"
+  notes: "Le dépôt est public (STATE.md §1c). Ne jamais afficher la valeur trouvée, seulement le fichier et la ligne."
+
+- key: HAR-7
+  title: "Definition of done exécutable : `verify:` par critère et `done.py` avec preuve datée"
+  phase: P0
+  stage: S1
+  model: sonnet
+  adr: ["NEW-HARNESS", "0012"]
+  depends_on: ["T-008", "HAR-2"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "backlog-outils"
+  scope: "tools/backlog/done.py, tools/backlog/check.py, backlog/README.md, backlog/evidence/"
+  intent: "Chaque critère de fin porte une commande `verify:` (code 0 = PASS) ou la mention `manual`. `done.py T-NNN` exécute, écrit backlog/evidence/T-NNN.json (statuts PASS/FAIL/NOT_TESTED/BLOCKED, date, niveau de preuve). La CI refuse `status: done` sans preuve PASS ; un critère `manual` reste NOT_TESTED."
+  done:
+    - "3 tickets existants migrés vers `verify:` comme exemples"
+    - "cas négatif : `status: done` sans evidence fait échouer le check"
+    - "le hook Stop de HAR-1 lance `done.py --dry` quand un ticket est `in-progress`"
+  notes: "Inspiré de la liste de fonctionnalités JSON d'Anthropic (seul `passes` modifiable). Les critères MANDAT restent manuels."
+
+- key: HAR-8
+  title: "Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenChoreo)"
+  phase: P0
+  stage: S1
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["T-002", "HAR-2"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "tests-fixtures"
+  scope: "tests/fixtures/, tools/fixtures/"
+  intent: "Fixtures chacun avec up.sh, health.sh, README : serveur OIDC factice (découverte + jeton), ntfy réel, API Grafana/Loki rejouant des réponses enregistrées, CRD OpenChoreo sans contrôleurs. Générateur déterministe (graine fixe) d'apps, intentions, alertes et incidents, sans donnée personnelle. Choix des images par spike court ; versions et digests épinglés."
+  done:
+    - "chaque fixture démarre sur k3d jetable et répond à son health.sh (run daté)"
+    - "le générateur produit la même sortie deux fois de suite (hash identique)"
+    - "un test déclare sa dépendance de fixture dans le registre de suites (T-216)"
+    - "aucune valeur secrète : jetons factices générés au démarrage"
+  notes: "Vrai si léger, factice si lourd. Le plan de contrôle OpenChoreo réel n'est pas simulé : il relève de N2/OKE."
+
+- key: HAR-9
+  title: "Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi par chemins"
+  phase: P0
+  stage: S1
+  model: sonnet
+  adr: ["NEW-HARNESS", "0002"]
+  depends_on: ["T-002", "T-216", "HAR-2"]
+  class: AUTONOME + REVUE
+  velocity: true
+  parallel_lane: "ci"
+  scope: "tools/dev/cluster, tests/registry.yaml, .github/workflows/k3d-integration.yml"
+  intent: "`cluster up|down --name pr-<n>` partagé par la CI (runner arm64) et la VM cloud (Docker x86_64) pour itérer ; cache des images ; nettoyage garanti (trap + job de balayage) ; le registre de suites décide quelles suites k3d lancer selon les chemins modifiés ; budget de temps et de RAM mesuré."
+  done:
+    - "une PR `platform/` lance les suites k3d ; une PR `docs/` ne lance rien (deux runs datés)"
+    - "temps de bout en bout ≤ 15 min et RAM maximale mesurée, consignées"
+    - "aucun cluster ni conteneur résiduel après job échoué (cas négatif : arrêt forcé)"
+  notes: "La modification de .github/ exige l'approbation de Paul (REVUE). La preuve de référence des images reste le runner arm64."
+
+- key: HAR-10
+  title: "Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d'échec, skill `resume-ticket`"
+  phase: P0
+  stage: S1
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["T-210", "HAR-7"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "agents-harness"
+  scope: "docs/AGENT-RUN-PROTOCOL.md, .agents/skills/resume-ticket/, tools/dev/session-start"
+  intent: "Fixer : PR brouillon dès le premier jalon comme journal (champs STE80), push WIP à chaque jalon, `max_attempts: 2`, classes d'échec (CI rouge, hors périmètre, outil indisponible, ambiguïté), passage à `blocked` avec `Bloqué par :`. `session-start` imprime ticket, branche, dernier CI, git log, critères restants ; le skill reprend une tentative interrompue (VM expirée, quota, SIGTERM)."
+  done:
+    - "essai : une session interrompue en cours de ticket est reprise par un autre agent sans intervention humaine (preuve datée)"
+    - "une 2e tentative échouée produit `blocked` et un commentaire de PR au format STE80"
+    - "le protocole tient en 60 lignes ou moins"
+  notes: "Les processus en arrière-plan ne survivent pas à l'expiration d'une VM cloud ; seuls l'historique et la branche poussée comptent."
+
+- key: HAR-11
+  title: "Sous-agents de projet : `reviewer` (lecture seule) et `ci-triager`"
+  phase: P0
+  stage: S1
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["HAR-0", "HAR-7"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "agents-harness"
+  scope: ".claude/agents/, tests/hooks/agents.test.sh"
+  intent: "`reviewer` : outils Read/Grep/Glob/Bash lecture seule, contexte neuf, compare le diff aux critères du ticket et aux garde-fous (platform-guardrails) avant l'ouverture de la PR (évaluateur-optimiseur). `ci-triager` (haiku) : lit les journaux d'un job rouge et rend une cause. Pas d'imbrication (Agent absent de leurs outils), maxTurns borné, définis en projet (un sous-agent de plugin ignore hooks et permissionMode)."
+  done:
+    - "test statique : frontmatter valide, `tools` sans Write/Edit pour reviewer, Agent exclu"
+    - "essai daté : le reviewer détecte une PR volontairement hors périmètre (cas négatif)"
+    - "le coût d'une revue (tokens, durée) est mesuré et inférieur à 20 % de celui du ticket"
+  notes: "Répertoire noyau (.claude/). Les sous-agents sont un accélérateur de retour, pas une frontière de sécurité."
+
+- key: HAR-12
+  title: "Spike (3 jours) : cluster dev homelab pour agents (vcluster, VM dédiée ou namespaces)"
+  phase: P1
+  stage: S2
+  model: opus
+  adr: ["NEW-HARNESS", "0003"]
+  depends_on: ["T-030", "T-062"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "hybride"
+  scope: "docs/research/DEV-CLUSTER-SPIKE.md, tests/dev-cluster/"
+  intent: "Comparer sur le homelab x86_64 : (a) vcluster en nœuds partagés par PR, (b) VM Talos dédiée au dev, (c) namespaces `lab-dev-*` seuls. Mesurer démarrage, RAM au repos, nettoyage, isolation entre agents, compatibilité avec le PSA restricted et le default-deny. Recommandation et seuils (≤ 2 previews, TTL 24 h). MANDAT : l'éventuelle VM ou le déploiement relève de Paul."
+  done:
+    - "tableau de mesures daté par option (démarrage, RAM au repos, RAM sous charge, destruction propre) ; NOT_MEASURED explicite sinon"
+    - "preuve d'isolation : un agent d'un vcluster ne voit pas les objets d'un autre (essai)"
+    - "recommandation unique avec le geste exact demandé à Paul, sans valeur"
+    - "limite écrite : x86_64, donc aucune preuve d'image arm64"
+  notes: "Périmètre cluster : namespaces openchoreo-* et lab-* seulement ; lecture seule ailleurs (AGENTS.md). Aucune mesure du surcoût de vcluster n'est publiée par le projet [NV]."
+
+- key: HAR-13
+  title: "Runners ARC sur le homelab : scale set éphémère sans privilège, limité à `main`"
+  phase: P1
+  stage: S2
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["HAR-12", "T-030"]
+  class: REVUE + MANDAT
+  velocity: false
+  parallel_lane: "hybride"
+  scope: "docs/AGENT-RUNNERS.md, platform/ (si le scale set vit ici), PR cross-dépôt vers homelab-infra / kube-ops"
+  intent: "Scale set ARC dédié (pas celui d'OpenTofu), zéro à N pods éphémères, aucun mode privilégié ni dind, aucun secret, NetworkPolicy default-deny avec sorties vers GitHub et le cluster dev seulement, groupe de runners accessible aux workflows de `main` et à workflow_dispatch, jamais aux PR de fork. Sert N2 (pilotage du cluster dev, banc nocturne). Relire les modes ARC et le prix des runners auto-hébergés avant décision [NV]."
+  done:
+    - "essai : une PR de fork ne peut pas planifier de job sur ce groupe (preuve datée)"
+    - "pod runner : securityContext restricted, aucun volume hôte, aucun Secret monté"
+    - "décision de coût écrite (frais de plateforme GitHub vérifiés à la source) ou BLOCKED"
+    - "le propriétaire du déploiement (kube-ops ou homelab-infra) est nommé ; aucune écriture hors périmètre"
+  notes: "Frontière de dépôt : homelab-infra possède l'ARC d'OpenTofu ; ne pas mélanger. MANDAT : la création de l'objet côté homelab est un geste de Paul."
+
+- key: HAR-14
+  title: "Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR d'agents"
+  phase: P1
+  stage: S2
+  model: opus
+  adr: ["NEW-HARNESS", "0001"]
+  depends_on: ["T-214", "T-062"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "socle-oke"
+  scope: "platform/install/argocd/, .github/workflows/ (régénération), tests/argo-guard/"
+  intent: "Une app = un répertoire `apps/<nom>/` sans éditer un fichier partagé : ApplicationSet à générateur Git (sous garde argo_guard). Activer la file de fusion sur main ; workflow de régénération de `generated/` après rebase pour qu'un conflit de génération ne bloque pas un agent."
+  done:
+    - "deux PR d'apps différentes, ouvertes en parallèle, fusionnent sans conflit (essai daté)"
+    - "argo_guard et ses cas négatifs restent verts (une Application hors périmètre reste refusée)"
+    - "un conflit sur `generated/` est résolu par régénération sans intervention (essai)"
+  notes: "Zone noyau (platform/install/argocd/, .github/) : Paul approuve. Cohérent avec la décision de consensus « un seul propriétaire par app et environnement »."
+
+- key: HAR-15
+  title: "Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité"
+  phase: P1
+  stage: S2
+  model: sonnet
+  adr: ["NEW-HARNESS", "0018"]
+  depends_on: ["HAR-0", "HAR-2"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "dev-factory"
+  scope: ".devcontainer/, tools/dev/dev, docs/DEV-FACTORY.md"
+  intent: "Lancer le processus de l'agent (et non seulement ses commandes) dans le conteneur : sandbox activé, filtre de sortie réseau par liste d'hôtes, aucun montage d'identifiants, pas de socket Docker, `--network none` pour les tests statiques. Exécuteur local (Mac puis N100) : même image. Construire l'image enfin et mesurer (`NON EXÉCUTÉ` dans DEV-FACTORY)."
+  done:
+    - "image construite et `tools/dev/check --static` passe dans le conteneur (temps et RAM par workspace datés)"
+    - "guard-check.sh PASS dans le conteneur ; cas négatif : une variable KUBECONFIG injectée le fait échouer"
+    - "deux workspaces parallèles tournent sans conflit de cache (essai)"
+  notes: "Dans un conteneur non privilégié bubblewrap peut échouer ; enableWeakerNestedSandbox seulement si le conteneur isole déjà. Voir T-168 pour le bac d'exécution du code lancé par les agents."
+
+- key: HAR-16
+  title: "Banc d'essai des tâches de développement (20-30 tâches, graders par code) et runner de banc"
+  phase: P1
+  stage: S3
+  model: sonnet
+  adr: ["NEW-HARNESS"]
+  depends_on: ["HAR-2", "HAR-7", "HAR-8", "HAR-9", "T-145"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "banc"
+  scope: "tests/bench/, tools/bench/"
+  intent: "Tâches tirées de vrais tickets et incidents : correctif appgen, nouveau check CI, doc de contrat, diagnostic d'incident (cas k3d jouables), changement platform/, plus des cas où l'agent ne doit pas agir (noyau, secret, hors périmètre). Chaque tâche : état initial, solution de référence, grader par code. `tools/bench/run.py` lance `claude -p --output-format json` avec plafonds de tours et de budget, dans un worktree et un conteneur neufs par essai, k essais."
+  done:
+    - "≥ 20 tâches, chacune avec solution de référence qui passe son grader (preuve datée)"
+    - "rapport JSON par type de ticket, étape et modèle : pass@1, pass^3, coût, tours, durée"
+    - "aucune tâche à 0 % sur 3 essais sans analyse de la transcription (tâche cassée ou agent faible)"
+    - "au moins 3 tâches « ne pas agir » ; une exécution les valide"
+    - "les essais ne partagent aucun état (cas négatif : un fichier laissé par l'essai n'est pas visible au suivant)"
+  notes: "Complète T-044 et T-077 (intentions utilisateur) : ici les tâches de développement. Mesures de coût = estimation client. L'équipe lit les transcriptions localement ; elles ne sont jamais publiées (dépôt public)."
+
+- key: HAR-17
+  title: "Skills du harness : `fix-ci`, `new-fixture`, `run-bench`"
+  phase: P1
+  stage: S3
+  model: haiku
+  adr: ["NEW-HARNESS"]
+  depends_on: ["HAR-8", "HAR-11", "HAR-16"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "agents-harness"
+  scope: ".agents/skills/fix-ci/, .agents/skills/new-fixture/, .agents/skills/run-bench/"
+  intent: "`fix-ci` : lire le journal par morceaux via ci-triager, corriger sur la même branche, jamais de contournement de garde ; `new-fixture` : gabarit up/health/README ; `run-bench` : lancer un sous-ensemble et lire le rapport. Descriptions courtes (budget de contexte T-041)."
+  done:
+    - "chaque skill ≤ 80 lignes, description ≤ 300 caractères (check T-041)"
+    - "essai daté de chaque skill par un agent sans contexte préalable"
+  notes: ".agents/ est libre (consensus décision 1 : seul `.agents/` consignes d'identité est noyau — vérifier le classement au moment de la PR)."
+
+- key: HAR-18
+  title: "Previews par PR sur le cluster dev homelab (TTL, frugalité, preuve publiée)"
+  phase: P1
+  stage: I1
+  model: sonnet
+  adr: ["NEW-HARNESS", "0004"]
+  depends_on: ["HAR-12", "HAR-13", "T-004", "T-005"]
+  class: AUTONOME + REVUE
+  velocity: true
+  parallel_lane: "hybride"
+  scope: "platform/ (ApplicationSet previews), tools/appgen/ (label preview), tests/dev-cluster/"
+  intent: "Une PR d'app peut demander une preview : instance isolée sur N2 (selon la décision de HAR-12), au plus 2 simultanées, TTL 24 h, suppression à la fermeture de la PR, preuve runtime publiée comme statut de commit (app-status.v1). Les agents lisent la preuve, jamais le cluster."
+  done:
+    - "preview créée à l'ouverture, détruite à la fermeture et à l'expiration (essais datés)"
+    - "la troisième preview simultanée est refusée (cas négatif)"
+    - "le statut de commit cite le niveau RUNTIME (homelab) et l'architecture x86_64"
+  notes: "Ne remplace pas la preuve OKE de T-005. Aucune app B ou C en preview (règle de frugalité ADR-0004)."
+
+- key: HAR-19
+  title: "Canari du harness : banc réduit nocturne sur main et montées épinglées de Claude Code et de l'action"
+  phase: P3
+  stage: I5
+  model: sonnet
+  adr: ["NEW-HARNESS", "0016"]
+  depends_on: ["HAR-16", "HAR-13", "T-120"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "renovate"
+  scope: ".github/workflows/harness-canary.yml, .github/renovate.json, tests/bench/canary.yaml"
+  intent: "Banc de 8 à 10 tâches chaque nuit sur main (runner homelab ou hébergé) ; alerte si pass^3 baisse de plus de 15 points. Versions de l'action claude-code-action (SHA), de la CLI Claude Code et du harness épinglées ; Renovate ouvre la montée, la PR n'est fusionnable que si le banc réduit est vert."
+  done:
+    - "baisse simulée (hook cassé volontairement) déclenche l'alerte (essai daté)"
+    - "une PR de montée de l'action est bloquée tant que le banc réduit n'a pas tourné"
+    - "coût nocturne mesuré et sous le plafond fixé par T-145"
+  notes: "Les agents de l'abonnement partagent des quotas : planifier la nuit, hors fenêtre de travail."
+
+- key: HAR-20
+  title: "Voie DeepSeek : spike de compatibilité et critère d'admission par le banc"
+  phase: P4
+  stage: I7
+  model: sonnet
+  adr: ["NEW-HARNESS", "0018"]
+  depends_on: ["HAR-16", "T-145", "T-164"]
+  class: REVUE + MANDAT
+  velocity: false
+  parallel_lane: "agents"
+  scope: "docs/research/DEEPSEEK-LANE.md, tools/bench/, .github/workflows/ (voie dédiée)"
+  intent: "Mesurer sur le banc une session pilotée par DeepSeek via un point d'accès compatible Anthropic (outils, MCP, taille de contexte, erreurs). Anthropic ne supporte pas le routage de Claude Code vers un modèle non-Claude : voie non supportée, donc admise seulement si pass^3 ≥ 0,8 sur les types N0 retenus, hors noyau, sans secret du dépôt, clé en secret du dépôt. Relire la documentation DeepSeek (hôte bloqué ici) [NV]."
+  done:
+    - "rapport de compatibilité daté : fonctionnalités testées / non testées"
+    - "pass@1 et pass^3 par type de ticket, comparés à sonnet et haiku"
+    - "règle écrite : types de tickets admis, noyau et MANDAT exclus, plafond de dépense"
+    - "cas négatif : une PR du noyau lancée par cette voie reste non fusionnable"
+  notes: "La clé est un secret : GitHub secret ou secret réseau, jamais dans le dépôt. Les sessions cloud (`--cloud`) ne sont pas disponibles avec un fournisseur tiers : voie runner seulement."
+
+- key: HAR-21
+  title: "Scorecard hebdomadaire des agents : réussite par type de ticket, modèle, coût, reverts"
+  phase: P4
+  stage: I8
+  model: sonnet
+  adr: ["NEW-HARNESS", "0019"]
+  depends_on: ["T-201", "HAR-16"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "données"
+  scope: "tools/metrics/ (noyau : REVUE si modifié), docs/metrics/agents-scorecard.md"
+  intent: "Calculer à partir des PR (T-201) et des sorties JSON : PR fusionnée sans retouche humaine, CI rouge avant vert, revert, tours et coût par ticket, délai ; ventilé par type, étape, modèle ; comparé au banc (HAR-16) pour détecter l'écart entre banc et réel."
+  done:
+    - "tableau hebdomadaire généré sans valeur secrète (exemple daté)"
+    - "écart banc/réel affiché par type de ticket"
+  notes: "`tools/metrics/` est dans le noyau (consensus) : une PR qui le modifie attend Paul."
+
+- key: HAR-22
+  title: "Boucle d'amélioration du harness : journal d'échecs, règle « deux fois = hook ou test », revue mensuelle"
+  phase: P1
+  stage: S3
+  model: haiku
+  adr: ["NEW-HARNESS", "0012"]
+  depends_on: ["HAR-10", "HAR-16"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "agents-harness"
+  scope: "docs/harness/FAILURES.md, tools/bench/triage.py"
+  intent: "Chaque échec d'agent (PR rejetée, CI rouge répétée, blocage) reçoit une ligne : cause classée (contexte, outil, hook manquant, test faible, tâche mal posée), correctif au bon étage (hook > test > skill > AGENTS.md) et tâche de banc ajoutée. Une faute vue deux fois crée un ticket HAR. Revue mensuelle par Paul (30 minutes, une page)."
+  done:
+    - "journal initial avec 5 échecs réels du dépôt (revues de PR #8 et #36, incidents de STATE.md)"
+    - "script : liste les fautes répétées et propose le ticket"
+    - "une tâche de banc créée à partir d'un échec du journal"
+  notes: "Aucune transcription brute dans le dépôt public : une synthèse sans secret seulement."
