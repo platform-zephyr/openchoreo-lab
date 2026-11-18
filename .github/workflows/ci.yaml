@@ -488,10 +488,25 @@ jobs:
       - name: Taille, liens et fraicheur du contexte (tools/dev/check)
         run: tools/dev/check --static --only context-check --strict
 
+  contract-guard:
+    # Garde du contrat (T-070, ADR-0001, ADR-0005 §3) : schéma app.schema.json compatible avec origin/main (sinon nouvelle
+    # apiVersion) et aucun objet Kubernetes hors des dossiers autorisés. Stdlib seule ; historique complet pour la base.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Schema compatible et aucun manifeste hors apps/generated (tools/dev/check)
+        run: tools/dev/check --static --only contract-guard --strict
+
   ci-ok:
     # Check requis par la protection de branche : echoue si un job amont n'est pas en success.
     if: always()
-    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, platform-render, release-history, dev-factory, backlog, lint-code, quality, quality-coverage, agent-trailers, hooks, context-check]
+    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, platform-render, release-history, dev-factory, backlog, lint-code, quality, quality-coverage, agent-trailers, hooks, context-check, contract-guard]
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Agregation
