@@ -30,6 +30,7 @@ Charger `platform-guardrails`. Parcours de référence : `golden-paths/DEPLOY-AN
    ```bash
    git switch -c fix/<app>-<cause-courte> origin/main
    python3 tools/appgen/appgen.py validate && python3 tools/appgen/appgen.py render && python3 tools/appgen/appgen.py check
+   tools/dev/check --static --changed   # local d'abord : FAIL = corriger avant le push ; verdict, niveau et reçu dans la fiche ; NOT_TESTED = INCOMPLET
    git add apps/<app> generated pins && git commit -m "<app>: corrige <cause>"
    git push -u origin HEAD && gh pr create --title "<app>: corrige <cause>" --body-file /tmp/fix-<app>.md
    gh pr checks --watch --fail-fast

@@ -24,6 +24,7 @@ Prérequis : charger `platform-guardrails`. Référence : `golden-paths/README.m
    git status --short    # seulement apps/<nom>/ et generated/
    ```
 
+4b. **Local d'abord** : `tools/dev/check --static --changed` avant tout push ; FAIL = corriger, pas de push. Reporter verdict, niveau et reçu (SHA, date) dans le corps de la PR ; `NOT_TESTED` = `INCOMPLET`, pas « PASS ».
 5. **PR** (corps : format §4.3 de DEPLOY-AND-FIX-FLOW) :
 
    ```bash
