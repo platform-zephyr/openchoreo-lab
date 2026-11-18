@@ -1,7 +1,7 @@
 ---
 id: T-479
 title: "Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et par ticket)"
-status: in-progress
+status: done
 phase: P0
 adr: [0021]
 depends_on: []
