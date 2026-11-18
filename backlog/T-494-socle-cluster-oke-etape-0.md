@@ -47,9 +47,13 @@ platform/baseline/, platform/install/values/cilium.yaml, platform/install/versio
 - [x] `helm template` du chart Cilium 1.20.4 avec `platform/install/values/cilium.yaml` : `cni-chaining-mode: generic-veth`, `cni-chaining-target: oci`, `cni-exclusive: "false"`, images par digest (STATIC, 2026-11-18)
 - [x] `tools/dev/check --static --changed` : INCOMPLET (22 PASS, 0 FAIL, 2 NOT_TESTED : `guard-check` hors conteneur de dev, `identities` absent du dépôt), niveau `static-changed`, reçu sha 95df3dd non dirty, 2026-11-18T22:21:13Z ; à reporter dans la PR
 - [ ] RUNTIME OKE (session locale) : `tools/oke/install.sh --step 0` (dry-run) puis `--step 0 --apply` sur le cluster vierge, durée mesurée
-- [ ] RUNTIME OKE (session locale) : `tools/oke/verify.sh --step 0` sans FAIL (B0-cilium, B0-cilium-chaining, B0-vap*/B0-vapb*, B0-ccnp*, B0-c1, B0-git, B0-vap-deny, B0-cep), journal daté
-- [ ] RUNTIME OKE (session locale) : `tools/oke/preflight.sh` GO, preuve datée sous `backlog/evidence/`
+  - Non coché : `--apply` prouvé (45 s, 22:35:23Z-22:36:08Z ; `T-487-2026-11-18T2237Z-etape0.md`), mais le dry-run préalable n'apparaît pas dans les preuves.
+- [x] RUNTIME OKE (session locale) : `tools/oke/verify.sh --step 0` sans FAIL (B0-cilium, B0-cilium-chaining, B0-vap*/B0-vapb*, B0-ccnp*, B0-c1, B0-git, B0-vap-deny, B0-cep), journal daté
+  - Preuve : `T-487-2026-11-18T2237Z-etape0.md` (`verify.sh --step 0`, 22:36:34Z-22:37:00Z, FAIL=0, BLOCKED=0).
+- [x] RUNTIME OKE (session locale) : `tools/oke/preflight.sh` GO, preuve datée sous `backlog/evidence/`
+  - Preuve : `T-487-2026-11-18T2237Z-etape0.md` (GO à 22:37Z).
 - [ ] RUNTIME OKE (session locale) : après l'étape 11, synchro manuelle de `lab-platform` : les 8 objets du socle Synced, `verify.sh --step 0` toujours sans FAIL (B0-git)
+  - Non coché : aucune synchro manuelle de `lab-platform` prouvée ; B11-lab-platform-manual (`T-487-etape11.md`, 23:18:19Z) confirme seulement l'adoption différée.
 
 ## Notes
 - Exécution : la session locale (Mac), seul exécutant sur OKE. Ordre : `install.sh --step 0 --apply` →
