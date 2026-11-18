@@ -462,6 +462,8 @@ factory_tests() {
     echo "-- $t"
     if ! bash "$t" >"$out" 2>&1; then
       rc=1
+      # Les lignes FAIL d'abord (le tail seul les perdait quand un test affiche beaucoup de PASS apres), puis la fin.
+      grep -E '^FAIL|FAIL \(' "$out" | head -n 20
       tail -n 15 "$out"
     fi
     grep -q '^NOT_TESTED' "$out" && { nt=1; grep '^NOT_TESTED' "$out"; }

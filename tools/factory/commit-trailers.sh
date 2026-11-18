@@ -45,6 +45,8 @@ cmd_install() {
   fi
   mkdir -p "$dir"
   chmod u+w "$dir"
+  # Reinstallation : les fichiers precedents sont en lecture seule (0444/0555) ; hors root, il faut les retirer d'abord.
+  rm -f "$dir/trailers.values" "$dir/prepare-commit-msg" "$dir/commit-msg"
   {
     echo "TICKET_ID=${TICKET_ID}"
     echo "MODEL=${MODEL}"
