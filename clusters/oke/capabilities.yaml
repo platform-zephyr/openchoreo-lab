@@ -12,14 +12,17 @@ spec:
   # Cilium en chaînage OCI VCN-native, posé par tools/oke/install.sh --step 0 (T-494), contrôlé par verify.sh --step 0.
   cilium: true
   privateEgressCIDRs: []
-  # lab-pg n'est PAS admis sur OKE : CNPG demande un PVC et l'overlay impose oci-bv (>= 50 Go) = le dernier quota,
-  # conserve comme marge de remplacement du worker (aucun nouveau volume autorise). Voir docs/storage/.
-  databaseInstances: {}
+  # lab-pg est admis sur OKE depuis la suppression des 2 volumes orphelins du drill (preuve datée 2026-11-18T22:31Z,
+  # MANDAT 24) : CNPG demande un PVC oci-bv (>= 50 Go). Capacité de bloc : boot 50 Go + lab-pg 50 Go = 100 Go sur 200 Go,
+  # la marge de remplacement du worker (50 Go) reste libre. Sans sauvegarde : OKE est jetable (D-2026-11-18-01).
+  databaseInstances:
+    lab-pg: {resourceType: cnpg-lab-db, namespace: lab-pg, cluster: lab-pg, backup: none}
     # pg-shared n'est PAS admis : aucune restauration hors Oracle prouvee (D-2026-11-14-03).
     # Pour l'admettre (PR plateforme) : pg-shared: {resourceType: cnpg-shared-db, namespace: <ns>, cluster: pg-shared, backup: cnpg}
   identityProviders: [thunderid]
-  # Aucun volume persistant admis sur OKE tant que Paul n'autorise pas le dernier Block Volume de 50 Go
-  # (150/200 Go alloues : boot + 2 volumes de drill detaches). Jamais Longhorn sur OKE ; pas de RWX.
-  storageClasses: {}
+  # Volumes persistants admis : StorageClass oci-bv (50 Go minimum par volume, facturation au minimum). Jamais Longhorn
+  # sur OKE ; pas de RWX. Tout volume au-delà de lab-pg reste une décision de Paul (quota de 200 Go, marge de 50 Go).
+  storageClasses:
+    block-rwo: oci-bv
   backupMechanisms: [none]
   secretStore: lab-store
