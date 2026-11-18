@@ -90,7 +90,7 @@ Règles transverses :
 ## 5. Supply chain
 - Ordre de preuve pour une nouvelle image : registre autorisé → digest → `linux/arm64` présent → signature cosign **si l'éditeur signe** (liste `signed-publishers`) → attestation de provenance (information) → Scorecard amont (information, jamais bloquant).
 - Kyverno `verifyImages` : Audit puis Enforce, uniquement pour les éditeurs listés (T-020) ; une image non signée n'est pas refusée par défaut, elle perd l'AUTO (ASSISTÉ).
-- Notre dépôt : Scorecard hebdomadaire, permissions de jeton minimales, actions épinglées par SHA, aucun `pull_request_target` (déjà dans l'esprit de `claude-agent.yml` à vérifier).
+- Notre dépôt : Scorecard hebdomadaire, permissions de jeton minimales, actions épinglées par SHA, aucun `pull_request_target` (vérifié : absent de `ci.yaml` et `claude-agent.yml`).
 - Les PR Renovate créées avec `GITHUB_TOKEN` ne déclenchent pas la CI [E] : exiger une GitHub App (identité à créer = MANDAT, UPG-2).
 
 ## 6. Veille fonctionnelle par agent
