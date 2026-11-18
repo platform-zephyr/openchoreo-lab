@@ -25,8 +25,8 @@ MANDAT = geste de Paul (accès, identité, dépense, VM) ; REVUE = approbation d
 
 | Étape | Gestes (MANDAT) | Approbations (REVUE) |
 |---|---|---|
-| S0 | [T-301](T-301-reecriture-de-l-historique-et-purge.md), [T-304](T-304-essai-reel-executant.md), [T-431](T-431-reglages-depot-actions-securite.md), [T-433](T-433-protection-tags.md), [T-434](T-434-gestes-organisation-paul.md) |  |
-| S1 | [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-456](T-456-corriger-t12-cle-eso-lab-pg-roles.md), [T-457](T-457-b09-known-fail-au-niveau-du-cas.md), [T-458](T-458-ancre-gitops-k3d-obsolete.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-436](T-436-labels-formulaires-issues.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
+| S0 | [T-301](T-301-reecriture-de-l-historique-et-purge.md), [T-431](T-431-reglages-depot-actions-securite.md), [T-433](T-433-protection-tags.md), [T-434](T-434-gestes-organisation-paul.md) |  |
+| S1 | [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-456](T-456-corriger-t12-cle-eso-lab-pg-roles.md), [T-457](T-457-b09-known-fail-au-niveau-du-cas.md), [T-458](T-458-ancre-gitops-k3d-obsolete.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-436](T-436-labels-formulaires-issues.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
 | S2 |  | [T-423](T-423-reduire-complexite-argo-guard.md), [T-062](T-062-lab-platform-auto.md), [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) |
 | S3 | [T-140](T-140-cost-1.md), [T-031](T-031-placement-coupure.md) | [T-070](T-070-garde-contrat.md), [T-439](T-439-essai-dependency-review.md), [T-368](T-368-garde-fous-de-capacite-du-homelab.md) |
 | PORTE | [T-211](T-211-porte-openchoreo.md) |  |
@@ -47,11 +47,10 @@ Gestes purement humains (aucun agent) : [T-301](T-301-reecriture-de-l-historique
 
 Pilote de **24 h à N=3** en dispatch manuel ([T-322](T-322-calibrage-du-quota-pilote-24-h.md)) : coût par ticket, % de quota 5 h et hebdomadaire, concurrence cloud ; puis paliers 6 et 10 décidés par Paul. Il ne dépend ni de T-215 ni du ruleset (FINAL0), ni de T-061/T-061b (actés par la fusion de la PR #48). Moteur horaire d'Atlas/homelab-infra en pause pendant les 24 h.
 
-### Prérequis : S0 minimal (1 tickets)
+### Prérequis : S0 minimal (0 tickets)
 
 | Ticket | Titre | Vague | Classe | Modèle |
 |---|---|---|---|---|
-| [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 0 | REVUE + MANDAT | sonnet/high |
 
 ### Liste figée du pilote (20 tickets, aucun autre lancement pendant le pilote)
 
@@ -90,7 +89,7 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 
 | Étape | haiku | sonnet | opus | humain |
 |---|---|---|---|---|
-| S0 | 2 | 3 | 0 | 1 |
+| S0 | 2 | 2 | 0 | 1 |
 | S1 | 0 | 34 | 4 | 0 |
 | S2 | 1 | 4 | 3 | 0 |
 | S3 | 0 | 13 | 0 | 0 |
@@ -107,12 +106,11 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | I8 | 0 | 3 | 0 | 0 |
 | FINAL | 0 | 0 | 5 | 0 |
 
-## S0 — MVP — S0 minimal du pilote 24 h (garde de fuite, ADR, exécutant, dispatcher, PAUSE, réglages) (6 tickets)
+## S0 — MVP — S0 minimal du pilote 24 h (garde de fuite, ADR, exécutant, dispatcher, PAUSE, réglages) (5 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
 | [T-431](T-431-reglages-depot-actions-securite.md) | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 0 | gouvernance | REVUE + MANDAT | sonnet/high | oui | 5 |
-| [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 0 | ci | REVUE + MANDAT | sonnet/high | oui | 2 |
 | [T-301](T-301-reecriture-de-l-historique-et-purge.md) | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | 0 | gouvernance | MANDAT | humain/none |  | 0 |
 | [T-433](T-433-protection-tags.md) | Protection des tags : core-baseline et v* (ruleset de type tag) | 0 | gouvernance | REVUE + MANDAT | sonnet/high |  | 0 |
 | [T-434](T-434-gestes-organisation-paul.md) | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | 0 | gouvernance | MANDAT | haiku/medium |  | 0 |
@@ -131,6 +129,7 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | [T-314](T-314-dispatcher-planifie-cron-15-min-et.md) | Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission | 0 | ci | REVUE | sonnet/high | oui | 2 |
 | [T-216](T-216-ci-registre.md) | CI extensible par registre de suites | 0 | ci | REVUE | sonnet/high | oui | 1 |
 | [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | Revue indépendante automatique avant merge (modèle différent, lecture seule) | 0 | ci | REVUE | sonnet/high | oui | 1 |
+| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | 0 | agents | AUTONOME + MANDAT | sonnet/high | oui | 1 |
 | [T-418](T-418-tests-outils-backlog.md) | Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui) | 0 | backlog | AUTONOME | sonnet/high | oui | 1 |
 | [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | 0 | connaissance | AUTONOME | sonnet/high | oui | 0 |
 | [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md) | Environnement Claude Code cloud « openchoreo-lab-agent » : script d'installation, réseau, secrets réseau | 0 | agents-harness | AUTONOME + MANDAT | sonnet/high | oui | 0 |
@@ -144,7 +143,6 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | [T-003](T-003-env-development-promotion.md) | Environment `development`, promotion vers `production`, pins de release par environnement | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 31 |
 | [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md) | Sous-agents de projet : `reviewer` (lecture seule) et `ci-triager` | 1 | agents-harness | REVUE | sonnet/high | oui | 2 |
 | [T-412](T-412-verificateur-prior-art-ci.md) | Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop | 1 | ci | REVUE | sonnet/high | oui | 2 |
-| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | 1 | agents | AUTONOME + MANDAT | sonnet/high | oui | 1 |
 | [T-315](T-315-merge-automatique-sous-conditions-app-de.md) | Merge automatique sous conditions : auto-merge natif pendant le dev, App de merge en FINAL | 1 | gouvernance | REVUE + MANDAT | sonnet/high | oui | 0 |
 | [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle | 1 | agents | AUTONOME | sonnet/high | oui | 0 |
 | [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md) | Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi par chemins | 1 | ci | AUTONOME + REVUE | sonnet/high | oui | 0 |
