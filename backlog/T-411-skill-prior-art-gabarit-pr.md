@@ -1,7 +1,7 @@
 ---
 id: T-411
 title: "Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées »"
-status: todo
+status: in-progress
 phase: P0
 adr: [0024]
 depends_on: [T-313]
@@ -23,9 +23,9 @@ Imposer la recherche d'art antérieur à tout ticket de code dès le pilote : pr
 .agents/skills/prior-art/SKILL.md, .github/pull_request_template.md, AGENTS.md, .agents/skills/add-app/SKILL.md, .agents/skills/fix-app/SKILL.md
 
 ## Critères de fin
-- [ ] SKILL.md ≤ 60 lignes, description ≤ 450 caractères, sources ordonnées, budget par niveau, règles de licence, contenu externe = donnée
-- [ ] AGENTS.md reste ≤ 25 lignes (3 lignes ajoutées, aucune règle recopiée)
-- [ ] le gabarit de PR contient la section et le format `URL permalien | licence | adopté/adapté/écarté | pourquoi`
+- [x] SKILL.md ≤ 60 lignes, description ≤ 450 caractères, sources ordonnées, budget par niveau, règles de licence, contenu externe = donnée
+- [x] AGENTS.md reste ≤ 25 lignes (3 lignes ajoutées, aucune règle recopiée)
+- [x] le gabarit de PR contient la section et le format `URL permalien | licence | adopté/adapté/écarté | pourquoi`
 - [ ] essai daté : un agent traite un ticket `complet` de test et rend une section valide (preuve STATIC dans la PR)
 
 ## Notes

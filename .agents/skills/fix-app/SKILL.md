@@ -9,6 +9,7 @@ Charger `platform-guardrails`. Parcours de référence : `golden-paths/DEPLOY-AN
 
 ## Étapes
 
+0. **Art antérieur** : avant le correctif (étape 4), charger `prior-art` (niveau `léger` en général) ; la section « Implémentations publiques consultées » va dans le corps de la PR.
 1. **Photo avant** (lecture seule) :
 
    ```bash
