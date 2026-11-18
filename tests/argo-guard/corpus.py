@@ -98,10 +98,10 @@ def projects_cases():
                          namespaceResourceWhitelist=[{"group": "*", "kind": "*"}], destinations=[])
     yield "combo/lab-root", p
     p = copy.deepcopy(base)
-    p["lab-apps"] = {"sourceRepos": ["*"], "destinations": [{"namespace": "x*"}],
+    p["lab-o"] = {"sourceRepos": ["*"], "destinations": [{"namespace": "x*"}],
                      "namespaceResourceWhitelist": [{"group": "g", "kind": "Application"}],
                      "sourceNamespaces": ["x"]}
-    yield "combo/lab-apps", p
+    yield "combo/lab-o", p
     p = copy.deepcopy(base)
     p["lab-authz"]["namespaceResourceBlacklist"] = []
     p["lab-authz"]["namespaceResourceWhitelist"] = [{"group": "g", "kind": "Foo"}]
@@ -155,8 +155,8 @@ def apps_cases():
     cases = []
     locations = {"apps": f"{A}/apps/x.yaml", "racine": GUARD.ROOT_APP, "ailleurs": "platform/data/x.yaml",
                  "apps-sous": f"{A}/apps/sub/x.yaml"}
-    projects = ("lab-platform", "lab-apps", "lab-authz", "lab-root", "default", "autre", None)
-    names = ("lab-root", "lab-platform", "lab-apps", "lab-authz", "evil")
+    projects = ("lab-platform", "lab-o", "lab-authz", "lab-root", "default", "autre", None)
+    names = ("lab-root", "lab-platform", "lab-o", "lab-authz", "evil")
     sources = {
         "platform": src("platform/policies"),
         "platform-racine": src("platform"),
@@ -179,11 +179,11 @@ def apps_cases():
         for proj in projects:
             for name in names:
                 for sname, s in sources.items():
-                    if proj == "lab-apps":
+                    if proj == "lab-o":
                         continue
                     cases.append((f"{lname}/{proj}/{name}/{sname}", rel, app_obj(name, proj, s)))
     for lname, rel in locations.items():
-        for proj in ("lab-platform", "lab-authz", "lab-root", "lab-apps", "default"):
+        for proj in ("lab-platform", "lab-authz", "lab-root", "lab-o", "default"):
             for sync_name, sync in (("auto", AUTO), ("auto-vide", {"automated": None}), ("manuel", {})):
                 cases.append((f"sync/{lname}/{proj}/{sync_name}", rel,
                               app_obj("lab-" + proj[4:], proj, src("platform/x"), sync=sync)))
@@ -191,53 +191,100 @@ def apps_cases():
     cases.append(("appset-ailleurs", "platform/x.yaml", app_obj("x", "default", kind="ApplicationSet")))
     cases.append(("sans-spec", f"{A}/apps/x.yaml", {"kind": "Application", "metadata": {"name": "x"}}))
     cases.append(("sans-nom", f"{A}/apps/x.yaml", {"kind": "Application", "spec": {"project": "lab-platform"}}))
-    cases.append(("sources-hors-lab-apps", f"{A}/apps/x.yaml", app_obj("x", "lab-platform", sources=[src("platform")])))
-    cases.append(("sources-et-source", f"{A}/apps/lab-apps.yaml",
-                  app_obj("lab-apps", "lab-apps", src("x"), sources=[lab_src("whoami")])))
+    cases.append(("sources-multiples", f"{A}/apps/x.yaml", app_obj("x", "lab-platform", sources=[src("platform")])))
+    cases.append(("sources-et-source", f"{A}/apps/lab-o.yaml",
+                  app_obj("lab-o", "lab-o", src("x"), sources=[lab_src("whoami")])))
     return cases
 
 
-def lab_apps_specs():
-    oke = {"whoami", "ntfy"}
+def appset_obj(**over):
+    """ApplicationSet lab-o conforme (T-491) ; `over` remplace des clés de spec."""
     prefix = GUARD.APPS_PATH + "/projects/"
-    ok_dir = {"recurse": True, "include": "*.yaml"}
-    specs = {
-        "ok": {"sources": [lab_src("whoami")]},
-        "ok-deux": {"sources": [lab_src("whoami"), lab_src("ntfy")]},
-        "source-unique": {"source": lab_src("whoami")},
-        "source-et-sources": {"source": lab_src("whoami"), "sources": [lab_src("whoami")]},
-        "sources-absent": {},
-        "sources-vide": {"sources": []},
-        "sources-non-liste": {"sources": "x"},
-        "entree-non-mapping": {"sources": ["x", None, 3]},
-        "cle-interdite": {"sources": [dict(lab_src("whoami"), helm={}, chart="c")]},
-        "repo-autre": {"sources": [dict(lab_src("whoami"), repoURL="https://x/y")]},
-        "repo-git": {"sources": [dict(lab_src("whoami"), repoURL=REPO + ".git")]},
-        "repo-absent": {"sources": [{k: v for k, v in lab_src("whoami").items() if k != "repoURL"}]},
-        "rev-autre": {"sources": [dict(lab_src("whoami"), targetRevision="dev")]},
-        "path-racine": {"sources": [lab_src("")]},
-        "path-prefixe-seul": {"sources": [src(prefix, directory=ok_dir)]},
-        "path-sous-dossier": {"sources": [lab_src("whoami/x")]},
-        "path-traversee": {"sources": [lab_src("..")]},
-        "path-hors-prefixe": {"sources": [src("platform", directory=ok_dir)]},
-        "app-non-oke": {"sources": [lab_src("autre")]},
-        "doublon": {"sources": [lab_src("whoami"), lab_src("whoami")]},
-        "recurse-faux": {"sources": [dict(lab_src("whoami"), directory={"recurse": False, "include": "*.yaml"})]},
-        "recurse-absent": {"sources": [dict(lab_src("whoami"), directory={"include": "*.yaml"})]},
-        "recurse-chaine": {"sources": [dict(lab_src("whoami"), directory={"recurse": "true", "include": "*.yaml"})]},
-        "include-autre": {"sources": [dict(lab_src("whoami"), directory={"recurse": True, "include": "*"})]},
-        "include-absent": {"sources": [dict(lab_src("whoami"), directory={"recurse": True})]},
-        "directory-absent": {"sources": [src(prefix + "whoami")]},
-        "directory-none": {"sources": [dict(lab_src("whoami"), directory=None)]},
-        "path-nombre": {"sources": [dict(lab_src("whoami"), path=3)]},
+    spec = {
+        "goTemplate": True, "goTemplateOptions": ["missingkey=error"],
+        "syncPolicy": {"preserveResourcesOnDeletion": True},
+        "generators": [{"git": {"repoURL": REPO, "revision": "main",
+                                "directories": [{"path": prefix + "*"}, {"path": prefix + "k3dapp", "exclude": True}]}}],
+        "template": {
+            "metadata": {"name": "lab-o-{{.path.basename}}"},
+            "spec": {"project": "lab-o",
+                     "source": {"repoURL": REPO, "targetRevision": "main", "path": "{{.path.path}}",
+                                "directory": {"recurse": True, "include": "*.yaml"}},
+                     "destination": {"server": "https://kubernetes.default.svc", "namespace": "default"},
+                     "syncPolicy": {"automated": {"prune": False, "selfHeal": True}}}},
     }
-    return oke, specs
+    spec.update(over)
+    return {"apiVersion": "argoproj.io/v1alpha1", "kind": "ApplicationSet", "metadata": {"name": "lab-o"},
+            "spec": spec}
 
 
-def run_lab_apps(mod, oke, name, spec):
+def appset_specs():
+    """Variantes de l'ApplicationSet : `ok` conforme, les autres ont UN écart chacune."""
+    prefix = GUARD.APPS_PATH + "/projects/"
+    ok = appset_obj()
+
+    def tpl(**spec_over):
+        t = copy.deepcopy(ok["spec"]["template"])
+        t["spec"].update(spec_over)
+        return {"template": t}
+
+    def gen(**git_over):
+        g = copy.deepcopy(ok["spec"]["generators"])
+        g[0]["git"].update(git_over)
+        return {"generators": g}
+
+    return {
+        "ok": ok,
+        "sans-gotemplate": appset_obj(goTemplate=False),
+        "sans-missingkey": appset_obj(goTemplateOptions=[]),
+        "sans-preserve": appset_obj(syncPolicy={}),
+        "template-patch": appset_obj(templatePatch="spec:\n  project: x"),
+        "strategie": appset_obj(strategy={"type": "RollingSync"}),
+        "deux-generateurs": appset_obj(generators=ok["spec"]["generators"] * 2),
+        "generateur-files": appset_obj(generators=[{"git": {"repoURL": REPO, "revision": "main",
+                                                            "files": [{"path": "apps/*/app.yaml"}]}}]),
+        "generateur-list": appset_obj(generators=[{"list": {"elements": []}}]),
+        "generateur-absent": appset_obj(generators=[]),
+        "depot-autre": appset_obj(**gen(repoURL="https://example.org/evil")),
+        "revision-dev": appset_obj(**gen(revision="dev")),
+        "inclusion-racine": appset_obj(**gen(directories=[{"path": "generated/namespaces/default"}])),
+        "inclusion-large": appset_obj(**gen(directories=[{"path": "generated/*"}])),
+        "inclusion-deux": appset_obj(**gen(directories=[{"path": prefix + "*"}, {"path": prefix + "x"}])),
+        "exclusion-glob": appset_obj(**gen(directories=[{"path": prefix + "*"}, {"path": prefix + "k*", "exclude": True}])),
+        "exclusion-hors-prefixe": appset_obj(**gen(directories=[{"path": prefix + "*"},
+                                                                 {"path": "platform", "exclude": True}])),
+        "entree-cle-inconnue": appset_obj(**gen(directories=[{"path": prefix + "*", "foo": 1}])),
+        "nom-autre": appset_obj(**{"template": dict(ok["spec"]["template"], metadata={"name": "{{.path.basename}}"})}),
+        "projet-parametre": appset_obj(**tpl(project="{{.path.basename}}")),
+        "projet-autre": appset_obj(**tpl(project="lab-platform")),
+        "projet-default": appset_obj(**tpl(project="default")),
+        "destination-parametree": appset_obj(**tpl(destination={"server": "https://kubernetes.default.svc",
+                                                                "namespace": "{{.path.basename}}"})),
+        "destination-kube-system": appset_obj(**tpl(destination={"server": "https://kubernetes.default.svc",
+                                                                 "namespace": "kube-system"})),
+        "destination-serveur": appset_obj(**tpl(destination={"server": "https://evil.example.org",
+                                                             "namespace": "default"})),
+        "source-chemin-fixe": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"], path="platform"))),
+        "source-helm": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"], helm={}))),
+        "source-depot": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"],
+                                                     repoURL="https://example.org/evil"))),
+        "source-revision": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"],
+                                                        targetRevision="dev"))),
+        "source-sans-recurse": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"],
+                                                            directory={"include": "*.yaml"}))),
+        "source-include-large": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"],
+                                                             directory={"recurse": True, "include": "*"}))),
+        "spec-cle-interdite": appset_obj(**tpl(ignoreDifferences=[{"kind": "Secret"}])),
+        "prune": appset_obj(**tpl(syncPolicy={"automated": {"prune": True}})),
+        "vide": {"kind": "ApplicationSet", "metadata": {"name": "lab-o"}},
+    }
+
+
+def run_appset(mod, rel, obj, files=None):
     g = mod.Guard(ROOT)
-    g.oke_apps = lambda: set(oke)
-    g.check_lab_apps_sources("rel.yaml", name, spec)
+    g.files = files if files is not None else {}
+    g.oke_apps = lambda: {"w"}
+    g.check_appset(rel, obj)
     return g.errs
 
 
@@ -257,7 +304,7 @@ def synced_cases():
         "other/j.yaml": [],
     }
     inc = {"aucun": None, "yaml": "*.yaml", "accolades": "{*.yaml, *.json}", "yml": "*.yml", "vide": ""}
-    for pname in ("lab-platform", "lab-apps", "lab-authz", "default"):
+    for pname in ("lab-platform", "lab-o", "lab-authz", "default"):
         for path in ("platform", "platform/", "platform/sub", "generated/namespaces/default/projects/w", "nope"):
             for rec in (None, True, False):
                 for iname, i in inc.items():
@@ -270,7 +317,7 @@ def synced_cases():
                     if d:
                         s["directory"] = d
                     yield f"{pname}/{path}/{rec}/{iname}", files, app_obj("a", pname, s)
-    for pname in ("lab-platform", "lab-apps"):
+    for pname in ("lab-platform", "lab-o"):
         yield f"{pname}/multi", files, app_obj("a", pname, sources=[lab_src("w"), "x", {"foo": 1}, src("platform")])
         yield f"{pname}/sans-path", files, app_obj("a", pname, {"repoURL": REPO})
         yield f"{pname}/sans-source", files, app_obj("a", pname)
@@ -345,7 +392,7 @@ def synced_objects():
 
 def project_specs():
     base = real_guard().projects()
-    out = {"vide": {}, "reelle/lab-platform": base["lab-platform"], "reelle/lab-apps": base["lab-apps"],
+    out = {"vide": {}, "reelle/lab-platform": base["lab-platform"], "reelle/lab-o": base["lab-o"],
            "reelle/lab-authz": base["lab-authz"]}
     out["tout"] = {"clusterResourceWhitelist": [{"group": "*", "kind": "*"}],
                    "namespaceResourceWhitelist": [{"group": "*", "kind": "*"}]}
@@ -492,16 +539,17 @@ def run_psa(mod, o, level):
 
 # --- production du gel -------------------------------------------------------------------------------------
 def build(mod_guard=GUARD, mod_psa=PSA):
-    out = {"check_projects": {}, "check_apps": {}, "check_lab_apps_sources": {}, "synced": {}, "check_synced": {},
+    out = {"check_projects": {}, "check_apps": {}, "check_appset": {}, "synced": {}, "check_synced": {},
            "oke_apps": {}, "psa_check": {}}
     for cid, p in projects_cases():
         out["check_projects"][cid] = run_projects(mod_guard, p)
     for cid, rel, o in apps_cases():
         out["check_apps"][cid] = run_apps(mod_guard, rel, o)
-    oke, specs = lab_apps_specs()
-    for name in ("lab-apps", "autre"):
-        for sid, spec in specs.items():
-            out["check_lab_apps_sources"][f"{name}/{sid}"] = run_lab_apps(mod_guard, oke, name, spec)
+    pre = GUARD.APPS_PATH + "/projects/"
+    tree = {f"{pre}{a}/x.yaml": [] for a in ("w", "k3dapp", "autre")}
+    for sid, o in appset_specs().items():
+        for rel in (f"{A}/apps/lab-apps.yaml", "platform/x.yaml"):
+            out["check_appset"][f"{sid}/{rel}"] = run_appset(mod_guard, rel, o, tree)
     for cid, files, o in synced_cases():
         out["synced"][cid] = run_synced(mod_guard, files, o)
     for pid, spec in project_specs().items():

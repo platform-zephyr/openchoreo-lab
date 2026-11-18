@@ -1,44 +1,56 @@
-# Applications du labo OKE, Git -> Argo : generated/namespaces/default/projects/<app> (sortie de tools/appgen ;
-# PR APPLICATIVES). Projet lab-apps : kinds OpenChoreo NAMESPACÉS applicatifs dans `default`, aucun kind
-# cluster-scoped (flux A2, docs/ARGO-ESCALATION.md). Un manifest glissé dans generated/ (ClusterRoleBinding,
-# Namespace, VAP, Secret, Application...) est refusé par Argo à la synchronisation.
-# SOURCES MULTIPLES (spec.sources[]) : UNE source par dossier d'app OKE, même dépôt, même targetRevision,
-# directory.recurse et include "*.yaml". Ni generated/ en entier, ni les dossiers des apps k3d (volumes interdits
-# sur OKE). tools/oke/argo_guard.py (A2/A3) refuse tout autre chemin, tout autre dépôt, toute autre révision,
-# et toute app non `cluster: oke` / stateless. Ajouter une app OKE = ajouter UNE source par PR (et son dossier).
+# Applications du labo OKE, Git -> Argo (T-491) : UNE Application `lab-o-<app>` par dossier
+# generated/namespaces/default/projects/<app> (sortie de tools/appgen ; PR APPLICATIVES), créée par cet
+# ApplicationSet. Projet `lab-o` LITTÉRAL (jamais tiré du dépôt applicatif), destination littérale `default` :
+# kinds OpenChoreo NAMESPACÉS applicatifs, aucun kind cluster-scoped (flux A2, docs/ARGO-ESCALATION.md).
+# Ajouter une app OKE = apps/<app>/app.yaml + sa sortie generated/ dans une PR ; rien à éditer sous platform/.
+# Une app k3d ou à volume/base n'est PAS déployée sur OKE : son dossier figure dans `exclude` ci-dessous ;
+# tools/oke/argo_guard.py (O1-O5) refuse tout autre générateur, tout projet ou toute destination paramétrés,
+# et toute app non OKE stateless absente de la liste d'exclusion.
+# goTemplate + missingkey=error : un paramètre absent fait échouer le rendu au lieu de produire une valeur vide.
+# preserveResourcesOnDeletion : supprimer l'ApplicationSet ou une Application CONSERVE les objets applicatifs.
 # Synchro AUTOMATIQUE sans prune (finalizers Component/Resource : APP-CONTRACT §5).
+# Le contrôleur ApplicationSet est à 0 réplica dans platform/install/values/argocd.yaml jusqu'à T-487.
 apiVersion: argoproj.io/v1alpha1
-kind: Application
+kind: ApplicationSet
 metadata:
-  name: lab-apps
+  name: lab-o
   namespace: lab-argocd
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
-  project: lab-apps
-  sources:
-    - repoURL: https://github.com/platform-zephyr/openchoreo-lab
-      targetRevision: main
-      path: generated/namespaces/default/projects/whoami
-      directory:
-        recurse: true
-        include: "*.yaml"
-    - repoURL: https://github.com/platform-zephyr/openchoreo-lab
-      targetRevision: main
-      path: generated/namespaces/default/projects/ntfy
-      directory:
-        recurse: true
-        include: "*.yaml"
-    - repoURL: https://github.com/platform-zephyr/openchoreo-lab
-      targetRevision: main
-      path: generated/namespaces/default/projects/echo-demo
-      directory:
-        recurse: true
-        include: "*.yaml"
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
   syncPolicy:
-    automated: {prune: false, selfHeal: true}
-    syncOptions:
-      - ServerSideApply=true
-      - FailOnSharedResource=true
+    preserveResourcesOnDeletion: true
+  generators:
+    - git:
+        repoURL: https://github.com/platform-zephyr/openchoreo-lab
+        revision: main
+        directories:
+          - path: generated/namespaces/default/projects/*
+          - {path: generated/namespaces/default/projects/aiostreams, exclude: true}
+          - {path: generated/namespaces/default/projects/idp-e2e, exclude: true}
+          - {path: generated/namespaces/default/projects/mealie, exclude: true}
+          - {path: generated/namespaces/default/projects/miniflux, exclude: true}
+          - {path: generated/namespaces/default/projects/open-connector, exclude: true}
+          - {path: generated/namespaces/default/projects/rustical-pilot, exclude: true}
+  template:
+    metadata:
+      name: "lab-o-{{.path.basename}}"
+      labels: {app.kubernetes.io/part-of: openchoreo-lab}
+    spec:
+      project: lab-o
+      source:
+        repoURL: https://github.com/platform-zephyr/openchoreo-lab
+        targetRevision: main
+        path: "{{.path.path}}"
+        directory:
+          recurse: true
+          include: "*.yaml"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: default
+      syncPolicy:
+        automated: {prune: false, selfHeal: true}
+        syncOptions:
+          - ServerSideApply=true
+          - FailOnSharedResource=true

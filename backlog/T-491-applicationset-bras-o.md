@@ -24,7 +24,7 @@ platform/install/argocd/apps/lab-apps.yaml, platform/install/argocd/project-lab.
 
 ## Critères de fin
 - [ ] ApplicationSet `lab-o` (générateur Git par répertoire), projet `lab-o` fixe, Applications nommées par app ; ligne `NOTICE` pour le modèle repris de kube-ops (MIT, SHA noté)
-- [ ] `argo_guard.py` refuse un projet ou une destination tirés du dépôt applicatif (test de refus)
+- [x] `argo_guard.py` refuse un projet ou une destination tirés du dépôt applicatif (test de refus)
 - [ ] suite `tests/argo-escalation/` verte sur Argo CD v3.5.1 en CI k3d avec l'ApplicationSet (preuve datée)
 - [ ] ajout d'une app par `apps/<app>/app.yaml` seul, sans modification de `platform/` (test sur une app témoin)
 

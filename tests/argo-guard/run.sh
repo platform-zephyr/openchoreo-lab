@@ -153,7 +153,7 @@ check enfant-projet-lab-root refus "A2 .*lab-root" "$d"
 d="$(fresh lab-tests)"; app tst lab-platform tests/gitops-k3d/apps "$AUTO" > "$d/$A/apps/tst.yaml"
 check lab-chemin-hors-platform refus "A3 .*chemin 'tests/gitops-k3d/apps'" "$d"
 
-# --- Flux A2 : séparation par source (lab-apps / lab-platform / lab-authz), docs/ARGO-ESCALATION.md ---
+# --- Flux A2 : séparation par source (lab-o / lab-platform / lab-authz), docs/ARGO-ESCALATION.md ---
 G=generated/namespaces/default/projects/whoami
 
 # 13. PR applicative : ClusterRoleBinding glissé dans generated/.
@@ -165,7 +165,7 @@ metadata: {name: lab-evil}
 roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: cluster-admin}
 subjects: [{kind: ServiceAccount, name: default, namespace: default}]
 EOF2
-check gen-clusterrolebinding refus "S1 ClusterRoleBinding/lab-evil cluster-scoped absent de clusterResourceWhitelist \(lab-apps\)" "$d"
+check gen-clusterrolebinding refus "S1 ClusterRoleBinding/lab-evil cluster-scoped absent de clusterResourceWhitelist \(lab-o\)" "$d"
 
 # 14. PR applicative : Application dans generated/ (projet lab-platform).
 d="$(fresh gen-app)"; app genapp lab-platform platform/policies "$AUTO" > "$d/$G/zz-app.yaml"
@@ -179,7 +179,7 @@ kind: Secret
 metadata: {name: leak, namespace: default}
 stringData: {password: factice}
 EOF2
-check gen-secret refus "S1 Secret/leak namespacé non autorisé par l'AppProject lab-apps" "$d"
+check gen-secret refus "S1 Secret/leak namespacé non autorisé par l'AppProject lab-o" "$d"
 
 # 16. PR applicative : Namespace kube-system patché (label PSA) dans generated/.
 d="$(fresh gen-ns)"
@@ -198,17 +198,17 @@ kind: ValidatingAdmissionPolicy
 metadata: {name: lab-cell-pod-hardening}
 spec: {failurePolicy: Ignore, matchConstraints: {resourceRules: []}, validations: [{expression: "true"}]}
 EOF2
-check gen-vap refus "S1 ValidatingAdmissionPolicy/lab-cell-pod-hardening cluster-scoped absent .*\(lab-apps\)" "$d"
+check gen-vap refus "S1 ValidatingAdmissionPolicy/lab-cell-pod-hardening cluster-scoped absent .*\(lab-o\)" "$d"
 
 # 18. Application lab-platform pointée sur generated/ (pour y gagner les kinds plateforme).
 d="$(fresh platform-on-gen)"; app pgen lab-platform generated/namespaces/default "$AUTO" > "$d/$A/apps/pgen.yaml"
 check lab-platform-sur-generated refus "A3 .*chemin 'generated/namespaces/default' interdit au projet lab-platform" "$d"
 
-# 19. Projet lab-apps emprunté par une autre Application (chemin platform/policies).
-d="$(fresh apps-borrow)"; app aborrow lab-apps platform/policies "$AUTO" > "$d/$A/apps/aborrow.yaml"
-check lab-apps-emprunte refus "A2 projet lab-apps réservé" "$d"
+# 19. Projet lab-o emprunté par une Application écrite à la main (réservé à l'ApplicationSet).
+d="$(fresh apps-borrow)"; app aborrow lab-o platform/policies "$AUTO" > "$d/$A/apps/aborrow.yaml"
+check lab-o-emprunte refus "A2 Application .aborrow. : projet lab-o réservé à l'ApplicationSet lab-o" "$d"
 
-# 20. lab-apps élargi : kind cluster-scoped en whitelist.
+# 20. lab-o élargi : kind cluster-scoped en whitelist.
 d="$(fresh apps-cluster)"
 python3 -I - "$d/$A/project-lab.yaml" <<'PY'
 import sys
@@ -220,9 +220,9 @@ s = s[:j] + "  clusterResourceWhitelist:\n    - {group: rbac.authorization.k8s.i
     + s[j + len("  clusterResourceWhitelist: []\n"):]
 open(p, "w").write(s)
 PY
-check lab-apps-cluster-scoped refus "P2 lab-apps : clusterResourceWhitelist doit être POSÉE vide" "$d"
+check lab-o-cluster-scoped refus "P2 lab-o : clusterResourceWhitelist doit être POSÉE vide" "$d"
 
-# 21. lab-apps élargi : Secret en whitelist namespacée.
+# 21. lab-o élargi : Secret en whitelist namespacée.
 d="$(fresh apps-secret-wl)"
 python3 -I - "$d/$A/project-lab.yaml" <<'PY'
 import sys
@@ -231,7 +231,7 @@ anchor = "    - {group: openchoreo.dev, kind: SecretReference}\n"
 assert anchor in s
 open(p, "w").write(s.replace(anchor, anchor + '    - {group: "", kind: Secret}\n', 1))
 PY
-check lab-apps-secret-whitelist refus "P2 lab-apps : namespaceResourceWhitelist limitée" "$d"
+check lab-o-secret-whitelist refus "P2 lab-o : namespaceResourceWhitelist limitée" "$d"
 
 # 22. lab-authz : fenêtre deny retirée (la synchro automatique redeviendrait possible).
 d="$(fresh authz-nowindow)"
@@ -268,92 +268,84 @@ open(p, "w").write(s[:j] + "    - kind: allow\n" + s[j + len("    - kind: deny\n
 PY
 check lab-platform-sans-fenetre-deny refus "P3 lab-platform : fenêtre deny permanente exigée" "$d"
 
-# --- Flux lab-apps en sources[] (une source par app OKE stateless, refus des autres) ---
-R=https://github.com/platform-zephyr/openchoreo-lab
-GW=generated/namespaces/default/projects/whoami
-GK=generated/namespaces/default/projects/miniflux
-lab_apps() { # CORPS_SOURCES : Application lab-apps avec le bloc sources donné
-  cat <<EOF
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata: {name: lab-apps, namespace: lab-argocd}
-spec:
-  project: lab-apps
-  sources:
-$1
-  destination: {server: https://kubernetes.default.svc, namespace: default}
-  syncPolicy: {automated: {prune: false, selfHeal: true}}
-EOF
-}
-src() { # DEPOT REVISION CHEMIN RECURSE INCLUDE : une entrée de sources[]
-  printf '    - {repoURL: %s, targetRevision: %s, path: %s, directory: {recurse: %s, include: "%s"}}\n' "$@"
+# --- ApplicationSet lab-o (T-491) : une Application par app, projet et destination fixes ---
+APPSET=$A/apps/lab-apps.yaml
+mutate() { # DOSSIER ANCIEN NOUVEAU : remplace UNE occurrence dans l'ApplicationSet (échoue si absente)
+  python3 -I - "$1/$APPSET" "$2" "$3" <<'PY'
+import sys
+p, old, new = sys.argv[1:4]
+s = open(p).read()
+assert old in s, old
+open(p, "w").write(s.replace(old, new, 1))
+PY
 }
 
-# Positif : sources[] actuelles (whoami + ntfy) déjà couvertes par « positif-arbre-actuel ».
+# 26. Projet tiré du dépôt applicatif (paramètre) au lieu du littéral lab-o.
+d="$(fresh appset-projet)"; mutate "$d" "      project: lab-o" "      project: '{{.path.basename}}'"
+check appset-projet-parametre refus "O4 lab-o : template.spec.project doit être le littéral lab-o" "$d"
+d="$(fresh appset-projet-default)"; mutate "$d" "      project: lab-o" "      project: default"
+check appset-projet-default refus "O4 lab-o : template.spec.project doit être le littéral lab-o" "$d"
 
-# 26. Source vers une app k3d (volume interdit sur OKE) : miniflux.
-d="$(fresh src-k3d)"; lab_apps "$(src $R main $GK true '*.yaml')
-$(src $R main $GW true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
-check src-app-k3d refus "A2 lab-apps : sources\[0\]\.path .generated/namespaces/default/projects/miniflux. : app .miniflux. non OKE" "$d"
+# 27. Destination tirée du dépôt applicatif, ou autre namespace.
+d="$(fresh appset-dest)"; mutate "$d" "        namespace: default
+      syncPolicy" "        namespace: '{{.path.basename}}'
+      syncPolicy"
+check appset-destination-parametree refus "O4 lab-o : template.spec.destination doit être le littéral" "$d"
+d="$(fresh appset-dest-ks)"; mutate "$d" "        namespace: default
+      syncPolicy" "        namespace: kube-system
+      syncPolicy"
+check appset-destination-kube-system refus "O4 lab-o : template.spec.destination doit être le littéral" "$d"
 
-# 27. Source = dossier parent (generated/ entier) ou sous-dossier d'une app.
-d="$(fresh src-racine)"; lab_apps "$(src $R main generated/namespaces/default true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
-check src-racine-generated refus "A2 lab-apps : sources\[0\]\.path .generated/namespaces/default. : seul" "$d"
-d="$(fresh src-sous-dossier)"; lab_apps "$(src $R main $GW/components true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
-check src-sous-dossier refus "A2 lab-apps : sources\[0\]\.path .generated/namespaces/default/projects/whoami/components. : seul" "$d"
+# 28. templatePatch (réécriture du modèle par un paramètre), générateur `files`, dépôt étranger.
+d="$(fresh appset-patch)"; mutate "$d" "  goTemplate: true" "  templatePatch: 'spec: {project: x}'
+  goTemplate: true"
+check appset-templatepatch refus "O2 lab-o : spec.templatePatch interdit" "$d"
+d="$(fresh appset-files)"; mutate "$d" "        directories:" "        files: [{path: 'apps/*/app.yaml'}]
+        directories:"
+check appset-generateur-files refus "O3 lab-o : generators\[0\].git.files interdit" "$d"
+d="$(fresh appset-depot)"; mutate "$d" "        repoURL: https://github.com/platform-zephyr/openchoreo-lab
+        revision: main" "        repoURL: https://example.org/evil
+        revision: main"
+check appset-depot-etranger refus "O3 lab-o : git.repoURL .https://example.org/evil. hors dépôt du labo" "$d"
 
-# 28. Récursion ou include différent de celui prévu.
-d="$(fresh src-norecurse)"; lab_apps "$(src $R main $GW false '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
-check src-sans-recurse refus "A3 lab-apps : sources\[0\]\.directory\.recurse" "$d"
-d="$(fresh src-include)"; lab_apps "$(src $R main $GW true '*')" > "$d/$A/apps/lab-apps.yaml"
-check src-include-large refus "A3 lab-apps : sources\[0\]\.directory\.include" "$d"
+# 29. missingkey=error retiré ; preserveResourcesOnDeletion retiré ; chemin source figé.
+d="$(fresh appset-missingkey)"; mutate "$d" '  goTemplateOptions: ["missingkey=error"]' '  goTemplateOptions: []'
+check appset-sans-missingkey refus "O2 lab-o : goTemplate: true et goTemplateOptions" "$d"
+d="$(fresh appset-preserve)"; mutate "$d" "preserveResourcesOnDeletion: true" "preserveResourcesOnDeletion: false"
+check appset-sans-preserve refus "O2 lab-o : syncPolicy.preserveResourcesOnDeletion" "$d"
+d="$(fresh appset-chemin)"; mutate "$d" '        path: "{{.path.path}}"' "        path: platform"
+check appset-chemin-fixe refus "O4 lab-o : template.spec.source.path doit être" "$d"
 
-# 29. Dépôt étranger, autre révision.
-d="$(fresh src-depot)"; lab_apps "$(src https://example.org/evil main $GW true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
-check src-depot-etranger refus "A3 lab-apps : sources\[0\]\.repoURL .https://example.org/evil. hors" "$d"
-d="$(fresh src-rev)"; lab_apps "$(src $R dev $GW true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
-check src-revision-dev refus "A3 lab-apps : sources\[0\]\.targetRevision doit être main" "$d"
+# 30. App k3d (volume interdit sur OKE) retirée de la liste d'exclusion : déployée par le générateur.
+d="$(fresh appset-k3d)"; mutate "$d" "          - {path: generated/namespaces/default/projects/miniflux, exclude: true}
+" ""
+check appset-app-k3d-non-exclue refus "O5 lab-o : app .miniflux. non OKE stateless et non exclue" "$d"
 
-# 30. Helm/kustomize dans une source ; même dossier deux fois.
-d="$(fresh src-chart)"; lab_apps "    - {repoURL: $R, targetRevision: main, path: $GW, directory: {recurse: true, include: \"*.yaml\"}, chart: {name: x}}" > "$d/$A/apps/lab-apps.yaml"
-check src-chart refus "A3 lab-apps : sources\[0\]\.chart interdit" "$d"
-d="$(fresh src-doublon)"; lab_apps "$(src $R main $GW true '*.yaml')
-$(src $R main $GW true '*.yaml')" > "$d/$A/apps/lab-apps.yaml"
-check src-doublon refus "A3 lab-apps : sources\[1\]\.path .generated/namespaces/default/projects/whoami. en double" "$d"
-
-# 31. `source` unique à la place de sources[] pour lab-apps.
-d="$(fresh src-unique)"
-cat > "$d/$A/apps/lab-apps.yaml" <<EOF
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata: {name: lab-apps, namespace: lab-argocd}
-spec:
-  project: lab-apps
-  source: {repoURL: $R, targetRevision: main, path: $GW, directory: {recurse: true, include: "*.yaml"}}
-  destination: {server: https://kubernetes.default.svc, namespace: default}
-EOF
-check source-unique-lab-apps refus 'A3 lab-apps : .source. unique interdit' "$d"
-
-# 32. sources[] hors lab-apps (lab-platform) : interdit.
-d="$(fresh src-platform)"
-cat > "$d/$A/apps/x.yaml" <<EOF
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata: {name: x, namespace: lab-argocd}
-spec:
-  project: lab-platform
-  sources: [{repoURL: $R, targetRevision: main, path: platform/policies}]
-  destination: {server: https://kubernetes.default.svc, namespace: default}
-EOF
-check sources-hors-lab-apps refus "A3 Application 'x' : sources multiples interdites hors lab-apps" "$d"
-
-# 33. Flip de politique sur l'app elle-même : ntfy repasse en k3d, puis en stateful (volume), refus côté Argo.
+# 31. Flip de politique sur l'app elle-même : ntfy repasse en k3d, puis en stateful (volume).
 d="$(fresh ntfy-k3d)"; python3 -I -c 'import sys,pathlib
 p=pathlib.Path(sys.argv[1]); s=p.read_text(); assert "cluster: oke" in s; p.write_text(s.replace("cluster: oke","cluster: k3d",1))' "$d/apps/ntfy/app.yaml"
-check ntfy-passe-k3d refus "A2 lab-apps : sources\[1\]\.path .generated/namespaces/default/projects/ntfy. : app .ntfy. non OKE" "$d"
+check ntfy-passe-k3d refus "O5 lab-o : app .ntfy. non OKE stateless et non exclue" "$d"
 d="$(fresh ntfy-stateful)"; python3 -I -c 'import sys,pathlib
 p=pathlib.Path(sys.argv[1]); s=p.read_text(); assert "profile: stateless" in s; p.write_text(s.replace("profile: stateless","profile: stateful",1))' "$d/apps/ntfy/app.yaml"
-check ntfy-passe-stateful refus "A2 lab-apps : sources\[1\]\.path .generated/namespaces/default/projects/ntfy. : app .ntfy. non OKE" "$d"
+check ntfy-passe-stateful refus "O5 lab-o : app .ntfy. non OKE stateless et non exclue" "$d"
+
+# 32. Un second ApplicationSet, ou un ApplicationSet hors apps/ : refus.
+d="$(fresh appset-second)"; sed 's/name: lab-o$/name: lab-evil/' "$d/$APPSET" > "$d/$A/apps/evil-appset.yaml"
+check appset-second refus "O1 ApplicationSet .lab-evil. : seul .lab-o., un exemplaire" "$d"
+
+# 33. App témoin (critère 4 de T-491) : une app OKE ajoutée par apps/<app>/app.yaml et sa sortie generated/ SEULS,
+#     sans modifier platform/ ni l'ApplicationSet : le contrôle statique passe et la synchronise.
+d="$(fresh app-temoin)"
+cp -R "$d/apps/whoami" "$d/apps/zz-temoin"
+cp -R "$d/generated/namespaces/default/projects/whoami" "$d/generated/namespaces/default/projects/zz-temoin"
+check app-temoin-sans-edition-platform 0 " 0 écart" "$d"
+n_before="$(python3 -I "$GUARD" "$(fresh app-temoin-ref)" | grep -oE '[0-9]+ par lab-o')"
+n_after="$(python3 -I "$GUARD" "$d" | grep -oE '[0-9]+ par lab-o')"
+if [[ "$n_before" != "$n_after" ]]; then
+  printf 'PASS %-28s fichiers synchronisés par lab-o : %s -> %s\n' app-temoin-synchronisee "$n_before" "$n_after"; pass=$((pass + 1))
+else
+  printf 'FAIL %-28s l app témoin n est pas synchronisée (%s)\n' app-temoin-synchronisee "$n_after"; fail=$((fail + 1))
+fi
 
 echo "argo-guard : $pass PASS, $fail FAIL"
 (( fail == 0 ))

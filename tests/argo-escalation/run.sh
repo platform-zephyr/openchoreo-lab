@@ -72,7 +72,7 @@ setup() {
   log "Argo CD $ARGOCD_VERSION (values du dépôt)"
   k create namespace "$NS" --dry-run=client -o yaml | k apply -f - >/dev/null
   helm upgrade --install argocd "$dl/argo-cd.tgz" -n "$NS" -f "$ROOT/platform/install/values/argocd.yaml" \
-    --wait --timeout 10m >/dev/null
+    --set applicationSet.replicas=1 --wait --timeout 10m >/dev/null  # T-491 : le contrôleur ApplicationSet est requis (0 dans le dépôt)
 
   log "serveur Git de test"
   k apply -f "$HERE/git-server.yaml" >/dev/null
@@ -98,6 +98,8 @@ setup() {
   k apply --server-side -f "$bs/project-lab.yaml" >/dev/null
   k apply --server-side -f "$bs/root-application.yaml" >/dev/null
   wait_rev lab-root "$(head_sha)" 180 || true
+  # T-491 : l'ApplicationSet lab-o crée une Application lab-o-<app> par dossier generated/ non exclu.
+  k -n "$NS" wait --for=create applications.argoproj.io/lab-o-whoami --timeout=180s >/dev/null
   # lab-platform : synchro MANUELLE forcée (fenêtre deny) ; première synchro = geste opérateur, comme sur OKE.
   sync_manual lab-platform "$(head_sha)"
   k -n lab-pg wait --for=create clusters.postgresql.cnpg.io/lab-pg --timeout=180s >/dev/null
@@ -108,7 +110,7 @@ setup() {
     '{"status":{"phase":"Cluster in healthy state","phaseReason":"simulé (test A2, aucun opérateur CNPG)","instances":1,"readyInstances":1}}' >/dev/null
   refresh_all
   wait_rev lab-platform "$(head_sha)" 180 || true
-  snap BASE lab-root lab-platform lab-apps lab-authz
+  snap BASE lab-root lab-platform lab-o-whoami lab-authz
   k -n "$NS" get appprojects -o json >"$EVID/BASE-appprojects.json"
 }
 
@@ -188,13 +190,13 @@ absent() { ! k get "$@" >/dev/null 2>&1; }
 G=generated/namespaces/default/projects/whoami
 AP=platform/install/argocd/apps
 
-t_pos_apps() { # Témoin : un Component/Workload valide de generated/ est synchronisé par lab-apps.
-  local sha; sha="$(head_sha)"; sync_manual lab-apps "$sha"
-  wait_rev lab-apps "$sha" 240 || true; snap P-APPS lab-apps
-  if [[ "$(op_phase lab-apps)" == Succeeded ]] && k -n default get components.openchoreo.dev whoami >/dev/null 2>&1 \
+t_pos_apps() { # Témoin : un Component/Workload valide de generated/ est synchronisé par lab-o-whoami.
+  local sha; sha="$(head_sha)"; sync_manual lab-o-whoami "$sha"
+  wait_rev lab-o-whoami "$sha" 240 || true; snap P-APPS lab-o-whoami
+  if [[ "$(op_phase lab-o-whoami)" == Succeeded ]] && k -n default get components.openchoreo.dev whoami >/dev/null 2>&1 \
       && k -n default get workloads.openchoreo.dev -o name | grep -q .; then
-    rec P-APPS PASS "lab-apps @${sha:0:7} Succeeded ; Component default/whoami et Workload présents (API)"
-  else rec P-APPS FAIL "phase=$(op_phase lab-apps) $(op_msg lab-apps)"; fi
+    rec P-APPS PASS "lab-o-whoami @${sha:0:7} Succeeded ; Component default/whoami et Workload présents (API)"
+  else rec P-APPS FAIL "phase=$(op_phase lab-o-whoami) $(op_msg lab-o-whoami)"; fi
 }
 
 t_pos_platform() { # Témoin : changement légitime de platform/ synchronisé par lab-platform (auto).
@@ -268,13 +270,13 @@ EOF
   plat_revert
 }
 
-gen_case() { # gen_case ID "description" FICHIER CHECK... : manifest malveillant dans generated/, synchro lab-apps
+gen_case() { # gen_case ID "description" FICHIER CHECK... : manifest malveillant dans generated/, synchro lab-o-whoami
   local id="$1" desc="$2"; shift 2
   commit "$id : $desc"
-  local sha; sha="$(head_sha)"; sync_manual lab-apps "$sha"; wait_rev lab-apps "$sha" 180 || true; snap "$id" lab-apps
-  local m ph; m="$(op_msg lab-apps)"; ph="$(op_phase lab-apps)"
+  local sha; sha="$(head_sha)"; sync_manual lab-o-whoami "$sha"; wait_rev lab-o-whoami "$sha" 180 || true; snap "$id" lab-o-whoami
+  local m ph; m="$(op_msg lab-o-whoami)"; ph="$(op_phase lab-o-whoami)"
   if [[ "$ph" != Succeeded && "$m" == *"not permitted"* ]] && "$@"; then
-    rec "$id" PASS "lab-apps $ph : ${m:0:240} ; API inchangée"
+    rec "$id" PASS "lab-o-whoami $ph : ${m:0:240} ; API inchangée"
   else rec "$id" FAIL "phase=$ph $m"; fi
   revert
 }
@@ -452,26 +454,26 @@ t_n7_platform_psa() { # chemin PRIVILÉGIÉ : abaisser la PSA de lab-pg dans pla
   rec N7c-platform-psa-restaure "$([[ $(psa) == restricted ]] && echo PASS || echo FAIL)" "après revert + synchro manuelle : enforce=$(psa)"
 }
 
-t_n8_projects() { # Application enfant lab-apps qui synchronise platform/install/argocd (AppProject).
+t_n8_projects() { # Application enfant lab-o qui synchronise platform/install/argocd (AppProject).
   cat >"$W/$AP/n8-projects.yaml" <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata: {name: n8-projects, namespace: lab-argocd}
 spec:
-  project: lab-apps
+  project: lab-o
   source: {repoURL: $IN_REPO, targetRevision: main, path: platform/install/argocd, directory: {include: "project-*.yaml"}}
   destination: {server: https://kubernetes.default.svc, namespace: default}
   syncPolicy: {automated: {prune: false, selfHeal: true}}
 EOF
   local before; before="$(k -n "$NS" get appprojects -o json | jq -c '[.items[] | {n: .metadata.name, rv: .metadata.resourceVersion}]')"
-  commit "N8 : Application enfant lab-apps -> AppProject"
+  commit "N8 : Application enfant lab-o -> AppProject"
   local sha; sha="$(head_sha)"; wait_rev lab-root "$sha" 180 || true; wait_rev n8-projects "$sha" 180 || true
   snap N8 lab-root n8-projects
   local after m; after="$(k -n "$NS" get appprojects -o json | jq -c '[.items[] | {n: .metadata.name, rv: .metadata.resourceVersion}]')"
   m="$(op_msg n8-projects)"
   if [[ "$before" == "$after" && "$m" == *"not permitted"* ]]; then
-    rec N8-appproject-via-lab-apps PASS "n8-projects $(op_phase n8-projects) : ${m:0:220} ; AppProject inchangés (resourceVersion)"
-  else rec N8-appproject-via-lab-apps FAIL "phase=$(op_phase n8-projects) $m ; avant=$before après=$after"; fi
+    rec N8-appproject-via-lab-o PASS "n8-projects $(op_phase n8-projects) : ${m:0:220} ; AppProject inchangés (resourceVersion)"
+  else rec N8-appproject-via-lab-o FAIL "phase=$(op_phase n8-projects) $m ; avant=$before après=$after"; fi
   revert; wait_rev lab-root "$(head_sha)" 180 || true
   k -n "$NS" delete application n8-projects --wait=false >/dev/null 2>&1 || true
 }
