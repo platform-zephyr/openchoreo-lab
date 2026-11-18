@@ -5,7 +5,8 @@ Erreurs (code de sortie 1) : en-tête incomplet ou invalide, id dupliqué, statu
 inexistant, dépendance absente ou gelée, cycle, `model`/`effort` inconnus, ticket actif sans périmètre de fichiers
 exploitable, ticket `done` avec une case de critère non cochée.
 Avertissements (code 0) : `effort: max` sur Sonnet (plafond xhigh), ticket REVUE sur le noyau sans modèle Opus,
-éléments de périmètre non exploitables dans un ticket qui en contient aussi d'exploitables.
+éléments de périmètre non exploitables dans un ticket qui en contient aussi d'exploitables, ticket `todo` ou
+`in-progress` trop gros pour un run (`sizing.py` : périmètre, critères, glob `**` sur du code ; T-480).
 
 Sans dépendance : l'en-tête est un sous-ensemble plat de YAML (`clé: valeur`), le graphe utilise `graphlib`.
 """
@@ -16,6 +17,9 @@ import sys
 from dataclasses import dataclass, field
 from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import sizing
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -227,6 +231,8 @@ def _check_body(t: Ticket, warns: list[str]) -> list[str]:
             out.append(f"PÉRIMÈTRE-INEXPLOITABLE {i} aucun chemin ou glob dans « Périmètre de fichiers »")
         elif bad:
             warns.append(f"PÉRIMÈTRE {i} éléments non exploitables : {'; '.join(bad)}")
+        if size_warning := sizing.message(i, sizing.ticket_size(t, sys.modules[__name__])):
+            warns.append(size_warning)
     if t.status == "done":
         crit = section(t.body, "Critères de fin")
         if re.search(r"^\s*- \[ \]", crit, re.M):
