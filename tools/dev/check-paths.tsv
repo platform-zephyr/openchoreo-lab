@@ -1,0 +1,39 @@
+# Table de sélection de `tools/dev/check --static --changed` (SL-3, T-455).
+# Format : NOM_DU_CONTROLE<TAB>MOTIFS (globs bash séparés par des virgules ; `*` y traverse les `/`).
+# Un contrôle s'exécute si au moins un fichier modifié (committé depuis merge-base origin/main, indexé, modifié ou non
+# suivi) correspond à un motif. Un contrôle absent de cette table s'exécute toujours (défaut sûr) ; le test
+# tests/dev-factory/check-test.sh exige une ligne par contrôle de `check --list`.
+# Toute modification de tools/dev/, .github/ ou pyproject.toml sélectionne tous les contrôles (codé dans `check`, pas ici).
+# Modèle : le filtre `files` de pre-commit et affected-tests.conf de kube-ops (dépôt privé : idée seule).
+guard-check	tools/dev/*,.devcontainer/*
+toolchain-lock	tools/dev/*,.devcontainer/*,.github/workflows/ci.yaml,tests/dev-factory/*
+dev-factory-static	tools/dev/*,.devcontainer/*,tests/dev-factory/*
+check-selftest	tools/dev/*,tests/dev-factory/*
+devcontainer-json	.devcontainer/*
+shellcheck	*.sh,tools/dev/*
+shellcheck-all	*.sh
+yamllint	*.yaml,*.yml
+yamllint-platform	platform/*,tools/oke/*,tests/argo-guard/*,tests/argo-escalation/*,tools/appgen/yamllint.yaml
+actionlint	.github/*
+gitleaks	*
+backlog	backlog/*,docs/adr/*,docs/review/*,tools/backlog/*,.github/CODEOWNERS
+backlog-unittest	backlog/*,tools/backlog/*,tests/backlog/*
+identities-lint	docs/state/*,tools/backlog/*,tests/identities/*
+ruff-bugs	*.py
+quality	*.py,tools/quality/*,tests/quality/*
+coverage	tools/*,tests/appgen/*,tests/backlog/*,tests/identities/*,apps/*
+appgen-validate	apps/*,generated/*,golden-paths/*,tools/appgen/*
+appgen-check	apps/*,generated/*,golden-paths/*,tools/appgen/*
+appgen-unittest	tools/appgen/*,tests/appgen/*,apps/*
+argo-guard-rules	platform/*,apps/*,generated/*,tools/oke/*,clusters/*
+argo-guard-negative	platform/*,tools/oke/*,tests/argo-guard/*
+release-history	tests/release-history/*,apps/*,generated/*,tools/appgen/*
+cell-cpt	platform/*,tests/cell-cpt/*,tools/appgen/*
+security-bundle	platform/*,security/*,tests/security-bundle/*
+render-check	platform/*,tools/oke/*,clusters/*
+uninstall-guards	platform/*,tools/oke/*,tests/argo-guard/*
+kubeconform-platform	platform/*,tools/oke/*
+leak-guard	*
+identities	docs/state/*,tests/identities/*,tools/backlog/*
+settings	.claude/*,tests/hooks/*
+hooks	.claude/*,tests/hooks/*,tools/dev/leak-guard.sh

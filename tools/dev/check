@@ -4,10 +4,20 @@
 # (tests/*, tools/*) sans les dupliquer et rend une ligne PASS / FAIL / NOT_TESTED par contrôle.
 #
 # Usage :
-#   tools/dev/check --static [--strict]   contrôles sans cluster ni Docker (N0), indépendants de l'architecture
+#   tools/dev/check --file <chemin>...    L0 (< 2 s) : lint des fichiers selon leur type (ruff, shellcheck, yamllint,
+#                                         JSON ; appgen validate pour apps/*/app.yaml). FAIL = rc 2 (retour au hook).
+#   tools/dev/check --fast                L1 (< 10 s) : ruff, yamllint et shellcheck des fichiers modifiés (indexés,
+#                                         sinon modifiés depuis merge-base origin/main) + backlog check
+#   tools/dev/check --static [--strict]   L2 : contrôles sans cluster ni Docker (N0), indépendants de l'architecture
+#   tools/dev/check --static --changed    restreint --static aux contrôles touchés par git diff (table check-paths.tsv) ;
+#                                         toute modification de tools/dev/, .github/ ou pyproject.toml sélectionne tout ;
+#                                         sans origin/main : tout
 #   tools/dev/check --k3d    [--strict]   banc k3d jetable (N1) : appel documenté de tests/k3d/run.sh ; NOT_TESTED sans
 #                                         kubectl ou sans contexte k3d (jamais OKE, jamais le cluster du homelab)
-#   --static et --k3d se combinent.
+#   --static et --k3d se combinent ; --fast se combine avec --k3d ; --file est seul.
+#   --jobs N    exécute jusqu'à N contrôles indépendants en parallèle (défaut 1 ; sortie dans l'ordre des contrôles)
+#   --json      une ligne JSON par contrôle puis une ligne de bilan sur stdout ; le texte lisible passe sur stderr
+#   --list      liste les contrôles de --static (un nom par ligne)
 #
 # Statuts (un résultat n'est PASS qu'avec une exécution réelle) :
 #   PASS        le contrôle a tourné et réussi
@@ -15,51 +25,104 @@
 #   NOT_TESTED  non exécuté : outil absent, script pas encore dans le dépôt, exclu (CHECK_SKIP), hors conteneur
 #               ou abandon du contrôle sur précondition (rc 125).
 #               Jamais compté comme PASS.
-# Code de sortie : 0 si aucun FAIL ; 1 si au moins un FAIL ; 3 avec --strict (ou CHECK_STRICT=1) s'il reste un
-# NOT_TESTED sans FAIL (la CI utilise --strict) ; 2 pour un usage incorrect. Le verdict final n'est « PASS » que si
-# tous les contrôles sont PASS, sinon « INCOMPLET ».
+#   SKIP        hors du périmètre demandé (--changed, --fast, fusion avec coverage) : ni PASS ni NOT_TESTED, listé dans
+#               le bilan et le reçu ; le contrôle n'a pas été demandé à ce niveau.
+# Code de sortie : 0 si aucun FAIL ; 1 si au moins un FAIL (2 pour --file, convention du hook) ; 3 avec --strict (ou
+# CHECK_STRICT=1) s'il reste un NOT_TESTED sans FAIL (la CI utilise --strict) ; 2 pour un usage incorrect. Le verdict
+# final n'est « PASS » que si tous les contrôles demandés sont PASS, sinon « INCOMPLET ».
+# Reçu : chaque exécution écrit SHA, niveau, résultats et date (UTC) dans `$(git rev-parse --git-dir)/check-receipt.json`
+# (hors arbre suivi ; CHECK_RECEIPT=<chemin> le déplace). Un reçu n'est pas une garantie : il dit ce qui a tourné, à
+# quel niveau, sur quel SHA, avec quel arbre (dirty).
 # Contrôles miroirs de la CI (SL-1, T-453) : quality, ruff-bugs, shellcheck-all, backlog-unittest, identities-lint,
-# yamllint-platform, coverage. ruff doit être à la version épinglée de ci.yaml, sinon NOT_TESTED.
+# yamllint-platform, coverage. ruff doit être à la version épinglée de ci.yaml, sinon NOT_TESTED. gitleaks reproduit le
+# job `secrets` de ci.yaml (historique, règles par défaut) ; la garde propre au dépôt (.gitleaks.toml) est `leak-guard`.
 # Variables : CHECK_ONLY="a,b" (ne lancer que ces contrôles : tests du script), CHECK_SKIP="a,b" (NOT_TESTED « exclu »),
+# CHECK_CHANGED_FILES (liste de chemins, un par ligne : remplace git pour --changed et --fast ; tests),
 # OKE_PHASEB_STATE (cache des charts Helm, partagé et sérialisé par flock).
 # Aucun secret, aucun accès cluster en --static ; sortie sans valeur sensible.
+# shellcheck disable=SC2329  # fonctions appelées indirectement par step et dispatch
 set -uo pipefail
 
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SELF_DIR/../.." && pwd)"
+ORIG_PWD="$PWD"
 cd "$ROOT" || exit 2
 # Pas de __pycache__ : les .pyc embarquent les valeurs fictives des tests et gitleaks (leak-guard) scanne l'arbre de travail.
 export PYTHONDONTWRITEBYTECODE=1
 
-n_pass=0
-n_fail=0
-n_nt=0
 STRICT="${CHECK_STRICT:-0}"
-SUMMARY=()
+JOBS=1
+LISTMODE=""
+SEQ=0
+LEVEL=""
+CHANGED=()
+SCOPE_ALL=1
+declare -A TABLE=()
+PATHS_TABLE="$SELF_DIR/check-paths.tsv"
+# Une modification de ces chemins (le contrôle lui-même, la CI, la configuration) sélectionne tous les contrôles.
+SELECT_ALL_PATTERNS=('tools/dev/*' '.github/*' 'pyproject.toml')
+RES="$(mktemp -d "${TMPDIR:-/tmp}/check-res.XXXXXX")" || exit 2
+trap 'rm -rf "$RES"' EXIT
 
 usage() { awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; }
+
+now_ms() {
+  local t="${EPOCHREALTIME:-}"
+  if [[ -n "$t" ]]; then
+    t="${t/[.,]/}"
+    echo $((10#$t / 1000))
+  else
+    echo $(($(date +%s) * 1000))
+  fi
+}
 
 selected() { # NOM : vrai si le contrôle doit être considéré
   [[ -z "${CHECK_ONLY:-}" ]] && return 0
   [[ ",${CHECK_ONLY}," == *",$1,"* ]]
 }
 
-record() { # STATUT NOM DUREE DETAIL
-  local st="$1" name="$2" dur="$3" detail="${4:-}"
-  case "$st" in
-    PASS) n_pass=$((n_pass + 1)) ;;
-    FAIL) n_fail=$((n_fail + 1)) ;;
-    *) n_nt=$((n_nt + 1)) ;;
-  esac
+# record STATUT NOM DUREE_MS DETAIL : une ligne lisible (sauf SKIP) et une ligne TSV pour le bilan, le JSON et le reçu.
+record() {
+  local st="$1" name="$2" ms="$3" detail="${4:-}" d
+  printf '%s\t%s\t%s\t%s\n' "$st" "$name" "$ms" "$detail" >"$RES/$SEQ.tsv"
+  [[ "$st" == SKIP ]] && return 0
+  printf -v d '%d.%d' "$((ms / 1000))" "$((ms % 1000 / 100))"
   if [[ -n "$detail" ]]; then
-    printf '%-11s %-24s %4ss  %s\n' "$st" "$name" "$dur" "$detail"
+    printf '%-11s %-24s %5ss  %s\n' "$st" "$name" "$d" "$detail"
   else
-    printf '%-11s %-24s %4ss\n' "$st" "$name" "$dur"
+    printf '%-11s %-24s %5ss\n' "$st" "$name" "$d"
   fi
-  SUMMARY+=("$st $name")
 }
 
-not_tested() { selected "$1" && record NOT_TESTED "$1" 0 "$2"; return 0; }
+# dispatch CMD... : exécute un contrôle ; avec --jobs N > 1, en arrière-plan (sortie mise en tampon, relue dans l'ordre).
+dispatch() {
+  SEQ=$((SEQ + 1))
+  if [[ "$JOBS" -le 1 ]]; then
+    "$@"
+    return 0
+  fi
+  local -a running=()
+  while :; do
+    mapfile -t running < <(jobs -rp)
+    [[ "${#running[@]}" -lt "$JOBS" ]] && break
+    wait -n 2>/dev/null || true
+  done
+  ("$@" >"$RES/$SEQ.out" 2>&1 </dev/null) &
+}
+
+skip_step() { # NOM RAISON
+  selected "$1" || return 0
+  if [[ -n "$LISTMODE" ]]; then echo "$1"; return 0; fi
+  SEQ=$((SEQ + 1))
+  record SKIP "$1" 0 "$2"
+}
+
+nt_run() { record NOT_TESTED "$1" 0 "$2"; }
+not_tested() { # NOM RAISON
+  selected "$1" || return 0
+  if [[ -n "$LISTMODE" ]]; then echo "$1"; return 0; fi
+  dispatch nt_run "$1" "$2"
+}
 
 # Un outil (ou « py:module » pour un module Python) est-il disponible ?
 have() {
@@ -69,11 +132,25 @@ have() {
   esac
 }
 
-# step NOM OUTILS_REQUIS(liste séparée par des virgules, - = aucun) COMMANDE...
-step() {
+# Le contrôle est-il dans le périmètre de --changed ? Un contrôle absent de la table s'exécute toujours.
+in_scope() {
+  [[ "$SCOPE_ALL" == 1 ]] && return 0
+  local pats="${TABLE[$1]:-}" f p
+  local -a arr=()
+  [[ -z "$pats" ]] && return 0
+  IFS=, read -ra arr <<<"$pats"
+  for f in "${CHANGED[@]}"; do
+    for p in "${arr[@]}"; do
+      # shellcheck disable=SC2053  # motif glob voulu
+      [[ "$f" == $p ]] && return 0
+    done
+  done
+  return 1
+}
+
+step_run() { # NOM OUTILS COMMANDE...
   local name="$1" needs="$2"
   shift 2
-  selected "$name" || return 0
   if [[ ",${CHECK_SKIP:-}," == *",$name,"* ]]; then
     record NOT_TESTED "$name" 0 "exclu (CHECK_SKIP)"
     return 0
@@ -89,9 +166,9 @@ step() {
   fi
   local log t0 t1 rc=0
   log="$(mktemp "${TMPDIR:-/tmp}/check.XXXXXX")"
-  t0="$(date +%s)"
+  t0="$(now_ms)"
   "$@" >"$log" 2>&1 || rc=$?
-  t1="$(date +%s)"
+  t1="$(now_ms)"
   if [[ "$rc" -eq 0 ]]; then
     record PASS "$name" "$((t1 - t0))"
   elif [[ "$rc" -eq 125 ]]; then
@@ -105,6 +182,18 @@ step() {
   rm -f "$log"
 }
 
+# step NOM OUTILS_REQUIS(liste séparée par des virgules, - = aucun) COMMANDE...
+step() {
+  selected "$1" || return 0
+  if [[ -n "$LISTMODE" ]]; then echo "$1"; return 0; fi
+  if ! in_scope "$1"; then
+    SEQ=$((SEQ + 1))
+    record SKIP "$1" 0 "hors périmètre (--changed)"
+    return 0
+  fi
+  dispatch step_run "$@"
+}
+
 # Contrôle porté par un script du dépôt qui n'existe pas encore (ticket) : NOT_TESTED, pas PASS.
 script_step() { # NOM TICKET OUTILS CHEMIN [ARGS...]
   local name="$1" ticket="$2" needs="$3" path="$4"
@@ -115,6 +204,67 @@ script_step() { # NOM TICKET OUTILS CHEMIN [ARGS...]
   fi
   step "$name" "$needs" bash "$path" "$@"
 }
+
+# ---- sélection par chemins (--changed, --fast) ----
+
+# collect_changed [BASE_DE_REPLI] : remplit CHANGED (committés depuis merge-base origin/main, indexés, modifiés, non suivis).
+# Sans origin/main : BASE_DE_REPLI si donnée (--fast), sinon retour 1 (--changed : tout sélectionner).
+collect_changed() {
+  local base f
+  local -A seen=()
+  CHANGED=()
+  if [[ -n "${CHECK_CHANGED_FILES+x}" ]]; then
+    while IFS= read -r f; do
+      [[ -n "$f" && -z "${seen[$f]:-}" ]] && { seen[$f]=1; CHANGED+=("$f"); }
+    done <<<"$CHECK_CHANGED_FILES"
+    return 0
+  fi
+  base="$(git merge-base HEAD origin/main 2>/dev/null)" || base="${1:-}"
+  [[ -n "$base" ]] || return 1
+  while IFS= read -r f; do
+    [[ -n "$f" && -z "${seen[$f]:-}" ]] && { seen[$f]=1; CHANGED+=("$f"); }
+  done < <(
+    git diff --name-only "$base"
+    git ls-files -o --exclude-standard
+  )
+  return 0
+}
+
+load_table() {
+  local n pats
+  [[ -f "$PATHS_TABLE" ]] || return 1
+  while IFS=$'\t' read -r n pats; do
+    [[ -z "$n" || "$n" == \#* ]] && continue
+    TABLE[$n]="$pats"
+  done <"$PATHS_TABLE"
+  return 0
+}
+
+setup_changed() {
+  local f p
+  if ! load_table; then
+    echo "-- --changed : table absente ($PATHS_TABLE), tous les contrôles sont sélectionnés"
+    return 0
+  fi
+  if ! collect_changed; then
+    echo "-- --changed : origin/main absent, tous les contrôles sont sélectionnés"
+    return 0
+  fi
+  SCOPE_ALL=0
+  for f in "${CHANGED[@]}"; do
+    for p in "${SELECT_ALL_PATTERNS[@]}"; do
+      # shellcheck disable=SC2053  # motif glob voulu
+      if [[ "$f" == $p ]]; then
+        SCOPE_ALL=1
+        echo "-- --changed : $f touche le contrôle ou la CI, tous les contrôles sont sélectionnés"
+        return 0
+      fi
+    done
+  done
+  echo "-- --changed : ${#CHANGED[@]} fichier(s) modifié(s)"
+}
+
+# ---- contrôles ----
 
 # Les rendus et téléchargements de charts partagent un cache : sérialisés entre exécutions parallèles.
 locked() {
@@ -127,17 +277,50 @@ locked() {
   fi
 }
 
-shellcheck_all() {
-  local -a files=()
+# Fichiers shell contrôlés (sévérité par défaut) par l'étape shellcheck ; un chemin par ligne.
+shellcheck_list() {
   local f
   shopt -s nullglob
   for f in tools/dev/dev tools/dev/check tools/dev/guard-check.sh tests/dev-factory/*.sh tools/oke/*.sh \
     tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh \
     tests/release-history/*.sh tests/appgen/*.sh tests/leak-guard/*.sh tests/identities/*.sh tests/hooks/*.sh \
     tools/dev/leak-guard.sh; do
-    [[ -f "$f" ]] && files+=("$f")
+    [[ -f "$f" ]] && echo "$f"
   done
+}
+
+shellcheck_all() {
+  local -a files=()
+  mapfile -t files < <(shellcheck_list)
   shellcheck -x -P SCRIPTDIR "${files[@]}"
+}
+
+# Contrôle shellcheck des fichiers donnés : sévérité par défaut pour ceux que couvre l'étape shellcheck, warning pour les autres
+# (comme shellcheck-all en CI).
+shellcheck_files() {
+  local -a strict=() warn=() list=()
+  local f x hit rc=0
+  mapfile -t list < <(shellcheck_list)
+  for f in "$@"; do
+    hit=0
+    for x in "${list[@]}"; do [[ "$x" == "$f" ]] && hit=1; done
+    if [[ "$hit" -eq 1 ]]; then strict+=("$f"); else warn+=("$f"); fi
+  done
+  if [[ "${#strict[@]}" -gt 0 ]]; then shellcheck -x -P SCRIPTDIR "${strict[@]}" || rc=1; fi
+  if [[ "${#warn[@]}" -gt 0 ]]; then shellcheck -x -P SCRIPTDIR -S warning "${warn[@]}" || rc=1; fi
+  return "$rc"
+}
+
+# gitleaks : miroir du job CI `secrets` (historique, règles par défaut de gitleaks, valeurs masquées). La config du dépôt
+# (.gitleaks.toml : OCID, IPv4, e-mail...) est celle du job leak-guard, que l'étape `leak-guard` applique à l'arbre ; la
+# charger ici scannerait l'historique déjà publié avec des règles qui n'existaient pas (208 FAIL de la dette T-450).
+gitleaks_history() {
+  local w rc=0
+  w="$(mktemp -d "${TMPDIR:-/tmp}/check-gl.XXXXXX")"
+  printf '[extend]\nuseDefault = true\n' >"$w/gitleaks-default.toml"
+  gitleaks git --config "$w/gitleaks-default.toml" --redact --no-banner --log-level warn . || rc=$?
+  rm -rf "$w"
+  return "$rc"
 }
 
 # Version de ruff épinglée par la CI (ci.yaml, job lint-code) : un ruff d'une autre version ne donne pas les mêmes
@@ -158,6 +341,12 @@ ruff_bugs() {
   ruff check --no-cache --select F,B,E9 tools tests
 }
 
+# Même sélection de règles sur des fichiers donnés (--fast, --file).
+ruff_files() {
+  ruff_pinned || return $?
+  ruff check --no-cache --select F,B,E9 "$@"
+}
+
 # Niveau warning sur tous les *.sh versionnés (shellcheck -S warning) : miroir du job CI lint-code.
 shellcheck_versioned() {
   local -a files=()
@@ -176,6 +365,31 @@ yamllint_platform() {
     [[ -d "$d" ]] && dirs+=("$d")
   done
   yamllint -c tools/appgen/yamllint.yaml "${dirs[@]}"
+}
+
+# Un fichier YAML est-il dans le périmètre yamllint de la CI (étapes yamllint et yamllint-platform) ?
+yamllint_scope() {
+  case "$1" in
+    apps/* | tools/* | tests/* | .github/*) return 0 ;;
+    platform/install/* | platform/authz/* | platform/policies/* | platform/data/* | platform/traits/* | \
+      platform/project-types/* | platform/resource-types/* | platform/cluster-agent/* | platform/identity/* | \
+      platform/portal/*) return 0 ;;
+  esac
+  return 1
+}
+
+yamllint_files() { yamllint -c tools/appgen/yamllint.yaml "$@"; }
+
+# Un fichier est-il un script shell (extension .sh, ou shebang sh/bash sans extension) ?
+is_shell() {
+  local first=""
+  [[ -f "$1" ]] || return 1
+  case "$1" in
+    *.sh) return 0 ;;
+  esac
+  [[ "${1##*/}" == *.* ]] && return 1
+  IFS= read -r first <"$1" 2>/dev/null || true
+  [[ "$first" =~ ^#!.*[[:space:]/](ba|da)?sh([[:space:]]|$) ]]
 }
 
 # Registre des identités (aucune valeur) et tests du lint : miroir du job CI appgen.
@@ -211,10 +425,30 @@ quality_coverage() {
   return "$rc"
 }
 
+# `coverage` rejoue les tests appgen que lance `appgen-unittest` : quand `coverage` va tourner (sélectionné, dans le
+# périmètre, outils présents, ruff épinglé), `appgen-unittest` est fusionné avec lui. Sinon il tourne seul : aucun
+# contrôle ne disparaît quand `coverage` est NOT_TESTED.
+coverage_ready() {
+  selected coverage && in_scope coverage || return 1
+  [[ ",${CHECK_SKIP:-}," == *",coverage,"* ]] && return 1
+  local t
+  for t in python3 ruff py:yaml py:jsonschema py:coverage py:radon py:mypy; do have "$t" || return 1; done
+  ruff_pinned >/dev/null 2>&1
+}
+
+appgen_unittest_step() {
+  if [[ -z "$LISTMODE" ]] && selected appgen-unittest \
+    && { [[ -z "${CHECK_ONLY:-}" ]] || [[ ",${CHECK_ONLY}," == *",coverage,"* ]]; } && coverage_ready; then
+    skip_step appgen-unittest "fusionné avec coverage (mêmes tests, une seule exécution)"
+    return 0
+  fi
+  step appgen-unittest python3,py:yaml,py:jsonschema python3 -m unittest discover -s tests/appgen
+}
+
 in_container() { [[ "${DEV_FACTORY:-}" == 1 ]]; }
 
 run_static() {
-  echo "== check --static : $(git rev-parse --short HEAD 2>/dev/null || echo '?') dans $ROOT ($(uname -m))"
+  [[ -n "$LISTMODE" ]] || echo "== check --static : $(git rev-parse --short HEAD 2>/dev/null || echo '?') dans $ROOT ($(uname -m))"
   # Garde-fou du conteneur : n'a de sens que dans le conteneur de dev (DEV_FACTORY=1) ; sur l'hôte il échoue par conception.
   if in_container; then
     step guard-check - tools/dev/guard-check.sh
@@ -230,7 +464,7 @@ run_static() {
   step yamllint yamllint yamllint -c tools/appgen/yamllint.yaml apps tools tests .github
   step yamllint-platform yamllint yamllint_platform
   step actionlint actionlint actionlint
-  step gitleaks gitleaks gitleaks git --redact --no-banner --log-level warn .
+  step gitleaks gitleaks gitleaks_history
   step backlog python3 python3 tools/backlog/check.py
   step backlog-unittest python3 python3 -m unittest discover -s tests/backlog
   step identities-lint python3 identities_lint
@@ -239,7 +473,7 @@ run_static() {
   step coverage python3,ruff,py:yaml,py:jsonschema,py:coverage,py:radon,py:mypy quality_coverage
   step appgen-validate python3,py:yaml,py:jsonschema python3 tools/appgen/appgen.py validate
   step appgen-check python3,py:yaml,py:jsonschema python3 tools/appgen/appgen.py check
-  step appgen-unittest python3,py:yaml,py:jsonschema python3 -m unittest discover -s tests/appgen
+  appgen_unittest_step
   step argo-guard-rules python3,py:yaml python3 -I tools/oke/argo_guard.py .
   step argo-guard-negative python3,py:yaml tests/argo-guard/run.sh
   step release-history git tests/release-history/check.sh
@@ -256,8 +490,69 @@ run_static() {
   script_step hooks T-331 jq tests/hooks/run.sh
 }
 
+# --fast (L1) : fichiers indexés, sinon modifiés depuis merge-base origin/main (sans origin/main : depuis HEAD).
+run_fast() {
+  local -a files=() py=() sh=() yml=()
+  local f
+  echo "== check --fast : $(git rev-parse --short HEAD 2>/dev/null || echo '?') dans $ROOT"
+  if [[ -n "${CHECK_CHANGED_FILES+x}" ]]; then
+    collect_changed
+    files=("${CHANGED[@]}")
+  else
+    mapfile -t files < <(git diff --cached --name-only --diff-filter=ACMR)
+    if [[ "${#files[@]}" -eq 0 ]]; then
+      collect_changed HEAD || true
+      files=("${CHANGED[@]}")
+    fi
+  fi
+  for f in "${files[@]}"; do
+    [[ -f "$f" ]] || continue
+    case "$f" in
+      *.py) py+=("$f") ;;
+      *.yaml | *.yml) yamllint_scope "$f" && yml+=("$f") ;;
+    esac
+    is_shell "$f" && sh+=("$f")
+  done
+  echo "-- --fast : ${#files[@]} fichier(s) : ${#py[@]} py, ${#yml[@]} yaml, ${#sh[@]} shell"
+  if [[ "${#py[@]}" -gt 0 ]]; then step ruff-fast ruff ruff_files "${py[@]}"; else skip_step ruff-fast "aucun .py modifié"; fi
+  if [[ "${#yml[@]}" -gt 0 ]]; then step yamllint-fast yamllint yamllint_files "${yml[@]}"; else skip_step yamllint-fast "aucun YAML modifié"; fi
+  if [[ "${#sh[@]}" -gt 0 ]]; then step shellcheck-fast shellcheck shellcheck_files "${sh[@]}"; else skip_step shellcheck-fast "aucun script shell modifié"; fi
+  step backlog python3 python3 tools/backlog/check.py
+}
+
+# --file (L0) : un jeu de contrôles par fichier, choisi par extension et chemin.
+file_steps() { # CHEMIN
+  local f="$1"
+  case "$f" in
+    *.py) step "ruff:$f" ruff ruff_files "$f" ;;
+    *.yaml | *.yml)
+      if yamllint_scope "$f"; then
+        step "yamllint:$f" yamllint yamllint_files "$f"
+      else
+        skip_step "yamllint:$f" "hors périmètre yamllint de la CI"
+      fi
+      case "$f" in
+        apps/*/app.yaml) step "appgen-validate:$f" python3,py:yaml,py:jsonschema python3 tools/appgen/appgen.py validate ;;
+      esac
+      ;;
+    *.json) step "json:$f" python3 python3 -I -m json.tool "$f" ;;
+    *)
+      if is_shell "$f"; then
+        step "shellcheck:$f" shellcheck shellcheck_files "$f"
+      else
+        skip_step "aucun-contrôle:$f" "type de fichier sans contrôle L0"
+      fi
+      ;;
+  esac
+}
+
+run_file() {
+  local f
+  for f in "$@"; do file_steps "$f"; done
+}
+
 run_k3d() {
-  echo "== check --k3d : banc N1 (k3d jetable), jamais OKE"
+  [[ -n "$LISTMODE" ]] || echo "== check --k3d : banc N1 (k3d jetable), jamais OKE"
   if [[ ! -f tests/k3d/run.sh ]]; then
     not_tested k3d "absent du dépôt : tests/k3d/run.sh"
   else
@@ -272,33 +567,184 @@ run_k3d() {
   fi
 }
 
+# ---- bilan, JSON, reçu ----
+
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\t'/ }"
+  printf '%s' "$s"
+}
+
+# Remplit n_pass, n_fail, n_nt, n_skip, et STEPS_JSON (objets JSON séparés par des virgules).
+tally() {
+  local i st name ms detail d first=1
+  n_pass=0 n_fail=0 n_nt=0 n_skip=0 SKIPPED="" STEPS_JSON="" STEP_LINES=()
+  for ((i = 1; i <= SEQ; i++)); do
+    [[ -f "$RES/$i.tsv" ]] || continue
+    IFS=$'\t' read -r st name ms detail <"$RES/$i.tsv"
+    case "$st" in
+      PASS) n_pass=$((n_pass + 1)) ;;
+      FAIL) n_fail=$((n_fail + 1)) ;;
+      SKIP) n_skip=$((n_skip + 1)); SKIPPED="$SKIPPED $name" ;;
+      *) n_nt=$((n_nt + 1)) ;;
+    esac
+    printf -v d '%d.%d' "$((ms / 1000))" "$((ms % 1000 / 100))"
+    local obj
+    obj="{\"name\":\"$(json_escape "$name")\",\"status\":\"$st\",\"seconds\":$d,\"level\":\"$LEVEL\""
+    [[ -n "$detail" ]] && obj="$obj,\"detail\":\"$(json_escape "$detail")\""
+    obj="$obj}"
+    STEP_LINES+=("$obj")
+    if [[ "$first" -eq 1 ]]; then STEPS_JSON="$obj"; first=0; else STEPS_JSON="$STEPS_JSON,$obj"; fi
+  done
+}
+
+write_receipt() { # RESULT SECONDES
+  local path="${CHECK_RECEIPT:-}" gd sha dirty=false when
+  if [[ -z "$path" ]]; then
+    gd="$(git rev-parse --git-dir 2>/dev/null)" || return 0
+    path="$gd/check-receipt.json"
+  fi
+  sha="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+  [[ -n "$(git status --porcelain 2>/dev/null)" ]] && dirty=true
+  TZ=UTC printf -v when '%(%Y-%m-%dT%H:%M:%SZ)T' -1
+  printf '{"sha":"%s","dirty":%s,"level":"%s","date":"%s","result":"%s","pass":%s,"fail":%s,"not_tested":%s,"skipped":%s,"seconds":%s,"only":"%s","skip_env":"%s","steps":[%s]}\n' \
+    "$sha" "$dirty" "$LEVEL" "$when" "$1" "$n_pass" "$n_fail" "$n_nt" "$n_skip" "$2" \
+    "$(json_escape "${CHECK_ONLY:-}")" "$(json_escape "${CHECK_SKIP:-}")" "$STEPS_JSON" >"$path" 2>/dev/null \
+    || echo "-- reçu non écrit : $path"
+}
+
+conclude() { # T0_MS MODE_FICHIER JSON
+  local t0="$1" file_mode="$2" json="$3" t1 secs result rc=0 d i
+  wait
+  for ((i = 1; i <= SEQ; i++)); do
+    [[ -f "$RES/$i.out" ]] && cat "$RES/$i.out"
+  done
+  t1="$(now_ms)"
+  printf -v secs '%d.%d' "$(((t1 - t0) / 1000))" "$(((t1 - t0) % 1000 / 100))"
+  tally
+  printf -- '-- PASS=%s FAIL=%s NOT_TESTED=%s (%ss)\n' "$n_pass" "$n_fail" "$n_nt" "$secs"
+  [[ "$n_skip" -gt 0 ]] && printf -- '-- hors périmètre (%s) :%s\n' "$n_skip" "$SKIPPED"
+  if [[ "$n_fail" -gt 0 ]]; then
+    result=FAIL
+    echo "RESULT: FAIL"
+    rc=1
+    [[ "$file_mode" -eq 1 ]] && rc=2
+  elif [[ "$n_nt" -gt 0 ]]; then
+    result=INCOMPLET
+    echo "RESULT: INCOMPLET (aucun FAIL ; $n_nt contrôle(s) NOT_TESTED, non comptés comme PASS)"
+    [[ "$STRICT" == 1 ]] && rc=3
+  elif [[ "$n_pass" -eq 0 ]]; then
+    result=PASS
+    echo "RESULT: PASS (aucun contrôle sélectionné : rien ne l'exigeait à ce niveau)"
+  else
+    result=PASS
+    echo "RESULT: PASS"
+  fi
+  write_receipt "$result" "$secs"
+  if [[ "$json" -eq 1 ]]; then
+    for d in "${STEP_LINES[@]}"; do printf '%s\n' "$d" >&4; done
+    printf '{"summary":true,"level":"%s","result":"%s","pass":%s,"fail":%s,"not_tested":%s,"skipped":%s,"seconds":%s}\n' \
+      "$LEVEL" "$result" "$n_pass" "$n_fail" "$n_nt" "$n_skip" "$secs" >&4
+  fi
+  if [[ "$file_mode" -eq 1 ]]; then
+    # --file : rien sur stdout si FAIL ; le détail part sur stderr (retour immédiat à l'agent via le hook).
+    if [[ "$rc" -eq 2 ]]; then cat "$RES/human.txt" >&2; else cat "$RES/human.txt" >&5; fi
+  fi
+  exit "$rc"
+}
+
 main() {
-  local do_static=0 do_k3d=0 a
+  local do_static=0 do_k3d=0 do_fast=0 do_changed=0 json=0 a
+  local -a files=()
   [[ $# -gt 0 ]] || { usage >&2; exit 2; }
-  for a in "$@"; do
+  while [[ $# -gt 0 ]]; do
+    a="$1"
+    shift
     case "$a" in
       --static) do_static=1 ;;
       --k3d) do_k3d=1 ;;
+      --fast) do_fast=1 ;;
+      --changed) do_changed=1 ;;
       --strict) STRICT=1 ;;
+      --json) json=1 ;;
+      --list) LISTMODE=1 ;;
+      --jobs)
+        [[ $# -gt 0 ]] || { echo "check: --jobs demande un entier" >&2; exit 2; }
+        JOBS="$1"
+        shift
+        ;;
+      --jobs=*) JOBS="${a#--jobs=}" ;;
+      --file)
+        while [[ $# -gt 0 && "$1" != --* ]]; do files+=("$1"); shift; done
+        [[ "${#files[@]}" -gt 0 ]] || { echo "check: --file demande au moins un chemin" >&2; exit 2; }
+        ;;
       -h | --help) usage; exit 0 ;;
       *) echo "check: option inconnue : $a" >&2; usage >&2; exit 2 ;;
     esac
   done
-  local t0 t1
-  t0="$(date +%s)"
-  [[ "$do_static" -eq 1 ]] && run_static
-  [[ "$do_k3d" -eq 1 ]] && run_k3d
-  t1="$(date +%s)"
-  printf -- '-- PASS=%s FAIL=%s NOT_TESTED=%s (%ss)\n' "$n_pass" "$n_fail" "$n_nt" "$((t1 - t0))"
-  if [[ "$n_fail" -gt 0 ]]; then
-    echo "RESULT: FAIL"
-    exit 1
-  elif [[ "$n_nt" -gt 0 ]]; then
-    echo "RESULT: INCOMPLET (aucun FAIL ; $n_nt contrôle(s) NOT_TESTED, non comptés comme PASS)"
-    [[ "$STRICT" == 1 ]] && exit 3
+  [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || { echo "check: --jobs demande un entier >= 1 (reçu : $JOBS)" >&2; exit 2; }
+  if [[ "${#files[@]}" -gt 0 ]] && [[ $((do_static + do_k3d + do_fast + do_changed)) -gt 0 ]]; then
+    echo "check: --file ne se combine avec aucun autre niveau" >&2
+    exit 2
+  fi
+  if [[ "$do_fast" -eq 1 && "$do_static" -eq 1 ]]; then
+    echo "check: --fast et --static sont deux niveaux distincts (lancer l'un puis l'autre)" >&2
+    exit 2
+  fi
+  if [[ "$do_changed" -eq 1 && "$do_static" -eq 0 ]]; then
+    echo "check: --changed restreint --static : l'indiquer (check --static --changed)" >&2
+    exit 2
+  fi
+  if [[ -n "$LISTMODE" ]]; then
+    run_static
     exit 0
   fi
-  echo "RESULT: PASS"
+  [[ $((do_fast + do_static + do_k3d + ${#files[@]})) -gt 0 ]] || { usage >&2; exit 2; }
+
+  local file_mode=0
+  [[ "${#files[@]}" -gt 0 ]] && file_mode=1
+  LEVEL=""
+  [[ "$file_mode" -eq 1 ]] && LEVEL="file"
+  [[ "$do_fast" -eq 1 ]] && LEVEL="fast"
+  if [[ "$do_static" -eq 1 ]]; then
+    [[ -n "$LEVEL" ]] && LEVEL="$LEVEL+"
+    LEVEL="${LEVEL}static"
+    [[ "$do_changed" -eq 1 ]] && LEVEL="static-changed"
+  fi
+  if [[ "$do_k3d" -eq 1 ]]; then
+    [[ -n "$LEVEL" ]] && LEVEL="$LEVEL+"
+    LEVEL="${LEVEL}k3d"
+  fi
+
+  # Descripteurs : 4 = stdout d'origine (JSON), 5 = destination du texte lisible. --file met le texte en tampon.
+  exec 4>&1
+  if [[ "$json" -eq 1 ]]; then exec 5>&2; else exec 5>&1; fi
+  if [[ "$file_mode" -eq 1 ]]; then exec 1>"$RES/human.txt"; else exec 1>&5; fi
+
+  local t0
+  t0="$(now_ms)"
+  if [[ "$file_mode" -eq 1 ]]; then
+    local -a rel=()
+    local f
+    for f in "${files[@]}"; do
+      [[ "$f" == /* ]] || f="$ORIG_PWD/$f"
+      f="${f#"$ROOT"/}"
+      f="${f#./}"
+      [[ -f "$f" ]] || { echo "check: fichier absent : $f" >&5; exit 2; }
+      rel+=("$f")
+    done
+    echo "== check --file : ${#rel[@]} fichier(s)"
+    run_file "${rel[@]}"
+  fi
+  [[ "$do_fast" -eq 1 ]] && run_fast
+  if [[ "$do_static" -eq 1 ]]; then
+    [[ "$do_changed" -eq 1 ]] && setup_changed
+    run_static
+  fi
+  [[ "$do_k3d" -eq 1 ]] && run_k3d
+  conclude "$t0" "$file_mode" "$json"
 }
 
 main "$@"
