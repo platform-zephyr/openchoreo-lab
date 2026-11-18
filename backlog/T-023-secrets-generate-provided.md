@@ -20,3 +20,4 @@ docs/schema/, tools/appgen/, platform/, tests/
 - [ ] k3d : app `generate` démarre sans geste, valeur stable après recréation du namespace
 - [ ] app `provided` BLOCKED puis Ready
 - [ ] agents sans lecture de valeur (test de politique)
+- [ ] CI : aucune cellule d'app ne référence le store Doppler

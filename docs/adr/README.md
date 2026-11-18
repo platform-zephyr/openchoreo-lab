@@ -23,7 +23,7 @@ exécutables, pas par des approbations.
 | [0011](0011-feedback-preuve-runtime.md) | Feedback machine-lisible et preuve runtime automatique | PROPOSÉ |
 | [0012](0012-connaissance-backlog.md) | Connaissance, backlog et état pour agents | PROPOSÉ |
 | [0013](0013-intention-langage-naturel.md) | L'utilisateur exprime une intention en langage naturel à un LLM | PROPOSÉ |
-| [0014](0014-secrets-openbao.md) | Secrets : OpenBao comme coffre de la plateforme, Doppler réduit aux racines | PROPOSÉ |
+| [0014](0014-secrets-openbao.md) | Secrets : OpenBao pour les secrets internes, Doppler pour les primitives externes | PROPOSÉ |
 
 Ces ADR ne changent rien au cluster. Un ADR passe d'**PROPOSÉ** à **ACTÉ** par la fusion de la PR qui le modifie,
 approuvée par Paul (`docs/adr/` fait partie du noyau protégé, ADR-0002). Un ADR acté n'est pas réécrit : il est
