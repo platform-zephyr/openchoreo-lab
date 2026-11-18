@@ -5,10 +5,10 @@ Relevé en LECTURE SEULE le 2026-11-17 (OCI CLI : `bv volume get`, `compute volu
 ## Ce qui est établi (preuve OCI)
 | | Volume A | Volume B |
 |---|---|---|
-| Nom | `csi-69b1aca8-b557-4547-b93b-37d0a2a681d0` | `csi-142706cc-8609-442a-be33-e7c82245b66b` |
+| Nom | `csi-<uuid-masqué>` | `csi-<uuid-masqué>` |
 | Taille / état | 50 Go, AVAILABLE, VPU 10, AD-1 | 50 Go, AVAILABLE, VPU 10, AD-1 |
 | Créé | 2026-11-15 21:27:38Z | 2026-11-15 21:45:44Z |
-| Créé par (balise Oracle `CreatedBy`) | cluster OKE `…ww66nmx6…chuigjmq` (ancien `oracle-a1`, endpoint 10.0.2.3, **DELETED**) | idem |
+| Créé par (balise Oracle `CreatedBy`) | cluster OKE `<id-masqué>` (ancien `oracle-a1`, endpoint <IP-privée-masquée>, **DELETED**) | idem |
 | Attachement | 1 historique, **DETACHED** (créé 21:27:49Z) | 1 historique, **DETACHED** (créé 21:47:47Z) |
 | Sauvegardes OCI | aucune | aucune |
 | Balises libres (PVC/namespace) | aucune | aucune |
