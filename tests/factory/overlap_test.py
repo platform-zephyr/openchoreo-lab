@@ -47,6 +47,14 @@ TICKETS = {
     "T-911": (".github/", "111"),
     "T-912": (".github/workflows/claude-agent.yml", "112"),
     "T-913": ("tools/factory/*.py, tests/factory/", "null"),
+    # Règle de finesse : dossier racine + chemins précis dessous = ombrelle ignorée.
+    "T-914": ("tools/, tools/observe/lint.py, tests/, tests/observe/, docs/runbooks/", "114"),
+    "T-915": ("tools/, tools/metrics/ingest/, tests/metrics/, docs/METRICS.md", "115"),
+    "T-916": ("tools/, docs/", "116"),  # dossiers racines sans chemin précis : tout le sous-arbre
+    "T-917": ("tests/, tests/observe/test_lint.py", "117"),
+    "T-918": ("tools/, tools/dev/check", "118"),
+    "T-919": ("tools/**, tools/appgen/", "119"),
+    "T-920": (".github/, .github/workflows/metrics.yml", "120"),
 }
 
 
@@ -147,6 +155,45 @@ class OverlapTest(unittest.TestCase):
                 rc, out, _ = self.run_guard(bad)
                 self.assertEqual(rc, overlap.EXIT_USAGE)
                 self.assertIsNone(out)
+
+    # --- règle de finesse (ombrelles)
+
+    def test_refine_unitaire(self):
+        self.assertEqual(overlap.refine(["tools/", "tools/x.py", "docs/"]), (["tools/x.py", "docs/"], ["tools/"]))
+        self.assertEqual(overlap.refine(["tools/**", "tools/a/"]), (["tools/a/"], ["tools/**"]))
+        # Profondeur 2 : jamais une ombrelle ; dossier racine seul : conservé.
+        self.assertEqual(overlap.refine(["apps/echo/", "apps/echo/values.yaml"]),
+                         (["apps/echo/", "apps/echo/values.yaml"], []))
+        self.assertEqual(overlap.refine(["tools/", "toolsx/a.py"]), (["tools/", "toolsx/a.py"], []))
+
+    def test_ombrelles_disjointes_admises(self):
+        for pair in ("114,115", "114,119", "115,119", "119,106", "120,110", "120,112"):
+            with self.subTest(pair=pair):
+                rc, out, err = self.run_guard(pair)
+                self.assertEqual(rc, overlap.EXIT_OK, err)
+                self.assertEqual(out["conflicts"], [])
+        _, out, _ = self.run_guard("114")
+        self.assertEqual(out["tickets"][0]["umbrellas"], ["tools/", "tests/"])
+
+    def test_meme_sous_chemin_refuse(self):
+        rc, out, err = self.run_guard("114,117")  # tests/observe/ ~ tests/observe/test_lint.py
+        self.assertEqual(rc, overlap.EXIT_OVERLAP)
+        self.assertEqual(out["conflicts"][0]["globs"], ["tests/observe/", "tests/observe/test_lint.py"])
+        self.assertIn("REFUS recouvrement : #114 (T-914) et #117 (T-917)", err)
+
+    def test_dossier_racine_non_raffine_reste_large(self):
+        for pair in ("116,114", "116,115", "116,106", "116,T-913"):
+            with self.subTest(pair=pair):
+                rc, _, _ = self.run_guard(pair)
+                self.assertEqual(rc, overlap.EXIT_OVERLAP)
+
+    def test_fichier_chaud_sous_ombrelle_refuse(self):
+        rc, out, _ = self.run_guard("118,105")  # tools/dev/check déclaré : groupe couplé avec ci.yaml
+        self.assertEqual(rc, overlap.EXIT_OVERLAP)
+        self.assertIn(".github/workflows/ci.yaml", out["conflicts"][0]["hot_files"])
+        rc, out, _ = self.run_guard("118,104")
+        self.assertEqual(rc, overlap.EXIT_OVERLAP)
+        self.assertTrue(out["conflicts"][0]["hot_files"])
 
     def test_normalisation_des_numeros(self):
         self.assertEqual(overlap.parse_refs("007, 7 T-5,T-5"), ["7", "T-5"])

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "alert-payload.v1",
+  "alert": "LabAppDown",
+  "status": "firing",
+  "severity": "critical",
+  "class": "app",
+  "app": "whoami",
+  "env": "development",
+  "cluster": "k3d",
+  "startsAt": "2026-11-18T12:00:00Z",
+  "fingerprint": "3f1c9a52b7d04e68",
+  "runbook": "docs/runbooks/LabAppDown.md",
+  "summary": "whoami (development) n'a aucun réplica disponible depuis 5 minutes."
+}

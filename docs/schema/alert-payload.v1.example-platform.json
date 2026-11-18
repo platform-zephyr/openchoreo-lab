@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "alert-payload.v1",
+  "alert": "LabClusterUnreachable",
+  "status": "firing",
+  "severity": "info",
+  "class": "platform",
+  "cluster": "homelab",
+  "startsAt": "2026-11-18T22:10:00Z",
+  "fingerprint": "a09b77c1d2e35f40",
+  "runbook": "docs/runbooks/LabClusterUnreachable.md",
+  "summary": "Le cluster homelab ne répond plus à la sonde depuis 10 minutes ; les alertes d'application sont suspendues."
+}

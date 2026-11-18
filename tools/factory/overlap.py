@@ -10,11 +10,20 @@ Entrées : une liste de références (numéros d'issues GitHub ou identifiants `
 champ `github_issue:` de l'en-tête. Le périmètre est lu dans `## Périmètre de fichiers` avec le même analyseur et le
 même test de recoupement de globs que le dispatcher (`tools/backlog/admission.py`, T-210).
 
+Règle de finesse (dossiers racines) : un élément qui désigne un dossier de premier niveau (`tools/`, `docs/`,
+`tests/`, `.github/`, ou `tools/**`) est une **ombrelle** quand le même ticket déclare aussi au moins un chemin plus
+précis dessous (`tools/observe/lint.py`, `tests/observe/`). L'ombrelle est alors ignorée : seuls ses chemins précis
+comptent. Deux tickets n'entrent donc en conflit sous un dossier racine que si tous deux déclarent un même sous-chemin
+(ou deux sous-chemins qui se recoupent). Sûreté : un dossier racine déclaré **sans** chemin précis dessous reste une
+revendication de tout le sous-arbre (il recoupe tout ce que l'autre ticket y déclare) ; un dossier de profondeur 2 ou
+plus (`tools/appgen/`) n'est jamais une ombrelle ; les fichiers chauds sont cherchés dans le périmètre raffiné, donc un
+fichier chaud n'est revendiqué que s'il est déclaré ou couvert par un dossier non raffiné.
+
 Fichiers chauds : `.github/workflows/ci.yaml`, `.github/CODEOWNERS`, `tools/dev/check`, `tools/dev/ci-map.tsv`,
 `AGENTS.md`. Les trois premiers fichiers CI sont couplés par le test de parité (T-460) : un ticket qui touche l'un
 d'eux est compté comme touchant les trois.
 
-Sortie : JSON `overlap-guard.v1` sur stdout ; un message par refus sur stderr.
+Sortie : JSON `overlap-guard.v1` sur stdout (champ additif `umbrellas` par ticket : ombrelles ignorées) ; un message par refus sur stderr.
 Codes : 0 = lot admis ; 4 = recouvrement (lot refusé) ; 3 = référence sans ticket ou sans périmètre exploitable dans
 un lot de plus d'un ticket (lot refusé : rien ne prouve l'absence de recouvrement) ; 2 = usage.
 Hors ligne, stdlib seulement, lecture seule : aucun réseau, aucun secret, aucune écriture.
@@ -95,6 +104,26 @@ def resolve(ref: str, backlog: dict[str, dict[str, object]]) -> str | None:
     return next((tid for tid, t in backlog.items() if t["issue"] == ref), None)
 
 
+def _root_dir(glob: str) -> str | None:
+    """Nom du dossier de premier niveau si `glob` vaut `X/` ou `X/**`, sinon None."""
+    segs = [s for s in glob.strip("/").split("/") if s]
+    if len(segs) == 2 and segs[1] == "**":
+        return segs[0]
+    if len(segs) == 1 and glob.endswith("/") and not any(c in segs[0] for c in "*?["):
+        return segs[0]
+    return None
+
+
+def refine(globs: list[str]) -> tuple[list[str], list[str]]:
+    """(périmètre raffiné, ombrelles retirées) : voir « Règle de finesse » en tête de module."""
+    umbrellas = []
+    for g in globs:
+        root = _root_dir(g)
+        if root and any(h != g and _root_dir(h) is None and h.startswith(root + "/") for h in globs):
+            umbrellas.append(g)
+    return [g for g in globs if g not in umbrellas], umbrellas
+
+
 def expand_hot(globs: list[str]) -> tuple[list[str], list[str]]:
     """(périmètre étendu au groupe couplé, fichiers chauds couverts)."""
     hot = [f for f in HOT_FILES if any(admission.overlaps(g, f) for g in globs)]
@@ -126,8 +155,10 @@ def evaluate(refs: list[str], backlog: dict[str, dict[str, object]]) -> tuple[in
         if not globs:
             unresolved.append({"ref": ref, "reason": f"{tid} : périmètre de fichiers vide ou non exploitable"})
             continue
-        scope, hot = expand_hot(globs)
-        entries.append({"ref": ref, "ticket": tid, "perimeter": globs, "scope": scope, "hot": hot})
+        precise, umbrellas = refine(globs)
+        scope, hot = expand_hot(precise)
+        entries.append({"ref": ref, "ticket": tid, "perimeter": globs, "umbrellas": umbrellas,
+                        "scope": scope, "hot": hot})
     conflicts = [c for i, a in enumerate(entries) for b in entries[i + 1:] if (c := _pair_conflict(a, b))]
     if conflicts:
         rc = EXIT_OVERLAP
@@ -136,7 +167,7 @@ def evaluate(refs: list[str], backlog: dict[str, dict[str, object]]) -> tuple[in
     else:
         rc = EXIT_OK
     out = {"schema": SCHEMA, "admitted": rc == EXIT_OK, "refs": refs,
-           "tickets": [{k: e[k] for k in ("ref", "ticket", "perimeter", "hot")} for e in entries],
+           "tickets": [{k: e[k] for k in ("ref", "ticket", "perimeter", "umbrellas", "hot")} for e in entries],
            "conflicts": conflicts, "unresolved": unresolved}
     return rc, out
 

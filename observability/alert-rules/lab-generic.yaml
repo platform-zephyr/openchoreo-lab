@@ -1,0 +1,88 @@
+# Règles d'alerte génériques du labo (T-100, ADR-0015) : une règle par signal, pas par app.
+# Format : fichier de règles Prometheus (groups/rules), importable dans Grafana. Ce fichier est le CONTRAT ; la
+# planification (OpenTofu, create/update seulement) vit dans homelab-infra et n'est pas faite ici.
+# Statut : STATIC. Les expressions n'ont pas été évaluées contre un cluster (NOT_TESTED).
+# Contrat de labels (posés par Alloy, ADR-0015) : lab_app, lab_env, cluster sur toute série lab-*.
+# Chaque règle porte severity (critical|warning|info), class (app|platform) et l'annotation runbook = docs/runbooks/<alert>.md.
+# Garde de warm-up : les règles class=app exigent `lab_cluster_reachable == 1` (sonde blackbox du site) ; un homelab éteint
+# ne déclenche donc que LabClusterUnreachable (info).
+groups:
+  - name: lab-app
+    rules:
+      - alert: LabAppDown
+        expr: |
+          (sum by (lab_app, lab_env, cluster) (kube_deployment_status_replicas_available{namespace=~"lab-.*"}) == 0)
+          and on (cluster) (lab_cluster_reachable == 1)
+        for: 5m
+        labels:
+          severity: critical
+          class: app
+        annotations:
+          summary: "{{ $labels.lab_app }} ({{ $labels.lab_env }}) n'a aucun réplica disponible depuis 5 minutes."
+          runbook: docs/runbooks/LabAppDown.md
+      - alert: LabPodCrashLooping
+        expr: |
+          (max by (lab_app, lab_env, cluster) (kube_pod_container_status_waiting_reason{namespace=~"lab-.*|dp-.*", reason="CrashLoopBackOff"}) == 1)
+          and on (cluster) (lab_cluster_reachable == 1)
+        for: 5m
+        labels:
+          severity: warning
+          class: app
+        annotations:
+          summary: "Un conteneur de {{ $labels.lab_app }} ({{ $labels.lab_env }}) est en CrashLoopBackOff depuis 5 minutes."
+          runbook: docs/runbooks/LabPodCrashLooping.md
+      - alert: LabPodOOMKilled
+        expr: |
+          (max by (lab_app, lab_env, cluster) (kube_pod_container_status_last_terminated_reason{namespace=~"lab-.*|dp-.*", reason="OOMKilled"}) == 1)
+          and on (cluster) (lab_cluster_reachable == 1)
+        for: 1m
+        labels:
+          severity: warning
+          class: app
+        annotations:
+          summary: "Un conteneur de {{ $labels.lab_app }} ({{ $labels.lab_env }}) a été tué pour dépassement de mémoire."
+          runbook: docs/runbooks/LabPodOOMKilled.md
+      - alert: LabPodPending
+        expr: |
+          (max by (lab_app, lab_env, cluster) (kube_pod_status_phase{namespace=~"lab-.*|dp-.*", phase="Pending"}) == 1)
+          and on (cluster) (lab_cluster_reachable == 1)
+        for: 15m
+        labels:
+          severity: warning
+          class: app
+        annotations:
+          summary: "Un pod de {{ $labels.lab_app }} ({{ $labels.lab_env }}) reste Pending depuis 15 minutes."
+          runbook: docs/runbooks/LabPodPending.md
+      - alert: LabAppStatusFail
+        expr: |
+          (max by (lab_app, lab_env, cluster) (lab_app_status{verdict="FAIL"}) == 1)
+          and on (cluster) (lab_cluster_reachable == 1)
+        for: 10m
+        labels:
+          severity: warning
+          class: app
+        annotations:
+          summary: "app-status.v1 de {{ $labels.lab_app }} ({{ $labels.lab_env }}) vaut FAIL depuis 10 minutes."
+          runbook: docs/runbooks/LabAppStatusFail.md
+  - name: lab-platform
+    rules:
+      - alert: LabArgoAppDegraded
+        expr: |
+          (max by (lab_app, lab_env, cluster) (argocd_app_info{dest_namespace=~"lab-.*", health_status=~"Degraded|Missing"}) == 1)
+          and on (cluster) (lab_cluster_reachable == 1)
+        for: 10m
+        labels:
+          severity: warning
+          class: platform
+        annotations:
+          summary: "L'application Argo CD de {{ $labels.lab_app }} ({{ $labels.lab_env }}) est Degraded depuis 10 minutes."
+          runbook: docs/runbooks/LabArgoAppDegraded.md
+      - alert: LabClusterUnreachable
+        expr: lab_cluster_reachable == 0
+        for: 10m
+        labels:
+          severity: info
+          class: platform
+        annotations:
+          summary: "Le cluster {{ $labels.cluster }} ne répond plus à la sonde depuis 10 minutes ; les alertes d'application sont suspendues."
+          runbook: docs/runbooks/LabClusterUnreachable.md
