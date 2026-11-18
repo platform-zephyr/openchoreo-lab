@@ -23,11 +23,11 @@ Le statut des apps est publié aujourd'hui sous l'identité de Paul. Le publier 
 docs/state/identities.yaml, docs/AGENT-IDENTITY.md, platform/install/values/argocd.yaml, platform/install/argocd/notifications/, tests/argo-notifications/
 
 ## Critères de fin
-- [ ] MANDAT Paul : App `openchoreo-status` créée avec exactement Checks, Commit statuses (écriture) et Metadata (lecture), installée sur ce dépôt et le bac à sable du bras K ; identifiants déposés dans Doppler sous les noms `OPENCHOREO_STATUS_APP_ID`, `OPENCHOREO_STATUS_INSTALLATION_ID`, `OPENCHOREO_STATUS_PRIVATE_KEY` (noms seulement ici)
-- [ ] entrée `statut-app-github` du registre confirmée (date réelle, `created_is_estimate: false`) ; `identities_lint.py` PASS
+- [x] MANDAT Paul : App `openchoreo-status` créée avec exactement Checks, Commit statuses (écriture) et Metadata (lecture), installée sur ce dépôt et le bac à sable du bras K ; identifiants déposés dans Doppler sous les noms `OPENCHOREO_STATUS_APP_ID`, `OPENCHOREO_STATUS_INSTALLATION_ID`, `OPENCHOREO_STATUS_PRIVATE_KEY` (noms seulement ici) (fait le 2026-11-18 : App créée vers 23:13Z, installée à 23:15:21Z sur `openchoreo-lab` et `bench-ab-arm-k` seulement ; permissions relevées par `gh api orgs/platform-zephyr/installations` : checks=write, statuses=write, metadata=read, aucun événement ; trois noms présents dans Doppler `identity/openchoreo-status` ; réserve : l'intégrité de la clé stockée n'a pas été relue)
+- [x] entrée `statut-app-github` du registre confirmée (date réelle, `created_is_estimate: false`) ; `identities_lint.py` PASS (`created_is_estimate: false`, `identities_lint.py` OK le 2026-11-18)
 - [ ] Notifications activé dans les valeurs d'Argo CD, secret lu par ESO dans `lab-argocd` seulement, gabarit de check run par app et par révision (`success`, `failure`, `neutral`) ; rendu Helm et `argo_guard.py` PASS en CI
 - [ ] test négatif : le jeton de l'App est refusé en écriture sur le contenu du dépôt (preuve datée, API GitHub)
-- [ ] `docs/AGENT-IDENTITY.md` : rôle, permissions, rotation, et pourquoi l'App de l'usine n'est pas réutilisée
+- [x] `docs/AGENT-IDENTITY.md` : rôle, permissions, rotation, et pourquoi l'App de l'usine n'est pas réutilisée (section ajoutée le 2026-11-18)
 
 ## Notes
 Art antérieur : Argo CD Notifications, service `github` (`appID`, `installationID`, `privateKey` ; gabarits `status` et `checkRun`), docs Argo CD lues le 2026-11-18 ; permalien à SHA à citer dans la PR. Contrôleur Notifications : +1 pod sur OKE (budget T-487).
