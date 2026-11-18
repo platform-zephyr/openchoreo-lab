@@ -23,8 +23,8 @@ github_issue: null
 tools/appgen/, tools/backlog/, pyproject.toml
 
 ## Critères de fin
-- [ ] `mypy tools/appgen` : 0 erreur, job CI requis ; modules déjà stricts listés dans `pyproject.toml`
-- [ ] 100 % des fonctions publiques de `tools/appgen` annotées
+- [x] `mypy tools/appgen` : 0 erreur (cliquet `quality`, requis par `ci-ok`, sans toucher ci.yaml) ; modules déjà stricts listés dans `pyproject.toml`
+- [x] 100 % des fonctions publiques de `tools/appgen` annotées
 
 ## Notes
 Proposition QA-7 (backlog/proposals/quality.yaml), intégrée (intégration 5, 2026-11-18). Pas de `# type: ignore` sans motif ; chaque ignore compté par QA-4.

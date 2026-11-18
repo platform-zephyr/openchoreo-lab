@@ -15,7 +15,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -142,7 +144,7 @@ RELEASE_PINS_HEADER = ("# Pins ComponentRelease par environnement (T-003). Ecrit
                        "# production suit ce pin, development la release courante.\n")
 
 
-def _release_pin_command(label: str, compute) -> int:
+def _release_pin_command(label: str, compute: Callable[[Path], dict[str, Any]]) -> int:
     try:
         pins = compute(config.ROOT / "generated")
     except AppError as exc:

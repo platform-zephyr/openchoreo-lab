@@ -23,7 +23,7 @@ def schema_errors(doc: Any) -> list[str]:
     return out
 
 
-def _env_errors(label: str, env: dict, envs_secret: list[str]) -> list[str]:
+def _env_errors(label: str, env: dict[str, Any], envs_secret: list[str]) -> list[str]:
     errs = []
     for var, value in env.items():
         if var in envs_secret:

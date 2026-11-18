@@ -18,7 +18,7 @@ from appgenlib.schema import schema_errors, values_errors
 from appgenlib.semantic import semantic_check
 
 
-def _load_apps(root: Path, examples: bool, ctx: Context, errors: list[str]) -> list[tuple[Path, str, dict]]:
+def _load_apps(root: Path, examples: bool, ctx: Context, errors: list[str]) -> list[tuple[Path, str, dict[str, Any]]]:
     """Charge les apps conformes au schema et les indexe dans ctx ; ajoute les erreurs de lecture et de schema."""
     loaded = []
     for d in app_dirs(root, examples=examples):

@@ -31,3 +31,30 @@ source = ["tools/appgen", "tools/backlog"]
 
 [tool.coverage.report]
 show_missing = true
+
+# T-417 : modules déjà conformes à `--strict`, un module à la fois (ajouter ici après correction).
+[[tool.mypy.overrides]]
+module = [
+    "appgenlib",
+    "appgenlib.catalog",
+    "appgenlib.cli",
+    "appgenlib.config",
+    "appgenlib.gateway",
+    "appgenlib.gitops",
+    "appgenlib.promotion",
+    "appgenlib.render",
+    "appgenlib.schema",
+    "appgenlib.validate",
+]
+# `strict = true` n'est pas valable par module : on liste les drapeaux que `--strict` active.
+disallow_any_generics = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+no_implicit_reexport = true
+strict_equality = true
+extra_checks = true
