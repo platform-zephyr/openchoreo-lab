@@ -6,8 +6,8 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 27 |
-| `todo` | 126 |
+| `in-progress` | 28 |
+| `todo` | 125 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 28 |
@@ -23,6 +23,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 3/9 | Reste : (a) `lint_runbooks.py` et `tests/observe` ne sont pas appelés par `tools/dev/check` ni `ci.yaml` (fichiers chauds, hors périmètre) ; (b) `golden-paths/_checks/status_json.py` n'émet pas encore `cause.nature` ; (c) la planification OpenTofu (homelab-in… | — |
 | [T-201](T-201-data-2.md) | Ingestion GitHub vers Parquet et métriques DORA par agent | 7/7 | (ligne « Reste » absente) | — |
 | [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | 5/7 | Reste à faire : (1) rapport de recoupement (`next.py --overlap-report <ids>`) : sur la liste figée de 20 tickets, 28 paires se recoupent et 21 ne sont pas sérialisées par une dépendance (surtout `tests/` et `docs/` trop larges : T-072, T-050, T-216) ; les sér… | — |
+| [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 4/4 | Reste : (1) ouvrir la PR, CI `appgen`, `quality`, `quality-coverage` vertes (NOT_TESTED en CI) ; (2) écart de garde : le plancher de couverture de `tools/quality/check.py` (`APPGEN = tools/appgen/appgen.py`, 85 %) ne mesure plus que la façade (100 %, bloc `__… | — |
 | [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md) | Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes) | 4/5 | Premier critère ouvert : (repris de HAR-6) même script en local, en CI et dans le hook Stop (T-331) ; seuls fichier et ligne sont affichés, jamais la valeur | — |
 | [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 3/3 | Reste (2026-11-18) : le ticket reste `in-progress` car le tag précède la fin de S0 (T-303, T-306… encore ouverts à sa pose) et n'est pas signé. Geste de Paul : soit accepter explicitement ce tag comme référence (les PR du noyau d'agents viennent après lui), s… | — |
 | [T-311](T-311-gouverneur-de-quota-ledger-5-h.md) | Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 réelle (max-parallel ou groupes par… | 1/3 | Premier critère ouvert : factory/PAUSE présent = aucun lancement, aucun merge automatique (test) — STATIC PASS : tests/factory/pause-test.sh (lancement) ; NOT_TESTED : run réel, désarmement d'un auto-merge déjà armé | — |
@@ -63,7 +64,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | Ticket | Score | Titre | Critères | Issue |
 |---|---|---|---|---|
 | [T-001](T-001-integrer-pr8-security-bundle.md) | 86 | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0/3 | — |
-| [T-214](T-214-appgen-modulaire.md) | 72 | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 0/4 | — |
 | [T-041](T-041-context-engineering.md) | 8 | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
 | [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
@@ -75,11 +75,11 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 
 | Ticket | Score | Titre | Attend | Issue |
 |---|---|---|---|---|
-| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | 64 | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, sto… | T-214 (todo) | — |
+| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | 64 | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, sto… | T-214 (in-progress) | — |
 | [T-007](T-007-test-noyau-codeowners.md) | 47 | Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002 | T-215 (todo) | — |
 | [T-435](T-435-k3d-ok-requis.md) | 47 | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | T-002 (in-progress) | — |
 | [T-003](T-003-env-development-promotion.md) | 42 | Environment `development`, promotion vers `production`, pins de release par environnement | T-001 (todo), T-002 (in-progress) | [#49](https://github.com/platform-zephyr/openchoreo-lab/issues/49) |
-| [T-025](T-025-classe-donnees.md) | 21 | Classe de donnée dans le contrat et labels `data-class` (G8) | T-002 (in-progress), T-214 (todo) | — |
+| [T-025](T-025-classe-donnees.md) | 21 | Classe de donnée dans le contrat et labels `data-class` (G8) | T-002 (in-progress), T-214 (in-progress) | — |
 | [T-010](T-010-probes-quota.md) | 20 | Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4) | T-001 (todo), T-002 (in-progress) | — |
 | [T-120](T-120-upg-1.md) | 19 | Renovate durci : catégories, âge minimal, limites de PR, dashboard, labels | T-002 (in-progress) | — |
 | [T-060](T-060-residu-kgateway.md) | 14 | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | T-001 (todo) | — |
@@ -99,7 +99,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-075](T-075-sauvegarde-volumes.md) | 7 | Sauvegarde des volumes : spike VolSync/restic vs Velero/Kopia | T-025 (todo), T-364 (todo) | — |
 | [T-012](T-012-verify-contrat.md) | 7 | `spec.verify` : vérification fonctionnelle déclarée (G10) | T-005 (todo) | — |
 | [T-189](T-189-ids-10.md) | 7 | `identity.mode: oidc \| proxy \| none` avec client OIDC généré et secret dans OpenBao | T-074 (todo), T-184 (todo), T-185 (todo) | — |
-| [T-212](T-212-backend-plain.md) | 6 | Backend « plain » d'appgen (spike 3 jours) : chart commun + Argo par cluster | T-214 (todo), T-363 (todo) | — |
+| [T-212](T-212-backend-plain.md) | 6 | Backend « plain » d'appgen (spike 3 jours) : chart commun + Argo par cluster | T-214 (in-progress), T-363 (todo) | — |
 | [T-027](T-027-drill-restauration-auto.md) | 6 | Drill de restauration automatique et `restore-evidence` | T-005 (todo), T-012 (todo), T-026 (todo), T-075 (todo) | — |
 | [T-044](T-044-banc-intentions.md) | 5 | Banc d'essai de 5 intentions A (MVP) | T-015 (todo), T-040 (todo), T-041 (todo), T-043 (todo), T-212 (todo) | — |
 | [T-051](T-051-premiere-app-familiale.md) | 4 | Première app familiale complète (OIDC + base + sauvegarde) sur le homelab | T-020 (todo), T-021 (todo), T-027 (todo), T-031 (todo), T-040 (todo), T-043 (todo), T-189 (todo), T-404 (todo) | — |
@@ -130,12 +130,12 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-217](T-217-vap-default-deny.md) | 0 | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | T-002 (in-progress) | — |
 | [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | 0 | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjon… | T-314 (todo) | — |
 | [T-006](T-006-mcp-cloudflare-access.md) | 0 | Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitH… | T-005 (todo) | [#52](https://github.com/platform-zephyr/openchoreo-lab/issues/52) |
-| [T-419](T-419-retrait-seed-py.md) | 0 | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-214 (todo) | — |
+| [T-419](T-419-retrait-seed-py.md) | 0 | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-214 (in-progress) | — |
 | [T-436](T-436-labels-formulaires-issues.md) | 0 | Labels as-code et formulaires d'issue : issues vides coupées, proposition de ticket | T-431 (todo) | — |
 | [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | 0 | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | T-412 (todo), T-322 (todo) | — |
-| [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | 0 | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR… | T-062 (todo), T-214 (todo) | — |
+| [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | 0 | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR… | T-062 (todo), T-214 (in-progress) | — |
 | [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | 0 | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | T-332 (in-progress) | — |
-| [T-417](T-417-typage-mypy.md) | 0 | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | T-214 (todo) | — |
+| [T-417](T-417-typage-mypy.md) | 0 | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | T-214 (in-progress) | — |
 | [T-423](T-423-reduire-complexite-argo-guard.md) | 0 | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | T-001 (todo) | — |
 | [T-439](T-439-essai-dependency-review.md) | 0 | Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation) | T-431 (todo) | — |
 | [T-465](T-465-nuit-check-complet.md) | 0 | Contrôle nocturne : check --full --k3d, dérive amont, évasions, alerte (SL-11) | T-461 (in-progress), T-451 (in-progress), T-452 (in-progress) | — |
