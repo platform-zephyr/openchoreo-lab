@@ -36,72 +36,122 @@ def pod_spec(obj):
 
 
 def check(obj, level):
+    """Orchestre les règles par pod puis par conteneur ; l'ordre des écarts est celui de l'ancienne fonction."""
     errs, warns = [], []
     ps = pod_spec(obj)
     if not ps:
         return errs, warns
     psc = ps.get("securityContext") or {}
-    ctrs = [("c", c) for c in ps.get("containers") or []] + \
-           [("init", c) for c in ps.get("initContainers") or []]
-    # VAP baseline-pod-hardening (kube-ops #1620)
+    rule_vap_pod(ps, errs)
+    rule_pod_unconfined(psc, errs)
+    for c in list(ps.get("containers") or []) + list(ps.get("initContainers") or []):
+        check_container(c, psc, level, errs, warns)
+    if level == "restricted":
+        rule_restricted_volumes(ps, errs)
+    return errs, warns
+
+
+def rule_vap_pod(ps, errs):
+    """VAP baseline-pod-hardening : ni hostNetwork/hostPID/hostIPC, ni hostPath."""
     for f in ("hostNetwork", "hostPID", "hostIPC"):
         if ps.get(f):
             errs.append(f"VAP: {f}")
     for v in ps.get("volumes") or []:
         if "hostPath" in v:
             errs.append(f"VAP: hostPath ({v.get('name')})")
-    pod_seccomp = (psc.get("seccompProfile") or {}).get("type")
-    pod_nonroot = psc.get("runAsNonRoot")
+
+
+def rule_pod_unconfined(psc, errs):
+    """PSA baseline (niveau pod) : ni AppArmor ni seccomp Unconfined."""
     if (psc.get("appArmorProfile") or {}).get("type") == "Unconfined":
         errs.append("PSA baseline: appArmorProfile Unconfined (pod)")
-    if pod_seccomp == "Unconfined":
+    if (psc.get("seccompProfile") or {}).get("type") == "Unconfined":
         errs.append("PSA baseline: seccomp Unconfined (pod)")
-    for _, c in ctrs:
-        n = c.get("name")
-        sc = c.get("securityContext") or {}
-        img = c.get("image", "")
-        if "@sha256:" not in img:
-            warns.append(f"image sans digest: {n} {img}")
-        if sc.get("privileged"):
-            errs.append(f"VAP: privileged ({n})")
-        for p in c.get("ports") or []:
-            if p.get("hostPort"):
-                errs.append(f"PSA baseline: hostPort ({n})")
-        if (sc.get("appArmorProfile") or {}).get("type") == "Unconfined":
-            errs.append(f"PSA baseline: appArmorProfile Unconfined ({n})")
-        if (sc.get("seccompProfile") or {}).get("type") == "Unconfined":
-            errs.append(f"PSA baseline: seccomp Unconfined ({n})")
-        caps = sc.get("capabilities") or {}
-        add = set(caps.get("add") or [])
-        if add - BASELINE_CAPS:
-            errs.append(f"PSA baseline: capabilities ajoutées {sorted(add - BASELINE_CAPS)} ({n})")
-        req = (c.get("resources") or {}).get("requests") or {}
-        if not req.get("cpu") or not req.get("memory"):
-            warns.append(f"requests absentes (LimitRange appliquera ses défauts): {n}")
-        if level == "restricted":
-            bad = []
-            if sc.get("allowPrivilegeEscalation") is not False:
-                bad.append("allowPrivilegeEscalation!=false")
-            if "ALL" not in (caps.get("drop") or []):
-                bad.append("drop ALL absent (casse exacte)")
-            if add - {"NET_BIND_SERVICE"}:
-                bad.append(f"add {sorted(add)}")
-            nonroot = sc.get("runAsNonRoot", pod_nonroot)
-            if nonroot is not True:
-                bad.append("runAsNonRoot absent")
-            if sc.get("runAsUser", psc.get("runAsUser")) == 0:
-                bad.append("runAsUser=0")
-            seccomp = (sc.get("seccompProfile") or {}).get("type", pod_seccomp)
-            if seccomp not in ("RuntimeDefault", "Localhost"):
-                bad.append("seccompProfile absent")
-            if bad:
-                errs.append(f"PSA restricted ({n}): " + ", ".join(bad))
+
+
+def check_container(c, psc, level, errs, warns):
+    """Règles d'un conteneur : VAP, PSA baseline, avertissements, puis PSA restricted si demandé."""
+    n = c.get("name")
+    sc = c.get("securityContext") or {}
+    rule_image_digest(c, n, warns)
+    rule_vap_privileged(sc, n, errs)
+    rule_baseline_hostport(c, n, errs)
+    rule_baseline_unconfined(sc, n, errs)
+    add = set((sc.get("capabilities") or {}).get("add") or [])
+    rule_baseline_caps(add, n, errs)
+    rule_requests(c, n, warns)
     if level == "restricted":
-        for v in ps.get("volumes") or []:
-            kinds = set(v) - {"name"}
-            if kinds - RESTRICTED_VOLUMES:
-                errs.append(f"PSA restricted: volume {v.get('name')} de type {sorted(kinds)}")
-    return errs, warns
+        rule_restricted_container(sc, psc, add, n, errs)
+
+
+def rule_image_digest(c, n, warns):
+    """Avertissement : image épinglée par digest."""
+    img = c.get("image", "")
+    if "@sha256:" not in img:
+        warns.append(f"image sans digest: {n} {img}")
+
+
+def rule_vap_privileged(sc, n, errs):
+    """VAP : pas de conteneur privileged."""
+    if sc.get("privileged"):
+        errs.append(f"VAP: privileged ({n})")
+
+
+def rule_baseline_hostport(c, n, errs):
+    """PSA baseline : pas de hostPort."""
+    for p in c.get("ports") or []:
+        if p.get("hostPort"):
+            errs.append(f"PSA baseline: hostPort ({n})")
+
+
+def rule_baseline_unconfined(sc, n, errs):
+    """PSA baseline (conteneur) : ni AppArmor ni seccomp Unconfined."""
+    if (sc.get("appArmorProfile") or {}).get("type") == "Unconfined":
+        errs.append(f"PSA baseline: appArmorProfile Unconfined ({n})")
+    if (sc.get("seccompProfile") or {}).get("type") == "Unconfined":
+        errs.append(f"PSA baseline: seccomp Unconfined ({n})")
+
+
+def rule_baseline_caps(add, n, errs):
+    """PSA baseline : capabilities ajoutées dans la liste baseline seulement."""
+    if add - BASELINE_CAPS:
+        errs.append(f"PSA baseline: capabilities ajoutées {sorted(add - BASELINE_CAPS)} ({n})")
+
+
+def rule_requests(c, n, warns):
+    """Avertissement : requests cpu et mémoire présentes (sinon LimitRange)."""
+    req = (c.get("resources") or {}).get("requests") or {}
+    if not req.get("cpu") or not req.get("memory"):
+        warns.append(f"requests absentes (LimitRange appliquera ses défauts): {n}")
+
+
+def rule_restricted_container(sc, psc, add, n, errs):
+    """PSA restricted (conteneur) : un seul message agrégé, comme avant."""
+    caps = sc.get("capabilities") or {}
+    bad = []
+    if sc.get("allowPrivilegeEscalation") is not False:
+        bad.append("allowPrivilegeEscalation!=false")
+    if "ALL" not in (caps.get("drop") or []):
+        bad.append("drop ALL absent (casse exacte)")
+    if add - {"NET_BIND_SERVICE"}:
+        bad.append(f"add {sorted(add)}")
+    if sc.get("runAsNonRoot", psc.get("runAsNonRoot")) is not True:
+        bad.append("runAsNonRoot absent")
+    if sc.get("runAsUser", psc.get("runAsUser")) == 0:
+        bad.append("runAsUser=0")
+    pod_seccomp = (psc.get("seccompProfile") or {}).get("type")
+    if (sc.get("seccompProfile") or {}).get("type", pod_seccomp) not in ("RuntimeDefault", "Localhost"):
+        bad.append("seccompProfile absent")
+    if bad:
+        errs.append(f"PSA restricted ({n}): " + ", ".join(bad))
+
+
+def rule_restricted_volumes(ps, errs):
+    """PSA restricted : types de volumes autorisés."""
+    for v in ps.get("volumes") or []:
+        kinds = set(v) - {"name"}
+        if kinds - RESTRICTED_VOLUMES:
+            errs.append(f"PSA restricted: volume {v.get('name')} de type {sorted(kinds)}")
 
 
 def main():

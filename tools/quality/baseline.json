@@ -40,12 +40,6 @@
     "tools/backlog/seed.py": {
       "lines": 1326,
       "ruff": 147
-    },
-    "tools/oke/argo_guard.py": {
-      "ruff": 3
-    },
-    "tools/oke/psa_check.py": {
-      "ruff": 1
     }
   },
   "functions": {
@@ -64,39 +58,6 @@
     },
     "tools/backlog/seed.py::rule_match": {
       "cc": 18
-    },
-    "tools/oke/argo_guard.py::Guard.check_apps": {
-      "cc": 37
-    },
-    "tools/oke/argo_guard.py::Guard.check_lab_apps_sources": {
-      "cc": 19
-    },
-    "tools/oke/argo_guard.py::Guard.check_projects": {
-      "cc": 65
-    },
-    "tools/oke/argo_guard.py::Guard.check_synced": {
-      "cc": 23
-    },
-    "tools/oke/argo_guard.py::Guard.synced": {
-      "cc": 16
-    },
-    "tools/oke/argo_guard.py::check_apps": {
-      "cc": 37
-    },
-    "tools/oke/argo_guard.py::check_lab_apps_sources": {
-      "cc": 19
-    },
-    "tools/oke/argo_guard.py::check_projects": {
-      "cc": 65
-    },
-    "tools/oke/argo_guard.py::check_synced": {
-      "cc": 23
-    },
-    "tools/oke/argo_guard.py::synced": {
-      "cc": 16
-    },
-    "tools/oke/psa_check.py::check": {
-      "cc": 48
     }
   }
 }
