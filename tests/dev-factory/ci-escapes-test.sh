@@ -92,6 +92,23 @@ else
   ko "source : méthode d'écriture HTTP trouvée"
 fi
 
+# Fonctions extraites de analyse (T-461, complexité <= 15) : cas unitaires directs.
+if python3 -I -c '
+import importlib.util, sys
+s = importlib.util.spec_from_file_location("e", sys.argv[1]); m = importlib.util.module_from_spec(s); s.loader.exec_module(m)
+runs = [{"id": 1, "conclusion": "failure", "created_at": "2026-11-17T10:00:00Z", "updated_at": "2026-11-17T10:05:00Z"},
+        {"id": 2, "conclusion": "success", "created_at": "2026-11-17T10:30:00Z", "updated_at": "2026-11-17T10:42:30Z"}]
+assert sorted(["branche:b", "#12", "#9"], key=m.pr_sort_key) == ["#9", "#12", "branche:b"]
+assert m.minutes_to_green(runs) == 42.5 and m.minutes_to_green(runs[:1]) is None
+jobs = {"1": [{"name": "dev (x)", "conclusion": "failure"}, {"name": "ci-ok", "conclusion": "failure"}, {"name": "lint", "conclusion": "success"}]}
+assert m.red_job_names(runs[0], jobs) == ["dev"] and m.red_job_names(runs[1], jobs) == []
+assert m.shift_left_candidates({"a": {"#1", "#2"}, "b": {"#1"}, "c": {"#1", "#2"}}, {"a": 3, "b": 3, "c": 2}) == [{"job": "a", "niveau": "L3", "prs": ["#1", "#2"]}]
+' "$TOOL"; then
+  ok "fonctions extraites : tri des PR, minutes jusqu'au vert, jobs rouges, candidats"
+else
+  ko "fonctions extraites"
+fi
+
 # Cas négatifs : rc 2 et stdout vide.
 neg() { # NOM ARGS...
   local name="$1" rc=0

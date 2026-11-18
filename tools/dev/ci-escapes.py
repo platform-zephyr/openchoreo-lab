@@ -25,7 +25,7 @@ import argparse
 import json
 import subprocess
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 SCHEMA = "ci-escapes.v1"
@@ -44,7 +44,7 @@ class ReadError(Exception):
 
 
 def parse_ts(value):
-    return datetime.strptime(value, TS).replace(tzinfo=timezone.utc)
+    return datetime.strptime(value, TS).replace(tzinfo=UTC)
 
 
 def load_levels(path=CI_MAP):
@@ -106,51 +106,78 @@ def pr_of(run):
     return f"branche:{run.get('head_branch', '?')}"
 
 
-def analyse(data, levels, since, now):
-    """Calcule l'indicateur à partir de runs et de jobs déjà lus (pure : testable sans réseau)."""
+def group_by_pr(runs, since, now):
+    """Runs terminés (success/failure) de la période, regroupés par PR ; annulés, ignorés et en cours : pas un verdict."""
     by_pr = {}
-    for run in data["runs"]:
+    for run in runs:
         if run.get("conclusion") not in ("success", "failure"):
-            continue  # annulé (concurrence), ignoré, en cours : pas un verdict
+            continue
         if not since <= parse_ts(run["created_at"]) <= now:
             continue
         by_pr.setdefault(pr_of(run), []).append(run)
-    prs, escapes, red_total, unmapped, failing = [], [], 0, set(), {}
-    for pr in sorted(by_pr, key=lambda p: (p[0] != "#", int(p[1:]) if p[0] == "#" else 0, p)):
-        runs = sorted(by_pr[pr], key=lambda r: (r["created_at"], r["id"]))
-        first = runs[0]
-        green = next((r for r in runs if r["conclusion"] == "success"), None)
-        minutes = None
-        if green is not None:
-            minutes = round((parse_ts(green["updated_at"]) - parse_ts(first["created_at"])).total_seconds() / 60, 1)
-        pr_escapes = []
-        for run in runs:
-            if run["conclusion"] != "failure":
-                continue
-            for job in data["jobs"].get(str(run["id"]), []):
-                if job.get("conclusion") != "failure" or job["name"] == AGGREGATE:
-                    continue
-                name = job["name"].split(" (")[0]  # matrice : « dev (x) » -> « dev »
-                red_total += 1
-                failing.setdefault(name, set()).add(pr)
-                level = levels.get(name)
-                if level is None:
-                    unmapped.add(name)
-                elif level <= MAX_LEVEL_ESCAPE:
-                    pr_escapes.append({"pr": pr, "job": name, "niveau": f"L{level}", "run": run["id"]})
-        escapes.extend(pr_escapes)
-        prs.append({
-            "pr": pr,
-            "ci_runs_per_pr": len(runs),
-            "first_push_green": first["conclusion"] == "success",
-            "minutes_to_green": minutes,
-            "escapes": pr_escapes,
-        })
-    candidates = sorted(
+    return by_pr
+
+
+def pr_sort_key(pr):
+    """PR numérotées d'abord (ordre numérique), puis les branches (ordre alphabétique)."""
+    return (pr[0] != "#", int(pr[1:]) if pr[0] == "#" else 0, pr)
+
+
+def minutes_to_green(runs):
+    """Minutes entre la création du premier run et la fin du premier run vert ; None sans run vert."""
+    green = next((r for r in runs if r["conclusion"] == "success"), None)
+    if green is None:
+        return None
+    return round((parse_ts(green["updated_at"]) - parse_ts(runs[0]["created_at"])).total_seconds() / 60, 1)
+
+
+def red_job_names(run, jobs):
+    """Noms des jobs rouges d'un run rouge, sans `ci-ok` ; la matrice « dev (x) » devient « dev »."""
+    if run["conclusion"] != "failure":
+        return []
+    return [job["name"].split(" (")[0] for job in jobs.get(str(run["id"]), [])
+            if job.get("conclusion") == "failure" and job["name"] != AGGREGATE]
+
+
+def summarise_pr(pr, runs, jobs, levels, acc):
+    """Indicateurs d'une PR ; `acc` (red, unmapped, failing) cumule les compteurs globaux."""
+    pr_escapes = []
+    for run in runs:
+        for name in red_job_names(run, jobs):
+            acc["red"] += 1
+            acc["failing"].setdefault(name, set()).add(pr)
+            level = levels.get(name)
+            if level is None:
+                acc["unmapped"].add(name)
+            elif level <= MAX_LEVEL_ESCAPE:
+                pr_escapes.append({"pr": pr, "job": name, "niveau": f"L{level}", "run": run["id"]})
+    return {
+        "pr": pr,
+        "ci_runs_per_pr": len(runs),
+        "first_push_green": runs[0]["conclusion"] == "success",
+        "minutes_to_green": minutes_to_green(runs),
+        "escapes": pr_escapes,
+    }
+
+
+def shift_left_candidates(failing, levels):
+    """Contrôles de niveau >= L3 en échec sur >= 2 PR distinctes (règle de promotion, SHIFT-LEFT-DEV-ENV §4.2)."""
+    return sorted(
         ({"job": j, "niveau": f"L{levels[j]}", "prs": sorted(p)}
          for j, p in failing.items() if j in levels and levels[j] > MAX_LEVEL_ESCAPE and len(p) >= 2),
         key=lambda c: c["job"],
     )
+
+
+def analyse(data, levels, since, now):
+    """Calcule l'indicateur à partir de runs et de jobs déjà lus (pure : testable sans réseau)."""
+    by_pr = group_by_pr(data["runs"], since, now)
+    acc = {"red": 0, "unmapped": set(), "failing": {}}
+    prs = []
+    for pr in sorted(by_pr, key=pr_sort_key):
+        runs = sorted(by_pr[pr], key=lambda r: (r["created_at"], r["id"]))
+        prs.append(summarise_pr(pr, runs, data["jobs"], levels, acc))
+    escapes = [e for p in prs for e in p["escapes"]]
     n = len(prs)
     return {
         "schema": SCHEMA,
@@ -158,11 +185,11 @@ def analyse(data, levels, since, now):
         "since": since.strftime(TS),
         "prs_count": n,
         "first_push_green_rate": round(sum(p["first_push_green"] for p in prs) / n, 3) if n else None,
-        "red_jobs": red_total,
+        "red_jobs": acc["red"],
         "escapes_count": len(escapes),
-        "escape_rate": round(len(escapes) / red_total, 3) if red_total else None,
-        "unmapped_jobs": sorted(unmapped),
-        "shift_left_candidates": candidates,
+        "escape_rate": round(len(escapes) / acc["red"], 3) if acc["red"] else None,
+        "unmapped_jobs": sorted(acc["unmapped"]),
+        "shift_left_candidates": shift_left_candidates(acc["failing"], levels),
         "prs": prs,
     }
 
@@ -219,7 +246,7 @@ def main(argv=None):
         print("ci-escapes : --days doit être >= 1", file=sys.stderr)
         return 2
     try:
-        now = parse_ts(args.now) if args.now else datetime.now(timezone.utc).replace(microsecond=0)
+        now = parse_ts(args.now) if args.now else datetime.now(UTC).replace(microsecond=0)
         since = now - timedelta(days=args.days)
         levels = load_levels(args.map)
         if args.fixture:
