@@ -1,0 +1,16 @@
+{
+  "name": "refus NotebookEdit hors périmètre",
+  "hook": "scope-guard",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "NotebookEdit",
+    "tool_input": {
+      "file_path": "@ROOT@/x.ipynb"
+    },
+    "cwd": "@ROOT@"
+  },
+  "env": {
+    "AGENT_TICKET_SCOPE": "docs/"
+  }
+}

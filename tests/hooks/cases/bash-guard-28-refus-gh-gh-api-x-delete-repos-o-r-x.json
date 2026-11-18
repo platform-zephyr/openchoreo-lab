@@ -1,0 +1,12 @@
+{
+  "name": "refus gh : gh api -X DELETE repos/o/r/x",
+  "hook": "bash-guard",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "gh api -X DELETE repos/o/r/x"
+    }
+  }
+}

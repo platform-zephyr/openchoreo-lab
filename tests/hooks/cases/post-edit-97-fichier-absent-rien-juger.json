@@ -1,0 +1,13 @@
+{
+  "name": "fichier absent : rien à juger",
+  "hook": "post-edit",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "@ROOT@/apps/_hooktest/absent.yaml"
+    }
+  },
+  "fixture": null
+}

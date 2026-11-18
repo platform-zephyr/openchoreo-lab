@@ -1,0 +1,12 @@
+{
+  "name": "autorisé : python3 tools/dev/check --fast",
+  "hook": "bash-guard",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "python3 tools/dev/check --fast"
+    }
+  }
+}

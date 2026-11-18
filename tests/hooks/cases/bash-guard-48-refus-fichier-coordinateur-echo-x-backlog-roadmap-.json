@@ -1,0 +1,12 @@
+{
+  "name": "refus fichier coordinateur : echo x >> backlog/ROADMAP.md",
+  "hook": "bash-guard",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "echo x >> backlog/ROADMAP.md"
+    }
+  }
+}

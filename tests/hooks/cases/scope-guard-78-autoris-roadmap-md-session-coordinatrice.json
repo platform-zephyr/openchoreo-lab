@@ -1,0 +1,16 @@
+{
+  "name": "autorisé ROADMAP.md session coordinatrice",
+  "hook": "scope-guard",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "@ROOT@/backlog/ROADMAP.md"
+    },
+    "cwd": "@ROOT@"
+  },
+  "env": {
+    "LAB_COORDINATOR_SESSION": "1"
+  }
+}

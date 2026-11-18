@@ -1,0 +1,12 @@
+{
+  "name": "refus identifiants ou env : env",
+  "hook": "bash-guard",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "env"
+    }
+  }
+}

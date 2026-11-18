@@ -1,0 +1,12 @@
+{
+  "name": "autorisé : env FOO=1 bash tests/hooks/run.sh",
+  "hook": "bash-guard",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "env FOO=1 bash tests/hooks/run.sh"
+    }
+  }
+}

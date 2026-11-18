@@ -1,0 +1,16 @@
+{
+  "name": "yaml valide : silence",
+  "hook": "post-edit",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "@ROOT@/apps/_hooktest/notes.yaml"
+    }
+  },
+  "fixture": {
+    "path": "apps/_hooktest/notes.yaml",
+    "content": "---\na: 1\nb:\n  - x\n"
+  }
+}

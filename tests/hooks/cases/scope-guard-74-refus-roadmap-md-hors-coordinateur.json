@@ -1,0 +1,13 @@
+{
+  "name": "refus ROADMAP.md hors coordinateur",
+  "hook": "scope-guard",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Edit",
+    "tool_input": {
+      "file_path": "@ROOT@/backlog/ROADMAP.md"
+    },
+    "cwd": "@ROOT@"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "entrée sans chemin",
+  "hook": "post-edit",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Write",
+    "tool_input": {}
+  }
+}

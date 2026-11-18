@@ -26,9 +26,15 @@ MANDAT = geste de Paul (accès, identité, dépense, VM) ; REVUE = approbation d
 | Étape | Gestes (MANDAT) | Approbations (REVUE) |
 |---|---|---|
 | S0 | [T-301](T-301-reecriture-de-l-historique-et-purge.md), [T-431](T-431-reglages-depot-actions-securite.md), [T-433](T-433-protection-tags.md), [T-434](T-434-gestes-organisation-paul.md) |  |
+<<<<<<< HEAD
 | S1 | [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-456](T-456-corriger-t12-cle-eso-lab-pg-roles.md), [T-457](T-457-b09-known-fail-au-niveau-du-cas.md), [T-458](T-458-ancre-gitops-k3d-obsolete.md), [T-460](T-460-parite-ci-check.md), [T-464](T-464-regles-d-agent-local-d-abord.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-436](T-436-labels-formulaires-issues.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
 | S2 |  | [T-462](T-462-devcontainer-multi-arch.md), [T-423](T-423-reduire-complexite-argo-guard.md), [T-461](T-461-indicateur-d-evasions.md), [T-062](T-062-lab-platform-auto.md), [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) |
 | S3 | [T-140](T-140-cost-1.md), [T-031](T-031-placement-coupure.md) | [T-070](T-070-garde-contrat.md), [T-439](T-439-essai-dependency-review.md), [T-465](T-465-nuit-check-complet.md), [T-368](T-368-garde-fous-de-capacite-du-homelab.md) |
+=======
+| S1 | [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-456](T-456-corriger-t12-cle-eso-lab-pg-roles.md), [T-457](T-457-b09-known-fail-au-niveau-du-cas.md), [T-458](T-458-ancre-gitops-k3d-obsolete.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-436](T-436-labels-formulaires-issues.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
+| S2 |  | [T-423](T-423-reduire-complexite-argo-guard.md), [T-062](T-062-lab-platform-auto.md), [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) |
+| S3 | [T-140](T-140-cost-1.md), [T-031](T-031-placement-coupure.md) | [T-070](T-070-garde-contrat.md), [T-439](T-439-essai-dependency-review.md), [T-368](T-368-garde-fous-de-capacite-du-homelab.md) |
+>>>>>>> worktree-agent-a355401da01d8d28f
 | PORTE | [T-211](T-211-porte-openchoreo.md) |  |
 | FINAL0 | [T-215](T-215-pack-identite.md), [T-403](T-403-rotation-secrets-dev.md), [T-400](T-400-retrait-bypass-admin-ruleset.md), [T-404](T-404-jalon-final0.md) | [T-435](T-435-k3d-ok-requis.md), [T-007](T-007-test-noyau-codeowners.md) |
 | I1 | [T-026](T-026-sauvegardes.md) | [T-069](T-069-vap-data-class.md) |
@@ -90,9 +96,15 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | Étape | haiku | sonnet | opus | humain |
 |---|---|---|---|---|
 | S0 | 2 | 2 | 0 | 1 |
+<<<<<<< HEAD
 | S1 | 0 | 37 | 4 | 0 |
 | S2 | 1 | 7 | 3 | 0 |
 | S3 | 0 | 14 | 0 | 0 |
+=======
+| S1 | 0 | 34 | 4 | 0 |
+| S2 | 1 | 4 | 3 | 0 |
+| S3 | 0 | 13 | 0 | 0 |
+>>>>>>> worktree-agent-a355401da01d8d28f
 | PORTE | 0 | 0 | 1 | 0 |
 | FINAL0 | 0 | 1 | 5 | 0 |
 | I1 | 0 | 6 | 1 | 0 |
