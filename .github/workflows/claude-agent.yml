@@ -155,10 +155,26 @@ jobs:
             --max-turns ${{ needs.plan.outputs.max_turns }}
             --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3:*),Bash(git:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh pr merge --auto --squash:*),Bash(factory/pause-check.sh:*),Bash(yamllint:*),Bash(shellcheck:*)"
             --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Si factory/PAUSE existe sur origin/main, ne lance aucun merge automatique (factory/pause-check.sh) et arrête-toi. Aucun accès cluster ni secret. Chaque commit porte les trailers Ticket: T-NNN, Model: ${{ inputs.model }}, Effort: ${{ inputs.effort }}, Escalated-from: ${{ inputs.escalated_from }} (si non vide) et Claude-Session, et l'e-mail noreply@anthropic.com. Remplis le modèle .github/pull_request_template.md (durée, tours, coût, statuts). Une PR par issue, périmètre de fichiers de l'issue seulement ; Mode dev (arbitrage 7) : tous les chemins du périmètre de l'issue sont autorisés, noyau compris (.github/ inclus), sauf STATE.md et backlog/ROADMAP.md ; la PR est fusionnée après ci-ok (arme l'auto-merge avec gh pr merge --auto --squash). N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
-      - name: Controle des trailers et de l'identite (refus si absents)
-        if: steps.pause.outputs.paused == 'false' && steps.claude.outputs.branch_name != ''
+      - name: Branche de l'agent (sortie de l'action, sinon PR claude/* ou agent/* qui cite l'issue)
+        id: branch
+        if: always() && steps.pause.outputs.paused == 'false'
         env:
-          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          GH_TOKEN: ${{ steps.app.outputs.token || secrets.FACTORY_GH_TOKEN || github.token }}
+          GH_REPO: ${{ github.repository }}
+          FROM_ACTION: ${{ steps.claude.outputs.branch_name }}
+          ISSUE: ${{ matrix.issue }}
+        run: |
+          # Essai T-304 : l'agent ouvre parfois la PR lui-meme ; branch_name est alors vide et rien n'etait controle ni commente.
+          b="$FROM_ACTION"
+          if [ -z "$b" ]; then
+            b="$(gh pr list --state all --search "#${ISSUE} in:title,body" --json headRefName,createdAt \
+              --jq '[.[] | select(.headRefName | test("^(claude|agent)/"))] | sort_by(.createdAt) | last | .headRefName // empty')" || b=""
+          fi
+          echo "branch=$b" >>"$GITHUB_OUTPUT"
+      - name: Controle des trailers et de l'identite (refus si absents)
+        if: steps.pause.outputs.paused == 'false' && steps.branch.outputs.branch != ''
+        env:
+          BRANCH: ${{ steps.branch.outputs.branch }}
         run: |
           git fetch --no-tags origin main "$BRANCH"
           tools/factory/run-ticket.sh check-trailers "origin/main..origin/${BRANCH}"
@@ -170,10 +186,23 @@ jobs:
           MODEL: ${{ inputs.model }}
           EFFORT: ${{ inputs.effort }}
           ESC: ${{ inputs.escalated_from }}
-          BRANCH: ${{ steps.claude.outputs.branch_name }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
         run: |
           tools/factory/run-ticket.sh result "$EXEC_FILE" "$ISSUE" "$MODEL" "$EFFORT" "$ESC" "$BRANCH" >"mission-result-${ISSUE}.json"
           python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print('model_observed=',d['model_observed'],'cost=',d['total_cost_usd'],'turns=',d['num_turns'])" "mission-result-${ISSUE}.json"
+      - name: Commentaire de PR (modele, tours, cout, duree, refus ; jeton de l'App)
+        if: always() && steps.pause.outputs.paused == 'false' && steps.branch.outputs.branch != '' && hashFiles(format('mission-result-{0}.json', matrix.issue)) != ''
+        env:
+          # Le jeton de l'App (ou celui de l'executant) : le commentaire vient du bot, pas de github-actions.
+          GH_TOKEN: ${{ steps.app.outputs.token || secrets.FACTORY_GH_TOKEN }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
+          ISSUE: ${{ matrix.issue }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          pr="$(gh pr list --head "$BRANCH" --state all --json number --jq '.[0].number // empty')"
+          if [ -z "$pr" ]; then echo "aucune PR pour la branche : pas de commentaire"; exit 0; fi
+          tools/factory/run-ticket.sh comment "mission-result-${ISSUE}.json" >comment.txt
+          gh pr comment "$pr" --body-file comment.txt
       - name: Archive mission-result
         if: always() && steps.pause.outputs.paused == 'false'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

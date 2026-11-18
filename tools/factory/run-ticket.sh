@@ -8,6 +8,7 @@
 #   check-trailers <git-range>           -> code 1 si un commit n'a pas noreply@anthropic.com ou un trailer requis
 #   result <execution_file> <issue> <model> <effort> [escalated_from] [branch]
 #                                        -> JSON mission-result.v1 sur stdout, resume Markdown sur $GITHUB_STEP_SUMMARY
+#   comment <mission-result.json>        -> une ligne pour le commentaire de PR : modele observe, tours, cout, duree, refus
 set -euo pipefail
 
 die() { echo "run-ticket: $*" >&2; exit 2; }
@@ -119,6 +120,18 @@ if summ:
 PY
 }
 
+cmd_comment() {
+  local file="${1:?mission-result.json requis}"
+  python3 -I - "$file" <<'PY'
+import json, sys
+
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+den = ", ".join(d.get("permission_denials") or []) or "aucun"
+print(f"mission-result.v1 : statut {d['status']} | modele {d['model_observed'] or 'NOT_TESTED'} | effort {d['effort']} | "
+      f"{d['num_turns']} tours | {d['total_cost_usd']:.3f} USD | {d['duration_ms'] / 1000:.0f} s | refus de permission : {den}")
+PY
+}
+
 sub="${1:-}"
 shift || true
 case "$sub" in
@@ -127,5 +140,6 @@ case "$sub" in
   claude-args) cmd_claude_args "$@" ;;
   check-trailers) cmd_check_trailers "$@" ;;
   result) cmd_result "$@" ;;
-  *) die "usage : run-ticket.sh limits|effort|claude-args|check-trailers|result ..." ;;
+  comment) cmd_comment "$@" ;;
+  *) die "usage : run-ticket.sh limits|effort|claude-args|check-trailers|result|comment ..." ;;
 esac
