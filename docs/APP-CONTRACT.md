@@ -16,7 +16,7 @@ Schéma : [`schema/app.schema.json`](schema/app.schema.json). Base de code : [`B
    - **Helm GitOps** : chart officiel synchronisé par Argo CD et seulement **référencé** au catalogue. OpenChoreo ne le pilote pas.
 
    Les 3 apps du pilote sont **natives**. Le parcours Helm est illustré (§2.4) mais n'est **pas activé**.
-3. **Un générateur CI** (`tools/appgen`, §4) transforme `app.yaml` en 7 à 11 manifests au format sample-gitops. Il appelle `occ` en mode file-system pour les ComponentRelease et les ReleaseBinding. Argo CD synchronise ensuite. Personne n'écrit de manifest OpenChoreo à la main.
+3. **Un générateur CI** (`tools/appgen`, §4) transforme `app.yaml` en 7 à 11 manifests au format sample-gitops. Il ne lance pas `occ` : il génère lui-même les ComponentRelease, les ReleaseBinding et les pins (voir `docs/research/OPENCHOREO-CHEMIN-NATIF.md`). Argo CD synchronise ensuite. Personne n'écrit de manifest OpenChoreo à la main.
 4. **Un objet = un contrôleur (§5).** Git et Argo possèdent tout ce qui est déclaratif. Les contrôleurs OpenChoreo possèdent les objets dérivés (`*Release` générés, RenderedRelease, objets des namespaces `dp-*`). Garde-fous : `autoDeploy: false`, `Prune=false` sur ComponentRelease, Component et Resource (annotations émises par appgen), `releases/` en ajout seul. Seule exception de champ : `ProjectReleaseBinding.spec.projectRelease`, initialisé une fois par le contrôleur [C], puis avancé par une 2ᵉ PR `pin-project`.
 5. **Objets custom minimaux, vérifiés contre les CRD v1.3.3 (§7) :** 1 ClusterComponentType `service-restricted`, 1 ClusterProjectType `cell-restricted`, 1 ClusterResourceType `cnpg-lab-db`, plus 2 ValidatingAdmissionPolicies natives. Aucune CRD custom, aucun fork.
 6. **Deux limites sont prouvées dans le code :**
