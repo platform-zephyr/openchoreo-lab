@@ -140,11 +140,13 @@ if ! kubectl get crd pushsecrets.external-secrets.io >/dev/null 2>&1; then
 fi
 kubectl wait --for=condition=Established crd/pushsecrets.external-secrets.io crd/passwords.generators.external-secrets.io >/dev/null
 
-for ns in openchoreo-data-plane lab-vap-test lab-pg vap-plain auth dp-vap-nopsa; do
+for ns in openchoreo-data-plane lab-vap-test lab-pg vap-plain auth dp-vap-nopsa dp-vap-nonp dp-vap-allow dp-vap-half; do
   kubectl create ns "$ns" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 done
 nsyaml dp-vap-app restricted oui | kubectl apply -f - >/dev/null
 kubectl label ns lab-vap-test lab-pg vap-plain auth dp-vap-nopsa lab-vap-test=bench --overwrite >/dev/null
+# VAP-3 : le binding sélectionne les cellules par label ; les dp-* du banc le portent (dp-vap-app l'a via nsyaml).
+kubectl label ns dp-vap-nopsa dp-vap-nonp dp-vap-allow dp-vap-half platform.smadja.dev/cell=restricted --overwrite >/dev/null
 kubectl -n "$AGENT_NS" create sa "$AGENT_SA" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 kubectl -n dp-vap-app create sa app --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 kubectl -n lab-vap-test create sa other --dry-run=client -o yaml | kubectl apply -f - >/dev/null
@@ -153,6 +155,15 @@ for s in "$AGENT_NS:$AGENT_SA" dp-vap-app:app lab-vap-test:other; do
     --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 done
 # Cibles CONNECT (pods conformes ; sans nœud prêt, ils restent Pending : l'admission CONNECT est la même).
+# VAP-3 (T-217) : un Pod de cellule exige la NetworkPolicy default-deny ; dp-vap-app et dp-vap-nopsa la reçoivent.
+for ns in dp-vap-app dp-vap-nopsa; do
+  kubectl -n "$ns" apply -f - >/dev/null <<EOP
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+EOP
+done
 for ns in lab-vap-test dp-vap-app dp-vap-nopsa vap-plain; do pod target | kubectl -n "$ns" apply -f - >/dev/null; done
 kubectl -n lab-pg create secret generic lab-pg-superuser --from-literal=username=factice --dry-run=client -o yaml \
   | kubectl apply -f - >/dev/null
@@ -283,6 +294,19 @@ ti V2-10 DENY $P "image « digest » invalide (@sha256:court) dans dp-*" -n dp-v
 
 kubectl apply --server-side --force-conflicts --field-manager=lab-vap-test -f "$ROOT/tests/vap/fixtures/baseline-oke-export.json" >/dev/null
 sleep 2
+echo "== VAP-3 lab-cell-default-deny (T-217 : Pod refusé sans NetworkPolicy default-deny conforme dans dp-*)"
+P=lab-cell-default-deny
+np() { # NS SPEC-JSON : NetworkPolicy default-deny du namespace
+  kubectl -n "$1" apply -f - >/dev/null <<<"{\"apiVersion\":\"networking.k8s.io/v1\",\"kind\":\"NetworkPolicy\",\"metadata\":{\"name\":\"default-deny\"},\"spec\":$2}"
+}
+np dp-vap-allow '{"podSelector":{},"policyTypes":["Ingress","Egress"],"egress":[{}]}'
+np dp-vap-half '{"podSelector":{},"policyTypes":["Ingress"]}'
+ti V3-01 DENY $P "pod dans dp-* sans NetworkPolicy default-deny" -n dp-vap-nonp create $DRY <<<"$(pod n1)"
+ti V3-02 ALLOW $P "pod dans dp-* avec default-deny conforme (témoin)" -n dp-vap-nopsa create $DRY <<<"$(pod n2)"
+ti V3-03 DENY $P "pod dans dp-* dont default-deny contient une règle egress" -n dp-vap-allow create $DRY <<<"$(pod n3)"
+ti V3-04 DENY $P "pod dans dp-* dont default-deny ne couvre que Ingress" -n dp-vap-half create $DRY <<<"$(pod n4)"
+ti V3-05 ALLOW $P "pod hors dp-* sans NetworkPolicy (lab-vap-test, hors périmètre)" -n lab-vap-test create $DRY <<<"$(pod n5)"
+
 echo "== baseline OKE (fixture exportée)"
 P=baseline-pod-hardening
 ti B-01 DENY $P "pod privileged dans vap-plain" -n vap-plain create $DRY <<<"$(pod b1 '' "$BUSYBOX" '    securityContext: {privileged: true}' | sed '/allowPrivilegeEscalation/d')"
@@ -309,14 +333,14 @@ DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-openchoreo}" docker exec k3d-lab-sec-va
   | jq -c --arg s "$START" 'select(.requestReceivedTimestamp >= $s) | select(.annotations != null) | select(.annotations | to_entries | any(.key | startswith("validation.policy.admission.k8s.io")))
            | {ts: .requestReceivedTimestamp, user: .user.username, verb, uri: .requestURI, code: .responseStatus.code, annotations}' \
   | tail -n 200 >"$AUD" || true
-for pol in lab-cluster-agent-scope lab-cell-pod-hardening baseline-image-digest; do
+for pol in lab-cluster-agent-scope lab-cell-pod-hardening lab-cell-default-deny baseline-image-digest; do
   n="$(grep -c -- "$pol" "$AUD" || true)"
   t "AUD-$pol" ALLOW "$pol" "journal d'audit : $n événement(s) annotés validation_failure pour $pol" -- test "$n" -gt 0
 done
 
 # --- Nettoyage ---------------------------------------------------------------------------------------
 if [[ $KEEP == 0 ]]; then
-  kubectl delete ns dp-vap-ok dp-vap-app dp-vap-nopsa lab-vap-test vap-plain auth lab-pg openchoreo-data-plane --wait=false --ignore-not-found >/dev/null
+  kubectl delete ns dp-vap-ok dp-vap-app dp-vap-nopsa dp-vap-nonp dp-vap-allow dp-vap-half lab-vap-test vap-plain auth lab-pg openchoreo-data-plane --wait=false --ignore-not-found >/dev/null
   kubectl delete clusterrolebinding lab-vap-test-openchoreo-data-plane-cluster-agent-dataplane lab-vap-test-dp-vap-app-app \
     lab-vap-test-lab-vap-test-other --ignore-not-found >/dev/null
   kubectl delete crd -l lab-vap-test --ignore-not-found >/dev/null
