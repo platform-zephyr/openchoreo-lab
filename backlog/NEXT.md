@@ -5,29 +5,26 @@ Point d'entrée pour reprendre : lire ce fichier, puis `docs/state/HANDOFF-COORD
 Pendant S0/S1, beaucoup de dépendances sont `in-progress` (implémentées) : lancer à la main les tickets ci-dessous.
 
 ## État en une ligne
-Exécutant prouvé de bout en bout (T-304) ; il reste à clore les prérequis du pilote 24 h (T-322) puis à paralléliser le développement.
+L'usine est prouvée en vrai sur un lot de 2 issues en parallèle (run 44338002716 : PASS/PASS, 0,51 $ et 0,37 $, auto-merge par le bot). Il reste à
+prouver `factory/PAUSE`, le disjoncteur de quota et un lot de 5 issues (T-311), à clore T-313/T-411, puis le pilote 24 h (T-322).
 
 ## Prérequis du pilote T-322 encore ouverts (voir la ligne « Reste » dans chaque ticket)
 | Ticket | Reste | Qui |
 |---|---|---|
-| T-303 | hook Stop avec le même script `leak-guard.sh` | T-331 (agent en cours) |
-| T-305 | tag `core-baseline` : annoté mais non signé, posé après la vague 1 ; Paul l'accepte ou le repose | Paul |
-| T-311 | run avec `factory/PAUSE` posé ; dispatch réel de plusieurs issues | coordinateur (voir « Dispatch multi-issues ») |
-| T-313 | code livré (job `agent-trailers`, commentaire de PR) ; reste le dispatch multi-issues qui le prouve en vrai | coordinateur |
+| T-303 | même script `leak-guard.sh` en local, en CI et dans le hook Stop : à cocher après relecture (T-331 livré) | coordinateur |
+| T-305 | tag `core-baseline` : annoté mais non signé ; Paul l'accepte ou le repose | Paul |
+| T-311 | run avec `factory/PAUSE` posé (désarmement d'un auto-merge déjà armé) ; 5 dispatchs terminés sans annulation | coordinateur |
+| T-313 | N PR parallèles prouvées (run 44338002716) : cocher les critères restants après relecture des tickets | coordinateur |
 | T-411 | essai daté sur un ticket `complet` (section « Implémentations publiques consultées » rendue) | coordinateur (dispatch d'un ticket de test) |
-Prérequis déjà `done` : T-008, T-302, T-304, T-306, T-326, T-330, T-413. T-322 dépend aussi de T-002 par la liste figée (pas des prérequis).
 
-## Vague A : à lancer tout de suite, en parallèle (aucun conflit de fichiers)
-| Ticket | Modèle | Périmètre | Note |
-|---|---|---|---|
-| T-456 | Opus high | `platform/resource-types/cnpg-lab-db.yaml`, VAP R6, `tests/vap`, `tests/k3d` | défaut réel de l'archétype B (clé ESO avec `/`) ; REVUE sensible |
-| T-457 | Sonnet high | `tests/vap/run.sh` | B-09 en KNOWN_FAIL au niveau du cas |
-| T-458 | Sonnet high | `tests/gitops-k3d/`, `tools/k3d/` | ancre périmée |
-| T-459 | Sonnet high | `.pre-commit-config.yaml`, `tools/dev/setup` | SL-4 |
-| T-460 | Sonnet high | `tools/dev/ci-map.tsv`, `ci.yaml` | SL-6 parité CI ↔ check ; attention aux conflits avec T-313 (ci.yaml) : séquentiel |
-| T-464 | Sonnet high | `AGENTS.md`, `.agents/skills/` | SL-10 ; conflit possible avec T-041 sur `AGENTS.md` |
-| T-463 | Sonnet high | `docs/research/` | spike Kyverno/VAP sans cluster |
-Les tickets T-456 à T-458 sont tous dans le couloir `agents` : un à la fois sur `tests/vap/` (T-456 et T-457 se chevauchent : T-457 d'abord).
+## Lot suivant (à lancer en arrivant, voir `priority.py --top 10` et `overlap.py`)
+- **Petits tickets, sous-agents locaux Sonnet en lot** (rapide, sans coût de démarrage) : T-041 (contexte en couches), T-100 (contrat d'alerte),
+  T-050 (verdicts kube-ops), T-420 (revue hebdomadaire de maintenabilité), T-479/T-480 à clôturer (livrés par l'usine).
+- **Sujets longs ou sensibles** : T-214 (découper `appgen`, score 72), T-001 (fusionner la PR #8 security bundle, score 86, vérifier si c'est un geste de Paul),
+  T-201 (ingestion GitHub vers Parquet), T-215 (pack identité, FINAL0).
+- **Suites de l'usine** : arbitrer le mode de permission de l'action (`auto` n'est pas une liste blanche), finalisation déterministe par le workflow
+  (étude T-477, R4), durcir le garde Bash (`git -c core.hooksPath`, `commit-tree`), motif `usage_limit`/`budget_cap_exceeded` dans `mission-result.v1`,
+  empreintes linux-amd64 de `toolchain.lock` (T-332, bloque T-470), cases T-471/T-472, T-469 (triage k3d), T-458 (classer les FAIL de `gitops-k3d`).
 
 ## Vague B : après la vague A
 T-461 (SL-7, dépend de T-460), T-462 (devcontainer), T-465 (nuit k3d, dépend de T-461, T-451, T-452), T-451 (reste : alerte k3d, fin de S1), T-452 (critère 3, fin de S1).
