@@ -31,8 +31,8 @@ Corriger les défauts Q1, Q2 et Q6 de l'audit du premier run multi-issues (2026-
 - [x] prompt : valeur de `Claude-Session` (URL du run), « ne lis jamais l'environnement », « n'attends pas la CI après l'auto-merge », `Closes #<n>` dans le corps de PR
 - [x] `allowedTools` : `Bash(python3:*)` remplacé par des préfixes étroits ; ajout de `tools/dev/check`, `tests/`, `gh pr list`, `gh search` ; aucun `gh api` ; hooks inchangés
 - [x] job `report` (`if: always()`) : commentaire de chaque issue avec le statut corrigé, jeton d'App neuf
-- [ ] run réel (RUNTIME, preuve datée) : un dispatch de 2 issues ou plus montre le Verdict, le contrôle des trailers après un échec de l'agent, la branche retrouvée par REST et le commentaire `report` sur chaque issue
-- [ ] run réel : aucun refus `env`, `printenv` ou `python3` dans `mission-result.permission_denials`
+- [x] run réel (RUNTIME, preuve datée) : un dispatch de 2 issues ou plus montre le Verdict, le contrôle des trailers après un échec de l'agent, la branche retrouvée par REST et le commentaire `report` sur chaque issue — PROUVÉ : run 44331128791 (issue 74, PR #81 du bot : 27 tours, 0,66 $, statut PASS, commit avec les 5 trailers injectés par le hook, 18 checks verts dont `agent-trailers`, branche `claude/issue-74-…` retrouvée, commentaire `report`), 2026-11-18 ; cas d'échec : run 44326043746, verdict FAIL/`trailers_refused` à raison, job rouge, artefact et commentaire cohérents
+- [x] run réel : aucun refus `env`, `printenv` ou `python3` dans `mission-result.permission_denials` — PROUVÉ : aucun refus `env`/`printenv`/`python3` dans les runs 44326043746 et 44331128791 (seul un `gh pr …` refusé au 2e run)
 
 ## Notes
 Avancement 2026-11-18 (niveau STATIC) : `tests/factory/run-ticket-test.sh` PASS (cas Verdict, schéma, structure du workflow) ; actionlint propre ; expression jq de l'étape « Branche » rejouée en lecture seule sur l'API REST pulls (issue 66 → `claude/issue-66-ci-parity`, issue 57 → `agent/issue-57-…`, issue 6 → vide). NOT_TESTED : tout le reste en run réel (dispatch, geste de Paul).

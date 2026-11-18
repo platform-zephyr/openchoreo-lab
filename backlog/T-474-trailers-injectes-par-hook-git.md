@@ -1,7 +1,7 @@
 ---
 id: T-474
 title: "Trailers de commit injectés par un hook git du workflow (Ticket, Model, Effort, Escalated-from, Claude-Session)"
-status: in-progress
+status: done
 phase: P0
 adr: [0021, 0022]
 depends_on: [T-466]
@@ -29,8 +29,8 @@ Ne plus dépendre de la mémoire du modèle pour les trailers. Run usine 4432604
 - [x] `check-trailers` lit les trailers avec `--no-divider` (une ligne `---` du corps ne coupe pas le message), comme le hook
 - [x] `tests/factory/commit-trailers-test.sh` PASS (2026-11-18, 45 cas) : sans trailers, partiels, valeur fausse, doublons, multi-lignes avec `---`, `--allow-empty`, éditeur avec commentaires, message vide (commit annulé), `--amend`, `--no-verify`, merge `--no-ff`, identité refusée, valeurs absentes ou altérées, environnement de l'agent ignoré, cas négatifs d'installation, garde Bash (`--no-verify`, `-n`, `-anm` refusés), structure du workflow ; test du test : workflow muté (étape `hooks` après `claude`) → FAIL
 - [x] `actionlint` propre ; `shellcheck` propre sur les scripts touchés ; `tests/factory/*.sh` tous PASS ; `tools/backlog/check.py` 0 erreur
-- [ ] run réel (RUNTIME, preuve datée) : un dispatch montre l'étape `hooks` verte, des commits de l'agent avec les 5 trailers et `check-trailers` PASS
-- [ ] run réel : vérifier que l'environnement du job (`GIT_CONFIG_*`, `GIT_AUTHOR_*`) atteint le Bash de l'agent dans `claude-code-action`
+- [x] run réel (RUNTIME, preuve datée) : un dispatch montre l'étape `hooks` verte, des commits de l'agent avec les 5 trailers et `check-trailers` PASS — PROUVÉ : run 44331128791 (issue 74, PR #81 du bot : 27 tours, 0,66 $, statut PASS, commit avec les 5 trailers injectés par le hook, 18 checks verts dont `agent-trailers`, branche `claude/issue-74-…` retrouvée, commentaire `report`), 2026-11-18
+- [x] run réel : vérifier que l'environnement du job (`GIT_CONFIG_*`, `GIT_AUTHOR_*`) atteint le Bash de l'agent dans `claude-code-action` — PROUVÉ : les 5 trailers du commit de l'agent ont été posés par le hook, donc `core.hooksPath` et l'environnement du job atteignent le Bash de l'agent (même run)
 
 ## Notes
 Avancement 2026-11-18 (niveau STATIC). NOT_TESTED : tout le comportement sur le runner (sudo, `RUNNER_TEMP`, propagation de l'environnement à l'agent).
