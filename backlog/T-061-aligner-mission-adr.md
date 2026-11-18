@@ -1,7 +1,7 @@
 ---
 id: T-061
 title: "Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote)"
-status: todo
+status: done
 phase: P0
 adr: [0002, 0021]
 depends_on: []
@@ -32,3 +32,5 @@ missions/MISSION.md, AGENTS.md, STATE.md, docs/adr/0002-autonomie-des-agents.md,
 T-061a de la décision 3 (consensus n°2 et arbitrages de Paul, 2026-11-18). Le reste de l'ancien T-061 est dans T-061b, en parallèle du pilote.
 
 Done à la fusion de la PR #54 (acte les ADR 0001-0023 et amendements) (arbitrage Fable, 2026-11-18). Ne bloque plus le pilote : retiré des dépendances du pilote et de ses prérequis.
+
+Fait : ADR actés par la fusion de la PR #54 (2026-11-18).

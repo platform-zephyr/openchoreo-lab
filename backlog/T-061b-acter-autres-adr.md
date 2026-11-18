@@ -1,7 +1,7 @@
 ---
 id: T-061b
 title: "Acter les autres ADR (0001, 0003-0006, 0010-0013, 0020, 0022, 0023, 0024) et les amendements du consensus n°2 (T-061b)"
-status: todo
+status: done
 phase: P0
 adr: [0003, 0020, 0022, 0023, 0024]
 depends_on: []
@@ -36,3 +36,5 @@ T-061b de la décision 3 (consensus n°2 et arbitrages de Paul, 2026-11-18). Ne 
 Done à la fusion de la PR #54 (acte les ADR 0001-0023 et amendements) (arbitrage Fable, 2026-11-18). Ne bloque plus le pilote : retiré des dépendances du pilote et de ses prérequis.
 
 QA-0 fusionné (intégration 5, 2026-11-18) : le fichier docs/adr/0024-art-anterieur-maintenabilite.md existe (PROPOSÉ) ; il n'y a pas de ticket T-410.
+
+Fait : ADR actés par la fusion de la PR #54 (2026-11-18).
