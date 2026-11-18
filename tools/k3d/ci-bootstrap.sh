@@ -6,6 +6,7 @@
 #   - étape 10 (CNPG + lab-pg) : déployée par tests/k3d/run.sh lui-même ;
 #   - étape 11 (Argo CD) : seuls tests/gitops-k3d et tests/argo-escalation en ont besoin, et ils l'installent eux-mêmes ;
 #   - étape 12 (RBAC réduit du cluster-agent) : non rejouée.
+# Limite : la CI installe le chart OpenChoreo standard ; un PASS en CI ne prouve pas l'installation durcie utilisée sur OKE.
 # Usage : tools/k3d/ci-bootstrap.sh <nom-du-cluster>   (contexte attendu : k3d-<nom>, un seul nœud arm64)
 set -euo pipefail
 
@@ -96,8 +97,10 @@ CA_INDENTED="        ${ca//$'\n'/$'\n'        }" awk '
 log "9. types, environnement, traits du labo"
 kubectl label namespace default openchoreo.dev/control-plane=true --overwrite
 "${KA[@]}" -f "$M/40-openchoreo-env.yaml"
-# Environnement `development` attendu par tests/k3d/fixtures (ses PRB pinnent `development`) : absent de
-# platform/ (qui ne déclare que `production`). Dérivé ici du même manifeste, non production, CI seulement.
+# TEMPORAIRE (contournement CI) : environnement `development` attendu par tests/k3d/fixtures, absent de
+# platform/ (qui ne déclare que `production`). Dérivé ici du même manifeste, non production. La CI teste donc
+# une plateforme légèrement différente d'OKE. Issue #49 : ajoutera `development` dans
+# platform/install/manifests/40-openchoreo-env.yaml. Quand #49 est fusionnée, RETIRER ce bloc yq.
 yq 'select(documentIndex == 0) | .metadata.name = "development" | .metadata.labels."openchoreo.dev/name" = "development" | .spec.isProduction = false' \
   "$M/40-openchoreo-env.yaml" | kubectl apply --server-side --field-manager=openchoreo-lab -f - >/dev/null
 "${KA[@]}" -f "$ROOT/platform/component-types/" -f "$ROOT/platform/traits/" \
