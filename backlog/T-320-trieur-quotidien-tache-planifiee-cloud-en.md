@@ -1,17 +1,17 @@
 ---
 id: T-320
 title: "Trieur quotidien : tâche planifiée cloud en lecture seule + issue de résumé"
-status: todo
-phase: P1
+status: deferred
+phase: P5
 adr: [0012, 0021]
 depends_on: [T-061, T-316]
 class: AUTONOME + MANDAT
 velocity: false
 lane: agents
-stage: S2
-model: claude-sonnet-5-5
+stage: après-porte
+model: claude-opus-5-5
 effort: high
-routing: R99-defaut
+routing: R1-noyau
 github_issue: null
 ---
 # T-320 — Trieur quotidien : tâche planifiée cloud en lecture seule + issue de résumé
@@ -30,3 +30,5 @@ docs/FACTORY-RUNBOOK.md, tools/backlog/roadmap.py (appel)
 MANDAT : création de la routine sur le web (la tâche s'exécute sous l'identité de Paul : lecture et commentaire seulement). Aperçu de recherche : plafonds susceptibles de changer.
 
 Proposé par la recherche `factory` (clé FAC-11) ; intégration 2 du 2026-11-18.
+
+Différé (consensus n°2 et arbitrages de Paul, 2026-11-18) : règle d'usine d'ADR-0021 (décision 10) ; avant la porte, un ticket d'usine n'entre que s'il supprime un geste de Paul mesuré au pilote.

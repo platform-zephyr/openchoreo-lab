@@ -4,14 +4,14 @@ title: "Gabarits de plan et de compte rendu dans `add-app`"
 status: todo
 phase: P1
 adr: [0013]
-depends_on: [T-005, T-061]
+depends_on: [T-005, T-061, T-061b]
 class: AUTONOME
 velocity: true
 lane: intention
 stage: S3
 model: claude-opus-5-5
 effort: high
-routing: R01-noyau-securite
+routing: R1-noyau
 github_issue: null
 ---
 # T-043 — Gabarits de plan et de compte rendu dans `add-app`

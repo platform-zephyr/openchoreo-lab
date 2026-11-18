@@ -1,17 +1,17 @@
 ---
 id: T-342
 title: "Spike (3 jours) : cluster dev homelab pour agents (vcluster, VM dédiée ou namespaces)"
-status: todo
-phase: P1
+status: deferred
+phase: P5
 adr: [0003, 0022]
 depends_on: [T-061, T-363]
 class: AUTONOME + MANDAT
 velocity: false
 lane: hybride
-stage: S2
-model: claude-opus-5-5
+stage: après-porte
+model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-342 — Spike (3 jours) : cluster dev homelab pour agents (vcluster, VM dédiée ou namespaces)
@@ -32,3 +32,5 @@ docs/research/DEV-CLUSTER-SPIKE.md, tests/dev-cluster/
 Périmètre cluster : namespaces openchoreo-* et lab-* seulement ; lecture seule ailleurs (AGENTS.md). Aucune mesure du surcoût de vcluster n'est publiée par le projet [NV].
 
 Proposé par la recherche `harness` (clé HAR-12) ; intégration 2 du 2026-11-18.
+
+Différé (consensus n°2 et arbitrages de Paul, 2026-11-18) : règle d'usine d'ADR-0021 (décision 10) ; avant la porte, un ticket d'usine n'entre que s'il supprime un geste de Paul mesuré au pilote.

@@ -4,14 +4,14 @@ title: "Registre des limites free tier (valeur, date, source) et lint de péremp
 status: todo
 phase: P1
 adr: [0017]
-depends_on: [T-001, T-061]
+depends_on: [T-001, T-061, T-061b]
 class: AUTONOME + MANDAT
 velocity: false
 lane: coût
 stage: S3
-model: claude-sonnet-5-5
-effort: medium
-routing: R10-code-simple
+model: claude-opus-5-5
+effort: high
+routing: R1-noyau
 github_issue: null
 ---
 # T-140 — Registre des limites free tier (valeur, date, source) et lint de péremption

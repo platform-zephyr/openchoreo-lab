@@ -8,10 +8,10 @@ depends_on: [T-002]
 class: REVUE
 velocity: false
 lane: securite
-stage: S0
+stage: S1
 model: claude-opus-5-5
 effort: high
-routing: R01-noyau-securite
+routing: R1-noyau
 github_issue: null
 ---
 # T-217 — VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny
@@ -25,3 +25,6 @@ platform/policies/, tests/vap/
 ## Critères de fin
 - [ ] VAP + test de refus en CI k3d
 - [ ] preuve sur k3d datée
+
+## Notes
+Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).

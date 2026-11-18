@@ -4,14 +4,14 @@ title: "Schéma `app-status.v1` et `_checks` en sortie JSON stable"
 status: todo
 phase: P0
 adr: [0011]
-depends_on: [T-001, T-061]
+depends_on: [T-001, T-061, T-061b]
 class: AUTONOME
 velocity: true
 lane: preuve
 stage: S1
 model: claude-sonnet-5-5
-effort: medium
-routing: R10-code-simple
+effort: high
+routing: R3-defaut
 github_issue: null
 ---
 # T-072 — Schéma `app-status.v1` et `_checks` en sortie JSON stable

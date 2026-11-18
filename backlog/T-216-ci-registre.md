@@ -4,14 +4,14 @@ title: "CI extensible par registre de suites"
 status: todo
 phase: P0
 adr: [0002]
-depends_on: [T-002, T-007, T-061]
+depends_on: [T-002, T-061]
 class: REVUE
 velocity: true
 lane: ci
 stage: S1
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-216 — CI extensible par registre de suites
@@ -25,3 +25,6 @@ Ajouter une suite de tests sans toucher `.github/` : un registre (noyau pour les
 ## Critères de fin
 - [ ] registre + job générique
 - [ ] ajout d'une suite non-garde sans revue prouvé
+
+## Notes
+Dépendance retirée (consensus n°2 et arbitrages de Paul, 2026-11-18) : T-007 (étape FINAL). Pendant le développement, identité de session de Paul ; bascule vers l'App de T-215 en FINAL.

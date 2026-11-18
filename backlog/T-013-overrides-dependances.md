@@ -11,7 +11,7 @@ lane: contrat-appgen
 stage: après-porte
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-013 — Surcharges par environnement (G12)

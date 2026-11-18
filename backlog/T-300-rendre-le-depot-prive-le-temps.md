@@ -1,7 +1,7 @@
 ---
 id: T-300
 title: "Rendre le dépôt privé le temps de la purge (geste de Paul, réversible)"
-status: todo
+status: dropped
 phase: P0
 adr: [0002]
 depends_on: []
@@ -30,3 +30,5 @@ paramètres du dépôt GitHub
 Proposé par la recherche `sensitive` (clé SEC-1) ; intégration 2 du 2026-11-18.
 
 Le retour en public rétablit la règle « aucun runner auto-hébergé » (T-343).
+
+Abandonné (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas de fenêtre privée ni de purge du cache GitHub (arbitrage 1 ; décision 6 annulée).

@@ -56,3 +56,18 @@ ADR-0004, ADR-0008 ; `docs/architecture/MULTI-DATAPLANE.md`
 
 ## Références
 `docs/research/HOMELAB-INFRA-REQUIREMENTS.md` §1, `docs/architecture/MULTI-DATAPLANE.md`, `docs/reference/openchoreo/dataplanes-multicluster.md`.
+
+## Amendement (consensus n°2 et arbitrages de Paul, 2026-11-18)
+Source : `docs/review/CONSENSUS-2.md` (arbitrages 2 et 3). Remplace les §1, §4 (dernière puce), §6 et §8 sur les points ci-dessous.
+1. **D11 tranché : le control plane OpenChoreo est sur le homelab**, dans une VM Talos « lab » dédiée sur Proxmox, séparée du
+   cluster kube-ops (T-361, T-363, T-364). Le CP et le data plane `homelab` y sont co-localisés.
+2. **OKE devient optionnel.** Un data plane OKE distant (T-030) ne s'ajoute que si Paul demande une app sur OKE ; il impose
+   alors une exception de flux OKE → homelab (D13) et une porte bis pour mesurer le multi-cluster. La nomenclature OKE du §8
+   ne s'applique que dans ce cas.
+3. L'alternative « control plane sur le homelab », écartée au départ, est retenue : le homelab tourne 24 h/24 (contraintes
+   thermiques et NVMe levées par Paul), Authentik y tourne déjà, et OKE n'est plus requis pour la plateforme.
+4. Place sur le homelab : des services de kube-ops peuvent être désactivés pour faire de la place à la VM lab (mesure T-360,
+   PR dans kube-ops, geste de Paul).
+5. Architecture : le homelab est x86_64, OKE arm64. Une app éligible aux deux clusters exige une image multi-arch (T-402).
+6. Les agents cloud lisent la plateforme du homelab sans kubeconfig, en lecture seule : MCP/API derrière Cloudflare Tunnel +
+   Access (déjà côté kube-ops) ou statut publié dans GitHub (T-006).

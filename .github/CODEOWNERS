@@ -69,6 +69,14 @@
 /identities/ @SmadjaPaul
 /platform/secrets/ @SmadjaPaul
 
+# Consensus n°2 (2026-11-18, décision 7) : usine (kill-switch PAUSE, concurrence, mandats), règles de routage des modèles,
+# registre des tarifs et budget de capacité du homelab. Le dispatcher recalcule le modèle depuis les chemins.
+/factory/ @SmadjaPaul
+/backlog/proposals/model-routing.yaml @SmadjaPaul
+/backlog/routing.yaml @SmadjaPaul
+/docs/state/model-prices.yaml @SmadjaPaul
+/docs/state/homelab-capacity.yaml @SmadjaPaul
+
 # Exception ciblée : ajouter une application OKE = une entrée `sources[]` dans lab-apps.yaml. Le fichier reste libre
 # car tools/oke/argo_guard.py (job CI `platform`, requis par ci-ok, lui-même protégé) refuse toute entrée qui n'est pas
 # generated/namespaces/default/projects/<app> d'une app `cluster: oke`, stateless, sans storage ni database.

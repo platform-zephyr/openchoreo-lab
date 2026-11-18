@@ -1,17 +1,17 @@
 ---
 id: T-318
 title: "Travailleur homelab en tirage sortant (claude -p) sur VM isolée, sans runner GitHub ni secret"
-status: todo
-phase: P1
+status: deferred
+phase: P5
 adr: [0003, 0021]
 depends_on: [T-002, T-061, T-313, T-360]
 class: REVUE + MANDAT
 velocity: true
 lane: hybride
-stage: S2
+stage: après-porte
 model: claude-opus-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R1-noyau
 github_issue: null
 ---
 # T-318 — Travailleur homelab en tirage sortant (claude -p) sur VM isolée, sans runner GitHub ni secret
@@ -34,3 +34,5 @@ MANDAT : création de la VM et du réseau (homelab-infra possède Proxmox : suiv
 Proposé par la recherche `factory` (clé FAC-9) ; intégration 2 du 2026-11-18.
 
 Conflit à trancher par Paul : la proposition visait 8 vCPU / 32 Go alors que le budget homelab (64 Gio) laisse 6-8 Gio de marge après la VM lab ; la taille vient de T-360.
+
+Différé (consensus n°2 et arbitrages de Paul, 2026-11-18) : règle d'usine d'ADR-0021 (décision 10) ; avant la porte, un ticket d'usine n'entre que s'il supprime un geste de Paul mesuré au pilote.

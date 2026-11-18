@@ -4,14 +4,14 @@ title: "Environment `development`, promotion vers `production`, pins de release 
 status: todo
 phase: P0
 adr: [0004]
-depends_on: [T-001, T-002, T-061]
+depends_on: [T-001, T-002, T-061, T-061b]
 class: AUTONOME
 velocity: true
 lane: contrat-appgen
 stage: S1
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: 49
 ---
 # T-003 — Environment `development`, promotion vers `production`, pins de release par environnement

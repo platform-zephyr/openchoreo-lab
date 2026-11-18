@@ -11,7 +11,7 @@ lane: migration
 stage: après-porte
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-052 — Retrait progressif des chemins kube-ops, app par app

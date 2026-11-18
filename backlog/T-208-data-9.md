@@ -9,9 +9,9 @@ class: AUTONOME
 velocity: false
 lane: données
 stage: après-porte
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R99-defaut
+routing: R1-noyau
 github_issue: null
 ---
 # T-208 — Gouvernance des données de mesure (classes, rétention, purge, pseudonymes)

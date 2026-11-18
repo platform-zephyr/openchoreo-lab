@@ -11,7 +11,7 @@ lane: agents
 stage: après-porte
 model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-367 — Runners ARC sur le cluster lab pour la CI du dépôt (sans Docker, éphémères)
@@ -33,3 +33,5 @@ Risque principal : exécution de code de PR sur le matériel domestique. MANDAT 
 Proposé par la recherche `homelab` (clé HOME-7) ; intégration 2 du 2026-11-18.
 
 Bloqué par : décision (b) de T-343 (runners ARC) ; par défaut (a) aucun runner homelab sur un dépôt public.
+
+(consensus n°2 et arbitrages de Paul, 2026-11-18) : bloqué jusqu'à T-343 ; règle d'admission = push/dispatch de mainteneurs, jamais PR de fork (arbitrage 6).

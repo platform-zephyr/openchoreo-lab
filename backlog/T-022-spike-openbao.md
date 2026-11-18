@@ -4,14 +4,14 @@ title: "OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors si
 status: todo
 phase: P2
 adr: [0014]
-depends_on: [T-061]
+depends_on: [T-061, T-061b]
 class: AUTONOME + MANDAT
 velocity: false
 lane: secrets
 stage: I2
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-022 — OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill

@@ -4,14 +4,14 @@ title: "Ingestion GitHub vers Parquet et métriques DORA par agent"
 status: todo
 phase: P4
 adr: [0019]
-depends_on: [T-061]
+depends_on: [T-061, T-061b]
 class: REVUE
 velocity: true
 lane: données
 stage: I8
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-201 — Ingestion GitHub vers Parquet et métriques DORA par agent

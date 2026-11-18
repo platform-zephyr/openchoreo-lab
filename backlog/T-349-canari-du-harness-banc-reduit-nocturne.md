@@ -1,17 +1,17 @@
 ---
 id: T-349
 title: "Canari du harness : banc réduit nocturne sur main et montées épinglées de Claude Code et de l'action"
-status: todo
-phase: P3
+status: deferred
+phase: P5
 adr: [0016, 0022]
 depends_on: [T-061, T-120, T-343, T-346]
 class: REVUE
 velocity: false
 lane: renovate
-stage: I5
-model: claude-sonnet-5-5
+stage: après-porte
+model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-349 — Canari du harness : banc réduit nocturne sur main et montées épinglées de Claude Code et de l'action
@@ -31,3 +31,5 @@ Banc de 8 à 10 tâches chaque nuit sur main (runner homelab ou hébergé) ; ale
 Les agents de l'abonnement partagent des quotas : planifier la nuit, hors fenêtre de travail.
 
 Proposé par la recherche `harness` (clé HAR-19) ; intégration 2 du 2026-11-18.
+
+Différé (consensus n°2 et arbitrages de Paul, 2026-11-18) : dépend de T-346, différé par la règle d'usine (décision 10).

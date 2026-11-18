@@ -8,10 +8,10 @@ depends_on: [T-061, T-303, T-330, T-332]
 class: REVUE
 velocity: true
 lane: agents-harness
-stage: S0
-model: claude-sonnet-5-5
+stage: S1
+model: claude-opus-5-5
 effort: high
-routing: R99-defaut
+routing: R1-noyau
 github_issue: null
 ---
 # T-331 — Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop
@@ -32,3 +32,5 @@ PreToolUse Bash (refus des commandes cluster, curl|sh, --no-verify, push forcé)
 PostToolUse ne peut pas bloquer ; Stop est débloqué après 8 blocs consécutifs (CLAUDE_CODE_STOP_HOOK_BLOCK_CAP). Le périmètre vient de la section `Périmètre de fichiers` du ticket.
 
 Proposé par la recherche `harness` (clé HAR-1) ; intégration 2 du 2026-11-18.
+
+Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).

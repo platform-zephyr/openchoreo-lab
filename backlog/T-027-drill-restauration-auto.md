@@ -4,14 +4,14 @@ title: "Drill de restauration automatique et `restore-evidence`"
 status: todo
 phase: P2
 adr: [0008, 0011]
-depends_on: [T-005, T-012, T-026, T-061, T-075]
+depends_on: [T-005, T-012, T-026, T-061, T-061b, T-075]
 class: AUTONOME
 velocity: false
 lane: donnees
 stage: I1
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-027 — Drill de restauration automatique et `restore-evidence`

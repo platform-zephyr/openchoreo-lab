@@ -41,3 +41,16 @@ Décisions liées : ADR-0001 (contrat indépendant du moteur), ADR-0003, ADR-000
 
 ## Vérification
 - Rapport daté de T-211 avec C1-C5 mesurés, sources et preuves ; décision de Paul consignée dans cet ADR (amendement).
+
+## Amendement (consensus n°2 et arbitrages de Paul, 2026-11-18)
+Source : `docs/review/CONSENSUS-2.md` (décision 5, arbitrage 2).
+1. **La porte évalue OpenChoreo en mono-cluster.** Le CP et le DP sont sur la VM lab du homelab (D11 tranché, ADR-0003
+   amendé). Elle ne mesure pas la valeur multi-cluster d'OpenChoreo ; si Paul veut des apps sur OKE, une porte bis (T-030)
+   la mesurera.
+2. Critères révisés : **C2** = requests du CP et du DP mesurées sur la VM lab, dans le budget du homelab (T-360, T-364) ;
+   **C4** = reprise sans action du cluster lab après redémarrage (T-031). C1, C3 et C5 inchangés.
+3. **§4 : T-364 remplace T-030** dans les règles en cas d'échec d'une voie.
+4. **Horloge** : les 3 jours d'agent du §3 partent de T-363 `done` (socle de la VM lab prêt), pas de l'ouverture du ticket.
+   Les deux moteurs sont mesurés sur la même VM, avec les mêmes apps, l'un après l'autre.
+5. **Repli** : si la VM lab n'est pas Ready le **2026-11-25**, C1 et C5 sont mesurés sur OKE pour les deux moteurs (CP déjà
+   installé). La date de décision reste le 2026-12-04, avec un seul report possible au 2026-12-11.

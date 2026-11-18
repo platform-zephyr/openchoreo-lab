@@ -4,14 +4,14 @@ title: "Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager,
 status: todo
 phase: P0
 adr: [0003, 0014]
-depends_on: [T-001, T-061, T-361, T-362]
+depends_on: [T-001, T-061, T-061b, T-361, T-362]
 class: REVUE + MANDAT
 velocity: true
 lane: socle-lab
 stage: S1
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-363 — Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stockage)

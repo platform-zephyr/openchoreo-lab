@@ -1,17 +1,17 @@
 ---
 id: T-323
 title: "Observabilité de l'usine : indicateurs, rapport hebdomadaire par (type de tâche, modèle), écart banc/réel, drill de panne"
-status: todo
-phase: P1
+status: deferred
+phase: P5
 adr: [0019, 0021]
 depends_on: [T-061, T-311, T-313, T-314, T-346]
 class: AUTONOME
 velocity: false
 lane: observabilité
-stage: S3
-model: claude-sonnet-5-5
+stage: après-porte
+model: claude-opus-5-5
 effort: high
-routing: R99-defaut
+routing: R1-noyau
 github_issue: null
 ---
 # T-323 — Observabilité de l'usine : indicateurs, rapport hebdomadaire par (type de tâche, modèle), écart banc/réel, drill de panne
@@ -32,3 +32,5 @@ tools/factory/metrics.py, docs/FACTORY-RUNBOOK.md, tools/metrics/model-routing/r
 
 ## Notes
 Proposé par la recherche `factory` (clé FAC-14) ; intégration 2 du 2026-11-18.
+
+Différé (consensus n°2 et arbitrages de Paul, 2026-11-18) : règle d'usine d'ADR-0021 (décision 10) ; avant la porte, un ticket d'usine n'entre que s'il supprime un geste de Paul mesuré au pilote.

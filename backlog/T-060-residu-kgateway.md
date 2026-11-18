@@ -4,14 +4,14 @@ title: "Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effec
 status: todo
 phase: P2
 adr: [0006]
-depends_on: [T-001, T-061]
+depends_on: [T-001, T-061, T-061b]
 class: REVUE
 velocity: false
 lane: socle-oke
 stage: I2
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R1-noyau
 github_issue: null
 ---
 # T-060 — Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL)

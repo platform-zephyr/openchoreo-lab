@@ -4,14 +4,14 @@ title: "`spec.verify` : vérification fonctionnelle déclarée (G10)"
 status: todo
 phase: P2
 adr: [0011, 0013]
-depends_on: [T-005, T-061]
+depends_on: [T-005, T-061, T-061b]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: I1
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-012 — `spec.verify` : vérification fonctionnelle déclarée (G10)

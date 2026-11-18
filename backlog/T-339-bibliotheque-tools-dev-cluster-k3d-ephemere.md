@@ -4,14 +4,14 @@ title: "Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi
 status: todo
 phase: P0
 adr: [0002, 0022]
-depends_on: [T-002, T-061, T-216, T-332]
+depends_on: [T-002, T-061, T-061b, T-216, T-332]
 class: AUTONOME + REVUE
 velocity: true
 lane: ci
 stage: S1
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R07-ci-github-actions
+routing: R1-noyau
 github_issue: null
 ---
 # T-339 — Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi par chemins

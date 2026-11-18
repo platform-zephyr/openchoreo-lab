@@ -4,14 +4,14 @@ title: "Check CI de frugalité du dev"
 status: todo
 phase: P1
 adr: [0004]
-depends_on: [T-003, T-061]
+depends_on: [T-003, T-061, T-061b]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: S3
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: 50
 ---
 # T-004 — Check CI de frugalité du dev

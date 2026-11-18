@@ -4,14 +4,14 @@ title: "Environnement Claude Code cloud « openchoreo-lab-agent » : script d'in
 status: todo
 phase: P0
 adr: [0022]
-depends_on: [T-061, T-332]
+depends_on: [T-061, T-061b, T-332]
 class: AUTONOME + MANDAT
 velocity: true
 lane: agents-harness
-stage: S0
+stage: S1
 model: claude-sonnet-5-5
 effort: high
-routing: R99-defaut
+routing: R3-defaut
 github_issue: null
 ---
 # T-334 — Environnement Claude Code cloud « openchoreo-lab-agent » : script d'installation, réseau, secrets réseau
@@ -32,3 +32,5 @@ docs/AGENT-ENVIRONMENTS.md, tools/dev/cloud-setup.sh
 Le script ne tourne pas à la reprise d'une VM inactive ; les processus lancés ne survivent pas à l'expiration.
 
 Proposé par la recherche `harness` (clé HAR-4) ; intégration 2 du 2026-11-18.
+
+Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).

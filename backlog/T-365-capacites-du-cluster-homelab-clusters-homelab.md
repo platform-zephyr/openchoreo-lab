@@ -11,7 +11,7 @@ lane: contrat-appgen
 stage: S1
 model: claude-sonnet-5-5
 effort: high
-routing: R06-refactor-appgen
+routing: R3-defaut
 github_issue: null
 ---
 # T-365 — Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno

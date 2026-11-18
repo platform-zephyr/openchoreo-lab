@@ -1,9 +1,9 @@
 ---
 id: T-061
-title: "Acter les ADR 0001-0006, 0010-0013, 0020-0023 (+ amendements homelab), réaligner MISSION sur le homelab"
+title: "Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote)"
 status: todo
 phase: P0
-adr: [0002, 0012]
+adr: [0002, 0021]
 depends_on: []
 class: MANDAT
 velocity: false
@@ -11,27 +11,22 @@ lane: gouvernance
 stage: S0
 model: claude-opus-5-5
 effort: high
-routing: R01-noyau-securite
+routing: R1-noyau
 github_issue: null
 ---
-# T-061 — Acter les ADR 0001-0006, 0010-0013, 0020-0023 (+ amendements homelab), réaligner MISSION sur le homelab
+# T-061 — Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote)
 
 ## Intention
-Lever les contradictions : MISSION interdit encore exposition publique, création d'identité, Cloudflare ; services visés obsolètes ; ADR tous PROPOSÉ.
+Acter le minimum qui autorise le pilote : ADR-0002 (avec la sécurité de dev et l'étape FINAL) et ADR-0021 réduit (règle d'usine, paliers, liste figée, PAUSE). Lever les contradictions de MISSION et STATE.
 
 ## Périmètre de fichiers
-missions/MISSION.md, AGENTS.md, STATE.md, docs/adr/, docs/architecture/
+missions/MISSION.md, AGENTS.md, STATE.md, docs/adr/0002-autonomie-des-agents.md, docs/adr/0021-usine-agents-24-7.md, docs/adr/README.md
 
 ## Critères de fin
-- [ ] ADR 0001-0006, 0010-0013, 0020 actés (ou amendés)
-- [ ] MISSION.md réaligné : homelab par défaut, OKE sur demande, interdits réécrits en classes, critère « plateforme finie »
-- [ ] AGENTS.md et STATE.md sans contradiction
-- [ ] ADR-0021/0022/0023 (usine 24/7), ADR-0022 (harness), ADR-0023 (routage des modèles) rédigés au gabarit depuis docs/research/ et actés (ou amendés)
-- [ ] amendements homelab (HOMELAB-CAPACITY-DATAPLANE §5) : ADR-0003 et ADR-0020 (C1, C2, C4) amendés et actés ; texte d'ADR-0017 amendé (acté avec T-218) ; TARGET-ARCHITECTURE, MULTI-DATAPLANE, DECISIONS-OPEN (D1 reformulée, D11-D14) à jour
-- [ ] D11 (emplacement définitif du CP) laissé ouvert jusqu'à la porte
-- [ ] Paul a tranché pour ADR-0023 : plancher Opus du noyau, Fable sur demande seulement, DeepSeek Flash sur données publiques (MANDAT de dépense)
-- [ ] aucun ticket ne cite encore « Talos éteint la nuit » ou « CP sur OKE » comme prérequis
+- [ ] ADR-0002 (amendement « sécurité de dev, sécurité finale ») et ADR-0021 réduit actés par Paul
+- [ ] MISSION.md réaligné : homelab par défaut, CP OpenChoreo sur le homelab (D11), OKE sur demande, interdits réécrits en classes, critère « plateforme finie » = étape FINAL `done`
+- [ ] STATE.md : homelab par défaut, chiffres du backlog à jour, consensus n°2 cité ; AGENTS.md sans contradiction
 - [ ] MISSION.md et STATE.md : A1 = 2/12, plus de « 4/24 »
 
 ## Notes
-Intégration 2 : absorbe HOME-13 et MOD-1 pour garder un seul geste de Paul. Ticket lourd sur le chemin critique : Paul peut le scinder (question dans INTEGRATION-2.md).
+T-061a de la décision 3 (consensus n°2 et arbitrages de Paul, 2026-11-18). Le reste de l'ancien T-061 est dans T-061b, en parallèle du pilote.

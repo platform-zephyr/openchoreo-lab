@@ -4,14 +4,14 @@ title: "Banc d'essai de 5 intentions A (MVP)"
 status: todo
 phase: P1
 adr: [0013]
-depends_on: [T-015, T-040, T-041, T-043, T-061]
+depends_on: [T-015, T-040, T-041, T-043, T-061, T-061b]
 class: AUTONOME
 velocity: false
 lane: intention
 stage: S3
 model: claude-sonnet-5-5
 effort: high
-routing: R14-banc-intentions
+routing: R3-defaut
 github_issue: null
 ---
 # T-044 — Banc d'essai de 5 intentions A (MVP)

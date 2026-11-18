@@ -4,14 +4,14 @@ title: "VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops)"
 status: todo
 phase: P0
 adr: [0003]
-depends_on: [T-061, T-360]
+depends_on: [T-061, T-061b, T-360]
 class: MANDAT
 velocity: false
 lane: hybride
-stage: S0
+stage: S1
 model: claude-sonnet-5-5
 effort: high
-routing: R08-manifestes-k8s-openchoreo
+routing: R3-defaut
 github_issue: null
 ---
 # T-361 — VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops)
@@ -31,3 +31,7 @@ dépôt homelab-infra (hors de ce dépôt) : seconde instance du module talos ; 
 Racine proxmox existante ou racine dédiée proxmox-lab : décision de Paul. L'agent de ce dépôt prépare la demande ; l'application se fait dans homelab-infra via ARC.
 
 Proposé par la recherche `homelab` (clé HOME-1) ; intégration 2 du 2026-11-18.
+
+Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).
+
+(consensus n°2 et arbitrages de Paul, 2026-11-18) : contraintes thermique et NVMe levées (arbitrage 3). Des services de kube-ops peuvent être désactivés pour faire de la place à la VM lab : liste et gain mesurés par T-360, désactivation par PR dans kube-ops, geste de Paul.

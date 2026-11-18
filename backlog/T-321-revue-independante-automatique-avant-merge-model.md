@@ -4,14 +4,14 @@ title: "Revue indépendante automatique avant merge (modèle différent, lecture
 status: todo
 phase: P0
 adr: [0002, 0021]
-depends_on: [T-002, T-061, T-313, T-382]
+depends_on: [T-002, T-061, T-313]
 class: REVUE
 velocity: true
 lane: ci
 stage: S1
 model: claude-opus-5-5
 effort: high
-routing: R01-noyau-securite
+routing: R1-noyau
 github_issue: null
 ---
 # T-321 — Revue indépendante automatique avant merge (modèle différent, lecture seule)
@@ -31,3 +31,5 @@ Sur chaque PR claude/*, une session de revue indépendante (autre modèle, outil
 Le reviewer ne modifie jamais la branche (coordination Atlas). Sur dépôt public, la revue ne tourne que sur les branches du dépôt (secrets non transmis aux forks).
 
 Proposé par la recherche `factory` (clé FAC-12) ; intégration 2 du 2026-11-18.
+
+Dépendance gelée retirée (consensus n°2 et arbitrages de Paul, 2026-11-18) : T-382.
