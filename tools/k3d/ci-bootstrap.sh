@@ -96,6 +96,10 @@ CA_INDENTED="        ${ca//$'\n'/$'\n'        }" awk '
 log "9. types, environnement, traits du labo"
 kubectl label namespace default openchoreo.dev/control-plane=true --overwrite
 "${KA[@]}" -f "$M/40-openchoreo-env.yaml"
+# Environnement `development` attendu par tests/k3d/fixtures (ses PRB pinnent `development`) : absent de
+# platform/ (qui ne déclare que `production`). Dérivé ici du même manifeste, non production, CI seulement.
+yq 'select(documentIndex == 0) | .metadata.name = "development" | .metadata.labels."openchoreo.dev/name" = "development" | .spec.isProduction = false' \
+  "$M/40-openchoreo-env.yaml" | kubectl apply --server-side --field-manager=openchoreo-lab -f - >/dev/null
 "${KA[@]}" -f "$ROOT/platform/component-types/" -f "$ROOT/platform/traits/" \
   -f "$ROOT/platform/project-types/" -f "$ROOT/platform/resource-types/"
 
