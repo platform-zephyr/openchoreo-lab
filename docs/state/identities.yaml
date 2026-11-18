@@ -151,9 +151,9 @@ identities:
     scope: "dépôt openchoreo-lab et bac à sable du bras K ; Checks et Commit statuses en écriture, Metadata en lecture ; rien d'autre"
     owner: paul
     created: 2026-11-18
-    created_is_estimate: true
+    created_is_estimate: false
     rotate_by: 2027-02-18
     dev: false
     vault: doppler
     consumers: [eso-lab]
-    note: "proposition de T-489 (POC accéléré) ; entrée à confirmer à la création réelle ; remplace l'identité de Paul pour la publication du statut."
+    note: "créée le 2026-11-18 (~23:13Z), installée à 23:15:21Z ; secrets : Doppler identity/openchoreo-status (3 noms de T-489) ; injection dans le cluster = geste de T-005 ; détails : docs/AGENT-IDENTITY.md."

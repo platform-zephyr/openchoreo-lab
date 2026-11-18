@@ -50,3 +50,12 @@ Dépôt : `platform-zephyr/openchoreo-lab`. Compte humain propriétaire : `<owne
 6. Création d'une PR qui touche `.github/` : l'App ne peut pas modifier `.github/workflows` (Workflows absent).
 7. Vérifier `expires_at` d'un token d'installation : environ 1 h après émission.
 8. Une PR approuvée par un humain non-auteur, hors `.github/`, se merge : confirmer que le flux nominal fonctionne.
+
+## App `openchoreo-status` (T-489, créée le 2026-11-18)
+
+- **Rôle** : publier le statut des apps dans GitHub (check run par app et par révision, `success`, `failure`, `neutral`), par Argo CD Notifications, sans le compte de Paul ni l'App de l'usine.
+- **Permissions** : Checks en écriture, Commit statuses en écriture, Metadata en lecture. Rien d'autre (ni Contents, ni Pull requests, ni Workflows). Webhook inactif, aucun abonnement à des événements. Installée en « Only select repositories » sur `openchoreo-lab` et `bench-ab-arm-k` (créée vers 23:13Z, installée à 23:15:21Z).
+- **Secrets** : Doppler, projet `identity`, environnement et config racine `openchoreo-status` (pas une config de branche, pour ne pas hériter des secrets existants). Noms : `OPENCHOREO_STATUS_APP_ID`, `OPENCHOREO_STATUS_INSTALLATION_ID`, `OPENCHOREO_STATUS_PRIVATE_KEY`. Une seule clé privée. Aucun jeton de service Doppler n'existe ; le magasin ESO d'OKE (`lab-store`) est de type kubernetes : la clé entre dans le cluster par un geste explicite de T-005, jamais par un lien direct avec Doppler.
+- **Rotation** : au plus tard le 2027-02-18 (`rotate_by`) : nouvelle clé, mise à jour du secret dans Doppler puis dans le cluster, suppression de l'ancienne clé dans les réglages de l'App.
+- **Pourquoi l'App de l'usine n'est pas réutilisée** : `openchoreo-worker` a Contents, Pull requests, Issues et Workflows en écriture ; sa clé ne doit jamais entrer dans un cluster. La clé de `openchoreo-status` y entre (lue par ESO dans `lab-argocd` seulement) et n'a aucune permission sur le contenu du dépôt : sa compromission ne permet que de publier un faux statut.
+- **Preuves** : permissions relevées par `gh api orgs/platform-zephyr/installations` (checks=write, statuses=write, metadata=read, aucun événement) le 2026-11-18T23:23Z ; interface GitHub : « Selected 2 repositories », une seule clé. Reste à prouver (T-489) : le refus d'écriture sur le contenu avec le jeton de l'App.

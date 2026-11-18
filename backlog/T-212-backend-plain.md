@@ -23,7 +23,7 @@ Le comparateur de la porte n'est plus un backend plain écrit pour l'occasion : 
 tests/bench-ab/arm-k/, dépôt bac à sable du bras K (hors de ce dépôt)
 
 ## Critères de fin
-- [ ] MANDAT Paul : dépôt privé du bac à sable créé, accès donné à l'App de l'usine
+- [x] MANDAT Paul : dépôt privé du bac à sable créé, accès donné à l'App de l'usine (fait le 2026-11-18T23:00:25Z : `platform-zephyr/bench-ab-arm-k`, privé, vide, issues et wiki désactivés ; l'installation « all repositories » de `openchoreo-worker` le couvre)
 - [ ] bac à sable = kube-ops au SHA noté, réduit aux apps du banc (`it-tools`, `vikunja`, `ntfy`), `AGENTS.md`, skills et chart `platform-app` inchangés ; licence MIT et `NOTICE` vérifiés ; aucun nom d'hôte ni IP
 - [ ] livraison = copie de l'ApplicationSet `apps-generated` et de son AppProject de kube-ops, à 3 champs près (dépôt, projet `lab-k`, préfixe `lab-k-`) ; `helm template` du chart `platform-app` OK en CI pour les 3 apps
 - [ ] seules différences avec kube-ops listées dans `tests/bench-ab/arm-k/DIFF.md` (cible `lab-k-*`, observation par check run publié, pas de `kubectl-rw`, base de M2 sur `lab-pg`)
