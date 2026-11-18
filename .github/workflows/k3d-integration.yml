@@ -1,3 +1,4 @@
+# essai T-304 : poussé par l'exécutant
 # Suites d'intégration k3d, un cluster JETABLE par job (un runner par suite, rien d'état partagé).
 # Non bloquant : le check requis reste `ci-ok` (ci.yaml). Agrégat propre : `k3d-ok`.
 # Aucun secret : ni `secrets.*` ni jeton. Actions épinglées par SHA ; binaires épinglés par sha256.
