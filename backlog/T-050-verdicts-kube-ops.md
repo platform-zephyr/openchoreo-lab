@@ -1,0 +1,21 @@
+---
+id: T-050
+title: "Verdict A-F pour chaque app de kube-ops"
+status: todo
+phase: P5
+adr: [0005]
+depends_on: [T-011, T-014]
+class: AUTONOME
+github_issue: null
+---
+# T-050 — Verdict A-F pour chaque app de kube-ops
+
+## Intention
+Passer le catalogue kube-ops dans `migrate-to-openchoreo` pour mesurer la couverture du contrat.
+
+## Périmètre de fichiers
+docs/, apps/ (brouillons)
+
+## Critères de fin
+- [ ] tableau app → archétype → manques
+- [ ] liste des évolutions de contrat nécessaires

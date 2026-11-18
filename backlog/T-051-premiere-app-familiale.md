@@ -1,0 +1,22 @@
+---
+id: T-051
+title: "Première app familiale complète (OIDC + base + sauvegarde) sur le homelab"
+status: todo
+phase: P5
+adr: [0007, 0008, 0014, 0003]
+depends_on: [T-024, T-027, T-031]
+class: AUTONOME
+github_issue: null
+---
+# T-051 — Première app familiale complète (OIDC + base + sauvegarde) sur le homelab
+
+## Intention
+Preuve de bout en bout sur une app réelle (ex. Vikunja ou Mealie) déclarée depuis une intention en langage naturel.
+
+## Périmètre de fichiers
+apps/<app>/
+
+## Critères de fin
+- [ ] PASS runtime daté
+- [ ] drill de restauration PASS
+- [ ] login famille OK, hors groupe refusé
