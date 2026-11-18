@@ -92,6 +92,13 @@ out = {
     "ci_failures": 0,
     "checks": {"static": "NOT_TESTED", "ci": "NOT_TESTED", "runtime": "NOT_TESTED"},
 }
+# Refus de permission : noms d'outils seulement (Bash : premier mot de la commande), jamais le contenu.
+den = []
+for d in res.get("permission_denials") or []:
+    name = str(d.get("tool_name", "?"))
+    cmd = str((d.get("tool_input") or {}).get("command", "")).split()
+    den.append(name + (":" + cmd[0] + (" " + cmd[1] if len(cmd) > 1 else "") if name == "Bash" and cmd else ""))
+out["permission_denials"] = den
 obs, req = out["model_observed"], out["model_requested"]
 if obs and not obs.startswith(req):
     out["status"] = "FAIL"
@@ -103,7 +110,8 @@ if summ:
         f.write(f"### mission-result.v1 issue #{out['ticket_issue']}\n\n| champ | valeur |\n|---|---|\n"
                 f"| statut | {out['status']} |\n| modele | {obs or 'NOT_TESTED'} |\n"
                 f"| total_cost_usd | {out['total_cost_usd']} |\n| num_turns | {out['num_turns']} |\n"
-                f"| duree_ms | {out['duration_ms']} |\n")
+                f"| duree_ms | {out['duration_ms']} |\n"
+                f"| refus_de_permission | {', '.join(den) or 'aucun'} |\n")
 PY
 }
 

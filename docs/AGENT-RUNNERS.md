@@ -27,7 +27,7 @@ Principe (T-313) : `workflow_dispatch` lancé par Paul (issues, modèle, effort 
 - Déclencheur limité à l'acteur `SmadjaPaul` ; les bots et utilisateurs sans écriture sont refusés par l'action.
 - Les issues publiques sont des entrées non fiables : seul le contenu relu par Paul avant le label doit être suivi.
 - `.claude/`, `CLAUDE.md` sont restaurés depuis `main` sur les PR par l'action : une PR ne réécrit pas les règles de l'agent.
-- Pas de `show_full_output` (journaux publics). Aucun secret autre que le jeton Claude n'est exposé au job.
+- `show_full_output` seulement avec `-f debug=true` (journaux publics : essai sans donnée sensible, jamais par défaut). Aucun secret autre que le jeton Claude n'est exposé au job.
 - Le job ne peut pas modifier le workflow lui-même sans approbation (CODEOWNERS), ni contourner le ruleset (jeton de l'App,
   sans bypass).
 ## Limites
