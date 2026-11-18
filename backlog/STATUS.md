@@ -6,13 +6,13 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 19 |
-| `todo` | 131 |
+| `in-progress` | 20 |
+| `todo` | 133 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 26 |
+| `done` | 27 |
 | `dropped` | 27 |
-| **Total** | **251** |
+| **Total** | **255** |
 
 ## En cours (`in-progress`)
 
@@ -32,6 +32,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-452](T-452-reactiver-les-suites-k3d-quand-et-comment.md) | Réactiver les suites k3d : quand et sous quelle forme (étude) | 2/3 | Reste ouvert : critère 3 (le `schedule` nocturne) à la fin de S1. | — |
 | [T-458](T-458-ancre-gitops-k3d-obsolete.md) | Réparer l'ancre obsolète de gitops-k3d (correction G1 déjà dans main) | 0/3 | Premier critère ouvert : ancre réparée, la suite va au-delà de T-DEPLOY | — |
 | [T-460](T-460-parite-ci-check.md) | Parité ci.yaml ↔ tools/dev/check : ci-map.tsv et test de parité (SL-6) | 3/3 | Reste : run CI vert de la PR T-475 (critère 2 prouvé en STATIC seulement), puis `status: done` ; issue 66 à fermer après relecture. LOCAL-ONLY restants : `guard-check`, `toolchain-lock`, `check-selftest`, `identities` (raisons dans `ci-map.tsv`). | [#66](https://github.com/platform-zephyr/openchoreo-lab/issues/66) |
+| [T-461](T-461-indicateur-d-evasions.md) | Indicateur d'évasions de la CI : tools/dev/ci-escapes.py et ligne « Preuve locale » (SL-7) | 2/3 | Reste : rapport hebdomadaire daté. Le générateur (`--out`, fichiers `ci-escapes-AAAA-Www.{json,md}`) est testé sur fixture, mais aucun rapport réel n'a été produit (NOT_TESTED : lecture `gh` en ligne sur le dépôt, aucune planification hebdomadaire). Le ticket… | [#75](https://github.com/platform-zephyr/openchoreo-lab/issues/75) |
 | [T-466](T-466-durcissement-usine-verdict-prompt.md) | Durcissement de l'usine : plafonds de tours, étape Verdict, trailers always(), branche REST, prompt… | 10/10 | (ligne « Reste » absente) | — |
 | [T-467](T-467-garde-de-recouvrement-et-disjoncteur-de-quota.md) | Garde de recouvrement des périmètres et disjoncteur de quota Max pour le planificateur de l'usine | 4/5 | Premier critère ouvert : preuve RUNTIME datée : un dispatch de deux issues en recouvrement s'arrête au job `plan` sans job `dev` ; un | — |
 | [T-473](T-473-vue-status-du-backlog.md) | Vue d'état du backlog : fait, en cours, bloqué, prêt (backlog/STATUS.md généré) | 4/5 | Reste : critère 5, imposé par la CI dès la fusion de T-475 (run CI de la PR non encore observé). | — |
@@ -60,6 +61,8 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-100](T-100-obs-0.md) | 4 | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
 | [T-201](T-201-data-2.md) | 4 | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
 | [T-050](T-050-verdicts-kube-ops.md) | 3 | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
+| [T-479](T-479-statistiques-usine-par-run.md) | 0 | Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et par ticket) | 0/5 | — |
+| [T-480](T-480-garde-taille-tickets.md) | 0 | Garde de taille des tickets : avertissement de check.py au-delà de ce qu'un run absorbe | 0/5 | — |
 | [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | 0 | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
 | [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
@@ -116,7 +119,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-415](T-415-sous-agent-prior-art-scout.md) | 1 | Sous-agent `prior-art-scout` (lecture seule, budget borné) | T-411 (in-progress), T-341 (todo) | — |
 | [T-340](T-340-protocole-d-echec-et-de-reprise.md) | 1 | Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d'échec, skill `resume-ticket` | T-210 (in-progress), T-337 (todo) | — |
 | [T-472](T-472-build-periodique-devcontainer.md) | 1 | Build périodique du devcontainer hors ci-ok | T-470 (todo) | — |
-| [T-461](T-461-indicateur-d-evasions.md) | 1 | Indicateur d'évasions de la CI : tools/dev/ci-escapes.py et ligne « Preuve locale » (SL-7) | T-460 (in-progress) | [#75](https://github.com/platform-zephyr/openchoreo-lab/issues/75) |
 | [T-471](T-471-mesure-check-static-1vcpu.md) | 1 | Mesure de check --static sous 1 vCPU et 1 GiB | T-470 (todo) | — |
 | [T-067](T-067-retrait-app.md) | 1 | `appgen retire` : retrait d'une app avec export des données | T-025 (todo), T-026 (todo) | — |
 | [T-028](T-028-exposition-publique.md) | 1 | Exposition `private \| internal \| public` : route par hôte (G6) et refus « public sans auth » | T-189 (todo), T-404 (todo) | — |
@@ -129,13 +131,14 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-006](T-006-mcp-cloudflare-access.md) | 0 | Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitH… | T-005 (todo) | [#52](https://github.com/platform-zephyr/openchoreo-lab/issues/52) |
 | [T-419](T-419-retrait-seed-py.md) | 0 | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-214 (todo) | — |
 | [T-436](T-436-labels-formulaires-issues.md) | 0 | Labels as-code et formulaires d'issue : issues vides coupées, proposition de ticket | T-431 (todo) | — |
+| [T-478](T-478-plafonds-natifs-executant.md) | 0 | Exécutant : plafonds natifs de Claude Code (--max-budget-usd, --permission-prompts none) et corps d… | T-466 (in-progress) | — |
 | [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | 0 | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | T-412 (todo), T-322 (todo) | — |
 | [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | 0 | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR… | T-062 (todo), T-214 (todo) | — |
 | [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | 0 | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | T-332 (in-progress) | — |
 | [T-417](T-417-typage-mypy.md) | 0 | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | T-214 (todo) | — |
 | [T-423](T-423-reduire-complexite-argo-guard.md) | 0 | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | T-001 (todo) | — |
 | [T-439](T-439-essai-dependency-review.md) | 0 | Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation) | T-431 (todo) | — |
-| [T-465](T-465-nuit-check-complet.md) | 0 | Contrôle nocturne : check --full --k3d, dérive amont, évasions, alerte (SL-11) | T-461 (todo), T-451 (in-progress), T-452 (in-progress) | — |
+| [T-465](T-465-nuit-check-complet.md) | 0 | Contrôle nocturne : check --full --k3d, dérive amont, évasions, alerte (SL-11) | T-461 (in-progress), T-451 (in-progress), T-452 (in-progress) | — |
 | [T-070](T-070-garde-contrat.md) | 0 | Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/` | T-002 (in-progress) | — |
 | [T-368](T-368-garde-fous-de-capacite-du-homelab.md) | 0 | Garde-fous de capacité du homelab : quotas lab-*, alertes RAM/NVMe/Tctl, budget versionné | T-360 (todo), T-363 (todo) | — |
 | [T-069](T-069-vap-data-class.md) | 0 | VAP : refus de DELETE des données `irreplaceable` (G8) | T-025 (todo) | — |
@@ -221,6 +224,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-464](T-464-regles-d-agent-local-d-abord.md) | Règles d'agent « local d'abord » dans AGENTS.md et les skills (SL-10) | 2026-11-18 | — | — |
 | [T-468](T-468-corriger-check-selftest.md) | Corriger le FAIL de check-selftest (test périmé après T-460) | — | — | — |
 | [T-474](T-474-trailers-injectes-par-hook-git.md) | Trailers de commit injectés par un hook git du workflow (Ticket, Model, Effort, Escalated-from, Claude-Session) | 2026-11-18 | — | — |
+| [T-477](T-477-etude-art-anterieur-usine.md) | Étude : art antérieur des usines d'agents à réutiliser (FACTORY-PRIOR-ART) | 2026-11-18 | — | — |
 
 ## Gelés et abandonnés
 
