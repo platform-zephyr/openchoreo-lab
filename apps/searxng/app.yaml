@@ -1,6 +1,6 @@
 # Metamoteur SearXNG, equivalent de kube-ops applications/catalog/searxng [C].
 # Digest index multi-arch (linux/arm64 present) verifie via docker buildx imagetools inspect [C].
-# Runtime NON VERIFIE (NOT_TESTED) : entrypoint, uid et ecriture de config. Voir NOTES.md.
+# Cible OKE (stateless, sans PVC, sans exposition publique). Runtime NON VERIFIE (NOT_TESTED) : entrypoint, uid et ecriture de config. Voir NOTES.md.
 apiVersion: platform.smadja.dev/v2alpha1
 kind: App
 metadata:
@@ -10,8 +10,8 @@ metadata:
   docs: https://docs.searxng.org/
 spec:
   source:
-    image: searxng/searxng:2026.9.30-a9d990033@sha256:a07a5cd2da2c63d66e559f9e4d3a3db106cfc6c32fb0ac70abe91cc28bcd7350
-  cluster: k3d
+    image: docker.io/searxng/searxng:2026.9.30-a9d990033@sha256:a07a5cd2da2c63d66e559f9e4d3a3db106cfc6c32fb0ac70abe91cc28bcd7350
+  cluster: oke
   environments: [production]
   profile: stateless
   runtime:
