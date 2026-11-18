@@ -13,8 +13,31 @@ Budget : OpenChoreo ≤ 1,5 GiB et ≤ 0,3 vCPU au repos = OBJECTIF d'optimisati
 - Préparer des PR ciblées dans `kube-ops` : correctif C1 (kube-ops #1629) et blueprints Authentik. L'APPLICATION sur des ressources de production n'a lieu qu'après vérification du périmètre, de l'impact et d'un rollback éprouvé.
 - Accès OKE par session bastion (ouverte avec l'accord de Paul) : un seul exécutant, le coordinateur.
 - Namespaces `dp-*` générés par OpenChoreo (avec labels de propriété, quotas, admission, nettoyage) ; label `openchoreo.dev/control-plane=true` sur `default` UNIQUEMENT si OpenChoreo 1.3.3 l'exige, sans élargir les permissions sur les autres ressources de `default`.
+## Décisions de Paul du 2026-11-18 (agents cloud, `docs/CLOUD-AGENTS.md`)
+- Backlog du labo : `backlog/` dans ce dépôt (ADR-0012), une issue GitHub seulement pour lancer un agent. Pas Linear tant que l'adoption d'OpenChoreo n'est pas tranchée.
+- Dev et prod sur le **même** OKE (un nœud, pas de HA) : Environments OpenChoreo `development` et `production`. Le dev doit rester frugal (`docs/CLOUD-AGENTS.md` §2).
+- **Exception d'exposition** : le MCP OpenChoreo, et lui seul, peut être publié par Cloudflare Tunnel **derrière Cloudflare Access** (service token dédié, aucun accès anonyme, aucun bypass), en plus de l'authz OpenChoreo. La configuration Cloudflare et Authentik reste un geste de Paul (MANDAT) ; l'agent prépare la PR `platform/` (NetworkPolicy) et la documentation.
+
+## Décisions de Paul du 2026-11-18 (suite)
+- Placement : homelab par défaut ; OKE seulement sur demande explicite de Paul (ADR-0003).
+- IdP : Authentik en GitOps ; arrivée et départ d'un utilisateur = golden paths (ADR-0007).
+- Secrets : OpenBao pour tout secret interne (clés d'API LLM comprises), Doppler pour les primitives externes ; tâche d'init depuis Doppler puis nettoyage et réduction des ~50 jetons Doppler (ADR-0014).
+- Atlas est le point d'arrivée ; les agents cloud ont accès aux dépôts (ADR-0012).
+- Chantiers ajoutés : observabilité (Grafana Cloud) et alerting, exploitation, montées de version automatisées, agent de remédiation déclenché sur échec avec escalade ntfy, coût dans le free tier, services IA en sandbox derrière un gateway (agentgateway), data platform légère sur le homelab pour mesurer la plateforme (DORA, maturité sécurité et cloud native). Vitesse maximale : un maximum d'agents en parallèle, les tickets qui accélèrent les suivants d'abord.
+
+## Faits et décisions de Paul du 2026-11-18 (fin de journée)
+- Le dépôt **reste public** : aucune donnée sensible (secret, identifiant de compte, IP, hôte interne, donnée personnelle, détail de faille) n'y entre ; audit et garde CI à mettre en place.
+- Homelab : mini-PC AMD Ryzen 7 PRO 8845HS, 64 Go de RAM, 1 To SSD, 14 To HDD ; Proxmox + VM Talos ; kube-ops y est entièrement déployé avec Argo CD.
+- Oracle : compte **PAYG**. Paul indiquait 4 OCPU / 24 Go gratuits ; la doc Oracle lue le 2026-11-18 donne **1 500 OCPU-h + 9 000 Go-h/mois = 2 OCPU / 12 Go gratuits pour tous les tenancies**, 4/24 étant un plafond de service facturé au-delà (`docs/research/VERIFICATION-2026-11-18.md`). On retient **2/12** tant que la facturation de Paul ne prouve pas le contraire ; toute dépense reste un MANDAT.
+- LLM : agents externes = mélange Claude Code (plan Max, ajustable au besoin réel) et DeepSeek ; services IA internes = DeepSeek (via le gateway). Choisir pour chaque tâche le modèle le moins cher qui suffit.
+- Vitesse : Claude doit pouvoir travailler **24 h/24**, avec le minimum d'interventions de Paul et autant d'agents en parallèle que le plan le permet.
+- Accès réseau complet donné aux sessions.
+
+## Mode développement (arbitrage de Paul, 2026-11-18)
+Sécurité allégée acceptée pendant le développement (droits étendus, accès admin, revue des code owners désactivée, Doppler élargi) ; seule compte la sécurité FINALE, vérifiée à l'étape FINAL du backlog. Les interdits ci-dessous qui ne concernent que le processus de revue sont suspendus pendant le dev ; ceux qui protègent les données, les secrets et les coûts restent en vigueur.
+
 ## Toujours INTERDIT (sans nouvelle autorisation écrite de Paul)
-Création du volume PostgreSQL OCI de 50 Go (`--confirm-storage`) ; toute exposition publique (Tunnel, Ingress, LoadBalancer) ; LoadBalancer OCI facturable ; migration Talos ; modification de `kube-system`, de ressources de production ou de politiques cluster-wide non vérifiées ; `tofu apply`, Doppler, Cloudflare ; migration Authentik ; création par un agent d'une identité/clé/token d'accès ; secret affiché ou committé ; TLS désactivé ; contournement d'admission ; suppression de ressources hors du labo ; nouvelle étude comparative.
+Création du volume PostgreSQL OCI de 50 Go (`--confirm-storage`) ; toute exposition publique (Tunnel, Ingress, LoadBalancer) hors l'exception MCP ci-dessus ; LoadBalancer OCI facturable ; migration Talos ; modification de `kube-system`, de ressources de production ou de politiques cluster-wide non vérifiées ; `tofu apply`, Doppler, Cloudflare ; migration Authentik ; création par un agent d'une identité/clé/token d'accès ; secret affiché ou committé ; TLS désactivé ; contournement d'admission ; suppression de ressources hors du labo ; nouvelle étude comparative.
 Périmètre cluster : écriture dans `openchoreo-*`, `lab-*` (+ les namespaces de prérequis que l'installation crée et marque `part-of=openchoreo-lab`) et `dp-*` ; lecture seule ailleurs. Les noms imposés par OpenChoreo (`dp-*`, label sur `default`) sont des exceptions acquittées ci-dessus.
 
 ### Exceptions IMPOSÉES par OpenChoreo 1.3.3 : détail technique À ACQUITTER PAR PAUL (revue B3, 2026-11-17)

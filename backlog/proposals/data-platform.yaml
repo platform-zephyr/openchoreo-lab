@@ -1,0 +1,118 @@
+- key: DATA-1
+  title: "ADR-0015 Data platform légère et mesure de la plateforme"
+  phase: P0
+  adr: ["NEW-DATA"]
+  depends_on: ["T-061"]
+  class: MANDAT
+  velocity: false
+  parallel_lane: "données"
+  scope: "docs/adr/0015-*.md, docs/adr/README.md"
+  intent: "Acter la pile fichiers (Parquet + DuckDB + objet S3), le catalogue de métriques et la gouvernance des données."
+  done: ["ADR-0015 fusionné par Paul", "index docs/adr/README.md mis à jour"]
+  notes: "Texte proposé dans docs/research/DATA-PLATFORM-METRICS.md. docs/adr/ est dans le noyau protégé."
+- key: DATA-2
+  title: "Ingestion GitHub vers Parquet (bronze/silver), exécution planifiée Actions"
+  phase: P1
+  adr: ["NEW-DATA"]
+  depends_on: ["DATA-1"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "données"
+  scope: "tools/metrics/ingest/, .github/workflows/metrics.yml (noyau : revue Paul)"
+  intent: "Ingérer PR, merges, runs CI, reverts, reviews en Parquet partitionné par source et jour, idempotent, jeton lecture seule."
+  done: ["rejeu sur 14 jours sans doublon", "aucun corps de PR ni secret dans les Parquet", "test sur jeu synthétique"]
+  notes: "Le workflow est sous .github/ donc REVUE. Phase 0 sans cluster."
+- key: DATA-3
+  title: "Métriques DORA par agent et par classe (D1-D8) avec tests de formules"
+  phase: P1
+  adr: ["0011", "0002", "NEW-DATA"]
+  depends_on: ["DATA-2", "T-072"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "données"
+  scope: "tools/metrics/gold/, tests/metrics/"
+  intent: "Calculer fréquence, lead time, taux d'échec, MTTR, rework, intention→PASS, autonomie, boucle CI en DuckDB."
+  done: ["chaque formule testée sur valeurs attendues", "effectif n publié, 'insuffisant' sous n<5", "dimension agent, classe, app, cluster"]
+  notes: "Attribution d'agent dépend de T-068. Merge sans preuve runtime non compté comme réussi."
+- key: DATA-4
+  title: "Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets)"
+  phase: P2
+  adr: ["0006", "NEW-DATA"]
+  depends_on: ["DATA-2", "T-020"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "données"
+  scope: "tools/metrics/security/"
+  intent: "Calculer S1-S9 ; couverture par primitive avec preuve fraîche < 30 j."
+  done: ["Scorecard ingéré par check", "tableau des 8 primitives PASS/FAIL/NOT_TESTED datés", "S8 aligné sur T-007"]
+  notes: "S3 (SLSA) exige l'activation des attestations de build : à vérifier [E]."
+- key: DATA-5
+  title: "Grille de maturité cloud native CNCF automatisée (niveaux 1-5)"
+  phase: P2
+  adr: ["NEW-DATA"]
+  depends_on: ["DATA-2", "T-072"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "données"
+  scope: "tools/metrics/maturity/, docs/reference/cncf-maturity-grid.yaml"
+  intent: "Traduire reference/v4beta1 en checks binaires datés par application et par cluster ; niveau = plus haut niveau tout PASS."
+  done: ["chaque check a source, niveau, dimension, cluster", "k3d et OKE jamais mélangés", "relire maturitymodel.cncf.io une fois l'hôte autorisé"]
+  notes: "Hôtes maturitymodel.cncf.io, tag-app-delivery.cncf.io et dora.dev bloqués dans la session de recherche."
+- key: DATA-6
+  title: "Spike Garage sur le homelab (objet S3, volume, sauvegarde R2)"
+  phase: P3
+  adr: ["NEW-DATA", "0008"]
+  depends_on: ["T-030", "T-025", "T-026"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "homelab"
+  scope: "apps/data-store/app.yaml, docs/research/"
+  intent: "Mesurer RAM, CPU, disque de Garage ; comparer SeaweedFS ; copier le gold chiffré vers R2."
+  done: ["mesures datées", "restauration du bucket prouvée", "décision Garage vs alternative"]
+  notes: "MANDAT pour les clés R2. Archétype exact à confirmer (T-014 si chart)."
+- key: DATA-7
+  title: "Jobs de calcul sur le homelab (CronJob lab-data) et restitution statique"
+  phase: P3
+  adr: ["NEW-DATA", "0011"]
+  depends_on: ["DATA-3", "DATA-6", "T-011", "T-023"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "homelab"
+  scope: "apps/metrics-job/app.yaml, tools/metrics/render/"
+  intent: "Déplacer ingestion et gold sur le homelab comme app du golden path ; produire metrics.json et index.html."
+  done: ["metrics.json de moins de 26 h, alerte sinon", "egress déclaré api.github.com", "preuve runtime app-status RUNTIME PASS"]
+- key: DATA-8
+  title: "Jauges bornées vers Grafana Cloud et alertes sur seuils d'objectif"
+  phase: P3
+  adr: ["NEW-DATA"]
+  depends_on: ["DATA-7", "T-065"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "observabilité"
+  scope: "apps/metrics-job/, règles d'alerte"
+  intent: "Pousser quelques jauges (D1-D4, S1, niveau CNCF) en remote_write sous budget de séries ; alerter sur dérive."
+  done: ["moins de 100 séries ajoutées", "jeton d'écriture via OpenBao, jamais dans Git"]
+  notes: "MANDAT pour la création du jeton Grafana Cloud."
+- key: DATA-9
+  title: "Gouvernance des données de mesure (classes, rétention, purge, pseudonymes)"
+  phase: P2
+  adr: ["0008", "NEW-DATA"]
+  depends_on: ["DATA-1", "T-025"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "données"
+  scope: "docs/data/METRICS-DATA-POLICY.md, tools/metrics/retention/"
+  intent: "Appliquer rétentions bronze 90 j, silver 400 j, gold 5 ans ; aucun prompt, secret ni donnée personnelle."
+  done: ["test CI de scan des Parquet de test", "purge bronze/silver prouvée", "suppression gold = MANDAT documentée"]
+- key: DATA-10
+  title: "Instrumenter le coût LLM par agent (jetons, tarif, par changement réussi)"
+  phase: P2
+  adr: ["NEW-DATA", "0011"]
+  depends_on: ["T-068", "DATA-2"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "données"
+  scope: "tools/metrics/costs/"
+  intent: "Collecter l'usage des sessions d'agents sans contenu de prompt et calculer D9."
+  done: ["source d'usage identifiée et documentée", "aucun contenu de prompt stocké", "D9 publié avec effectif"]
+  notes: "Source non encore identifiée [E] : première tâche du ticket."

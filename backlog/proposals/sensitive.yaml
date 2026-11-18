@@ -1,0 +1,54 @@
+# Propositions issues de l'audit de données sensibles du 2026-11-18 (rapport hors dépôt, sans valeurs).
+- key: SEC-1
+  title: "Rendre le dépôt privé le temps de la purge (geste de Paul, réversible)"
+  phase: P0
+  stage: S0
+  adr: ["0002"]
+  depends_on: []
+  class: MANDAT
+  velocity: false
+  parallel_lane: "gouvernance"
+  model: "aucun (geste humain)"
+  scope: "paramètres du dépôt GitHub"
+  intent: "Arrêter l'exposition d'un détail de faille en coordination privée présent dans l'historique, le temps de la réécriture et de la purge par GitHub ; le dépôt redevient public ensuite."
+  done: ["dépôt privé", "date de retour en public consignée dans STATE.md"]
+- key: SEC-2
+  title: "Réécriture de l'historique et purge des refs de PR (mailmap, détail de faille, identifiants)"
+  phase: P0
+  stage: S0
+  adr: ["0002"]
+  depends_on: ["SEC-1"]
+  class: MANDAT
+  velocity: false
+  parallel_lane: "gouvernance"
+  model: "opus (préparation), geste de Paul (force-push et demande au support GitHub)"
+  scope: "historique git de toutes les branches"
+  intent: "Retirer de l'historique le détail de faille, l'e-mail professionnel (mailmap) et les identifiants d'infrastructure ; demander au support GitHub la purge des refs `refs/pull/*` et des vues en cache ; rebaser ou recréer les branches ouvertes."
+  done: ["miroir de sauvegarde privé avant réécriture", "gitleaks + règles maison : 0 constat sur tout l'historique réécrit", "demande de purge au support GitHub envoyée et confirmée", "branches ouvertes recréées, PR rouvertes"]
+  notes: "Commandes `git filter-repo` préparées dans le rapport d'audit (hors dépôt). Toute PR ou fork existant garde l'ancien historique : à vérifier."
+- key: SEC-3
+  title: "Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets"
+  phase: P0
+  stage: S0
+  adr: ["0002"]
+  depends_on: []
+  class: REVUE
+  velocity: false
+  parallel_lane: "gouvernance"
+  model: "sonnet"
+  scope: "docs/REVIEW-PHASE-B.md, docs/REVIEW-PR8.md, platform/cluster-agent/, platform/policies/, fichiers contenant des chemins locaux"
+  intent: "Retirer de l'arbre le scénario d'exploitation résiduel (Paul juge s'il relève du signalement privé), les chemins `/Users/<prénom>`, et la structure révélatrice des clés Doppler."
+  done: ["0 constat CRITIQUE/ÉLEVÉ dans l'arbre selon la garde SEC-4", "commentaires des manifestes réécrits en durcissement générique"]
+- key: SEC-4
+  title: "Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes)"
+  phase: P0
+  stage: S0
+  adr: ["0002","0006"]
+  depends_on: []
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  model: "sonnet"
+  scope: ".gitleaks.toml, .github/workflows/ci.yaml"
+  intent: "Empêcher toute nouvelle fuite dans un dépôt public : job requis par ci-ok ; motifs propres au propriétaire chargés depuis un secret CI, jamais écrits dans le dépôt."
+  done: ["job requis, échoue sur un OCID, une IPv4 non documentaire, un e-mail hors noreply, un chemin local, un hôte interne", "aucune valeur réelle dans .gitleaks.toml"]

@@ -1,0 +1,130 @@
+# Atlas — index de contexte machine-lisible (v1). Seul fichier à ouvrir pour router une demande.
+# Source unique du routage : le catalogue humain (repos/catalog.md) en est dérivé, pas l'inverse.
+# Aucun secret, aucun statut volatil (pas d'état de PR, de cluster ou de ticket ici).
+# Validé par scripts/check-context.py : chaque `path` existe (dépôt local ou miroir), chaque `skill`
+# existe, chaque intention nomme un `repo` déclaré, `updated` + `review_days` respectés.
+version: 1
+owner: paul
+updated: 2026-11-18
+review_days: 30
+
+precedence:   # en cas de conflit entre sources, de la plus forte à la plus faible
+  - "registre de décisions du domaine (champ repos.<id>.decisions)"
+  - "règles impératives du AGENTS.md du dépôt cible (la règle la plus stricte gagne)"
+  - "policies/ d'Atlas"
+  - "skills, docs, code"
+  - "état court du dépôt (STATE.md), en dernier : l'état change, les règles non"
+
+repos:
+  openchoreo-lab:
+    url: https://github.com/SmadjaPaul/openchoreo-lab
+    role: "plateforme cible OpenChoreo ; apps déclarées par app.yaml"
+    maturity: lab               # lab = jetable (CLEANUP.md) ; ne pas y mettre de données irremplaçables
+    visibility: public
+    entrypoint: AGENTS.md
+    state: STATE.md
+    skills_dir: .agents/skills
+    tracker: "github-issues:SmadjaPaul/openchoreo-lab"   # ADR-0012 (PROPOSÉ) ; pas Linear
+    decisions: "docs/adr/"
+    write_surface: "PR sur apps/<nom>/app.yaml uniquement ; aucun accès cluster en écriture"
+  kube-ops:
+    url: https://github.com/SmadjaPaul/kube-ops
+    role: "cluster Kubernetes actuel (Argo CD, Talos) : production existante"
+    maturity: production
+    visibility: private
+    entrypoint: AGENTS.md
+    skills_dir: .agents/skills
+    tracker: "linear:boule"
+    decisions: "homelab-infra:docs/decisions-active.md"  # détail : docs/decisions.md, à n'ouvrir que pour une décision citée
+    write_surface: "PR ; `just check` ; kubectl-rw.sh borné"
+  homelab-infra:
+    url: https://github.com/SmadjaPaul/homelab-infra
+    role: "substrat physique et externe : Proxmox, Talos, Cloudflare, Doppler, OpenTofu via ARC"
+    maturity: production
+    visibility: private
+    entrypoint: AGENTS.md
+    state: docs/state/CURRENT.md
+    tracker: "linear:boule"
+    decisions: "docs/decisions-active.md"
+    write_surface: "PR ; OpenTofu uniquement via ARC"
+  home-ops:
+    url: https://github.com/SmadjaPaul/home-ops
+    role: "HomeOps Flux distinct ; ne pas confondre avec kube-ops"
+    maturity: unknown
+    entrypoint: AGENTS.md
+  atlas:
+    url: https://github.com/SmadjaPaul/Atlas
+    role: "routage et politiques transversales (ce dépôt)"
+    entrypoint: AGENTS.md
+
+# Une intention = un déclencheur (mots, FR/EN, insensible à la casse) -> un dépôt -> un skill -> des documents lus dans l'ordre.
+# `read` ne liste que ce qui est nécessaire ; tout le reste est atteint par le skill, à la demande.
+intents:
+  - id: deploy-app
+    triggers: ["installe", "déploie", "ajoute l'application", "mets en ligne", "install", "deploy", "add app"]
+    repo: openchoreo-lab
+    skill: add-app
+    read: [AGENTS.md, STATE.md, ".agents/skills/add-app/SKILL.md", "recipes/<app>.yaml (si présent)"]
+    produces: "PR apps/<nom>/app.yaml + plan lisible + compte rendu avec preuve"
+    ask_only_if: [exposition publique, donnée irremplaçable, coût, accès d'une personne à un groupe]   # ADR-0013
+    needs_decision: D1          # cible par défaut tant que Paul n'a pas tranché : annoncer le choix, ne pas deviner en silence
+    alt: {repo: kube-ops, skill: deploy-a-service, when: "l'utilisateur veut de la production maintenant, ou la donnée est irremplaçable"}
+  - id: evaluate-migration
+    triggers: ["peut-on migrer", "migrer", "onboarde", "que donnerait", "eligible", "chart helm", "docker-compose"]
+    repo: openchoreo-lab
+    skill: migrate-to-openchoreo
+    read: [AGENTS.md, "golden-paths/README.md"]
+    produces: "verdict A à F motivé ; brouillon app.yaml si éligible ; aucune écriture"
+  - id: fix-app
+    triggers: ["ne marche pas", "est cassé", "Degraded", "OutOfSync", "répare", "pourquoi", "lent", "CrashLoop", "broken", "fix"]
+    repo: openchoreo-lab
+    skill: diagnose-app          # puis fix-app si la cause est prouvée
+    read: [AGENTS.md, STATE.md, ".agents/skills/diagnose-app/SKILL.md"]
+    alt: {repo: kube-ops, skill: kubernetes-debug, when: "l'application tourne sur le cluster kube-ops (Argo homelab ou oracle-a1 existant)"}
+  - id: promote-or-rollback
+    triggers: ["promeus", "passe en prod", "mets à jour", "bump", "rollback", "reviens en arrière", "revert"]
+    repo: openchoreo-lab
+    skill: promote-or-rollback
+    read: [AGENTS.md, ".agents/skills/promote-or-rollback/SKILL.md"]
+  - id: change-platform
+    triggers: ["type de composant", "quota", "politique d'admission", "authz", "VAP", "platform/", "ajoute un CronJob à la plateforme"]
+    repo: openchoreo-lab
+    skill: openchoreo-platform-engineer-gitops
+    read: [AGENTS.md, ".agents/skills/platform-guardrails/SKILL.md"]
+    risk_class: REVUE            # toujours : jamais mergé seul
+  - id: oidc-login
+    triggers: ["login", "SSO", "OIDC", "connexion famille", "groupe", "authentik"]
+    repo: openchoreo-lab
+    skill: add-app               # champ spec.identity.oidc de app.yaml
+    read: [AGENTS.md, "docs/adr/0007-identite-oidc.md"]
+    needs_decision: D2           # Authentik vs ThunderID : voir CONTEXT-ENGINEERING.md §8
+    alt: {repo: kube-ops, skill: oidc-integration, when: "cluster actuel"}
+  - id: backup-restore
+    triggers: ["sauvegarde", "backup", "restaure", "restore", "données"]
+    repo: openchoreo-lab
+    skill: add-app               # classe de donnée déclarée (ADR-0008) ; le volume OCI 50 Go reste INTERDIT sans mandat
+    read: [AGENTS.md, "docs/adr/0008-donnees-stateful-recuperation.md"]
+    alt: {repo: kube-ops, skill: backup-restore, when: "cluster actuel"}
+  - id: install-openchoreo-k3d
+    triggers: ["installe openchoreo", "réinstalle openchoreo", "k3d"]
+    repo: openchoreo-lab
+    skill: openchoreo-setup
+    read: [AGENTS.md, missions/MISSION.md]
+  - id: infra-substrate
+    triggers: ["proxmox", "talos", "cloudflare", "dns", "doppler", "opentofu", "terraform", "tofu"]
+    repo: homelab-infra
+    read: [AGENTS.md, docs/decisions-active.md, docs/state/CURRENT.md]
+  - id: ticket-mission
+    triggers: ["PLT-", "ticket", "mission", "issue"]
+    repo: atlas
+    read: [dispatcher/mission-contract.md, workflows/issue-to-pr.md, policies/change-risk.md]
+  - id: decision-question
+    triggers: ["pourquoi a-t-on décidé", "décision", "ADR", "D-2026"]
+    repo: "domaine concerné (champ repos.<id>.decisions)"
+    read: ["registre du domaine, section citée seulement"]
+  - id: context-maintenance
+    triggers: ["contexte des agents", "AGENTS.md", "index", "catalogue"]
+    repo: atlas
+    read: [AGENTS.md, context/index.yaml]
+
+fallback: "Aucune intention ne correspond : poser UNE question (quelle plateforme, quel résultat attendu), sans charger de document supplémentaire."

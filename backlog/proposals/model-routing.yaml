@@ -1,0 +1,382 @@
+# Propositions du domaine « Routage des modèles par tâche » (ADR proposé : NEW-MODELS = ADR-0021, voir docs/research/MODEL-ROUTING.md §7)
+# Deux listes :
+#   rules   : règles machine-lisibles ; la PREMIÈRE règle dont `match` correspond s'applique (fin de liste = défaut).
+#   tickets : tickets MOD-n au format backlog/proposals/FORMAT.md, avec en plus `stage` et `model` (modèle conseillé pour exécuter le ticket).
+# Marque : status: hypothesis = règle non étalonnée (MOD-7)  ; sourced = fait lu à la source (DeepSeek, agentgateway, Terminal-Bench 4.1), le niveau de performance restant une hypothèse.
+# `match` : lane (liste de couloirs ou motifs *), class (classe recalculée depuis les chemins), paths (globs), keywords (titre/intention),
+#           kind (type de tâche déclaré par le dispatcher : review, adversarial-review, incident, remediation, plan, research, doc, ticket-writing, watch, internal-ai, bench).
+# `escalate` : after = nombre d'échecs (ci_fail | blocking_finding | out_of_scope | unproven_hypothesis) avant de monter d'un cran.
+# `floor` : modèle minimal ; le champ `model:` d'un ticket peut monter au-dessus, jamais descendre dessous.
+
+meta:
+  date: "2026-11-18"
+  ladder: [haiku-5-5, sonnet-5-5/medium, sonnet-5-5/high, opus-5-5/high, opus-5-5/max, human]   # Fable hors échelle (TB 4.1 : 65,8 % comme Opus 5.5 pour 3,5x le coût)
+  ids:
+    haiku-5-5: claude-haiku-5-5
+    sonnet-5-5: claude-sonnet-5-5
+    opus-5-5: claude-opus-5-5
+    fable-5-2: claude-fable-5-2
+  caps:
+    sonnet_max_effort: xhigh          # Sonnet 5.5 à `max` fait moins bien qu'à `xhigh` (annonce Anthropic, lue le 2026-11-18)
+    fable: "sur demande de Paul seulement ; jamais en CI planifiée ; plafond 50 % du quota hebdomadaire ; Terminal-Bench 4.1 (2026-11-17) : 65,8 % = Opus 5.5, coût 16,5 k$ contre 4,7 k$"
+    quota_fallback: "si quota hebdomadaire Max > 70 % consommé : Opus -> Sonnet high, sauf règles floor: opus du noyau (file d'attente)"
+  confidentiality:
+    deepseek_allowed_data: [public-repo]
+    deepseek_denied_data: [prod-logs, secrets, "data-class != public", user-identifiers]
+    deepseek_basis: "politique de confidentialité DeepSeek (cdn.deepseek.com, lue le 2026-11-18) : entrées utilisables pour entraîner ; conditions API non lues (NOT_PROVEN)"
+  deepseek:
+    source: "api-docs.deepseek.com/quick_start/pricing, lue le 2026-11-18"
+    models: {deepseek-flash: "V4.1-Flash-1017, 0,15/0,60 $/MTok creux (x2 pointe), cache 0,003", deepseek-v4-pro: "V4-Pro-0813, 0,66/1,98 creux, TB 4.1 = 6,7 % : exclu des agents"}
+    peak_utc: "01-04 h et 06-10 h, lundi-vendredi : planifier les lots hors de ces heures"
+    claude_code_env: {ANTHROPIC_BASE_URL: "https://api.deepseek.com/anthropic", alias_opus_sonnet_haiku: deepseek-flash, trap: "un nom claude-opus* est routé vers deepseek-v4-pro (tarif Pro)"}
+  terminal_bench_4_1: {date: "2026-11-17", agent: claude-code, effort: max, opus-5-5: 65.8, fable-5-2: 65.8, sonnet-5-5: 63.9, haiku-5-5: 40.0, deepseek-flash-1017: 38.5, deepseek-v4-pro-0813: 6.7, cost_k_usd: {opus-5-5: 4.7, fable-5-2: 16.5, sonnet-5-5: 7.3, haiku-5-5: 1.0, deepseek-flash-1017: 0.2}}
+
+rules:
+  - id: R01-noyau-securite
+    match:
+      lane: [securite, admission, "identité-secrets/*", identité-agents, mcp, sandbox, supply-chain, gouvernance]
+      paths: ["platform/policies/**", "platform/authz/**", "platform/project-types/**", "platform/secrets/**", ".agents/**", "CODEOWNERS", "users/**", "groups/**", "identities/**"]
+    model: claude-opus-5-5
+    effort: high
+    floor: claude-opus-5-5
+    review: {model: claude-opus-5-5, effort: high, note: "revue adverse par une session distincte de l'auteur"}
+    escalate: {after: 2, on: [ci_fail, blocking_finding], to: {model: claude-opus-5-5, effort: max}, then: human}
+    rationale: "Erreur coûteuse (admission, RBAC, secrets) et noyau d'ADR-0002 ; aucun benchmark ne couvre ce domaine, donc plancher par coût de l'erreur."
+    status: hypothesis
+  - id: R02-revue-adverse
+    match: {kind: [adversarial-review]}
+    model: claude-opus-5-5
+    effort: high
+    floor: claude-opus-5-5
+    constraint: "modèle différent de celui de l'auteur (erreurs corrélées) ; effort max pour un ADR ou un changement de noyau classé MANDAT"
+    escalate: {after: 1, on: [unproven_hypothesis], to: {model: claude-opus-5-5, effort: max}}
+    rationale: "Lire un diff coûte peu de sortie ; la qualité du jugement compte plus que le prix."
+    status: hypothesis
+  - id: R03-incident-prod
+    match: {kind: [incident], lane: [remédiation, plateforme-santé, exploitation]}
+    model: claude-sonnet-5-5
+    effort: high
+    providers_allowed: [anthropic]          # logs de production : jamais DeepSeek
+    escalate: {after: 2, on: [unproven_hypothesis], to: {model: claude-opus-5-5, effort: high}}
+    rationale: "Diagnostic en lecture seule, longue chaîne d'outils : Sonnet 70,6 % à Terminal-Bench 4.0 ; Opus si la cause n'est pas prouvée après 2 hypothèses."
+    status: hypothesis
+  - id: R04-remediation
+    match: {kind: [remediation]}
+    model: claude-sonnet-5-5
+    effort: high
+    providers_allowed: [anthropic]
+    escalate: {after: 1, on: [ci_fail], to: {model: claude-opus-5-5, effort: high}, also_when: "data-class irreplaceable, migration ou revert en échec"}
+    rationale: "Correctif par PR, revert par git revert ; le coût d'erreur monte avec les données, d'où une seule tentative avant Opus."
+    status: hypothesis
+  - id: R05-coordination-planification
+    match: {kind: [plan], lane: [gouvernance, porte]}
+    model: claude-opus-5-5
+    effort: high
+    escalate: {after: 2, on: [blocking_finding], to: {model: claude-opus-5-5, effort: max}, then: human, note: "arbitrage inter-ADR : Paul"}
+    rationale: "Peu de tokens, décisions lourdes : un plan faux fait perdre plus de quota que son coût."
+    status: hypothesis
+  - id: R06-refactor-appgen
+    match: {lane: [contrat-appgen, appgen], keywords: [refactor, découper, modulaire, schéma]}
+    model: claude-sonnet-5-5
+    effort: high
+    escalate: {after: 2, on: [ci_fail], to: {model: claude-opus-5-5, effort: high}, also_when: "plus de 5 modules touchés"}
+    constraint: "un seul agent sur contrat-appgen avant T-214"
+    rationale: "Python multi-fichiers couvert par des tests ; Sonnet suffit tant que la CI est le juge."
+    status: hypothesis
+  - id: R07-ci-github-actions
+    match: {lane: [ci], paths: [".github/**", "tools/ci/**"]}
+    model: claude-sonnet-5-5
+    effort: high
+    review: {model: claude-opus-5-5, effort: high, when: "le chemin touche un script de garde d'un job requis (noyau, CONSENSUS §1)"}
+    escalate: {after: 2, on: [ci_fail], to: {model: claude-opus-5-5, effort: high}}
+    rationale: "YAML et shell vérifiables (yamllint, shellcheck) ; la revue Opus ne s'ajoute que pour le noyau."
+    status: hypothesis
+  - id: R08-manifestes-k8s-openchoreo
+    match:
+      lane: [openchoreo, plateforme, socle-oke, k8s-os, hybride, homelab, stateful, sauvegardes, exposition, moteur-plain]
+      paths: ["platform/**", "clusters/**", "apps/**/values.yaml"]
+    model: claude-sonnet-5-5
+    effort: high
+    escalate: {after: 2, on: [ci_fail], to: {model: claude-opus-5-5, effort: high}}
+    rationale: "Objets OpenChoreo v1.3.3 : l'agent charge les skills du dépôt ; k3d et appgen jugent. Opus après 2 échecs."
+    status: hypothesis
+  - id: R09-app-yaml-archetype-A
+    match: {paths: ["apps/*/app.yaml"], class: [AUTONOME], keywords: [déploie, ajoute, "archétype A"]}
+    model: claude-haiku-5-5
+    effort: medium
+    escalate: {after: 1, on: [ci_fail], to: {model: claude-sonnet-5-5, effort: high}}
+    rationale: "Un app.yaml validé par schéma et appgen : l'échec est détecté par la CI à coût nul ; Haiku coûte ≈ 5 % de Sonnet. Hypothèse à tester en MOD-7 (banc T-044), avec deepseek-flash (38,5 % à TB 4.1, 5x moins cher) comme candidat MOD-12."
+    status: hypothesis
+  - id: R10-code-simple
+    match: {lane: [preuve, connaissance, données, donnees, cout, coût, alertes, intention], keywords: [script, lint, check, schéma, "test"], kind: [code]}
+    model: claude-sonnet-5-5
+    effort: medium
+    escalate: {after: 2, on: [ci_fail], to: {model: claude-sonnet-5-5, effort: high}, then: {model: claude-opus-5-5, effort: high}}
+    rationale: "Python/YAML court avec tests ; effort `medium` d'abord, car l'effort pilote la consommation de quota."
+    status: hypothesis
+  - id: R11-redaction-tickets
+    match: {kind: [ticket-writing]}
+    model: claude-haiku-5-5
+    effort: medium
+    escalate: {after: 1, on: [lint_backlog_fail], to: {model: claude-sonnet-5-5, effort: medium}}
+    rationale: "Sortie structurée (FORMAT.md) contrôlée par check.py ; tâche de classification et d'extraction, cœur de cible de Haiku."
+    status: hypothesis
+  - id: R12-recherche-documentation
+    match: {kind: [research, doc]}
+    model: claude-sonnet-5-5
+    effort: medium
+    variants: [{when: "fiche ou README simple, sources fournies", model: claude-haiku-5-5, effort: medium}]
+    escalate: {after: 1, on: [unproven_hypothesis], to: {model: claude-opus-5-5, effort: high}, note: "sources contradictoires ou synthèse d'ADR"}
+    rationale: "Lecture de sources et synthèse : qualité du raisonnement, peu de code."
+    status: hypothesis
+  - id: R13-revue-de-code
+    match: {kind: [review]}
+    model: claude-sonnet-5-5
+    effort: high
+    variants: [{when: "classe REVUE ou MANDAT, ou chemin de noyau", model: claude-opus-5-5, effort: high}]
+    escalate: {after: 1, on: [blocking_finding_missed], to: {model: claude-opus-5-5, effort: high}}
+    rationale: "Revue AUTONOME = filet à bas coût ; REVUE/MANDAT = dernier filet avant Paul."
+    status: hypothesis
+  - id: R14-banc-intentions
+    match: {kind: [bench], lane: [intention]}
+    model: claude-sonnet-5-5
+    effort: high
+    calibration: {matrix: [claude-haiku-5-5, claude-sonnet-5-5, claude-opus-5-5], runs_per_cell: 5}
+    judge: none   # preuve runtime déterministe (PASS/FAIL des scripts), pas de juge LLM
+    rationale: "Le banc mesure le modèle réellement utilisé en production ; la matrice sert à étalonner toutes les règles."
+    status: hypothesis
+  - id: R15-veille-releases
+    match: {kind: [watch], lane: [veille, renovate]}
+    model: claude-haiku-5-5
+    effort: low
+    candidates: [{provider: deepseek, model: deepseek-flash, via: agentgateway, data: public-repo, schedule: "hors 06-10 h UTC en semaine", status: sourced}]
+    escalate: {after: 1, on: [breaking_change_flagged], to: {model: claude-sonnet-5-5, effort: high}}
+    rationale: "Résumé de notes de version publiques ; volume élevé, risque faible."
+    status: hypothesis
+  - id: R16-service-ia-interne
+    match: {kind: [internal-ai]}
+    via: agentgateway          # clé virtuelle + allowedModels + budget bloquant (ADR-0018)
+    data_sensitive:  {provider: anthropic, model: claude-haiku-5-5, effort: low}
+    data_public:     {provider: deepseek, model: deepseek-flash, thinking: high, status: sourced}
+    excluded:        {provider: deepseek, model: deepseek-v4-pro, why: "Terminal-Bench 4.1 : 6,7 % ; concurrence 500 ; sans vision"}
+    failover: {anthropic: claude-haiku-5-5, deepseek: deepseek-flash}
+    escalate: {after: 1, on: [quality_below_threshold], to: {model: claude-sonnet-5-5, effort: medium}}
+    rationale: "Haiku 5.5 (0,10/0,50) et deepseek-flash (0,15/0,60 creux ; cache 0,003) coûtent autant par session (≈0,11 $) et valent 40,0 / 38,5 % à TB 4.1 : DeepSeek sert l'indépendance de quota et la bascule. Données sensibles : Haiku seulement."
+    status: hypothesis
+  - id: R99-defaut
+    match: {}
+    model: claude-sonnet-5-5
+    effort: high
+    escalate: {after: 2, on: [ci_fail], to: {model: claude-opus-5-5, effort: high}}
+    rationale: "Défaut : moitié du prix de liste d'Opus au token ; mais à effort max Sonnet consomme 2,4x plus de tokens (TB 4.1 : 63,9 % pour 7,3 k$ contre 65,8 % pour 4,7 k$ pour Opus). MOD-7 tranche Sonnet high contre Opus medium sur le quota par ticket fusionné."
+    alt_to_test: {model: claude-opus-5-5, effort: medium}
+    status: hypothesis
+
+tickets:
+  - key: MOD-1
+    title: "ADR-0021 Routage des modèles par tâche (proposé, à acter par Paul)"
+    phase: P0
+    stage: S0
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS"]
+    depends_on: ["T-061"]
+    class: MANDAT
+    velocity: true
+    parallel_lane: "gouvernance"
+    scope: "docs/adr/0021-routage-des-modeles.md, docs/adr/README.md"
+    intent: "Reprendre le texte de docs/research/MODEL-ROUTING.md §7 au gabarit des ADR ; Paul l'acte par la PR (docs/adr/ est dans le noyau)."
+    done:
+      - "ADR-0021 PROPOSÉ au gabarit, ajouté à la table de docs/adr/README.md"
+      - "Paul a tranché : plancher Opus du noyau, Fable sur demande seulement, DeepSeek Flash sur données publiques (MANDAT de dépense)"
+    notes: "Sans cet ADR, MOD-2 à MOD-8 restent en proposition."
+  - key: MOD-2
+    title: "En-tête de ticket : champs `model` et `effort`, validés par check.py"
+    phase: P0
+    stage: S0
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS", "0012"]
+    depends_on: ["T-008", "MOD-1"]
+    class: REVUE
+    velocity: true
+    parallel_lane: "ci"
+    scope: "backlog/README.md, backlog/proposals/FORMAT.md, tools/backlog/check.py, tests/backlog/"
+    intent: "Ajouter `model:` (ID complet épinglé) et `effort:` facultatifs à l'en-tête ; check.py refuse un ID inconnu ou un effort non supporté."
+    done:
+      - "backlog/README.md documente les deux champs ; FORMAT.md reste compatible"
+      - "test : `model: claude-unknown` → check.py rouge ; effort `max` sur Sonnet → avertissement (plafond xhigh)"
+    notes: "tools/backlog/ est noyau (CONSENSUS décision 1) : relecture de Paul."
+  - key: MOD-3
+    title: "route.py : règles backlog/routing.yaml et résolution d'un modèle par ticket"
+    phase: P0
+    stage: S0
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS"]
+    depends_on: ["MOD-2"]
+    class: REVUE
+    velocity: true
+    parallel_lane: "ci"
+    scope: "backlog/routing.yaml, tools/backlog/route.py, tests/backlog/"
+    intent: "Promouvoir la liste `rules:` de cette proposition en backlog/routing.yaml et écrire route.py : (ticket, kind) → {model, effort, review, escalate} ; le plancher est recalculé depuis les chemins, le champ `model` ne fait que monter."
+    done:
+      - "tests : 20 tickets d'exemple (un par couloir) routés comme la grille ; R01 impose Opus même si l'en-tête dit sonnet"
+      - "`route.py --explain T-xxx` affiche la règle appliquée"
+    notes: "Même principe que T-210 : classe recalculée, jamais lue dans l'en-tête."
+  - key: MOD-4
+    title: "Dispatcher : transmettre --model et --effort à claude-code-action, et gérer l'escalade"
+    phase: P0
+    stage: S0
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS"]
+    depends_on: ["T-210", "MOD-3"]
+    class: REVUE
+    velocity: true
+    parallel_lane: "ci"
+    scope: ".github/workflows/claude-agent.yml, tools/backlog/next.py"
+    intent: "Entrées `model` et `effort` de workflow_dispatch passées à `claude_args` (--model, --effort) ; relance d'un cran au-dessus après les échecs prévus par la règle, avec l'étiquette `escalated-from`."
+    done:
+      - "run de test : la session s'exécute sur le modèle demandé (preuve : modèle consigné dans la sortie result)"
+      - "deux échecs CI simulés → relance au cran suivant, une seule fois par cran ; au-delà : issue `needs-human`"
+    notes: "Le workflow est noyau (script de garde) : relecture Opus adverse (R07). Le jeton d'abonnement reste CLAUDE_CODE_OAUTH_TOKEN (aucune clé API sans MANDAT)."
+  - key: MOD-5
+    title: "Attribution : trailers Model/Effort/Escalated-from et enregistrement de l'usage par PR"
+    phase: P1
+    stage: S1
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS", "0011"]
+    depends_on: ["MOD-4"]
+    class: AUTONOME + REVUE
+    velocity: true
+    parallel_lane: "preuve"
+    scope: ".github/pull_request_template.md, tools/metrics/model-routing/collect.py, docs/schema/"
+    intent: "Chaque PR d'agent porte Model, Effort, Escalated-from ; collect.py lit ces trailers et l'usage (tokens, tours, durée) de la sortie result, sans contenu de prompt."
+    done:
+      - "schéma `model-run.v1` (ticket, modèle, effort, échecs CI, escalades, tokens, durée, issue) ; aucun prompt stocké"
+      - "10 PR réelles collectées, preuve datée"
+    notes: "Complète T-043 (mission-result.v1) et T-209 (coût LLM par agent, différé) ; ne pas dupliquer : réutiliser leur schéma si publié."
+  - key: MOD-6
+    title: "Rapport hebdomadaire par (type de tâche, modèle) : réussite, escalades, quota par PR"
+    phase: P1
+    stage: S3
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS"]
+    depends_on: ["MOD-5"]
+    class: AUTONOME
+    velocity: false
+    parallel_lane: "preuve"
+    scope: "tools/metrics/model-routing/report.py, docs/state/model-routing-report.md"
+    intent: "Agréger model-run.v1 : réussite au premier passage, revert sous 7 jours, taux d'escalade, quota ou coût par PR fusionnée, intervalle de Wilson ; signaler `n < 20`."
+    done:
+      - "rapport daté généré depuis les données réelles ; cellules n < 20 marquées NOT_PROVEN"
+      - "règle d'alerte : une règle dont le taux d'escalade dépasse 40 % sur n ≥ 20 ouvre une issue"
+  - key: MOD-7
+    title: "Étalonnage : matrice Haiku / Sonnet / Opus sur le banc d'intentions et sur 30 tickets rejoués"
+    phase: P1
+    stage: S3
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS", "0013"]
+    depends_on: ["T-044", "MOD-5"]
+    class: AUTONOME
+    velocity: false
+    parallel_lane: "intention"
+    scope: "tests/intents/, docs/research/model-calibration.md"
+    intent: "Rejouer les 5 intentions A (T-044) × 3 modèles × 5 passes et un échantillon de tickets AUTONOME par type ; trancher R09, R10, R11 et la règle de descente (10 % au cran inférieur)."
+    done:
+      - "tableau (type, modèle) : PASS runtime, échecs CI, quota par ticket fusionné (Sonnet high contre Opus medium : lequel consomme le moins) ; chaque règle passe de `hypothesis` à `calibrated` ou est corrigée"
+      - "décision datée sur R09 (Haiku pour app.yaml A) : tenue ou relevée à Sonnet"
+    notes: "Consomme du quota Max : à exécuter hors fenêtre de pointe, 2 sessions au plus (T-145)."
+  - key: MOD-8
+    title: "Quota Max : mesure par ticket (/status), seuil de repli et réglage du plan"
+    phase: P1
+    stage: S2
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS", "0017"]
+    depends_on: ["T-145", "MOD-5"]
+    class: REVUE + MANDAT
+    velocity: false
+    parallel_lane: "agents"
+    scope: "tools/metrics/model-routing/quota.py, docs/CLOUD-AGENTS.md"
+    intent: "Relever la part de quota hebdomadaire consommée avant/après 10 tickets par modèle pour remplacer le proxy de prix (Haiku 0,05× ; Opus 2× ; Fable 4×) par une mesure ; fixer le repli à 70 % ; dire à Paul si 5× suffit ou si le 20× ou un plan supérieur s'impose."
+    done:
+      - "ratios mesurés (quota par ticket) consignés ; proxy remplacé ou confirmé"
+      - "recommandation de plan chiffrée ; MANDAT : Paul ajuste le plan, la PR décrit le geste"
+    notes: "Aucune API au token sans MANDAT (COST-FREE-TIER §3). Les crédits API mensuels de Max ne servent pas dans Claude Code."
+  - key: MOD-9
+    title: "Registre des modèles et tarifs : docs/state/model-prices.yaml avec date de lecture et lint à 90 jours (sources DeepSeek déjà lues)"
+    phase: P1
+    stage: S2
+    model: claude-haiku-5-5
+    adr: ["NEW-MODELS", "0017"]
+    depends_on: ["MOD-1"]
+    class: AUTONOME + MANDAT
+    velocity: false
+    parallel_lane: "veille"
+    scope: "docs/state/model-prices.yaml, tools/backlog/lint_prices.py"
+    intent: "Consigner prix, contexte, effort par défaut et date de retrait des modèles Claude 5 et DeepSeek avec source et date (lues le 2026-11-18 : voir MODEL-ROUTING.md §3), plus les scores Terminal-Bench 4.1 ; lire les conditions de la plateforme API DeepSeek (illisibles le 2026-11-18) pour trancher la rétention des données API."
+    done:
+      - "chaque ligne a url, date de lecture, prochaine revue ; une ligne de plus de 90 jours fait échouer le lint"
+      - "verdict DeepSeek par propriété : tarifs PASS, endpoint Anthropic PASS, appels d'outils PASS (docs, 2026-11-18) ; rétention API NOT_PROVEN jusqu'à lecture des conditions ; test runtime NOT_TESTED"
+    notes: "Les hôtes bloqués pour l'outil web restent lisibles par curl depuis le shell. MANDAT seulement si une clé ou une dépense est créée."
+  - key: MOD-10
+    title: "agentgateway : fournisseur DeepSeek, clés virtuelles par usage, budget bloquant (fournisseur factice d'abord)"
+    phase: P4
+    stage: I7
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS", "0018"]
+    depends_on: ["T-161", "T-023", "MOD-9"]
+    class: REVUE + MANDAT
+    velocity: false
+    parallel_lane: "ai-gateway"
+    scope: "platform/ai-gateway/, tests/k3d/"
+    intent: "Ajouter les fournisseurs `anthropic` et `deepseek` (intégré ; `baseUrl` https://api.deepseek.com/anthropic si Claude Code passe par le gateway, pour éviter la conversion Messages vers Chat Completions) avec clés virtuelles, restriction de modèles (deepseek-flash seulement) et budget bloquant ; bascule Haiku ↔ Flash ; la clé de fournisseur n'existe que dans le namespace du gateway."
+    done:
+      - "k3d, fournisseur factice : routage par modèle, bascule sur panne, budget dépassé → blocage, clé révoquée → 401"
+      - "fournisseur réel seulement après MANDAT (création de la clé DeepSeek, plafond mensuel côté console) ; appel de test journalisé avec agent_id et tokens"
+    notes: "agentgateway 1.7 (docs lues le 2026-11-18) : route /v1/messages native avec conversion vers Chat Completions, clés virtuelles et budgets documentés ; la bascule entre fournisseurs (Resiliency) reste à prouver en k3d."
+  - key: MOD-11
+    title: "Garde de confidentialité : aucun log de production ni secret vers un fournisseur autre qu'Anthropic"
+    phase: P4
+    stage: I7
+    model: claude-opus-5-5
+    adr: ["NEW-MODELS", "0018", "0008"]
+    depends_on: ["MOD-10", "T-025"]
+    class: REVUE
+    velocity: false
+    parallel_lane: "admission"
+    scope: "platform/ai-gateway/, platform/policies/, tests/k3d/"
+    intent: "Faire respecter `deepseek_denied_data` : le gateway refuse une clé DeepSeek pour tout consommateur étiqueté `data-class` ≠ public ou lisant des logs de production ; test d'injection d'un faux log."
+    done:
+      - "test k3d : consommateur data-class `internal` demandant `deepseek-*` → refus ; modèle Claude → accepté"
+      - "allowlist modifiée sans revue → CI rouge"
+    notes: "Noyau : plancher Opus (R01), revue adverse."
+  - key: MOD-12
+    title: "Spike : Claude Code vers deepseek-flash (ANTHROPIC_BASE_URL) pour des tickets AUTONOME à faible risque"
+    phase: P4
+    stage: I7
+    model: claude-sonnet-5-5
+    adr: ["NEW-MODELS"]
+    depends_on: ["MOD-10", "MOD-7"]
+    class: AUTONOME + MANDAT
+    velocity: false
+    parallel_lane: "agents"
+    scope: "tests/model-routing/, docs/research/model-calibration.md"
+    intent: "Avec les alias Opus/Sonnet/Haiku épinglés sur deepseek-flash (un nom claude-opus* serait routé vers V4 Pro, 6,7 % à TB 4.1), rejouer 20 tickets de type R09/R10 hors des heures de pointe UTC et comparer au cran Haiku/Sonnet (réussite, échecs CI, quota libéré, $ par ticket). Vérifier si claude-code-action accepte ANTHROPIC_BASE_URL."
+    done:
+      - "20 tickets rejoués, tableau comparatif daté ; verdict : adopter pour un type de tâche, ou NO-GO motivé"
+      - "aucune donnée hors dépôt public envoyée ; MANDAT de dépense obtenu avant l'essai"
+    notes: "Baseline : deepseek-flash 38,5 % contre Haiku 40,0 % à TB 4.1. Dépense = MANDAT avec plafond mensuel ; données publiques seulement."
+  - key: MOD-13
+    title: "Revue trimestrielle du routage : retraits de modèles, nouveaux modèles, dérive des tarifs"
+    phase: P5
+    stage: après-porte
+    model: claude-haiku-5-5
+    adr: ["NEW-MODELS", "0016"]
+    depends_on: ["MOD-6", "MOD-9"]
+    class: AUTONOME
+    velocity: false
+    parallel_lane: "veille"
+    scope: "docs/state/model-prices.yaml, backlog/routing.yaml"
+    intent: "Chaque trimestre : relire les pages modèles et tarifs, proposer par PR les changements de règles (modèle retiré, nouveau palier moins cher), joindre le rapport MOD-6."
+    done:
+      - "PR trimestrielle ouverte avec diff des tarifs et des règles, preuve datée"
+      - "un modèle dont la retraite approche (≥ 2027-09) a une règle de remplacement"
+    notes: "Retraits annoncés : Opus 5.5 ≥ 2027-09-22, Sonnet 5.5 ≥ 2027-09-28, Haiku 5.5 ≥ 2027-10-07, Fable 5.2 ≥ 2027-11-09 (lus le 2026-11-18)."

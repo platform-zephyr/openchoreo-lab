@@ -1,0 +1,71 @@
+# ADR-0002 — Autonomie d'abord, noyau de confiance protégé
+Statut : PROPOSÉ · Date : 2026-11-18 · Décideur : Paul
+Décisions liées : D-2026-11-15-03 et D-2026-11-16-07 (homelab-infra, autonomie maximale), ADR-0001, ADR-0006, ADR-0011
+
+## Contexte
+- Paul vise d'abord l'**autonomie totale des agents**, puis la sécurité.
+- Jusqu'ici, `.github/CODEOWNERS` soumettait à sa revue `platform/`, `tools/`, `tests/`, `golden-paths/`, `.agents/`… :
+  presque tout changement utile attendait un humain. Le goulot est humain, pas technique.
+- Une approbation humaine n'est pas un contrôle fiable à vitesse machine ; un contrôle exécutable l'est.
+
+## Décision
+1. **Par défaut, un agent livre seul** : branche, PR, `ci-ok` verte, merge, déploiement, preuve runtime, `git revert`
+   s'il échoue. Cela vaut pour les apps **et** pour la plateforme (`platform/` hors noyau, `tools/appgen`, tests,
+   golden paths, skills).
+2. **Seul le noyau de confiance reste soumis à Paul** : ce qui définit le pouvoir des agents eux-mêmes.
+   - CI et protection du dépôt : `.github/`, `tools/apply-branch-protection.sh` ;
+   - mandat, règles et décisions : `missions/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `docs/adr/` ;
+   - droits des agents et frontière GitOps : `platform/authz/`, `platform/cluster-agent/`, `platform/install/argocd/`,
+     `argo_guard` et ses tests ;
+   - admission qui borne les cellules (VAP) : `platform/policies/` et ses tests ;
+   - contrôle compensatoire et classes d'autonomie : `tools/k3d/`, `tests/k3d/`, `tests/gitops-k3d/`,
+     `tests/argo-escalation/`, `.agents/skills/platform-guardrails/` ;
+   - identité générée par la plateforme : `platform/identity/` (ADR-0007) ;
+   - sécurité amont : `security/`, bundle et ses tests ;
+   - **règle générale (consensus du 2026-11-18)** : tout script de garde exécuté par un job requis par `ci-ok`, et tout
+     script que le coordinateur exécute avec des droits cluster (`tools/oke/`), est noyau ; de même les consignes lues
+     par tous les agents (`.agents/`), le calcul des classes du dispatcher (`tools/backlog/`), les identités et secrets
+     de plateforme (`users/`, `groups/`, `identities/`, `platform/secrets/`), `ops/`, `tools/metrics/`. Le produit testé
+     (`tools/appgen/appgen.py`) reste libre ;
+   - **les agents n'agissent jamais avec le compte admin de Paul** : compte agent rôle Write + GitHub App plateforme
+     (T-215), sinon `CODEOWNERS` ne protège rien.
+3. **MANDAT (Paul seul)** reste réservé à ce qu'une PR ne peut pas faire : créer une identité, une clé ou un jeton ;
+   un coût hors Always Free ; une suppression de données sans restauration prouvée ; un premier accès réseau
+   externe (Cloudflare, DNS) tant qu'il n'est pas déclaré par Crossplane (ADR-0009).
+4. **Contrôle compensatoire** : une PR qui touche `platform/` doit avoir la CI k3d verte (suites VAP, cellules,
+   GitOps). Une régression détectée en runtime déclenche un `git revert` autonome.
+5. **Un agent ne peut jamais élargir ses propres droits** : c'est l'invariant qui rend le reste acceptable.
+
+## Conséquences
+- `.github/CODEOWNERS`, `platform-guardrails` et `docs/AGENT-PR-MODEL.md` sont alignés sur ce noyau (même PR).
+- La CI devient la vraie frontière : elle doit être solide (k3d en CI, PR #36) et rapide.
+- Risque accepté : un agent peut dégrader une politique Kyverno ou un type de composant hors noyau. Compensé par
+  les VAP (noyau), la CI k3d et le revert.
+
+## Alternatives écartées
+- **Garder la revue sur `platform/`** : sécurité forte, autonomie faible ; contraire à la priorité de Paul.
+- **Aucun noyau** : un agent pourrait se donner des droits (authz, Argo, CI) ; perte du seul invariant indispensable.
+
+## Vérification
+- Test CI (T-007) : `CODEOWNERS` couvre la liste de cet ADR **et** tous les scripts appelés par `ci.yaml` ; essai réel :
+  une PR du noyau ouverte par l'identité agent ne peut pas être fusionnée.
+- Indicateur : délai médian issue → merge pour une PR hors noyau ; part des PR fusionnées sans humain.
+
+## Références
+`.github/CODEOWNERS`, `.agents/skills/platform-guardrails/SKILL.md`, `docs/AGENT-PR-MODEL.md`, `docs/GITOPS-TRUST-BOUNDARY.md`.
+
+## Amendement (consensus n°2 et arbitrages de Paul, 2026-11-18)
+Source : `docs/review/CONSENSUS-2.md` (arbitrage 4).
+1. **Sécurité de développement et sécurité finale.** Pendant le développement, un niveau de sécurité moindre est accepté :
+   les sessions d'agents agissent avec l'identité de Paul et le ruleset garde son contournement admin. Seule compte la
+   sécurité **finale** de la plateforme.
+2. **Étape FINAL « Durcissement final »**, obligatoire avant de déclarer la plateforme finie : identité d'usine et GitHub App
+   (T-215), noyau CODEOWNERS testé avec l'identité agent (T-007), ruleset sans `bypass_actors` admin (T-400), revue de
+   sécurité finale (T-401), garde d'image multi-arch si des apps vont sur OKE (T-402). La puce « les agents n'agissent
+   jamais avec le compte admin de Paul » du §2 devient une exigence de l'étape FINAL.
+3. Ce qui reste vrai dès maintenant : aucun secret, jeton ou donnée sensible dans le dépôt public (garde CI T-303 en S0) ;
+   le noyau reste soumis à l'approbation de Paul ; un agent n'élargit jamais ses propres droits (§5).
+4. Vérification : T-401 conclut PASS sur chaque point avant que Paul écrive « plateforme finie » dans STATE.md et MISSION.md.
+
+## Amendement (arbitrages de Paul n°2, 2026-11-18)
+Pendant le développement, la revue des code owners est désactivée dans le ruleset et les agents ont des droits étendus ; le noyau reste écrit dans `CODEOWNERS` et testé. La revue est réactivée, et le contournement admin retiré, à l'étape FINAL (T-400), qui conditionne la déclaration « plateforme finie ».

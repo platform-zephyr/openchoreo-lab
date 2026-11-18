@@ -1,0 +1,202 @@
+# Propositions du domaine observabilité, alerting, remédiation (voir docs/research/OBSERVABILITY-OPERATIONS.md).
+# ADR proposé : NEW-OBS = « Observabilité, alerting et remédiation automatique » (texte en §6 du rapport).
+- key: OBS-0
+  title: "Contrat d'alerte : labels, charge d'alerte, format de runbook, lint"
+  phase: P0
+  adr: ["NEW-OBS"]
+  depends_on: ["T-072"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "observabilité"
+  scope: "docs/schema/alert-payload.v1.json, docs/runbooks/_TEMPLATE.md, tools/observe/lint_runbooks.py, tests/"
+  intent: "Fixer ce que tout le chantier partage : labels lab_app/lab_env/cluster, schéma de la charge d'alerte reçue par l'agent, front matter des runbooks (alert, severity, class, signals, checks, allowed_actions, escalate_when), et un lint qui exige un runbook par règle."
+  done:
+    - "schéma JSON versionné + 2 exemples valides et 2 invalides testés"
+    - "gabarit de runbook et lint CI : une règle d'alerte sans runbook échoue"
+    - "cause.type (retryable/à corriger/plateforme) ajouté au schéma app-status.v1 sans casser T-072"
+  notes: "Débloque OBS-4, OBS-6, OBS-7, OBS-8 en parallèle."
+
+- key: OBS-1
+  title: "Mesure du free tier Grafana Cloud et registre de budget de séries"
+  phase: P1
+  adr: ["NEW-OBS", "0003"]
+  depends_on: ["T-009"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "observabilité"
+  scope: "docs/state/observability-budget.md, tools/observe/usage.sh"
+  intent: "Mesurer les séries actives, logs/jour et rétention réels des deux clusters, trancher la contradiction 8 000 + 8 000 contre 10 000 et fixer des plafonds par cluster et par app."
+  done:
+    - "relevé daté (lecture seule, jeton Viewer) des séries par cluster et par job"
+    - "plafonds par cluster et estimation par app écrits ; alerte à 80 % confirmée"
+    - "limites Grafana (séries, logs, rétention, règles) vérifiées sur la page Usage et citées avec date"
+  notes: "Complète T-009 (registre des quotas gratuits) : y ajouter les lignes Grafana Cloud et ntfy.sh."
+
+- key: OBS-2
+  title: "Alloy OKE : collecte filtrée lab-*/dp-*/openchoreo-*, plafonds et récepteur de statut"
+  phase: P1
+  adr: ["NEW-OBS", "0003"]
+  depends_on: ["T-001", "OBS-1"]
+  class: REVUE + MANDAT
+  velocity: false
+  parallel_lane: "observabilité"
+  scope: "platform/observability/alloy/, tests/"
+  intent: "Reprendre le contrat Alloy de kube-ops pour OKE (allowlist, scrape 60 s, sample_limit), ajouter labels lab_app/lab_env, logs ≥ warn limités et un prometheus.receive_http ClusterIP pour lab_app_status."
+  done:
+    - "Alloy + kube-state-metrics ≤ 40m / 200 Mi demandés, mesure datée sur OKE"
+    - "séries OKE ≤ plafond OBS-1, preuve datée dans Grafana"
+    - "NetworkPolicy : le récepteur n'accepte que le Job de statut"
+  notes: "MANDAT : placement du jeton d'écriture (OpenBao/ESO ou Doppler, ADR-0014) ; aucun jeton dans le dépôt."
+
+- key: OBS-3
+  title: "Sondes blackbox intégrées à Alloy, générées depuis healthPath (G5)"
+  phase: P1
+  adr: ["NEW-OBS", "0005"]
+  depends_on: ["T-010", "OBS-2"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "observabilité"
+  scope: "tools/appgen/, generated/, platform/observability/alloy/probes"
+  intent: "appgen rend une cible de sonde par app (URL interne du service, healthPath) consommée par prometheus.exporter.blackbox d'Alloy ; probe_success/probe_duration_seconds portent lab_app et lab_env. Rend G5 `observability`."
+  done:
+    - "app d'exemple : probe_success visible dans Grafana, daté"
+    - "app sans healthPath : aucune sonde et refus ou NOT_TESTED explicite"
+    - "G5 rendu ou déclassé dans SCHEMA-GAPS"
+  absorbs: ["T-065"]
+  notes: "T-065 est redécoupé : G5 -> OBS-3 ; CronJob de statut périodique reste dans T-065 (réduit) ; PR de revert automatique -> OBS-6 ; notification -> OBS-7."
+
+- key: OBS-4
+  title: "Règles d'alerte génériques par label (app, déploiement, plateforme) en OpenTofu"
+  phase: P1
+  adr: ["NEW-OBS", "0011"]
+  depends_on: ["OBS-0", "OBS-2", "OBS-3"]
+  class: REVUE + MANDAT
+  velocity: true
+  parallel_lane: "observabilité"
+  scope: "homelab-infra terraform/grafana-cloud/alert-rules-lab.tf (PR cross-repo) + docs/runbooks/"
+  intent: "Une règle par signal, pas par app : app down (rapide 5 min / lent 1 h), CrashLoop/OOM/Pending dans lab-*, Argo Degraded lab-*, app-status FAIL ; garde warm-up homelab ; étiquette class=app|platform pour le routage."
+  done:
+    - "règles planifiées par OpenTofu (create/update seulement), lint runbook vert"
+    - "app cassée en dev : alerte reçue en moins de 10 minutes, datée"
+    - "homelab éteint 10 min : aucune alerte applicative, une alerte info"
+  notes: "MANDAT : apply de la racine (ARC refuse delete). Une seule racine grafana-cloud : coordonner avec les propriétaires du dépôt homelab-infra."
+
+- key: OBS-5
+  title: "Statut d'app publié comme métrique lab_app_status"
+  phase: P1
+  adr: ["NEW-OBS", "0011"]
+  depends_on: ["T-005", "T-072", "OBS-2"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "observabilité"
+  scope: "golden-paths/_checks/, platform/ (Job PostSync et CronJob), tests/"
+  intent: "Le Job de preuve (T-005) et le CronJob périodique envoient verdict, niveau et cause.type au récepteur Alloy du cluster ; aucune clé dans la cellule."
+  done:
+    - "lab_app_status{app,env,verdict,cause_type} visible dans Grafana après un FAIL volontaire (k3d et OKE)"
+    - "Job ≤ 50m / 64Mi (critère T-005 conservé)"
+  notes: "Modifie T-005 : ajouter ce critère d'envoi."
+
+- key: OBS-6
+  title: "Pont alerte -> agent : workflow remediate, dédoublonnage, budget, disjoncteur"
+  phase: P1
+  adr: ["NEW-OBS", "0002", "0013"]
+  depends_on: ["OBS-0", "OBS-5", "T-068", "T-005"]
+  class: REVUE + MANDAT
+  velocity: true
+  parallel_lane: "remédiation"
+  scope: ".github/workflows/remediate.yml, tools/observe/, .agents/skills/fix-app/, docs/AGENT-RUNNERS.md"
+  intent: "workflow_dispatch appelé par un contact point Grafana (jeton Actions-only) ; étape 1 sans agent collecte un context.json assaini (jeton Viewer), étape 2 lance fix-app via claude-code-action sans secret ; issue incident:<app>:<env>, 2 essais/app/24 h, 6 dispatches/jour, label agent:gave-up."
+  done:
+    - "alerte simulée : un seul job, une seule issue ; seconde alerte = commentaire, pas de job"
+    - "étape agent sans secret ni jeton Grafana (test statique du workflow)"
+    - "régression simulée : PR de revert ouverte, PASS runtime daté, issue close"
+    - "deux échecs : agent:gave-up posé, plus de dispatch ; condition de déclenchement de claude-agent.yml amendée"
+  notes: "MANDAT : création des jetons (Actions-only, Viewer) et secrets GitHub, par nom seulement. .github/ est noyau : REVUE. Absorbe la partie « PR de revert automatique » de T-065. Contexte assaini : pas de logs bruts (dépôt public)."
+
+- key: OBS-7
+  title: "Escalade ntfy : contact points, script de notification, route différée"
+  phase: P1
+  adr: ["NEW-OBS"]
+  depends_on: ["OBS-0"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "remédiation"
+  scope: "tools/notify/ntfy.sh, tests/notify/, homelab-infra terraform/grafana-cloud (réutilise ntfy-phone)"
+  intent: "Script unique d'envoi ntfy (priorité, titre, lien, sans secret ni log), route Grafana différée de 45 min pour les alertes d'app encore actives, route directe priorité 5 pour la plateforme."
+  done:
+    - "test statique : le message n'embarque ni topic, ni jeton, ni valeur ; priorités vérifiées"
+    - "alerte plateforme simulée : notification reçue en moins de 10 minutes, datée"
+    - "agent muet 45 min : notification reçue quand même"
+  notes: "MANDAT : secret GitHub NTFY_TOPIC (nom seulement). Le ntfy interne de T-015 reste une app de démonstration, pas le canal d'alerte. Réduit T-065 (notification)."
+
+- key: OBS-8
+  title: "Runbooks initiaux lisibles par agent"
+  phase: P1
+  adr: ["NEW-OBS", "0011"]
+  depends_on: ["OBS-0", "OBS-4"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "observabilité"
+  scope: "docs/runbooks/, .agents/skills/fix-app/SKILL.md, .agents/skills/diagnose-app/SKILL.md"
+  intent: "Un runbook par règle générique (app down, CrashLoop, OOM, Argo Degraded, app-status FAIL, secret-missing, quota) avec arbre de décision, actions permises par classe et condition d'escalade ; fix-app et diagnose-app les chargent par `alert`."
+  done:
+    - "lint OBS-0 vert sur toutes les règles"
+    - "banc : l'agent choisit la bonne action sur 5 alertes simulées, preuve datée"
+
+- key: OBS-9
+  title: "Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane"
+  phase: P2
+  adr: ["NEW-OBS", "0003", "0014"]
+  depends_on: ["OBS-4", "OBS-7", "T-022", "T-030"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "plateforme-santé"
+  scope: "platform/observability/, homelab-infra terraform/grafana-cloud, docs/runbooks/platform-*.md"
+  intent: "Sondes et règles classe platform : /readyz du control plane, Argo et contrôleur, sys/health d'OpenBao (scellé = route 5, jamais d'auto-fix), ExternalSecret, CNPG, disponibilité des ClusterDataPlane, dead man's switch Healthchecks."
+  done:
+    - "chaque composant a une règle et un runbook ; OpenBao scellé simulé en k3d : notification priorité 5, aucun dispatch d'agent"
+    - "métrique de connexion de l'agent de data plane identifiée ou remplacée par une condition lue, documentée"
+  notes: "MANDAT : jeton Healthchecks si absent. Les agents de remédiation n'agissent pas sur la classe platform."
+
+- key: OBS-10
+  title: "Journal d'incident sans blâme et indicateurs MTTD/MTTR"
+  phase: P2
+  adr: ["NEW-OBS", "0011"]
+  depends_on: ["OBS-6"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "remédiation"
+  scope: "docs/incidents/_TEMPLATE.md, tools/observe/incident_stats.py, .agents/skills/fix-app/"
+  intent: "L'agent ajoute à la PR de correction une fiche d'incident (chronologie, détection, cause prouvée, correctif, test ajouté) ; un script calcule MTTD/MTTR et la part de clôtures sans humain depuis les horodatages issue/PR/PASS."
+  done:
+    - "fiche générée automatiquement lors du drill OBS-11"
+    - "script d'indicateurs testé sur 3 incidents simulés"
+
+- key: OBS-11
+  title: "Drill de bout en bout : échec d'app -> alerte -> agent -> PR ou ntfy"
+  phase: P2
+  adr: ["NEW-OBS", "0013"]
+  depends_on: ["OBS-6", "OBS-7", "OBS-8"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "remédiation"
+  scope: "tests/observability-drill/, evidence/"
+  intent: "Deux scénarios scriptés sur l'environnement development : (a) régression réparable -> revert/PR -> PASS ; (b) échec non réparable (secret-missing) -> escalade ntfy sans boucle. Mesure le coût LLM et les minutes consommées."
+  done:
+    - "(a) PASS daté, MTTR relevé"
+    - "(b) ntfy reçu, aucun second dispatch, disjoncteur testé"
+    - "coût LLM par incident relevé et comparé au plafond de 6 runs/jour"
+
+- key: OBS-12
+  title: "Spike optionnel : observability plane OpenChoreo réduit sur le homelab (audit)"
+  phase: P3
+  adr: ["NEW-OBS", "0003"]
+  depends_on: ["T-030", "OBS-1"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "plateforme-santé"
+  scope: "docs/research/, aucun changement de platform/ sans nouveau ticket"
+  intent: "Chiffrer RAM/CPU d'un plan logs+métriques sans RCA sur le homelab et la valeur de query_audit_logs et des query_* MCP ; conclure go/no-go sans toucher OKE."
+  done:
+    - "mesure datée sur k3d ou homelab, verdict motivé (go/no-go) ajouté à l'ADR ou à son amendement"
+  notes: "Basse priorité : ne bloque rien."
