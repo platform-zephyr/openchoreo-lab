@@ -7,6 +7,8 @@
 # Usage : tests/argo-guard/uninstall-guards.sh   (helm, jq, yq, python3 ; réseau au 1er téléchargement des
 # charts, sauf si ARGO_GUARD_CHART_CACHE désigne un dossier de .tgz déjà vérifiés)
 set -euo pipefail
+# Plage documentaire RFC 5737 pour les fixtures (la regex réelle reste le défaut de tools/oke/lib.sh).
+export OKE_TLS_SERVER_RE='^203\.0\.113\.[0-9]+$'
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/uninstall-guards.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
@@ -26,7 +28,7 @@ case "$1" in delete|apply|label|annotate|patch|create|replace|scale) printf 'WRI
 case "$a" in
   "config current-context") echo context-oracle-a1-test;;
   "config view --minify -o jsonpath={.clusters[0].cluster.server}") echo https://127.0.0.1:16443;;
-  "config view --minify -o jsonpath={.clusters[0].cluster.tls-server-name}") echo 10.0.2.10;;
+  "config view --minify -o jsonpath={.clusters[0].cluster.tls-server-name}") echo 203.0.113.10;;
   "get nodes -o json") echo '{"items":[{"spec":{"providerID":"ocid1.instance.oc1.test"},"status":{"nodeInfo":{"architecture":"arm64"}}}]}';;
   "get crd -o json") cat "$FIX/crds.json";;
   "get crd -o name") jq -r '.items[] | "customresourcedefinition.apiextensions.k8s.io/" + .metadata.name' "$FIX/crds.json";;

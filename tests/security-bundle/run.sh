@@ -5,6 +5,8 @@
 # Usage : tests/security-bundle/run.sh   (bash, python3, jq, shasum, helm ; réseau au 1er téléchargement des charts
 # sauf si SECURITY_BUNDLE_CHART_CACHE désigne un dossier contenant les .tgz OpenChoreo déjà vérifiés)
 set -euo pipefail
+# Plage documentaire RFC 5737 pour les fixtures (la regex réelle reste le défaut de tools/oke/lib.sh).
+export OKE_TLS_SERVER_RE='^203\.0\.113\.[0-9]+$'
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/sb-tests.XXXXXX")"
 trap '[[ -n "${KEEP:-}" ]] || rm -rf "$WORK"' EXIT
@@ -29,7 +31,7 @@ case "$v" in delete|apply|label|annotate|patch|create|replace|scale|rollout) pri
 case "$*" in
   "config current-context") echo context-oracle-a1-test;;
   "config view --minify -o jsonpath={.clusters[0].cluster.server}") echo https://127.0.0.1:16443;;
-  "config view --minify -o jsonpath={.clusters[0].cluster.tls-server-name}") echo 10.0.2.10;;
+  "config view --minify -o jsonpath={.clusters[0].cluster.tls-server-name}") echo 203.0.113.10;;
   "-n openchoreo-control-plane get secret cluster-gateway-ca -o jsonpath={.data.ca\\.crt}") printf -- '-----BEGIN CERTIFICATE-----\nX\n' | base64;;
   "get nodes -o json") echo '{"items":[{"spec":{"providerID":"ocid1.instance.oc1.test"},"status":{"nodeInfo":{"architecture":"arm64"}}}]}';;
   *) exit 0;;   # autres lectures : réponse vide

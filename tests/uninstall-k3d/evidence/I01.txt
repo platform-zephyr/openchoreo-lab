@@ -1,9 +1,9 @@
 # I01 — install.sh --from 1 --to 2 --apply (mode test)
 # date : 2026-11-17T20:29:23Z
-$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/install.sh --from 1 --to 2 --apply
+$ /Users/example/Developer/Perso/openchoreo-lab/tools/oke/install.sh --from 1 --to 2 --apply
 20:29:21Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
 20:29:21Z === étape 1 (APPLY=1)
-20:29:21Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/00-namespaces.yaml
+20:29:21Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/00-namespaces.yaml
 namespace/openchoreo-control-plane serverside-applied
 namespace/openchoreo-data-plane serverside-applied
 namespace/openchoreo-cert-manager serverside-applied
@@ -11,7 +11,7 @@ namespace/openchoreo-external-secrets serverside-applied
 namespace/lab-secrets serverside-applied
 namespace/lab-argocd serverside-applied
 namespace/lab-cnpg serverside-applied
-20:29:21Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/01-quotas.yaml
+20:29:21Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/01-quotas.yaml
 resourcequota/lab-quota serverside-applied
 limitrange/lab-defaults serverside-applied
 resourcequota/lab-quota serverside-applied
@@ -25,7 +25,7 @@ resourcequota/lab-quota serverside-applied
 limitrange/lab-defaults serverside-applied
 resourcequota/lab-quota serverside-applied
 limitrange/lab-defaults serverside-applied
-20:29:21Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/02-network-policies.yaml
+20:29:21Z + kubectl apply --server-side --field-manager=openchoreo-lab -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/02-network-policies.yaml
 networkpolicy.networking.k8s.io/lab-default-deny serverside-applied
 networkpolicy.networking.k8s.io/lab-default-deny serverside-applied
 networkpolicy.networking.k8s.io/lab-default-deny serverside-applied

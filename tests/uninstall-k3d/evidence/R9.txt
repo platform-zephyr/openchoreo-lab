@@ -1,23 +1,23 @@
 # R9 — --step 9 --apply
 # date : 2026-11-17T20:30:38Z
-$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 9 --apply
+$ /Users/example/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 9 --apply
 20:30:38Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
-20:30:38Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/resource-types/ -f /Users/paul/Developer/Perso/openchoreo-lab/platform/project-types/ -f /Users/paul/Developer/Perso/openchoreo-lab/platform/traits/ -f /Users/paul/Developer/Perso/openchoreo-lab/platform/component-types/
-resource mapping not found for name: "cnpg-lab-db" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/resource-types/cnpg-lab-db.yaml": no matches for kind "ClusterResourceType" in version "openchoreo.dev/v1alpha1"
+20:30:38Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/resource-types/ -f /Users/example/Developer/Perso/openchoreo-lab/platform/project-types/ -f /Users/example/Developer/Perso/openchoreo-lab/platform/traits/ -f /Users/example/Developer/Perso/openchoreo-lab/platform/component-types/
+resource mapping not found for name: "cnpg-lab-db" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/resource-types/cnpg-lab-db.yaml": no matches for kind "ClusterResourceType" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "cell-restricted" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/project-types/cell-restricted.yaml": no matches for kind "ClusterProjectType" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "cell-restricted" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/project-types/cell-restricted.yaml": no matches for kind "ClusterProjectType" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "persistent-volume-claim" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/traits/persistent-volume-claim.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "persistent-volume-claim" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/traits/persistent-volume-claim.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "service-restricted" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/component-types/service-restricted.yaml": no matches for kind "ClusterComponentType" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "service-restricted" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/component-types/service-restricted.yaml": no matches for kind "ClusterComponentType" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
 20:30:38Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
-20:30:38Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml
-resource mapping not found for name: "production" namespace: "default" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "Environment" in version "openchoreo.dev/v1alpha1"
+20:30:38Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml
+resource mapping not found for name: "production" namespace: "default" from "/Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "Environment" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "standard" namespace: "default" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "DeploymentPipeline" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "standard" namespace: "default" from "/Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "DeploymentPipeline" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "health-probes" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "health-probes" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
 20:30:38Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
 20:30:38Z + kubectl label namespace default openchoreo.dev/control-plane-

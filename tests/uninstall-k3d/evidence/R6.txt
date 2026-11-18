@@ -1,9 +1,9 @@
 # R6 — --step 6 --apply
 # date : 2026-11-17T20:30:40Z
-$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 6 --apply
+$ /Users/example/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 6 --apply
 20:30:40Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
 20:30:40Z release openchoreo-control-plane/openchoreo-control-plane absente
-20:30:40Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/03-idp-egress.yaml
+20:30:40Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/03-idp-egress.yaml
 20:30:40Z + kubectl delete --ignore-not-found -n openchoreo-control-plane secret backstage-secrets
 20:30:40Z CRD de openchoreo-control-plane conservées (--delete-crds absent)
 # rc=0

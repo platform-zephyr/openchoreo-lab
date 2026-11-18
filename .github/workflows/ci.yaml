@@ -367,10 +367,64 @@ jobs:
           command -v shellcheck >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck; }
           git ls-files -z '*.sh' | xargs -0 shellcheck -S warning
 
+  quality:
+    # ADR-0024, T-414 : cliquet de maintenabilite (tools/quality/check.py contre baseline.json). Rapide : aucun test.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Installer les outils (versions figees)
+        run: python3 -m pip install --disable-pip-version-check "ruff==0.16.9" "radon==6.0.1" "mypy==2.3.1"
+      - name: Tests du cliquet (degradation refusee, refactor accepte)
+        run: python3 -m unittest discover -s tests/quality -v
+      - name: Cliquet (aucune degradation ; seuils durs sur le code neuf)
+        run: python3 tools/quality/check.py
+
+  quality-coverage:
+    # ADR-0024, T-414 : plancher de couverture (appgen.py >= 85 %, diff >= 80 %) et artefact quality.v1.json date.
+    # En parallele de `quality` : la CI ne s'allonge pas (chemin critique : platform).
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Installer les outils (versions figees)
+        run: |
+          python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt \
+            "ruff==0.16.9" "radon==6.0.1" "mypy==2.3.1" "coverage==7.17.3"
+      - name: Tests sous couverture (appgen, backlog, identites)
+        run: |
+          coverage run -m unittest discover -s tests/appgen
+          coverage run -a -m unittest discover -s tests/backlog
+          coverage run -a -m unittest discover -s tests/identities
+          coverage json -o coverage.json
+      - name: Plancher de couverture, diff et quality.v1.json
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          base=()
+          if [ -n "$BASE_REF" ]; then base=(--base "origin/$BASE_REF"); fi
+          python3 tools/quality/check.py --coverage-json coverage.json --output quality.v1.json "${base[@]}"
+      - name: Publier quality.v1.json
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quality-v1
+          path: quality.v1.json
+          if-no-files-found: ignore
+
   ci-ok:
     # Check requis par la protection de branche : echoue si un job amont n'est pas en success.
     if: always()
-    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, platform-render, release-history, dev-factory, backlog, lint-code]
+    needs: [yamllint, appgen, crd-schema, secrets, leak-guard, actionlint, charts, platform, platform-render, release-history, dev-factory, backlog, lint-code, quality, quality-coverage]
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Agregation

@@ -1,7 +1,7 @@
 ---
 id: T-450
 title: "Nettoyer la dette de .gitleaksignore (129 emplacements) et le vider"
-status: todo
+status: in-progress
 phase: P0
 adr: [0002, 0006]
 depends_on: [T-303]
@@ -23,9 +23,9 @@ Remplacer les IP privées réelles de docs/ et des `apps/*/NOTES.md` par des val
 docs/, apps/*/NOTES.md, tests/*/evidence, .gitleaksignore
 
 ## Critères de fin
-- [ ] les 129 emplacements de `.gitleaksignore` sont traités (IP réelles → valeurs documentaires, chemins locaux → chemins génériques)
+- [x] les 129 emplacements de `.gitleaksignore` sont traités (IP réelles → valeurs documentaires, chemins locaux → chemins génériques)
 - [ ] `.gitleaksignore` vidé (ou supprimé) ; la garde `leak-guard` (T-303) reste verte sur tout l'arbre
-- [ ] aucune preuve datée n'a perdu son sens (les `evidence` gardent leur structure et leurs dates)
+- [x] aucune preuve datée n'a perdu son sens (les `evidence` gardent leur structure et leurs dates)
 - [ ] garde T-303 verte sur la PR ; aucune valeur réelle dans le diff
 
 ## Notes

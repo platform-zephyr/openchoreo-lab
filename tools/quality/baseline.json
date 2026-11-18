@@ -1,0 +1,131 @@
+{
+  "schema": "quality-baseline.v1",
+  "files": {
+    "tests/appgen/test_appgen.py": {
+      "ruff": 1
+    },
+    "tests/appgen/test_extensions.py": {
+      "lines": 681
+    },
+    "tests/appgen/test_gitops_fixes.py": {
+      "ruff": 1
+    },
+    "tests/appgen/test_platform_loader.py": {
+      "ruff": 1
+    },
+    "tests/checks/test_app_status.py": {
+      "ruff": 8
+    },
+    "tests/mcp/matrix.py": {
+      "ruff": 22
+    },
+    "tests/mcp/mcp.py": {
+      "ruff": 1
+    },
+    "tests/mcp/thunder.py": {
+      "ruff": 3
+    },
+    "tools/appgen/appgen.py": {
+      "lines": 1481,
+      "ruff": 8,
+      "mypy": 12
+    },
+    "tools/backlog/check.py": {
+      "ruff": 1
+    },
+    "tools/backlog/identities_lint.py": {
+      "ruff": 1
+    },
+    "tools/backlog/next.py": {
+      "ruff": 1
+    },
+    "tools/backlog/roadmap.py": {
+      "ruff": 25
+    },
+    "tools/backlog/seed.py": {
+      "lines": 1326,
+      "ruff": 147
+    },
+    "tools/oke/argo_guard.py": {
+      "ruff": 3
+    },
+    "tools/oke/psa_check.py": {
+      "ruff": 1
+    }
+  },
+  "functions": {
+    "tests/mcp/matrix.py::main": {
+      "cc": 32,
+      "len": 194
+    },
+    "tools/appgen/appgen.py::_native_errors": {
+      "cc": 41
+    },
+    "tools/appgen/appgen.py::egress_errors": {
+      "cc": 21
+    },
+    "tools/appgen/appgen.py::gateway_errors": {
+      "cc": 20
+    },
+    "tools/appgen/appgen.py::render_component": {
+      "cc": 46,
+      "len": 136
+    },
+    "tools/appgen/appgen.py::render_native": {
+      "cc": 19,
+      "len": 106
+    },
+    "tools/appgen/appgen.py::semantic_check": {
+      "cc": 45,
+      "len": 102
+    },
+    "tools/appgen/appgen.py::validate_all_full": {
+      "cc": 16
+    },
+    "tools/backlog/identities_lint.py::lint": {
+      "cc": 16
+    },
+    "tools/backlog/next.py::compute": {
+      "cc": 27
+    },
+    "tools/backlog/next.py::ready_ids": {
+      "cc": 16
+    },
+    "tools/backlog/seed.py::rule_match": {
+      "cc": 18
+    },
+    "tools/oke/argo_guard.py::Guard.check_apps": {
+      "cc": 37
+    },
+    "tools/oke/argo_guard.py::Guard.check_lab_apps_sources": {
+      "cc": 19
+    },
+    "tools/oke/argo_guard.py::Guard.check_projects": {
+      "cc": 65
+    },
+    "tools/oke/argo_guard.py::Guard.check_synced": {
+      "cc": 23
+    },
+    "tools/oke/argo_guard.py::Guard.synced": {
+      "cc": 16
+    },
+    "tools/oke/argo_guard.py::check_apps": {
+      "cc": 37
+    },
+    "tools/oke/argo_guard.py::check_lab_apps_sources": {
+      "cc": 19
+    },
+    "tools/oke/argo_guard.py::check_projects": {
+      "cc": 65
+    },
+    "tools/oke/argo_guard.py::check_synced": {
+      "cc": 23
+    },
+    "tools/oke/argo_guard.py::synced": {
+      "cc": 16
+    },
+    "tools/oke/psa_check.py::check": {
+      "cc": 48
+    }
+  }
+}

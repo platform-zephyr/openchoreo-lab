@@ -16,3 +16,12 @@ concurrency:
 billing:
   # Une cle API facturee au token exige un plafond mensuel Console (geste MANDAT de Paul). Aucun euro par agent promis.
   api_key_requires_console_monthly_cap: true
+quota:
+  # Ledger et disjoncteur (T-326) : tools/factory/ledger.py. Estimations cote client ; seuils 70/85/100 % : T-314.
+  window_hours: 5
+  week_start: monday_utc
+  results_dir: factory/results
+  # Un resultat « limit » ecrit ce fichier (disjoncteur ouvert : aucun lancement, aucune relance).
+  # Paul reprend a la main au reset annonce : `ledger.py reset --state factory/LIMIT.json`.
+  breaker_state_file: factory/LIMIT.json
+  resume: manual

@@ -1,6 +1,6 @@
 # R8 — --step 8 --apply
 # date : 2026-11-17T20:30:39Z
-$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 8 --apply
+$ /Users/example/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 8 --apply
 20:30:38Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
 20:30:38Z + kubectl delete --ignore-not-found clusterdataplanes.openchoreo.dev default
 error: the server doesn't have a resource type "clusterdataplanes"

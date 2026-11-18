@@ -14,8 +14,8 @@ OKE_ACCESS_DIR="${OKE_ACCESS_DIR:-$HOME/.cache/oke-access}"
 OKE_LOCAL_PORT="${OKE_LOCAL_PORT:-16443}"
 EXPECTED_KUBECONFIG="$OKE_ACCESS_DIR/kubeconfig"
 OKE_CONTEXT_RE="${OKE_CONTEXT_RE:-^context-oracle-a1-}"
-# Plage de l'endpoint API privé (homelab-private-subnet 10.0.2.0/24, OKE-ACCESS.md).
-OKE_TLS_SERVER_RE='^10\.0\.2\.[0-9]+$'
+# Plage de l'endpoint API privé (homelab-private-subnet 203.0.113.0/24, OKE-ACCESS.md).
+OKE_TLS_SERVER_RE="${OKE_TLS_SERVER_RE:-^10\.0\.2\.[0-9]+$}"
 
 # Budget au repos (missions/MISSION.md) appliqué à la pile de l'essai (STACK_NS).
 BUDGET_MEM_MI="${BUDGET_MEM_MI:-1536}"
