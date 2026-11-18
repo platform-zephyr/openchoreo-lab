@@ -41,3 +41,5 @@ Décisions de Paul (2026-11-18, « ok D-1 à D-6 », recommandations du rapport)
 - D-5 : B-09 en `KNOWN_FAIL` au niveau du cas (T-457) ; vraie correction dans la baseline de la VM lab (T-363).
 - D-6 : déclencheur par label `k3d` autorisé (`pull_request: types: [labeled]`, label seul). Fait.
 Reste ouvert : critère 3 (le `schedule` nocturne) à la fin de S1.
+
+Relevé des préalables (2026-11-18, STATIC, lecture du dépôt `origin/main` abb7563 ; détail : rapport, section « Préalables de la réactivation nocturne ») : T-456 et T-457 faits (RUNTIME) ; T-458 en cours ; la suite `k3d` reste rouge (T01g, T02-T06, T03f, FAIL préexistants, run 44313410652) : pas de dispatch vert sur `main`. Critère 3 : NOT_PROVEN, à ne pas cocher. Reste : un ticket pour classer ces FAIL, puis le `schedule` à la fin de S1.
