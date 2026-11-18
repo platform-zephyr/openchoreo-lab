@@ -1,17 +1,26 @@
 {
   "always_loaded": {
-    "AGENTS.md": {"max_lines": 60, "max_bytes": 5000},
-    "CLAUDE.md": {"max_lines": 10, "max_bytes": 600},
-    "STATE.md": {"max_lines": 60, "max_bytes": 6000}
+    "AGENTS.md": {
+      "max_lines": 60,
+      "max_bytes": 5000
+    },
+    "CLAUDE.md": {
+      "max_lines": 10,
+      "max_bytes": 600
+    },
+    "STATE.md": {
+      "max_lines": 60,
+      "max_bytes": 6000
+    }
   },
-  "always_loaded_total": {"max_lines": 130, "max_bytes": 11000},
+  "always_loaded_total": {
+    "max_lines": 130,
+    "max_bytes": 11000
+  },
   "freshness_required": {
     "STATE.md": 7,
     "missions/MISSION.md": 30
   },
   "skill_description_max_chars": 450,
-  "deny": [],
-  "pending": {
-    "STATE.md": "T-041, réécriture réservée à la session coordinatrice (retirer cette entrée ensuite)"
-  }
+  "deny": []
 }
