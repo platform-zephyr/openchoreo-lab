@@ -6,8 +6,8 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 25 |
-| `todo` | 128 |
+| `in-progress` | 26 |
+| `todo` | 127 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 28 |
@@ -19,6 +19,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | Ticket | Titre | Critères | Reste | Issue |
 |---|---|---|---|---|
 | [T-002](T-002-ci-k3d.md) | CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue | 3/4 | Reste : critère 4 exige un run GitHub réel (NOT_TESTED, aucun run possible depuis cette session). `development` : le bootstrap ne l'invente plus si `platform/` le fournit (STATIC, yq 4.54.3 testé avec un faux manifeste). `docs/research/GITHUB-CONFIG.md` est a… | — |
+| [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 3/9 | Reste : (a) `lint_runbooks.py` et `tests/observe` ne sont pas appelés par `tools/dev/check` ni `ci.yaml` (fichiers chauds, hors périmètre) ; (b) `golden-paths/_checks/status_json.py` n'émet pas encore `cause.nature` ; (c) la planification OpenTofu (homelab-in… | — |
 | [T-201](T-201-data-2.md) | Ingestion GitHub vers Parquet et métriques DORA par agent | 7/7 | (ligne « Reste » absente) | — |
 | [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | 5/7 | Reste à faire : (1) rapport de recoupement (`next.py --overlap-report <ids>`) : sur la liste figée de 20 tickets, 28 paires se recoupent et 21 ne sont pas sérialisées par une dépendance (surtout `tests/` et `docs/` trop larges : T-072, T-050, T-216) ; les sér… | — |
 | [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md) | Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes) | 4/5 | Premier critère ouvert : (repris de HAR-6) même script en local, en CI et dans le hook Stop (T-331) ; seuls fichier et ligne sont affichés, jamais la valeur | — |
@@ -63,7 +64,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-001](T-001-integrer-pr8-security-bundle.md) | 86 | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0/3 | — |
 | [T-214](T-214-appgen-modulaire.md) | 72 | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 0/4 | — |
 | [T-041](T-041-context-engineering.md) | 8 | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
-| [T-100](T-100-obs-0.md) | 4 | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
 | [T-050](T-050-verdicts-kube-ops.md) | 3 | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
 | [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
@@ -145,7 +145,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-071](T-071-doc-utilisateur.md) | 0 | Guide utilisateur : demander, suivre, annuler, déposer un secret | T-023 (todo), T-043 (todo) | — |
 | [T-186](T-186-ids-7.md) | 0 | Golden path utilisateur : arrivée et départ (users/<id>.yaml) | T-185 (todo) | — |
 | [T-101](T-101-obs-1.md) | 0 | Collecte : Alloy de kube-ops réutilisé, budget de séries, sondes depuis healthPath | T-140 (todo) | — |
-| [T-111](T-111-obs-11.md) | 0 | Drill de bout en bout : échec d'app -> alerte -> agent -> PR ou ntfy | T-100 (todo), T-106 (todo), T-107 (todo) | — |
+| [T-111](T-111-obs-11.md) | 0 | Drill de bout en bout : échec d'app -> alerte -> agent -> PR ou ntfy | T-100 (in-progress), T-106 (todo), T-107 (todo) | — |
 | [T-125](T-125-upg-6.md) | 0 | File sérialisée des montées en development et garde de budget | T-004 (todo), T-124 (todo), T-140 (todo) | — |
 | [T-131](T-131-upg-12.md) | 0 | Montées stateful : précondition de sauvegarde fraîche et restauration prouvée | T-026 (todo), T-027 (todo), T-122 (todo) | — |
 | [T-168](T-168-ai-9.md) | 0 | Bac d'exécution éphémère (agent-sandbox) pour le code lancé par les agents | T-160 (todo), T-163 (todo) | — |
@@ -173,13 +173,13 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-065](T-065-sante-periodique-alertes.md) | 3 | CronJob de statut périodique (réduit : sondes → T-103, revert → T-106, ntfy → T-107) | T-005 (todo), T-015 (todo) | — |
 | [T-181](T-181-ids-2.md) | 3 | Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao | T-022 (todo), T-190 (todo), T-404 (todo) | — |
 | [T-160](T-160-ai-1.md) | 3 | gVisor et vcluster jetables pour les agents sur le cluster lab | T-364 (todo) | — |
-| [T-107](T-107-obs-7.md) | 2 | Escalade ntfy : contact points, script de notification, route différée | T-100 (todo) | — |
+| [T-107](T-107-obs-7.md) | 2 | Escalade ntfy : contact points, script de notification, route différée | T-100 (in-progress) | — |
 | [T-132](T-132-upg-13.md) | 2 | Runbook et preflight de montée Kubernetes OKE (nœud unique) | T-001 (todo), T-140 (todo) | — |
 | [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | 1 | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | T-303 (in-progress), T-305 (in-progress), T-311 (in-progress), T-313 (in-progress), T-411 (in-progress) | — |
 | [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) | 1 | ntfy seulement si nécessaire et résumé quotidien unique | T-314 (todo) | — |
 | [T-437](T-437-durcir-executant-environnement.md) | 1 | Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteu… | T-313 (in-progress), T-431 (todo) | — |
 | [T-211](T-211-porte-openchoreo.md) | 1 | Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04) | T-031 (todo), T-044 (todo), T-050 (todo), T-212 (todo), T-364 (todo) | — |
-| [T-106](T-106-obs-6.md) | 1 | Pont alerte -> agent : workflow remediate, dédoublonnage, budget, disjoncteur | T-005 (todo), T-100 (todo), T-164 (todo) | — |
+| [T-106](T-106-obs-6.md) | 1 | Pont alerte -> agent : workflow remediate, dédoublonnage, budget, disjoncteur | T-005 (todo), T-100 (in-progress), T-164 (todo) | — |
 | [T-405](T-405-rotation-complete-final.md) | 1 | Rotation complète des secrets et identités du registre (FINAL) | T-404 (todo) | — |
 | [T-301](T-301-reecriture-de-l-historique-et-purge.md) | 0 | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | T-303 (in-progress) | — |
 | [T-433](T-433-protection-tags.md) | 0 | Protection des tags : core-baseline et v* (ruleset de type tag) | T-305 (in-progress) | — |
@@ -187,7 +187,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-315](T-315-merge-automatique-sous-conditions-app-de.md) | 0 | Merge automatique sous conditions : auto-merge natif pendant le dev, App de merge en FINAL | T-210 (in-progress), T-321 (todo) | — |
 | [T-218](T-218-acter-adr-0014-0019.md) | 0 | Acter les ADR 0014-0019 après le MVP | T-211 (todo) | — |
 | [T-147](T-147-cost-8.md) | 0 | Alertes de coût : relier billing_cost_eur et cost-evidence à ntfy, règle de fraîcheur | T-026 (todo), T-065 (todo), T-140 (todo) | — |
-| [T-109](T-109-obs-9.md) | 0 | Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane | T-022 (todo), T-100 (todo), T-107 (todo), T-364 (todo) | — |
+| [T-109](T-109-obs-9.md) | 0 | Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane | T-022 (todo), T-100 (in-progress), T-107 (todo), T-364 (todo) | — |
 | [T-193](T-193-ids-14.md) | 0 | Nettoyage Doppler : clés obsolètes, jetons orphelins, projets vides, liste fermée en CI | T-181 (todo), T-192 (todo) | — |
 | [T-194](T-194-ids-15.md) | 0 | Rotation et échéances : jetons Doppler, clés d'agents, secrets OIDC, clé de seal | T-181 (todo), T-184 (todo) | — |
 | [T-195](T-195-ids-16.md) | 0 | Audit : OpenBao, Doppler, Authentik ; rapport « qui a lu quoi » et alertes | T-065 (todo), T-184 (todo) | — |
