@@ -2,12 +2,13 @@
 id: T-060
 title: "Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL)"
 status: todo
-phase: P0
+phase: P2
 adr: [0006]
-depends_on: [T-001]
+depends_on: [T-001, T-061]
 class: REVUE
 velocity: false
 lane: socle-oke
+stage: I2
 github_issue: null
 ---
 # T-060 — Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL)

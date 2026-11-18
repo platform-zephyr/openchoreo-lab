@@ -23,6 +23,8 @@ Décisions liées : ADR-0002, ADR-0005, ADR-0011, ADR-0013 (l'humain parle en la
 4. **Opérer = modifier l'intention.** Mettre à jour, promouvoir, mettre à l'échelle, retirer ou revenir en arrière se fait
    par une PR sur `app.yaml` (ou `git revert`). Les verbes `appgen` (`new`, `check`, `promote`, `retire`) sont des
    aides pour écrire cette PR.
+6. **Le contrat est indépendant du moteur** (consensus du 2026-11-18) : `app.yaml` peut être rendu vers OpenChoreo ou
+   vers un backend « plain » (chart commun + Argo), comparés à la porte d'adoption (ADR-0020).
 5. **Le contrat ne grossit que par champs optionnels** avec valeurs par défaut sûres. Un besoin hors contrat = archétype
    F (refus motivé) ou évolution du contrat par PR plateforme, jamais un échappatoire libre (`extraManifests`…).
 

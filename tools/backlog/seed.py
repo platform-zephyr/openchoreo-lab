@@ -374,6 +374,140 @@ new("T-210","dispatcher-agents","Dispatcher : tickets prêts → un agent par ti
   ["`tools/backlog/next.py` liste les tickets prêts triés (vélocité, nombre de tickets débloqués)", "workflow : déclenchement par Paul ou planifié, plafond global et par couloir (COST-6)", "condition `SmadjaPaul` du workflow d'agent remplacée par une identité de dispatch bornée", "preuve : 3 tickets indépendants traités en parallèle, 3 PR vertes"],
   "Plus gros accélérateur : sans lui, chaque lancement d'agent attend un humain.")
 X["T-210"]["velocity"]=True; X["T-210"]["lane"]="ci"
+
+# ===== Consensus avec la revue adverse (2026-11-18, docs/review/CONSENSUS.md) =====
+def mk(id, slug, title, phase, adr, deps, cls, scope, intent, done, notes="", velocity=False, lane="divers"):
+    t(id, slug, title, phase, adr, deps, cls, scope, intent, done, notes); X[id]=T[-1]; T[-1]["velocity"]=velocity; T[-1]["lane"]=lane
+mk("T-215","pack-identite","Pack identité : compte agent (rôle Write) et GitHub App plateforme","P0",["0002"],["T-007"],"MANDAT",
+   "docs/AGENT-IDENTITY.md, .github/",
+   "Une identité agent sans droit d'admin et une seule GitHub App (statut de commit, Renovate, dispatch, remédiation). Aucun agent n'agit avec le compte admin de Paul.",
+   ["compte agent rôle Write créé par Paul", "GitHub App plateforme installée sur ce dépôt seulement, permissions minimales listées", "essai réel : une PR du noyau ouverte par l'agent n'est pas fusionnable"],
+   "Absorbe les parties GitHub de T-005, T-106, T-121, T-164 et T-210.", True, "gouvernance")
+mk("T-217","vap-default-deny","VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny","P0",["0006","0002"],["T-002"],"REVUE",
+   "platform/policies/, tests/vap/",
+   "Rendre le default-deny réseau non contournable même si un agent modifie un ProjectType.",
+   ["VAP + test de refus en CI k3d", "preuve sur k3d datée"], "", False, "securite")
+mk("T-211","porte-openchoreo","Porte d'adoption OpenChoreo : mesurer C1-C5 et décision de Paul (2026-12-04)","P1",["0020"],["T-044","T-031","T-140","T-212","T-213"],"MANDAT",
+   "docs/review/, docs/adr/0020-porte-adoption-openchoreo.md",
+   "Rapport daté des critères C1-C5 et décision adopter/abandonner (ADR-0020), avec les règles en cas d'échec d'une voie.",
+   ["C1 à C5 mesurés avec preuves", "décision de Paul consignée dans ADR-0020", "tickets `deferred` dégelés ou `dropped` selon la décision"], "", False, "gouvernance")
+mk("T-212","backend-plain","Backend « plain » d'appgen (spike 3 jours) : chart commun + Argo par cluster","P1",["0001","0020"],["T-061","T-214"],"AUTONOME",
+   "tools/appgen/ (backend séparé), platform/plain/",
+   "Rendre le même `app.yaml` sans OpenChoreo (inspiré de `platform-app` et `apps-generated` de kube-ops) pour comparer à la porte (C5).",
+   ["une app A sur le homelab via le backend plain, PASS runtime daté", "même suite `_checks`", "mesures : délai, lignes et tickets propres au moteur"], "Échec = pas d'app A Ready avec PASS après 3 jours d'agent (ADR-0020 §3).", False, "moteur-plain")
+mk("T-213","argo-unique-oke","Un seul Argo CD sur OKE et nomenclature OKE figée (D4)","P1",["0003"],["T-001","T-061"],"REVUE + MANDAT",
+   "platform/install/argocd/, docs/architecture/",
+   "Fusionner les Argo sur OKE (AppProject borné), trancher l'emplacement d'Authentik, sortir Backstage d'OKE, mesurer la nomenclature (≤ 33 pods, ≤ 70 %).",
+   ["un seul Argo sur OKE, preuve datée", "nomenclature mesurée et versionnée", "emplacement d'Authentik décidé par Paul"], "", False, "socle-oke")
+mk("T-214","appgen-modulaire","Découper appgen en modules (avant le couloir contrat)","P1",["0001","0005"],["T-061"],"AUTONOME",
+   "tools/appgen/, tests/appgen/",
+   "Le fichier unique de ~1 500 lignes limite le couloir contrat à 1 agent ; des modules permettent plusieurs agents en parallèle.",
+   ["modules par domaine (schéma, rendu OpenChoreo, Argo, réseau, données…)", "137 tests et plus toujours verts, `appgen check` sans dérive"], "", True, "contrat-appgen")
+mk("T-216","ci-registre","CI extensible par registre de suites","P1",["0002"],["T-002","T-007"],"REVUE",
+   ".github/workflows/, tests/registry.yaml",
+   "Ajouter une suite de tests sans toucher `.github/` : un registre (noyau pour les suites de garde, libre pour les autres) lu par un job générique.",
+   ["registre + job générique", "ajout d'une suite non-garde sans revue prouvé"], "", True, "ci")
+mk("T-218","acter-adr-0014-0019","Acter les ADR 0014-0019 après le MVP","P2",["0014","0015","0016","0017","0018","0019"],["T-211"],"MANDAT",
+   "docs/adr/", "Seconde moitié de l'ancien T-061 : décisions secrets, observabilité, montées, coût, IA, data platform, une fois le moteur choisi.",
+   ["ADR actés ou amendés", "seal OpenBao tranché par Paul"], "", False, "gouvernance")
+# T-061 = T-061a
+X["T-061"]["title"]="Acter les ADR 0001-0006, 0010-0013 et 0020, réaligner MISSION sur le homelab"
+X["T-061"]["done"]=["ADR 0001-0006, 0010-0013, 0020 actés (ou amendés)", "MISSION.md réaligné : homelab par défaut, OKE sur demande, interdits réécrits en classes, critère « plateforme finie »", "AGENTS.md et STATE.md sans contradiction"]
+# Fusions et suppressions
+def drop(old, into, why):
+    if old in X:
+        X[old]["status"]="dropped"; X[old]["notes"]=(X[old]["notes"]+f"\n\n{why} (consensus du 2026-11-18)." + (f" Fusionné dans {into}." if into else "")).strip()
+        if into: X[into]["done"] += [f"(repris de {old}) {d}" for d in X[old]["done"]]
+for o in ("T-141","T-142"): drop(o,"T-140","Fusion coût")
+drop("T-143","T-026","Mesure R2 avec les sauvegardes")
+drop("T-187","T-186","Golden path utilisateur unique (arrivée et départ)")
+for o in ("T-182","T-191"): drop(o,"T-181","Migration Doppler en une séance MANDAT")
+drop("T-202","T-201","Ingestion et DORA ensemble")
+for o in ("T-102","T-103"): drop(o,"T-101","Collecte : Alloy de kube-ops réutilisé")
+for o in ("T-104","T-108"): drop(o,"T-100","Contrat d'alerte, règles et runbooks ensemble")
+drop("T-105","T-005","Statut publié par la preuve automatique")
+drop("T-110","T-106","Journal d'incident avec la remédiation")
+for o in ("T-112","T-144","T-146","T-169","T-170"): drop(o,None,"Supprimé par la revue adverse")
+X["T-186"]["title"]="Golden path utilisateur : arrivée et départ (users/<id>.yaml)"
+X["T-181"]["title"]="Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao"
+X["T-201"]["title"]="Ingestion GitHub vers Parquet et métriques DORA par agent"
+X["T-101"]["title"]="Collecte : Alloy de kube-ops réutilisé, budget de séries, sondes depuis healthPath"
+X["T-100"]["title"]="Contrat d'alerte, règles génériques et runbooks lisibles par agent"
+# Revert : un seul propriétaire (T-106)
+for k in ("T-065","T-124"):
+    X[k]["done"]=[d for d in X[k]["done"] if "revert" not in d.lower()]
+X["T-124"]["deps"]=[d for d in X["T-124"]["deps"] if d!="T-065"]
+X["T-106"]["done"]+=["seul propriétaire du revert automatique", "jamais une seconde PR d'agent sur une même (app, env) sans humain"]
+X["T-120"]["done"]+=["pas d'automerge des digests d'actions ni d'apps avant T-124", "fichier de refus de versions lu par Renovate (ajout seul)"]
+# Dispatcher réduit
+X["T-210"]["deps"]=["T-008","T-215","T-007"]
+X["T-210"]["done"]=["`tools/backlog/next.py` liste les tickets prêts (vélocité, débloqués)", "workflow_dispatch déclenché par Paul avec une liste d'ID ; pas de planification en S0", "classe recalculée depuis les chemins touchés, pas lue dans l'en-tête", "plafond 4, contrat de mission d'Atlas (max_attempts 2, ressources exclusives)", "preuve : 3 PR parallèles sur couloirs distincts (hors contrat-appgen avant T-214) ; une PR du noyau lancée par le dispatcher reste non fusionnable"]
+X["T-007"]["done"]+=["compare CODEOWNERS aux scripts appelés par ci.yaml et aux ADR 0002/0014/0016/0017/0019", "essai réel avec l'identité agent (T-215)"]
+X["T-007"]["deps"]=["T-215"]; X["T-215"]["deps"]=[]
+X["T-005"]["deps"]=sorted(set(X["T-005"]["deps"]+["T-215"])); X["T-106"]["deps"]=sorted(set(X["T-106"]["deps"]+["T-215"]))
+X["T-121"]["deps"]=sorted(set([d for d in X["T-121"]["deps"] if d!="T-164"]+["T-215"]))
+# OpenBao : pas de migration avant drill
+X["T-022"]["done"]+=["pod OpenBao inscrit dans la nomenclature OKE avant installation", "exercice perte + restauration réussi et daté AVANT toute migration"]
+X["T-181"]["deps"]=sorted(set(X["T-181"]["deps"]+["T-022","T-190"]) - {"T-181"})
+X["T-026"]["done"]+=["mots de passe de bases par rôles gérés CNPG (sans Doppler ni OpenBao)"]
+# MVP réduit
+X["T-044"]["title"]="Banc d'essai de 5 intentions A (MVP)"; X["T-044"]["done"]=["5 intentions A écrites", "5/5 PASS runtime sur le homelab, délai médian ≤ 30 min (C1)", "rapport daté"]
+X["T-040"]["done"]=["format + 5 recettes", "CI : digest existant et arm64"]
+X["T-050"]["deps"]=["T-008"]
+X["T-029"]["status"]="blocked"; X["T-029"]["notes"]+="\n\nBloqué par : déclencheur ADR-0009 §6 non atteint."
+X["T-076"]["status"]="blocked"; X["T-076"]["notes"]+="\n\nBloqué par : déclencheur ADR-0009 §6 non atteint."
+X["T-028"]["deps"]=[d for d in X["T-028"]["deps"] if d not in ("T-029",)]
+X["T-028"]["done"]+=["v1 : application Access wildcard (Tofu, une fois) + routes déclarées"]
+DEFER=["T-006","T-042","T-127","T-129","T-130","T-133","T-134","T-135","T-136","T-137","T-138","T-128","T-126","T-014","T-013","T-073","T-205","T-206","T-207","T-208","T-209","T-052","T-077","T-063"]
+for k in DEFER:
+    if k in X and X[k].get("status","todo")=="todo":
+        X[k]["status"]="deferred"; X[k]["notes"]=(X[k]["notes"]+"\n\nDifféré après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).").strip()
+# Étapes
+STAGE={}
+for k in ["T-007","T-215","T-217","T-002","T-001","T-061","T-008","T-210","T-041"]: STAGE[k]="S0"
+for k in ["T-072","T-005","T-216"]: STAGE[k]="S1"
+for k in ["T-030","T-212","T-214","T-062","T-145","T-213"]: STAGE[k]="S2"
+for k in ["T-003","T-010","T-015","T-043","T-040","T-044","T-050","T-004","T-070","T-031","T-140"]: STAGE[k]="S3"
+STAGE["T-211"]="PORTE"
+for k in ["T-025","T-026","T-027","T-069","T-075","T-012","T-067"]: STAGE[k]="I1"
+for k in ["T-011","T-014"]: STAGE[k]="I1bis"
+for k in ["T-060","T-074","T-022","T-184","T-183","T-023","T-164","T-185","T-189","T-186","T-051","T-071","T-218","T-194","T-195"]: STAGE[k]="I2"
+for k in ["T-028","T-020","T-021"]: STAGE[k]="I3"
+for k in ["T-100","T-101","T-106","T-107","T-111","T-065","T-109","T-147"]: STAGE[k]="I4"
+for k in ["T-120","T-121","T-122","T-123","T-124","T-125","T-131","T-132"]: STAGE[k]="I5"
+for k in ["T-181","T-190","T-192","T-193"]: STAGE[k]="I6"
+for k in ["T-160","T-161","T-162","T-163","T-165","T-166","T-167","T-168","T-171"]: STAGE[k]="I7"
+for k in ["T-201","T-203","T-204"]: STAGE[k]="I8"
+for x in T:
+    x["stage"]=STAGE.get(x["id"], "après-porte" if x.get("status") in ("deferred","blocked") else ("—" if x.get("status")=="dropped" else "I9"))
+# T-061 prérequis explicite
+EXEMPT={"T-061","T-001","T-002","T-007","T-215","T-217","T-008","T-041"}
+for x in T:
+    if x.get("status","todo") in ("todo",) and x["id"] not in EXEMPT and "T-061" not in x["deps"]:
+        x["deps"]=sorted(x["deps"]+["T-061"])
+
+
+# ===== Ajustements d'étapes =====
+X["T-145"]["deps"]=["T-061","T-215"]
+X["T-003"]["stage"]="S1"
+X["T-051"]["stage"]="I3"
+X["T-026"]["deps"]=[d for d in X["T-026"]["deps"] if d!="T-023"]
+X["T-194"]["stage"]="I6"; X["T-195"]["stage"]="I6"
+# ===== Nettoyage post-consensus =====
+MERGE={"T-141":"T-140","T-142":"T-140","T-143":"T-026","T-187":"T-186","T-182":"T-181","T-191":"T-181","T-202":"T-201",
+       "T-102":"T-101","T-103":"T-101","T-104":"T-100","T-108":"T-100","T-105":"T-005","T-110":"T-106"}
+DROP={k for k,x in X.items() if x.get("status")=="dropped"}
+for x in T:
+    nd=set()
+    for d in x["deps"]:
+        d=MERGE.get(d,d)
+        if d in DROP: continue
+        if d!=x["id"]: nd.add(d)
+    x["deps"]=sorted(nd)
+X["T-190"]["deps"]=[d for d in X["T-190"]["deps"] if d!="T-181"]
+SP={"S0":"P0","S1":"P0","S2":"P1","S3":"P1","PORTE":"P1","I1":"P2","I1bis":"P2","I2":"P2","I3":"P2","I4":"P3","I5":"P3","I6":"P3","I7":"P4","I8":"P4","I9":"P4","après-porte":"P5"}
+for x in T:
+    if x.get("stage") in SP: x["phase"]=SP[x["stage"]]
 PH = {"P0":"Fondations : débloquer l'autonomie","P1":"Golden path complet","P2":"Primitives (sécurité, secrets, identité, données, exposition)","P3":"Hybride OKE + homelab","P4":"Intention en langage naturel et connaissance","P5":"Migration depuis kube-ops"}
 for x in T:
     deps = "[" + ", ".join(x["deps"]) + "]"
@@ -388,6 +522,7 @@ depends_on: {deps}
 class: {x['cls']}
 velocity: {str(x.get('velocity', False)).lower()}
 lane: {x.get('lane','divers')}
+stage: {x.get('stage','I9')}
 {('github_issue: ' + str(x['issue'])) if x['issue'] else 'github_issue: null'}
 ---
 # {x['id']} — {x['title']}

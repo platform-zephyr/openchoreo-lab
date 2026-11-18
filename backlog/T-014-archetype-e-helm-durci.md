@@ -1,13 +1,14 @@
 ---
 id: T-014
 title: "Archétype E : chart Helm tiers encapsulé dans une cellule durcie (G7)"
-status: todo
-phase: P1
+status: deferred
+phase: P2
 adr: [0005, 0006]
 depends_on: [T-010]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
+stage: I1bis
 github_issue: null
 ---
 # T-014 — Archétype E : chart Helm tiers encapsulé dans une cellule durcie (G7)
@@ -22,3 +23,6 @@ tools/appgen/, golden-paths/E-*/, tests/
 - [ ] rendu refusé si objet cluster-scoped, RBAC, LB, privileged
 - [ ] template + checklist + suite k3d
 - [ ] une app réelle du catalogue kube-ops en preuve
+
+## Notes
+Différé après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).

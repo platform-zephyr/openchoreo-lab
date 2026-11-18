@@ -4,10 +4,11 @@ title: "Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4)"
 status: todo
 phase: P1
 adr: [0005]
-depends_on: [T-001, T-002]
+depends_on: [T-001, T-002, T-061]
 class: AUTONOME
 velocity: true
 lane: contrat-appgen
+stage: S3
 github_issue: null
 ---
 # T-010 — Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4)

@@ -4,10 +4,11 @@ title: "Garde du contrat : compatibilité du schéma et aucun objet Kubernetes h
 status: todo
 phase: P1
 adr: [0001, 0005]
-depends_on: [T-002]
+depends_on: [T-002, T-061]
 class: REVUE
 velocity: true
 lane: ci
+stage: S3
 github_issue: null
 ---
 # T-070 — Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/`

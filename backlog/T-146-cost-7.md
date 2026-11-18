@@ -1,13 +1,14 @@
 ---
 id: T-146
 title: "Coût par app en monnaie de CPU/Go (sans OpenCost)"
-status: todo
+status: dropped
 phase: P3
 adr: [0004, 0017]
-depends_on: [T-010, T-141]
+depends_on: [T-010, T-140]
 class: AUTONOME
 velocity: false
 lane: observabilité
+stage: —
 github_issue: null
 ---
 # T-146 — Coût par app en monnaie de CPU/Go (sans OpenCost)
@@ -27,3 +28,5 @@ tools/appgen/ (calcul requests/volumes), tools/cost/app_footprint.py, docs/
 OpenCost dépend de l'observability plane, lourd sur un nœud A1 à ~260m de marge avant 70 %.
 
 Proposé par la recherche `cost` (clé T-146).
+
+Supprimé par la revue adverse (consensus du 2026-11-18).

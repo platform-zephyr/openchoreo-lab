@@ -1,13 +1,14 @@
 ---
 id: T-042
 title: "Atlas : entrée de catalogue et skill de routage d'intention"
-status: todo
-phase: P4
+status: deferred
+phase: P5
 adr: [0012, 0013]
 depends_on: [T-041]
 class: REVUE + MANDAT
 velocity: false
 lane: connaissance
+stage: après-porte
 github_issue: null
 ---
 # T-042 — Atlas : entrée de catalogue et skill de routage d'intention
@@ -25,3 +26,5 @@ dépôt Atlas (PR séparée)
 
 ## Notes
 Accès en écriture au dépôt Atlas à donner par Paul.
+
+Différé après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).

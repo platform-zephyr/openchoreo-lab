@@ -41,6 +41,19 @@ ADR-0007, ADR-0008, ADR-0009 ; `docs/architecture/DECISIONS-OPEN.md` D2, `docs/s
    sinon Raft sur un petit volume : tout nouveau volume OCI reste un MANDAT de Paul), **auto-unseal** par une clé hors cluster (OCI Vault ou transit), sauvegarde
    chiffrée hors Oracle avec restauration prouvée (ADR-0008, classe `irreplaceable`).
 
+7. **Amendement (consensus du 2026-11-18)** :
+   - mots de passe de bases = **rôles gérés CNPG** (générés dans le cluster, réalignés à la restauration) : aucun passage
+     par Doppler, aucune dépendance à OpenBao pour le MVP ; OpenBao reste la cible de **tous les autres** secrets
+     internes (OIDC, `provided`, clés LLM, jetons inter-services) et arrive en I2, juste après le MVP ;
+   - **seal statique** proposé (clé dans Doppler `seal`, livrée au seul pod, clés de récupération hors ligne), avec la
+     mise en garde écrite : il ne protège guère mieux qu'un Secret contre un administrateur du cluster ; **décision
+     finale à Paul** ;
+   - **aucune migration** depuis Doppler avant un exercice de perte et de restauration d'OpenBao réussi et daté (T-022) ;
+   - le pod OpenBao entre dans la nomenclature OKE (ADR-0003 §8) **avant** l'installation ;
+   - clés LLM : lues par le **seul** namespace du gateway (ADR-0018) ;
+   - une panne d'OKE bloque les nouveaux déploiements et rotations du homelab, pas les pods en cours ; test : homelab
+     coupé 10 min, apps Ready, un déploiement qui demande un secret nouveau passe BLOCKED typé.
+
 ## Conséquences
 - Lève le principal geste humain par app ; rend la promesse d'ADR-0013 (« installe X » sans préparation) tenable.
 - Coût : 1 pod (~100-250 Mi [E]), une sauvegarde de plus, un déscellement à prouver ; OpenBao devient une

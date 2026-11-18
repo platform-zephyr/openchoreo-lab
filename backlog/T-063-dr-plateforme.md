@@ -1,13 +1,14 @@
 ---
 id: T-063
 title: "Reprise après sinistre de la plateforme : runbook de reconstruction et drill"
-status: todo
-phase: P2
+status: deferred
+phase: P5
 adr: [0008, 0003]
 depends_on: [T-022, T-062]
 class: AUTONOME + MANDAT
 velocity: false
 lane: exploitation
+stage: après-porte
 github_issue: null
 ---
 # T-063 — Reprise après sinistre de la plateforme : runbook de reconstruction et drill
@@ -22,3 +23,6 @@ docs/runbooks/, tests/
 - [ ] runbook ordonné avec RTO
 - [ ] drill complet sur k3d en CI ou manuel daté
 - [ ] liste des secrets racines nécessaires (Doppler) sans valeurs
+
+## Notes
+Différé après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).

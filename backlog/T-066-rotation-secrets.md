@@ -8,6 +8,7 @@ depends_on: [T-023]
 class: MANDAT
 velocity: false
 lane: secrets
+stage: —
 github_issue: null
 ---
 # T-066 — Rotation et échéances des secrets et jetons racines

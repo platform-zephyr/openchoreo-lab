@@ -4,10 +4,11 @@ title: "Spike OpenBao : placement, stockage, déscellement, sauvegarde"
 status: todo
 phase: P2
 adr: [0014]
-depends_on: []
+depends_on: [T-061]
 class: AUTONOME + MANDAT
 velocity: false
 lane: secrets
+stage: I2
 github_issue: null
 ---
 # T-022 — Spike OpenBao : placement, stockage, déscellement, sauvegarde
@@ -24,3 +25,5 @@ docs/storage/, platform/ (brouillon), tests/
 - [ ] drill perte + restauration
 - [ ] backend sans nouveau volume OCI, sinon MANDAT explicite pour le volume
 - [ ] MANDAT Paul : clé d'auto-unseal, stockage des clés de récupération (Doppler + hors ligne)
+- [ ] pod OpenBao inscrit dans la nomenclature OKE avant installation
+- [ ] exercice perte + restauration réussi et daté AVANT toute migration

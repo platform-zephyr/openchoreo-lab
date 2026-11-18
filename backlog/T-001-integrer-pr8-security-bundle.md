@@ -8,6 +8,7 @@ depends_on: []
 class: REVUE
 velocity: true
 lane: socle-oke
+stage: S0
 github_issue: null
 ---
 # T-001 — Fusionner la PR #8 (installation fail-closed avec le security bundle)

@@ -8,6 +8,7 @@ depends_on: [T-023, T-061, T-074]
 class: REVUE
 velocity: false
 lane: identite
+stage: —
 github_issue: null
 ---
 # T-024 — Identité déclarée : `identity.mode: oidc | proxy | none`

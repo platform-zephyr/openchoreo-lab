@@ -2,12 +2,13 @@
 id: T-051
 title: "Première app familiale complète (OIDC + base + sauvegarde) sur le homelab"
 status: todo
-phase: P5
+phase: P2
 adr: [0007, 0008, 0014, 0003]
-depends_on: [T-020, T-021, T-027, T-031, T-040, T-043, T-189]
+depends_on: [T-020, T-021, T-027, T-031, T-040, T-043, T-061, T-189]
 class: AUTONOME
 velocity: false
 lane: apps
+stage: I3
 github_issue: null
 ---
 # T-051 — Première app familiale complète (OIDC + base + sauvegarde) sur le homelab

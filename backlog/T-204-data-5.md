@@ -2,12 +2,13 @@
 id: T-204
 title: "Grille de maturité cloud native CNCF automatisée (niveaux 1-5)"
 status: todo
-phase: P2
+phase: P4
 adr: [0019]
-depends_on: [T-072, T-201]
+depends_on: [T-061, T-072, T-201]
 class: AUTONOME
 velocity: false
 lane: données
+stage: I8
 github_issue: null
 ---
 # T-204 — Grille de maturité cloud native CNCF automatisée (niveaux 1-5)

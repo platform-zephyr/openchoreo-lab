@@ -4,10 +4,11 @@ title: "Preuve runtime automatique après sync (Job PostSync + publication)"
 status: todo
 phase: P0
 adr: [0011]
-depends_on: [T-003, T-072]
+depends_on: [T-003, T-061, T-072, T-215]
 class: AUTONOME + REVUE + MANDAT
 velocity: true
 lane: preuve
+stage: S1
 github_issue: 51
 ---
 # T-005 — Preuve runtime automatique après sync (Job PostSync + publication)
@@ -22,6 +23,8 @@ platform/ (Job PostSync, SA lecture), golden-paths/_checks/, tools/, tests/
 - [ ] k3d CI : PASS puis FAIL volontaire typé
 - [ ] preuve OKE datée sans coordinateur
 - [ ] Job ≤ 50m / 64Mi, se termine
+- [ ] (repris de T-105) lab_app_status{app,env,verdict,cause_type} visible dans Grafana après un FAIL volontaire (k3d et OKE)
+- [ ] (repris de T-105) Job ≤ 50m / 64Mi (critère T-005 conservé)
 
 ## Notes
 Publication du statut de commit = jeton GitHub (MANDAT). RBAC de lecture à valider contre `argo_guard` (REVUE). Egress de la cellule vers l'API GitHub à déclarer. Supprime le goulot « coordinateur + bastion » pour les apps.

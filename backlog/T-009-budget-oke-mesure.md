@@ -8,6 +8,7 @@ depends_on: [T-001]
 class: AUTONOME
 velocity: false
 lane: cout
+stage: —
 github_issue: null
 ---
 # T-009 — Estimer le budget OKE et tenir le registre des quotas gratuits

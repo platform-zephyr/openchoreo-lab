@@ -1,13 +1,14 @@
 ---
 id: T-006
 title: "MCP OpenChoreo lisible depuis les sessions cloud (Tunnel + Access + authz)"
-status: todo
-phase: P0
+status: deferred
+phase: P5
 adr: [0010, 0007]
 depends_on: [T-001, T-060]
 class: REVUE + MANDAT
 velocity: false
 lane: acces-mcp
+stage: après-porte
 github_issue: 52
 ---
 # T-006 — MCP OpenChoreo lisible depuis les sessions cloud (Tunnel + Access + authz)
@@ -25,3 +26,5 @@ platform/ (NetworkPolicy tunnel → MCP), docs/CLOUD-AGENTS.md, tests/mcp/
 
 ## Notes
 Inclure le déploiement/réglage de cloudflared et sa NetworkPolicy. Access exige normalement deux en-têtes de service token : l'injection en un seul en-tête est une hypothèse à prouver, sinon prévoir un relais.
+
+Différé après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).

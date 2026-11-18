@@ -8,6 +8,7 @@ depends_on: [T-061, T-189]
 class: AUTONOME
 velocity: false
 lane: exposition
+stage: I3
 github_issue: null
 ---
 # T-028 — Exposition `private | internal | public` : route par hôte (G6) et refus « public sans auth »
@@ -22,3 +23,4 @@ docs/schema/, tools/appgen/, platform/
 - [ ] CI : public sans auth → refus
 - [ ] route par hôte rendue
 - [ ] sonde externe : sans session → 302/403
+- [ ] v1 : application Access wildcard (Tofu, une fois) + routes déclarées

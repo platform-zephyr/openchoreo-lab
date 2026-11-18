@@ -4,10 +4,11 @@ title: "Verdict A-F pour chaque app de kube-ops"
 status: todo
 phase: P1
 adr: [0005]
-depends_on: [T-008]
+depends_on: [T-008, T-061]
 class: AUTONOME
 velocity: false
 lane: migration
+stage: S3
 github_issue: null
 ---
 # T-050 — Verdict A-F pour chaque app de kube-ops

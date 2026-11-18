@@ -8,6 +8,7 @@ depends_on: [T-003, T-005]
 class: REVUE
 velocity: false
 lane: exploitation
+stage: —
 github_issue: null
 ---
 # T-064 — Mises à jour : Renovate (digests), montée OpenChoreo, montée OKE/K8s

@@ -4,10 +4,11 @@ title: "Dispatcher : tickets prêts → un agent par ticket, en parallèle par c
 status: todo
 phase: P0
 adr: [0002, 0012, 0013]
-depends_on: [T-008]
+depends_on: [T-007, T-008, T-061, T-215]
 class: REVUE
 velocity: true
 lane: ci
+stage: S0
 github_issue: null
 ---
 # T-210 — Dispatcher : tickets prêts → un agent par ticket, en parallèle par couloir
@@ -19,10 +20,11 @@ Calculer les tickets prêts (dépendances `done`, classe sans geste humain en at
 tools/backlog/, .github/workflows/claude-agent.yml, backlog/README.md
 
 ## Critères de fin
-- [ ] `tools/backlog/next.py` liste les tickets prêts triés (vélocité, nombre de tickets débloqués)
-- [ ] workflow : déclenchement par Paul ou planifié, plafond global et par couloir (COST-6)
-- [ ] condition `SmadjaPaul` du workflow d'agent remplacée par une identité de dispatch bornée
-- [ ] preuve : 3 tickets indépendants traités en parallèle, 3 PR vertes
+- [ ] `tools/backlog/next.py` liste les tickets prêts (vélocité, débloqués)
+- [ ] workflow_dispatch déclenché par Paul avec une liste d'ID ; pas de planification en S0
+- [ ] classe recalculée depuis les chemins touchés, pas lue dans l'en-tête
+- [ ] plafond 4, contrat de mission d'Atlas (max_attempts 2, ressources exclusives)
+- [ ] preuve : 3 PR parallèles sur couloirs distincts (hors contrat-appgen avant T-214) ; une PR du noyau lancée par le dispatcher reste non fusionnable
 
 ## Notes
 Plus gros accélérateur : sans lui, chaque lancement d'agent attend un humain.

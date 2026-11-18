@@ -2,12 +2,13 @@
 id: T-062
 title: "`lab-platform` en synchronisation automatique (hors lab-pg)"
 status: todo
-phase: P0
+phase: P1
 adr: [0002]
-depends_on: [T-001, T-002]
+depends_on: [T-001, T-002, T-061]
 class: REVUE
 velocity: true
 lane: socle-oke
+stage: S2
 github_issue: null
 ---
 # T-062 — `lab-platform` en synchronisation automatique (hors lab-pg)

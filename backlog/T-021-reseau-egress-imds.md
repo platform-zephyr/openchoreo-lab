@@ -4,10 +4,11 @@ title: "Egress déclaré (FQDN Cilium) et IMDS refusé dans toutes les cellules"
 status: todo
 phase: P2
 adr: [0006, 0003]
-depends_on: [T-002, T-030]
+depends_on: [T-002, T-030, T-061]
 class: AUTONOME + MANDAT
 velocity: false
 lane: securite
+stage: I3
 github_issue: null
 ---
 # T-021 — Egress déclaré (FQDN Cilium) et IMDS refusé dans toutes les cellules

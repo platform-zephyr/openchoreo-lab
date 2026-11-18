@@ -2,12 +2,13 @@
 id: T-041
 title: "Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur"
 status: todo
-phase: P1
+phase: P0
 adr: [0012]
 depends_on: []
 class: REVUE
 velocity: true
 lane: connaissance
+stage: S0
 github_issue: null
 ---
 # T-041 — Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur

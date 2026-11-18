@@ -22,6 +22,10 @@ Décisions liées : ADR-0002, ADR-0003, ADR-0011, ADR-0013, D-2026-11-15-05 et D
 6. **OpenChoreo observability plane et SRE agent non déployés** ; à réexaminer sur preuve de besoin, hors OKE.
 7. Chaque incident produit une fiche sans blâme et, si possible, un test ou une règle.
 
+**Amendement (consensus du 2026-11-18)** : réutiliser l'Alloy de kube-ops (PR kube-ops) plutôt qu'un second collecteur ;
+liste fermée des champs d'alerte transmis à l'agent ; **un seul propriétaire du revert automatique (T-106)** ; jamais une
+seconde PR d'agent sur une même (app, env) sans humain.
+
 ## Conséquences
 - Contrat : labels `lab_app/lab_env/cluster`, schéma de charge d'alerte, format de runbook, `cause.type` dans `app-status.v1`.
 - Un workflow `.github/` (noyau, REVUE) et deux jetons (Actions-only, Viewer) créés par Paul (MANDAT).

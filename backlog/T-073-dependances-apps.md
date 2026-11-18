@@ -1,13 +1,14 @@
 ---
 id: T-073
 title: "Dépendances entre apps `dependsOn` (G11)"
-status: todo
-phase: P2
+status: deferred
+phase: P5
 adr: [0005]
 depends_on: [T-021]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
+stage: après-porte
 github_issue: null
 ---
 # T-073 — Dépendances entre apps `dependsOn` (G11)
@@ -22,3 +23,6 @@ docs/schema/, tools/appgen/
 - [ ] tests appgen
 - [ ] NetworkPolicy d'egress ciblée rendue
 - [ ] preuve k3d A → B
+
+## Notes
+Différé après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).

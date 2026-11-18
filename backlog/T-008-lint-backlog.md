@@ -8,6 +8,7 @@ depends_on: []
 class: REVUE
 velocity: true
 lane: ci
+stage: S0
 github_issue: null
 ---
 # T-008 — Check CI des tickets `backlog/`

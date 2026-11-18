@@ -29,13 +29,14 @@ exécutables, pas par des approbations.
 | [0017](0017-cout-free-tier.md) | Coût : rester dans le free tier, garde-fous exécutables | PROPOSÉ |
 | [0018](0018-services-ia.md) | Services IA : sandbox, gateway, identité et audit des IA | PROPOSÉ |
 | [0019](0019-data-platform-mesure.md) | Data platform légère et mesure de la plateforme | PROPOSÉ |
+| [0020](0020-porte-adoption-openchoreo.md) | Porte d'adoption d'OpenChoreo (décision le 2026-12-04) | PROPOSÉ |
 
 Ces ADR ne changent rien au cluster. Un ADR passe d'**PROPOSÉ** à **ACTÉ** par la fusion de la PR qui le modifie,
 approuvée par Paul (`docs/adr/` fait partie du noyau protégé, ADR-0002). Un ADR acté n'est pas réécrit : il est
 **amendé** ou **remplacé** par un nouvel ADR, comme les décisions `D-AAAA-MM-JJ-NN` de homelab-infra.
 
-Les tickets de `backlog/` ne démarrent qu'une fois leurs ADR **ACTÉ** (ticket T-061 : fusion de la PR qui les acte et
-alignement de `missions/MISSION.md`).
+Les tickets de `backlog/` ne démarrent qu'une fois leurs ADR **ACTÉ** : T-061 acte ADR 0001-0006, 0010-0013 et 0020 (prérequis
+explicite des tickets), T-218 acte ADR 0014-0019 après le MVP (consensus du 2026-11-18).
 
 ## Rapport à l'existant
 

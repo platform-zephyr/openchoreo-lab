@@ -1,13 +1,14 @@
 ---
 id: T-207
 title: "Jauges bornées vers Grafana Cloud et alertes sur seuils d'objectif"
-status: todo
-phase: P3
+status: deferred
+phase: P5
 adr: [0019]
 depends_on: [T-065, T-206]
 class: AUTONOME + MANDAT
 velocity: false
 lane: observabilité
+stage: après-porte
 github_issue: null
 ---
 # T-207 — Jauges bornées vers Grafana Cloud et alertes sur seuils d'objectif
@@ -26,3 +27,5 @@ apps/metrics-job/, règles d'alerte
 MANDAT pour la création du jeton Grafana Cloud.
 
 Proposé par la recherche `data-platform` (clé T-207).
+
+Différé après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).

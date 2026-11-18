@@ -1,13 +1,14 @@
 ---
 id: T-144
 title: "Compteur de minutes CI et garde « dépôt public »"
-status: todo
+status: dropped
 phase: P1
 adr: [0002, 0017]
 depends_on: [T-002, T-140]
 class: REVUE
 velocity: false
 lane: ci
+stage: —
 github_issue: null
 ---
 # T-144 — Compteur de minutes CI et garde « dépôt public »
@@ -27,3 +28,5 @@ Agréger durée x multiplicateur des runs par semaine via l'API Actions, vérifi
 .github/ est du noyau protégé (ADR-0002) : REVUE de Paul.
 
 Proposé par la recherche `cost` (clé T-144).
+
+Supprimé par la revue adverse (consensus du 2026-11-18).
