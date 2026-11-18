@@ -37,4 +37,4 @@ tools/factory/stats.py, tests/factory/stats_test.py, docs/research/FACTORY-STATS
 Branchement dans `claude-agent.yml` (job `report`) hors périmètre : PR séparée après T-478 (même fichier). Sert de mesure
 avant/après pour T-478 et pour la recommandation R6 (paquet de contexte).
 
-Reste : aucun (comparaison coût/tours avant/après T-466/T-474/T-478 : NOT_PROVEN, échantillon trop petit ; à refaire quand plus de runs existent).
+Limite connue : la comparaison coût/tours avant/après T-466/T-474/T-478 est NOT_PROVEN (échantillon trop petit) ; à refaire quand plus de runs existent.

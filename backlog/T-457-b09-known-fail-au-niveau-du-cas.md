@@ -30,6 +30,3 @@ tests/vap/run.sh, tests/vap/
 
 ## Notes
 Issu de l'étude T-452 (`docs/research/K3D-REACTIVATION.md` §2) et de la décision de Paul du 2026-11-18. Mode dev : merge après `ci-ok` ; preuve par dispatch manuel de `k3d-integration` sur la branche.
-
-## Reste
-- Dispatch manuel de `k3d-integration` (suite vap) sur la branche : vert avec B-09 `KNOWN_FAIL`, preuve datée. Geste de Paul (ou d'un agent avec droit `gh workflow run`) ; non fait ici.

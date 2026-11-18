@@ -1,7 +1,7 @@
 ---
 id: T-460
 title: "Parité ci.yaml ↔ tools/dev/check : ci-map.tsv et test de parité (SL-6)"
-status: in-progress
+status: done
 phase: P0
 adr: [0022]
 depends_on: [T-453, T-455, T-332]
@@ -33,4 +33,4 @@ tools/dev/ci-map.tsv, tests/dev-factory/ci-parity.sh, .github/workflows/ci.yaml,
 ## Notes
 Issu de `docs/research/SHIFT-LEFT-DEV-ENV.md` §5. Mode dev : merge après `ci-ok`.
 
-Reste : run CI vert de la PR T-475 (critère 2 prouvé en STATIC seulement), puis `status: done` ; issue 66 à fermer après relecture. LOCAL-ONLY restants : `guard-check`, `toolchain-lock`, `check-selftest`, `identities` (raisons dans `ci-map.tsv`).
+Clôture (2026-11-18) : la PR T-475 (#82) est fusionnée (15:15Z) avec `ci-ok` vert sur sa tête acc5e57 (18 checks en succès), ce qui prouve en CI le critère 2. Étapes LOCAL-ONLY (sans job CI) : `guard-check`, `toolchain-lock`, `check-selftest`, `identities` (raisons dans `ci-map.tsv`).

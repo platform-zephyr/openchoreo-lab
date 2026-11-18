@@ -30,16 +30,13 @@ tools/metrics/ingest/, .github/workflows/metrics.yml (noyau : revue Paul)
 - [x] (repris de T-202) effectif n publié, 'insuffisant' sous n<5
 - [x] (repris de T-202) dimension agent, classe, app, cluster
 - [x] ingestion budgétée sous 1 000 req/h (limite du jeton Actions) ou par l'App (budget 900 compté par `github_api.Client`, test `test_budget_is_counted_and_truncation_degrades`)
+- [ ] `.github/workflows/metrics.yml` écrit (planifié, jeton lecture seule) ; fichier chaud `.github/` : REVUE
+- [ ] `tests/metrics` branché dans la CI : `python3 -B -m unittest discover -s tests/metrics` dans `tools/dev/check`, `check-paths.tsv`, `ci-map.tsv` et `ci.yaml`, avec `pyarrow` à version épinglée (sinon les tests Parquet sont SKIP) ; fichiers chauds
+- [ ] preuve runtime datée : une ingestion réelle sur l'API GitHub (budget compté sous 1 000 req/h) ; aujourd'hui NOT_TESTED
 
 ## Notes
 Le workflow est sous .github/ donc REVUE. Phase 0 sans cluster.
 
 Proposé par la recherche `data-platform` (clé T-201).
-- [ ] `.github/workflows/metrics.yml` (planifié, jeton lecture seule) et branchement de `tests/metrics` dans la CI
 
-## Reste
-- Workflow `.github/workflows/metrics.yml` : non écrit (fichier chaud `.github/`, hors périmètre de cette livraison).
-- CI : `tests/metrics` n'est lancé ni par `tools/dev/check` ni par `ci.yaml` (fichiers chauds : `check`, `check-paths.tsv`, `ci.yaml`). Commande : `python3 -B -m unittest discover -s tests/metrics`. Les tests Parquet sont SKIP sans `pyarrow` : à installer (version épinglée) dans le job.
-- Preuve runtime datée : NOT_TESTED (aucun appel réel à l'API GitHub, aucun cluster). Preuve de cette livraison : STATIC, 20 tests (19 PASS sans pyarrow, 20 PASS avec pyarrow, 2026-11-18).
-- D1 sans source Argo (`proof: github-only`) ; `cluster` = `unknown` faute de source ; lead time = création → fusion (1er commit non ingéré).
-- Source Argo, app-status.v1, coûts LLM : hors T-201.
+Limites de la livraison : D1 sans source Argo (`proof: github-only`) ; `cluster` = `unknown` faute de source ; lead time = création → fusion (1er commit non ingéré) ; source Argo, app-status.v1 et coûts LLM hors T-201. Preuve de la livraison : STATIC, 20 tests (19 PASS sans `pyarrow`, 20 PASS avec, 2026-11-18).
