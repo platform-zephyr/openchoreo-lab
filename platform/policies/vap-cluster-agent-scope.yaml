@@ -19,7 +19,8 @@
 #   R5 jamais de roles, clusterroles, clusterrolebindings, admissionregistration.*, CCNP, serviceaccounts/token
 #      (double du RBAC : rien de tout cela n'est accordé) ;
 #   R6 lab-pg : contenu borné des kinds du CRT cnpg-lab-db (PushSecret ne publie que <x>-pg-role vers
-#      lab-pg-roles/*, ExternalSecret alimenté par le SEUL générateur Password <x>-pg, sans template ni
+#      la SEULE clé lab-pg-roles-<x> (T-456 : séparateur « - », clé liée au nom, pas d'écrasement de la
+#      clé d'une autre app), ExternalSecret alimenté par le SEUL générateur Password <x>-pg, sans template ni
 #      extraction du coffre, Job sans jeton SA, volumes emptyDir seulement, image postgresql, secretKeyRef limités).
 #   R2b (2026-11-17, preuve runtime k3d) une identité applicative n'écrit que dans son propre namespace dp-X.
 # Preuves runtime (vrai API server k3d, CEL évalué) : tests/vap/run.sh, tests/vap/RESULTS.md.
@@ -174,7 +175,7 @@ spec:
            object.spec.selector.secret.name == object.metadata.name &&
            !has(object.spec.selector.generatorRef) &&
            has(object.spec.data) &&
-           object.spec.data.all(d, d.match.remoteRef.remoteKey.startsWith('lab-pg-roles/'))) :
+           object.spec.data.all(d, d.match.remoteRef.remoteKey + '-pg-role' == 'lab-pg-roles-' + object.metadata.name)) :
          variables.res == 'externalsecrets' ?
           (object.metadata.name.endsWith('-pg-role') &&
            has(object.spec.target) && has(object.spec.target.name) &&
