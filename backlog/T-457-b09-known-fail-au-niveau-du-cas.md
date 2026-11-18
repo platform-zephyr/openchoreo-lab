@@ -1,7 +1,7 @@
 ---
 id: T-457
 title: "Classer B-09 KNOWN_FAIL au niveau du cas dans tests/vap/run.sh"
-status: todo
+status: in-progress
 phase: P0
 adr: [0002]
 depends_on: []
@@ -24,9 +24,12 @@ B-09 (conteneur éphémère privileged hors dp-* admis) est un écart de la base
 tests/vap/run.sh, tests/vap/
 
 ## Critères de fin
-- [ ] B-09 classé KNOWN_FAIL, le cas reste exécuté et son verdict visible
-- [ ] la suite rend 0 sans autre FAIL et annonce un passage inattendu
+- [x] B-09 classé KNOWN_FAIL, le cas reste exécuté et son verdict visible (`tests/vap/known-fail.sh` ; `t()` exécute toujours le cas, verdict `KNOWN_FAIL` écrit dans `results.tsv`, la ligne et la preuve ; test `bash tests/vap/known-fail.test.sh` 12 PASS dont négatifs, 2026-11-18, STATIC)
+- [x] la suite rend 0 sans autre FAIL et annonce un passage inattendu (simulation de `t()` extrait de run.sh : B-09 KNOWN_FAIL ne compte pas, B-10 FAIL compte, B-09 qui passe = ligne `ANNONCE` + `UNEXPECTED_PASS`, 2026-11-18 ; runtime sur cluster NOT_TESTED)
 - [ ] dispatch manuel de vap : vert, preuve datée
 
 ## Notes
 Issu de l'étude T-452 (`docs/research/K3D-REACTIVATION.md` §2) et de la décision de Paul du 2026-11-18. Mode dev : merge après `ci-ok` ; preuve par dispatch manuel de `k3d-integration` sur la branche.
+
+## Reste
+- Dispatch manuel de `k3d-integration` (suite vap) sur la branche : vert avec B-09 `KNOWN_FAIL`, preuve datée. Geste de Paul (ou d'un agent avec droit `gh workflow run`) ; non fait ici.

@@ -35,6 +35,7 @@ rm -rf "$EV"; mkdir -p "$EV"
 RES="$EV/results.tsv"; : >"$RES"
 START="$(date -u +%FT%T)"  # filtre du journal d'audit : événements de CE passage seulement
 FAILS=0
+source "$ROOT/tests/vap/known-fail.sh"  # classify : B-09 KNOWN_FAIL au niveau du cas (T-457)
 
 AGENT_NS=openchoreo-data-plane AGENT_SA=cluster-agent-dataplane
 AGENT=(--as="system:serviceaccount:$AGENT_NS:$AGENT_SA" --as-group=system:serviceaccounts
@@ -62,7 +63,9 @@ t() {
     ALLOWC) ! grep -qiE "ValidatingAdmissionPolicy|forbidden" <<<"$out" && verdict=PASS;;
     WARN)   [[ $rc == 0 ]] && grep -qi "warning.*\(ValidatingAdmissionPolicy '$pol'\|$pol\)" <<<"$out" && verdict=PASS;;
   esac
-  [[ $verdict == PASS ]] || FAILS=$((FAILS + 1))
+  verdict="$(classify "$id" "$verdict")"
+  [[ $verdict != FAIL ]] || FAILS=$((FAILS + 1))
+  [[ $verdict != UNEXPECTED_PASS ]] || echo "ANNONCE : $id passe alors qu'il est KNOWN_FAIL : retirer $id de KNOWN_FAIL_IDS (tests/vap/known-fail.sh)"
   { printf '# %s — %s\n# attendu : %s (%s)\n# date : %s\n$ %s\n' "$id" "$desc" "$exp" "$pol" "$(date -u +%FT%TZ)" "$*"
     printf '%s\n# rc=%s verdict=%s\n' "$out" "$rc" "$verdict"; } >"$EV/$id.txt"
   printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$verdict" "$exp" "$pol" "$desc" >>"$RES"
@@ -314,5 +317,5 @@ if [[ $KEEP == 0 ]]; then
     lab-vap-test-lab-vap-test-other --ignore-not-found >/dev/null
   kubectl delete crd -l lab-vap-test --ignore-not-found >/dev/null
 fi
-echo "== bilan $LABEL : $(grep -c $'\tPASS\t' "$RES") PASS, $(grep -c $'\tFAIL\t' "$RES") FAIL ($RES)"
+echo "== bilan $LABEL : $(grep -c $'\tPASS\t' "$RES") PASS, $(grep -c $'\tFAIL\t' "$RES") FAIL, $(grep -c $'\tKNOWN_FAIL\t' "$RES") KNOWN_FAIL, $(grep -c $'\tUNEXPECTED_PASS\t' "$RES") UNEXPECTED_PASS ($RES)"
 exit $(( FAILS > 0 ))
