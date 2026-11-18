@@ -48,3 +48,6 @@ Décisions liées : ADR-0002, ADR-0012, ADR-0017, ADR-0018, ADR-0021 ; `docs/rev
 ## Références
 `docs/research/MODEL-ROUTING.md` §1, §5-§7, `backlog/proposals/model-routing.yaml` (grille d'origine, conservée comme
 hypothèses), `docs/review/ADVERSARIAL-REVIEW-2.md` §4, `docs/review/CONSENSUS-2.md`.
+
+## Amendement (arbitrages de Paul n°2, 2026-11-18)
+La règle R1 devient « R1-sensible » : Opus `high` seulement pour authz, admission/VAP, cluster-agent, frontière Argo, sécurité, secrets et identités, pour l'étape FINAL et pour la décision de la porte. Le reste du noyau suit R3 (Sonnet `high`).

@@ -9,9 +9,9 @@ class: REVUE + MANDAT
 velocity: false
 lane: ai-gateway
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-389 — agentgateway : fournisseur DeepSeek, clés virtuelles par usage, budget bloquant (fournisseur factice d'abord)

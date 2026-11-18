@@ -9,9 +9,9 @@ class: AUTONOME
 velocity: false
 lane: observabilité
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-323 — Observabilité de l'usine : indicateurs, rapport hebdomadaire par (type de tâche, modèle), écart banc/réel, drill de panne

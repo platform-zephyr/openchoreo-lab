@@ -9,9 +9,9 @@ class: REVUE + MANDAT
 velocity: true
 lane: hybride
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-318 — Travailleur homelab en tirage sortant (claude -p) sur VM isolée, sans runner GitHub ni secret

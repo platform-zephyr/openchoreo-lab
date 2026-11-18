@@ -11,7 +11,7 @@ lane: gouvernance
 stage: PORTE
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-211 — Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C5 et décision de Paul (2026-12-04)

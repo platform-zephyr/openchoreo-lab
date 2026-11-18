@@ -9,9 +9,9 @@ class: REVUE
 velocity: true
 lane: agents
 stage: S0
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-311 — Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3

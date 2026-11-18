@@ -48,3 +48,15 @@ worktrees, kube-ops) ; gain de quota perdu avec un routage simplifié ; usage r�
 6. **Runners** : homelab-infra (privé) a déjà des runners ARC sur le cluster local. Pour ce dépôt public, runners GitHub
    hébergés par défaut ; des runners ARC homelab ne sont admis que pour des workflows déclenchés par push/dispatch de
    mainteneurs (jamais sur PR de fork), à qualifier dans le ticket runners.
+
+## Arbitrages de Paul n°2 (2026-11-18, nuit)
+7. **Mode développement** : droits étendus acceptés (accès admin, Doppler élargi). Pendant le dev, l'option « revue des code
+   owners » du ruleset est **désactivée** : les agents fusionnent eux-mêmes toutes leurs PR, noyau compris, après `ci-ok`.
+   `CODEOWNERS` reste écrit et testé ; la revue est **réactivée à l'étape FINAL** (T-400) avec le retrait du contournement admin.
+8. **Routage** : Opus réservé aux sujets sensibles (authz, admission/VAP, cluster-agent, frontière Argo, sécurité, secrets,
+   identités), à l'étape FINAL et à la décision de la porte ; tout le reste du noyau passe en Sonnet (règle R1-sensible).
+9. **Homelab** : nouvelle VM Talos « lab » avec sa propre racine OpenTofu ; tout service de kube-ops peut être réduit ou la VM
+   kube-ops éteinte pendant les tests.
+10. **Doppler** : accès étendu accepté pendant le dev ; pas de plan Team ; export des valeurs avant migration.
+11. **Faille amont** : Paul ne prévient pas l'amont ; la réécriture de l'historique suffit.
+12. **Plan Claude** : Max ou Ultra décidé après le pilote, sur la consommation mesurée.

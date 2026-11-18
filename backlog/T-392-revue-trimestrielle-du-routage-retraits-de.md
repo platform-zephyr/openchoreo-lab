@@ -9,9 +9,9 @@ class: AUTONOME
 velocity: false
 lane: veille
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-392 — Revue trimestrielle du routage : retraits de modèles, nouveaux modèles, dérive des tarifs

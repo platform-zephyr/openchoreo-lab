@@ -9,9 +9,9 @@ class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: FINAL
-model: claude-sonnet-5-5
+model: claude-opus-5-5
 effort: high
-routing: R3-defaut
+routing: R1-sensible
 github_issue: null
 ---
 # T-402 — Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64)

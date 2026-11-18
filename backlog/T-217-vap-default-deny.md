@@ -11,7 +11,7 @@ lane: securite
 stage: S1
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-217 — VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny

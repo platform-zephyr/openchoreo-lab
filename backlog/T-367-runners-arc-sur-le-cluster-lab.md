@@ -9,9 +9,9 @@ class: REVUE + MANDAT
 velocity: true
 lane: agents
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-367 — Runners ARC sur le cluster lab pour la CI du dépôt (sans Docker, éphémères)

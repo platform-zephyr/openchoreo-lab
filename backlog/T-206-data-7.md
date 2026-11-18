@@ -9,9 +9,9 @@ class: AUTONOME
 velocity: false
 lane: homelab
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-206 — Jobs de calcul sur le homelab (CronJob lab-data) et restitution statique

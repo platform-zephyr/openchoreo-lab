@@ -9,9 +9,9 @@ class: AUTONOME + MANDAT
 velocity: true
 lane: agents
 stage: S1
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-322 — Calibrage du quota : pilote 24 h à N=3, puis 6, puis 8-10, et décision Max/Ultra

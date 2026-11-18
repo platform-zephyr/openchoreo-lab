@@ -11,7 +11,7 @@ lane: admission
 stage: après-porte
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-390 — Garde de confidentialité : aucun log de production ni secret vers un fournisseur autre qu'Anthropic

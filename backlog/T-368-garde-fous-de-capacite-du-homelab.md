@@ -9,9 +9,9 @@ class: AUTONOME + REVUE
 velocity: false
 lane: coût
 stage: S3
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-368 — Garde-fous de capacité du homelab : quotas lab-*, alertes RAM/NVMe/Tctl, budget versionné

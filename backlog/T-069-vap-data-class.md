@@ -11,7 +11,7 @@ lane: securite
 stage: I1
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-069 — VAP : refus de DELETE des données `irreplaceable` (G8)

@@ -11,7 +11,7 @@ lane: socle-oke
 stage: S2
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-062 — `lab-platform` en synchronisation automatique (hors lab-pg)

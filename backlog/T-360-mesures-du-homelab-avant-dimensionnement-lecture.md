@@ -9,9 +9,9 @@ class: AUTONOME + MANDAT
 velocity: true
 lane: hybride
 stage: S1
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-360 — Mesures du homelab avant dimensionnement (lecture seule)

@@ -9,9 +9,9 @@ class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: I1
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-067 — `appgen retire` : retrait d'une app avec export des données

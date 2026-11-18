@@ -9,9 +9,9 @@ class: REVUE
 velocity: false
 lane: renovate
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-349 — Canari du harness : banc réduit nocturne sur main et montées épinglées de Claude Code et de l'action

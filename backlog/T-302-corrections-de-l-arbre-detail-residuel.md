@@ -11,7 +11,7 @@ lane: gouvernance
 stage: S0
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-302 — Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets
