@@ -1,7 +1,7 @@
 ---
 id: T-430
 title: "Rulesets as-code : tools/github/apply.sh (--check/--apply) et main-dev.json alignés sur l'ADR-0002"
-status: in-progress
+status: done
 phase: P0
 adr: [0002]
 depends_on: []
