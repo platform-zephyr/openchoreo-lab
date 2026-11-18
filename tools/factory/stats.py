@@ -31,7 +31,10 @@ FAILURES = ("model_mismatch", "no_branch", "agent_error", "action_error", "trail
 MODELS = ("claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5")
 OTHER = "autre"
 # Nom d'outil d'un refus : `Bash:git push` ou `Edit` ; tout le reste (contenu éventuel) est ramené à « ? ».
-TOOL_RE = re.compile(r"[A-Za-z0-9_.-]{1,40}(?::[A-Za-z0-9_./-]{1,40}(?: [A-Za-z0-9_./-]{1,40})?)?")
+# La partie après « : » (début de commande) peut porter un argument collé par erreur (jeton) : seuls des mots
+# en minuscules et tirets (deux au plus) sont repris ; sinon elle devient « ? » (`Bash:?`).
+TOOL_RE = re.compile(r"([A-Za-z0-9_.-]{1,40})(?::(.*))?", re.S)
+CMD_RE = re.compile(r"[a-z][a-z-]{0,19}(?: [a-z][a-z-]{0,19})?")
 # champ -> (types acceptés) ; bool est exclu car int en Python.
 REQUIRED = {"ticket_issue": (int,), "model_requested": (str,), "status": (str,), "num_turns": (int,),
             "duration_ms": (int,), "total_cost_usd": (int, float)}
@@ -98,7 +101,13 @@ def summary(values: list[float]) -> dict:
 
 
 def clean_tool(raw: object) -> str:
-    return raw if isinstance(raw, str) and TOOL_RE.fullmatch(raw) else "?"
+    m = TOOL_RE.fullmatch(raw) if isinstance(raw, str) else None
+    if m is None:
+        return "?"
+    name, cmd = m.groups()
+    if cmd is None:
+        return name
+    return f"{name}:{cmd}" if CMD_RE.fullmatch(cmd) else f"{name}:?"
 
 
 def count_denials(runs: list[dict]) -> dict:
