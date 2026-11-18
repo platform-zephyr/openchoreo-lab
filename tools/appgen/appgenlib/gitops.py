@@ -12,6 +12,7 @@ import filecmp
 import re
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -33,7 +34,7 @@ def release_deletions(base_paths: set[str], current_paths: set[str]) -> list[str
     return errs
 
 
-def project_pin_warnings(base_params: dict, cur_params: dict, base_pins: dict, cur_pins: dict) -> list[str]:
+def project_pin_warnings(base_params: dict[str, Any], cur_params: dict[str, Any], base_pins: dict[str, Any], cur_pins: dict[str, Any]) -> list[str]:
     """A3 : parametres d'un Project existant modifies sans changement de pin -> le PRB reste sur l'ancienne
     ProjectRelease (quota, NetworkPolicy, PVC non appliques, T-PIN-STALE). Signale la 2e PR."""
     out = []
@@ -63,7 +64,7 @@ def _git(args: list[str]) -> str:
     return subprocess.run(["git", "-C", str(ROOT), *args], check=True, capture_output=True, text=True).stdout
 
 
-def base_state(ref: str) -> tuple[set[str], dict, dict]:
+def base_state(ref: str) -> tuple[set[str], dict[str, Any], dict[str, Any]]:
     """(chemins generated/, parametres Project, pins Project) a la revision ref (lecture git seule)."""
     paths = set(_git(["ls-tree", "-r", "--name-only", ref, "--", "generated/"]).split())
     params = {}
