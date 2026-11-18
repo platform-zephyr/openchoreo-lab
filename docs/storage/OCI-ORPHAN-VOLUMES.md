@@ -8,7 +8,7 @@ Relevé en LECTURE SEULE le 2026-11-17 (OCI CLI : `bv volume get`, `compute volu
 | Nom | `csi-<uuid-masqué>` | `csi-<uuid-masqué>` |
 | Taille / état | 50 Go, AVAILABLE, VPU 10, AD-1 | 50 Go, AVAILABLE, VPU 10, AD-1 |
 | Créé | 2026-11-15 21:27:38Z | 2026-11-15 21:45:44Z |
-| Créé par (balise Oracle `CreatedBy`) | cluster OKE `…***MASQUÉ***…` (ancien `oracle-a1`, endpoint ***MASQUÉ***, **DELETED**) | idem |
+| Créé par (balise Oracle `CreatedBy`) | cluster OKE `<id-masqué>` (ancien `oracle-a1`, endpoint <IP-privée-masquée>, **DELETED**) | idem |
 | Attachement | 1 historique, **DETACHED** (créé 21:27:49Z) | 1 historique, **DETACHED** (créé 21:47:47Z) |
 | Sauvegardes OCI | aucune | aucune |
 | Balises libres (PVC/namespace) | aucune | aucune |
