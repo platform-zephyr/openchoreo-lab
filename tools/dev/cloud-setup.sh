@@ -11,7 +11,7 @@
 #   respecté par curl).
 #
 # Usage : tools/dev/cloud-setup.sh [--only outil[,outil...]]
-# Outils : helm kubeconform actionlint gitleaks shellcheck ruff yq pre-commit
+# Outils : helm kubeconform actionlint gitleaks shellcheck ruff yq pre-commit kubectl jq gh
 # Sortie : une ligne PASS / FAIL par outil, puis tools/dev/doctor. Code 0 si tous PASS, 1 sinon, 2 usage ou architecture
 # non prise en charge (les empreintes du lock sont linux-amd64 ; sur arm64 utiliser .devcontainer/Dockerfile).
 # Variables : CLOUD_BIN_DIR, LOCK (tests).
@@ -20,7 +20,7 @@ set -uo pipefail
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCK="${LOCK:-$SELF_DIR/toolchain.lock}"
 BIN_DIR="${CLOUD_BIN_DIR:-$HOME/.local/bin}"
-ALL_TOOLS=(helm kubeconform actionlint gitleaks shellcheck ruff yq pre-commit)
+ALL_TOOLS=(helm kubeconform actionlint gitleaks shellcheck ruff yq pre-commit kubectl jq gh)
 ONLY=""
 
 while [[ $# -gt 0 ]]; do
@@ -111,6 +111,16 @@ install_tool() { # NOM : télécharge, vérifie, pose
       v="$(need PRECOMMIT_VERSION)" && sha="$(need PRECOMMIT_PYZ_SHA256)" || return 1
       fetch "https://github.com/pre-commit/pre-commit/releases/download/v${v}/pre-commit-${v}.pyz" "$sha" "$d/pre-commit.pyz" &&
         put "$d/pre-commit.pyz" pre-commit ;;
+    kubectl)
+      v="$(need KUBECTL_VERSION)" && sha="$(need KUBECTL_AMD64_SHA256)" || return 1
+      fetch "https://dl.k8s.io/release/${v}/bin/linux/amd64/kubectl" "$sha" "$d/kubectl" && put "$d/kubectl" kubectl ;;
+    jq)
+      v="$(need JQ_VERSION)" && sha="$(need JQ_AMD64_SHA256)" || return 1
+      fetch "https://github.com/jqlang/jq/releases/download/${v}/jq-linux-amd64" "$sha" "$d/jq" && put "$d/jq" jq ;;
+    gh)
+      v="$(need GH_VERSION)" && sha="$(need GH_AMD64_SHA256)" || return 1
+      fetch "https://github.com/cli/cli/releases/download/v${v}/gh_${v}_linux_amd64.tar.gz" "$sha" "$d/a.tar.gz" &&
+        extrait_et_pose "$d/a.tar.gz" gh gh ;;
     *) echo "outil inconnu : $t" >&2; return 1 ;;
   esac
 }

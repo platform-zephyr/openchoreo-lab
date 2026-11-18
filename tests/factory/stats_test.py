@@ -125,6 +125,27 @@ class StatsTest(unittest.TestCase):
         self.assertEqual(den, {"?": 3, "Bash:git push": 1})
         self.assertEqual(self.report()["total"]["failures"], {"autre": 1})
 
+    def test_denial_command_part_never_carries_arguments(self):
+        """Revue de sortie T-479 : un jeton collé après `Outil:` ne sort jamais ; seule la forme `mots minuscules` reste."""
+        tok = "ghp_SECRETVALUE123"
+        write(self.d, "a.json", run(1, permission_denials=[
+            f"Bash:{tok}", f"Bash:git push {tok}", "Bash:export TOKEN=abc", "Bash:curl https://hote.interne/x",
+            "Bash:gh pr", "Bash:git push", "Edit:\nligne2", "Write"]))
+        den = self.report()["total"]["permission_denials"]
+        self.assertEqual(den, {"Bash:?": 4, "Bash:gh pr": 1, "Bash:git push": 1, "Edit:?": 1, "Write": 1})
+        for args in ((), ("--json",)):
+            out = cli("--dir", self.d, *args)[1]
+            for forbidden in (tok, "TOKEN", "hote.interne", "https"):
+                self.assertNotIn(forbidden, out)
+
+    def test_output_has_only_closed_keys(self):
+        """Seuls les agrégats attendus sortent : ni branche, ni nom de dossier source."""
+        write(self.d, "dossier-prive/a.json", run(1, branch="claude/branche-sensible"))
+        out = cli("--dir", self.d, "--json")[1]
+        self.assertNotIn("branche-sensible", out)
+        self.assertNotIn("dossier-prive", out)
+        self.assertEqual(set(json.loads(out)), {"schema", "since", "note", "total", "by_model", "by_ticket", "ignored"})
+
 
 if __name__ == "__main__":
     unittest.main()

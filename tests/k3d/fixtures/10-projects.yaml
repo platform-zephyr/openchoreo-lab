@@ -1,13 +1,27 @@
 # Deux cellules de test (k3d) sur le CPT cell-restricted.
 #   t-cell-a : egress none, database true  (whoami + client PG + 2 bases)
 #   t-cell-b : egress public-internet, database false, 1 PVC (whoami + sonde réseau + app PVC)
+# Pipeline de test : la CI (tools/k3d/ci-bootstrap.sh) n'installe que `standard` (promotionPaths vide) et pas
+# `default`. Avec autoDeploy: true, le contrôleur n'a alors aucun pipeline (`DeploymentPipeline "default" not
+# found`) et ne crée aucun ReleaseBinding (T-469). Modèle : tests/mcp/fixtures/lab-mcp-target.yaml.
+apiVersion: openchoreo.dev/v1alpha1
+kind: DeploymentPipeline
+metadata:
+  name: t-pipeline
+  namespace: default
+spec:
+  promotionPaths:
+    - sourceEnvironmentRef: {kind: Environment, name: development}
+      targetEnvironmentRefs:
+        - {kind: Environment, name: production}
+---
 apiVersion: openchoreo.dev/v1alpha1
 kind: Project
 metadata:
   name: t-cell-a
   namespace: default
 spec:
-  deploymentPipelineRef: {kind: DeploymentPipeline, name: default}
+  deploymentPipelineRef: {kind: DeploymentPipeline, name: t-pipeline}
   type: {kind: ClusterProjectType, name: cell-restricted}
   parameters: {egress: none, database: true}
 ---
@@ -30,7 +44,7 @@ metadata:
   name: t-cell-b
   namespace: default
 spec:
-  deploymentPipelineRef: {kind: DeploymentPipeline, name: default}
+  deploymentPipelineRef: {kind: DeploymentPipeline, name: t-pipeline}
   type: {kind: ClusterProjectType, name: cell-restricted}
   parameters: {egress: public-internet, database: false, quota: {pvcs: "1"}}
 ---
