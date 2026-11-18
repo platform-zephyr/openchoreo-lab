@@ -33,7 +33,7 @@ scripts existants (`tests/*`, `tools/appgen`, `tools/oke`). Outil : `tools/dev/d
 |---|---|
 | `dev up <tâche>` | worktree + conteneur + garde-fous (conteneur supprimé si KO) |
 | `dev exec <tâche> -- <cmd>` | exécute dans le conteneur, ex. `dev exec t -- tools/dev/dev test` |
-| `dev test` | garde-fou, shellcheck, yamllint, actionlint, gitleaks, appgen, argo_guard, tests argo-guard / security-bundle / release-history / cell-cpt, rendus Helm, kubeconform. Exclut `tests/k3d` (cluster) |
+| `dev test` | alias de `tools/dev/check --static --strict` (T-332) : mêmes contrôles que la CI, une ligne PASS / FAIL / NOT_TESTED par contrôle. Exclut `tests/k3d` (cluster) ; `tools/dev/check --k3d` le documente |
 | `dev reset <tâche>` | recrée le conteneur (worktree et caches conservés) |
 | `dev destroy <tâche>` | supprime conteneur + worktree **seulement** si propre, sans fichier ignoré, branche suivie et tout poussé ; sinon refus |
 | `dev status` | worktrees, conteneurs, branches `feat/*`, PR ouvertes, registre |

@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+# check : definition of done technique du labo (ADR-0022 décision 2, T-332). Une seule commande, le même code dans
+# le conteneur de dev, la CI, le hook Stop et l'environnement cloud. Elle APPELLE les contrôles existants du dépôt
+# (tests/*, tools/*) sans les dupliquer et rend une ligne PASS / FAIL / NOT_TESTED par contrôle.
+#
+# Usage :
+#   tools/dev/check --static [--strict]   contrôles sans cluster ni Docker (N0), indépendants de l'architecture
+#   tools/dev/check --k3d    [--strict]   banc k3d jetable (N1) : appel documenté de tests/k3d/run.sh ; NOT_TESTED sans
+#                                         kubectl ou sans contexte k3d (jamais OKE, jamais le cluster du homelab)
+#   --static et --k3d se combinent.
+#
+# Statuts (un résultat n'est PASS qu'avec une exécution réelle) :
+#   PASS        le contrôle a tourné et réussi
+#   FAIL        le contrôle a tourné et échoué (extrait du journal affiché)
+#   NOT_TESTED  non exécuté : outil absent, script pas encore dans le dépôt, exclu (CHECK_SKIP), hors conteneur
+#               ou abandon du contrôle sur précondition (rc 125).
+#               Jamais compté comme PASS.
+# Code de sortie : 0 si aucun FAIL ; 1 si au moins un FAIL ; 3 avec --strict (ou CHECK_STRICT=1) s'il reste un
+# NOT_TESTED sans FAIL (la CI utilise --strict) ; 2 pour un usage incorrect. Le verdict final n'est « PASS » que si
+# tous les contrôles sont PASS, sinon « INCOMPLET ».
+# Variables : CHECK_ONLY="a,b" (ne lancer que ces contrôles : tests du script), CHECK_SKIP="a,b" (NOT_TESTED « exclu »),
+# OKE_PHASEB_STATE (cache des charts Helm, partagé et sérialisé par flock).
+# Aucun secret, aucun accès cluster en --static ; sortie sans valeur sensible.
+set -uo pipefail
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SELF_DIR/../.." && pwd)"
+cd "$ROOT" || exit 2
+
+n_pass=0
+n_fail=0
+n_nt=0
+STRICT="${CHECK_STRICT:-0}"
+SUMMARY=()
+
+usage() { awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; }
+
+selected() { # NOM : vrai si le contrôle doit être considéré
+  [[ -z "${CHECK_ONLY:-}" ]] && return 0
+  [[ ",${CHECK_ONLY}," == *",$1,"* ]]
+}
+
+record() { # STATUT NOM DUREE DETAIL
+  local st="$1" name="$2" dur="$3" detail="${4:-}"
+  case "$st" in
+    PASS) n_pass=$((n_pass + 1)) ;;
+    FAIL) n_fail=$((n_fail + 1)) ;;
+    *) n_nt=$((n_nt + 1)) ;;
+  esac
+  if [[ -n "$detail" ]]; then
+    printf '%-11s %-24s %4ss  %s\n' "$st" "$name" "$dur" "$detail"
+  else
+    printf '%-11s %-24s %4ss\n' "$st" "$name" "$dur"
+  fi
+  SUMMARY+=("$st $name")
+}
+
+not_tested() { selected "$1" && record NOT_TESTED "$1" 0 "$2"; return 0; }
+
+# Un outil (ou « py:module » pour un module Python) est-il disponible ?
+have() {
+  case "$1" in
+    py:*) python3 -c "import ${1#py:}" >/dev/null 2>&1 ;;
+    *) command -v "$1" >/dev/null 2>&1 ;;
+  esac
+}
+
+# step NOM OUTILS_REQUIS(liste séparée par des virgules, - = aucun) COMMANDE...
+step() {
+  local name="$1" needs="$2"
+  shift 2
+  selected "$name" || return 0
+  if [[ ",${CHECK_SKIP:-}," == *",$name,"* ]]; then
+    record NOT_TESTED "$name" 0 "exclu (CHECK_SKIP)"
+    return 0
+  fi
+  local missing="" t
+  if [[ "$needs" != "-" ]]; then
+    local IFS=','
+    for t in $needs; do have "$t" || missing="$missing $t"; done
+  fi
+  if [[ -n "$missing" ]]; then
+    record NOT_TESTED "$name" 0 "outil absent :${missing}"
+    return 0
+  fi
+  local log t0 t1 rc=0
+  log="$(mktemp "${TMPDIR:-/tmp}/check.XXXXXX")"
+  t0="$(date +%s)"
+  "$@" >"$log" 2>&1 || rc=$?
+  t1="$(date +%s)"
+  if [[ "$rc" -eq 0 ]]; then
+    record PASS "$name" "$((t1 - t0))"
+  elif [[ "$rc" -eq 125 ]]; then
+    # 125 : le contrôle s'est abandonné lui-même (précondition absente, ex. contexte non k3d) : pas un échec.
+    record NOT_TESTED "$name" "$((t1 - t0))" "précondition absente (abandon du contrôle)"
+    tail -n 5 "$log" | sed 's/^/      | /'
+  else
+    record FAIL "$name" "$((t1 - t0))" "rc=$rc"
+    tail -n 25 "$log" | sed 's/^/      | /'
+  fi
+  rm -f "$log"
+}
+
+# Contrôle porté par un script du dépôt qui n'existe pas encore (ticket) : NOT_TESTED, pas PASS.
+script_step() { # NOM TICKET OUTILS CHEMIN [ARGS...]
+  local name="$1" ticket="$2" needs="$3" path="$4"
+  shift 4
+  if [[ ! -f "$path" ]]; then
+    not_tested "$name" "absent du dépôt : $path ($ticket)"
+    return 0
+  fi
+  step "$name" "$needs" bash "$path" "$@"
+}
+
+# Les rendus et téléchargements de charts partagent un cache : sérialisés entre exécutions parallèles.
+locked() {
+  local st="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}"
+  mkdir -p "$st"
+  if command -v flock >/dev/null 2>&1; then
+    flock -x -w 900 "$st/.dev-test.lock" "$@"
+  else
+    "$@"
+  fi
+}
+
+shellcheck_all() {
+  local -a files=()
+  local f
+  shopt -s nullglob
+  for f in tools/dev/dev tools/dev/check tools/dev/guard-check.sh tests/dev-factory/*.sh tools/oke/*.sh \
+    tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh \
+    tests/release-history/*.sh tests/appgen/*.sh tests/leak-guard/*.sh tests/identities/*.sh tests/hooks/*.sh \
+    tools/dev/leak-guard.sh; do
+    [[ -f "$f" ]] && files+=("$f")
+  done
+  shellcheck -x -P SCRIPTDIR "${files[@]}"
+}
+
+in_container() { [[ "${DEV_FACTORY:-}" == 1 ]]; }
+
+run_static() {
+  echo "== check --static : $(git rev-parse --short HEAD 2>/dev/null || echo '?') dans $ROOT ($(uname -m))"
+  # Garde-fou du conteneur : n'a de sens que dans le conteneur de dev (DEV_FACTORY=1) ; sur l'hôte il échoue par conception.
+  if in_container; then
+    step guard-check - tools/dev/guard-check.sh
+  else
+    not_tested guard-check "hors conteneur de dev (DEV_FACTORY non défini)"
+  fi
+  step toolchain-lock - tests/dev-factory/lock-concordance.sh
+  step dev-factory-static - tests/dev-factory/run.sh
+  step check-selftest - tests/dev-factory/check-test.sh
+  step devcontainer-json python3 python3 -I -m json.tool .devcontainer/devcontainer.json
+  step shellcheck shellcheck shellcheck_all
+  step yamllint yamllint yamllint -c tools/appgen/yamllint.yaml apps tools tests .github
+  step actionlint actionlint actionlint
+  step gitleaks gitleaks gitleaks git --redact --no-banner --log-level warn .
+  step backlog python3 python3 tools/backlog/check.py
+  step appgen-validate python3,py:yaml,py:jsonschema python3 tools/appgen/appgen.py validate
+  step appgen-check python3,py:yaml,py:jsonschema python3 tools/appgen/appgen.py check
+  step appgen-unittest python3,py:yaml,py:jsonschema python3 -m unittest discover -s tests/appgen
+  step argo-guard-rules python3,py:yaml python3 -I tools/oke/argo_guard.py .
+  step argo-guard-negative python3,py:yaml tests/argo-guard/run.sh
+  step release-history git tests/release-history/check.sh
+  step cell-cpt python3,py:yaml tests/cell-cpt/run.sh
+  step security-bundle helm,jq,python3,shasum locked tests/security-bundle/run.sh
+  step render-check helm,yq,python3,shasum locked tools/oke/render-check.sh
+  step uninstall-guards helm locked env ARGO_GUARD_CHART_CACHE="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}/charts" tests/argo-guard/uninstall-guards.sh
+  step kubeconform-platform helm,kubeconform,python3,curl,shasum locked tools/oke/kubeconform-platform.sh
+  # Contrôles des tickets T-303, T-306, T-330, T-331 : actifs dès que leur script entre dans le dépôt.
+  script_step leak-guard T-303 - tests/leak-guard/run.sh
+  script_step identities T-306 python3 tests/identities/run.sh
+  script_step settings T-330 jq tests/hooks/settings.test.sh
+  script_step hooks T-331 jq tests/hooks/run.sh
+}
+
+run_k3d() {
+  echo "== check --k3d : banc N1 (k3d jetable), jamais OKE"
+  if [[ ! -f tests/k3d/run.sh ]]; then
+    not_tested k3d "absent du dépôt : tests/k3d/run.sh"
+  else
+    # tests/k3d/run.sh vérifie lui-même le contexte (k3d-openchoreo) et sort en 2 s'il est autre : NOT_TESTED.
+    k3d_wrapper() {
+      local rc=0
+      bash tests/k3d/run.sh || rc=$?
+      [[ "$rc" -eq 2 ]] && return 125
+      return "$rc"
+    }
+    step k3d kubectl,helm,yq k3d_wrapper
+  fi
+}
+
+main() {
+  local do_static=0 do_k3d=0 a
+  [[ $# -gt 0 ]] || { usage >&2; exit 2; }
+  for a in "$@"; do
+    case "$a" in
+      --static) do_static=1 ;;
+      --k3d) do_k3d=1 ;;
+      --strict) STRICT=1 ;;
+      -h | --help) usage; exit 0 ;;
+      *) echo "check: option inconnue : $a" >&2; usage >&2; exit 2 ;;
+    esac
+  done
+  local t0 t1
+  t0="$(date +%s)"
+  [[ "$do_static" -eq 1 ]] && run_static
+  [[ "$do_k3d" -eq 1 ]] && run_k3d
+  t1="$(date +%s)"
+  printf -- '-- PASS=%s FAIL=%s NOT_TESTED=%s (%ss)\n' "$n_pass" "$n_fail" "$n_nt" "$((t1 - t0))"
+  if [[ "$n_fail" -gt 0 ]]; then
+    echo "RESULT: FAIL"
+    exit 1
+  elif [[ "$n_nt" -gt 0 ]]; then
+    echo "RESULT: INCOMPLET (aucun FAIL ; $n_nt contrôle(s) NOT_TESTED, non comptés comme PASS)"
+    [[ "$STRICT" == 1 ]] && exit 3
+    exit 0
+  fi
+  echo "RESULT: PASS"
+}
+
+main "$@"
