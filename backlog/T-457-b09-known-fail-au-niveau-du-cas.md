@@ -1,7 +1,7 @@
 ---
 id: T-457
 title: "Classer B-09 KNOWN_FAIL au niveau du cas dans tests/vap/run.sh"
-status: in-progress
+status: done
 phase: P0
 adr: [0002]
 depends_on: []
@@ -26,7 +26,7 @@ tests/vap/run.sh, tests/vap/
 ## Critères de fin
 - [x] B-09 classé KNOWN_FAIL, le cas reste exécuté et son verdict visible (`tests/vap/known-fail.sh` ; `t()` exécute toujours le cas, verdict `KNOWN_FAIL` écrit dans `results.tsv`, la ligne et la preuve ; test `bash tests/vap/known-fail.test.sh` 12 PASS dont négatifs, 2026-11-18, STATIC)
 - [x] la suite rend 0 sans autre FAIL et annonce un passage inattendu (simulation de `t()` extrait de run.sh : B-09 KNOWN_FAIL ne compte pas, B-10 FAIL compte, B-09 qui passe = ligne `ANNONCE` + `UNEXPECTED_PASS`, 2026-11-18 ; runtime sur cluster NOT_TESTED)
-- [ ] dispatch manuel de vap : vert, preuve datée
+- [x] dispatch manuel de vap : vert, preuve datée (RUNTIME, 2026-11-18, run 44313410652 sur main : 91 PASS, 0 FAIL, 1 KNOWN_FAIL (B-09), 0 UNEXPECTED_PASS, RESULTAT PASS)
 
 ## Notes
 Issu de l'étude T-452 (`docs/research/K3D-REACTIVATION.md` §2) et de la décision de Paul du 2026-11-18. Mode dev : merge après `ci-ok` ; preuve par dispatch manuel de `k3d-integration` sur la branche.

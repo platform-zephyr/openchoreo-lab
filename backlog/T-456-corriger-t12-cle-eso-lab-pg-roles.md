@@ -1,7 +1,7 @@
 ---
 id: T-456
 title: "Corriger T12 : clé ESO lab-pg-roles/<nom> refusée par le provider kubernetes"
-status: in-progress
+status: done
 phase: P0
 adr: [0002]
 depends_on: []
@@ -26,7 +26,7 @@ platform/resource-types/cnpg-lab-db.yaml, platform/policies/vap-cluster-agent-sc
 ## Critères de fin
 - [x] séparateur remplacé dans cnpg-lab-db.yaml (clé sans « / ») : `lab-pg-roles-${metadata.name}` (PushSecret l. 116, ExternalSecret l. 214) ; STATIC
 - [x] règle R6 de vap-cluster-agent-scope.yaml et cas P01/P05 de tests/vap/ alignés : R6 lie la clé au nom (`remoteKey + '-pg-role' == 'lab-pg-roles-' + metadata.name`) ; P04/P06 migrés, P05 + P05b-e négatifs (ancienne clé `/`, autre app, préfixe seul, suffixe) ; T12e ajouté à tests/k3d (clé `password` du Secret `lab-pg-roles-<nom>` dans lab-secrets). Preuve STATIC 2026-11-18 : expression R6 extraite du YAML et évaluée par cel-go v0.23.2 sur 9 cas, 9/9 conformes ; l'ancienne R6 refuse P04 et la clé du CRT et admet `lab-pg-roles/app` (rouge attendu). P01 inchangé (ExternalSecret à générateur, sans clé du coffre)
-- [ ] dispatch manuel de k3d et vap sur la branche : T12 vert, preuve datée
+- [x] dispatch de k3d et vap sur la branche : T12 vert, preuve datée (RUNTIME, 2026-11-18, run 44313941923 sur la PR #69, label `k3d` : T12a-e PASS dont T12e, suite vap PASS ; les autres FAIL de la suite `k3d`, T01g, T02-T06, T03f, sont préexistants et hors périmètre : mêmes FAIL sur main, run 44313410652)
 
 ## Notes
 Issu de l'étude T-452 (`docs/research/K3D-REACTIVATION.md` §2) et de la décision de Paul du 2026-11-18. Mode dev : merge après `ci-ok` ; preuve par dispatch manuel de `k3d-integration` sur la branche.
