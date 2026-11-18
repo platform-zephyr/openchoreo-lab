@@ -17,8 +17,11 @@ sont dans `backlog/NEXT.md` (tenu à la main). Dépôt PUBLIC : aucune IP, OCID,
   T-414, T-430, T-450, T-453, T-454, T-455. En cours (`in-progress`, avec ligne « Reste » dans le ticket) : T-002, T-210, T-303, T-305,
   T-311, T-313, T-332, T-411, T-451, T-452.
 - **Agents de développement en cours au moment du handoff** (worktrees `.claude/worktrees/agent-*`, branches `worktree-agent-<id>`, non poussées) :
-  T-331 hooks Claude Code (branche `worktree-agent-a355401da01d8d28f`) ; T-313 reste, `check-trailers` dans `ci.yaml` et coût dans la PR
-  (branche `worktree-agent-a57bd36799f7b6baf`). Leurs rapports arrivent à la session : intégrer comme ci-dessous.
+  **T-331 hooks Claude Code** (branche `worktree-agent-a355401da01d8d28f`) : son rapport arrive à la session, l'intégrer comme ci-dessous.
+  Déjà intégré (2026-11-18, commit `158bfe2`) : le reste de T-313 (job `agent-trailers` dans `ci.yaml` et `ci-ok`, commentaire de PR avec modèle,
+  tours, coût, durée, refus ; résolution de la branche de l'agent ; tableau des runs dans la preuve de T-304). Non joué en vrai : tout dépend du
+  prochain dispatch. Constat : la sortie `branch_name` de l'action est vide quand l'agent ouvre lui-même sa PR (branche `agent/…`), d'où `no_branch` ;
+  le workflow retrouve maintenant la branche par la PR qui cite l'issue.
 
 ## Reprise : ce qu'il faut faire en arrivant
 1. Lire `backlog/NEXT.md`. 2. `git fetch origin && git checkout claude/cool-hamilton-r7aa5k && git merge origin/main`.

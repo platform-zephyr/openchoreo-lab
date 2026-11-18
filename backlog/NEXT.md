@@ -13,7 +13,7 @@ Exécutant prouvé de bout en bout (T-304) ; il reste à clore les prérequis du
 | T-303 | hook Stop avec le même script `leak-guard.sh` | T-331 (agent en cours) |
 | T-305 | tag `core-baseline` : annoté mais non signé, posé après la vague 1 ; Paul l'accepte ou le repose | Paul |
 | T-311 | run avec `factory/PAUSE` posé ; dispatch réel de plusieurs issues | coordinateur (voir « Dispatch multi-issues ») |
-| T-313 | `check-trailers` dans `ci.yaml`, coût/tours dans la PR, dispatch multi-issues | agent en cours puis coordinateur |
+| T-313 | code livré (job `agent-trailers`, commentaire de PR) ; reste le dispatch multi-issues qui le prouve en vrai | coordinateur |
 | T-411 | essai daté sur un ticket `complet` (section « Implémentations publiques consultées » rendue) | coordinateur (dispatch d'un ticket de test) |
 Prérequis déjà `done` : T-008, T-302, T-304, T-306, T-326, T-330, T-413. T-322 dépend aussi de T-002 par la liste figée (pas des prérequis).
 
