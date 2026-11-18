@@ -38,3 +38,5 @@ Issu de l'étude T-452 (`docs/research/K3D-REACTIVATION.md` §2) et de la décis
   - classer chaque FAIL réapparu (T-ARGO-HEALTH, T-PRUNE-STATUS, T-PIN-STALE, T-STRATEGY, T-RETRAIT-1) : corrigé ou `KNOWN_FAIL` motivé ;
   - noter le résultat daté ; retirer `known_fail` de la matrice (`.github/workflows/k3d-integration.yml`, hors périmètre) seulement si la suite passe ;
   - brancher `tests/gitops-k3d` dans la CI unitaire (`ci.yaml`, autre agent) : non fait.
+
+Preuve runtime partielle (2026-11-18, run 44313410652 sur main) : la suite `gitops-k3d` dépasse désormais l'ancre mais rend encore `RESULTAT: KNOWN_FAIL` (job vert car la suite est classée `known_fail`). Reste : lire `results.tsv` de l'artefact, classer chaque FAIL (corrigé ou KNOWN_FAIL motivé), puis cocher les trois cases.

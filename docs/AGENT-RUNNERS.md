@@ -26,11 +26,63 @@ Principe (T-313) : `workflow_dispatch` lancé par Paul (issues, modèle, effort 
 
 ## Exécutant minimal (T-313)
 - Entrées : `tickets` (20 au plus), `model`, `effort`, `escalated_from`. Passées à `claude_args` (`--model`, `--effort`, `--max-turns`).
-- Plafonds (`tools/factory/run-ticket.sh limits`) : Opus 90 min et 150 tours ; Sonnet et Haiku 45 min et 60 tours ; `effort: max` refusé hors Opus.
+- Plafonds (`tools/factory/run-ticket.sh limits`, T-466) : Opus 90 min et 200 tours ; Sonnet et Haiku 45 min et 100 tours ; `effort: max` refusé hors Opus. Le plafond de tours n'est pas une coupure fiable : l'action compare `num_turns` à `--max-turns` après la session (run 44313706955 : 79 tours pour 60, session réussie, PR fusionnée, étape en échec). La vraie coupure est `timeout-minutes`.
 - Concurrence : `max-parallel: 3` (matrice) et un groupe par issue ; kill-switch `factory/PAUSE` (T-311).
-- Identité : `noreply@anthropic.com` ; trailers `Ticket`, `Model`, `Effort`, `Claude-Session` (+ `Escalated-from`) ; l'étape `check-trailers` fait échouer le job sinon.
+- Identité : `noreply@anthropic.com` ; trailers `Ticket`, `Model`, `Effort`, `Claude-Session` (+ `Escalated-from`). Le prompt donne la valeur de `Claude-Session` : l'URL du run (`<server>/<dépôt>/actions/runs/<run_id>`) ; l'agent ne la cherche plus dans l'environnement. L'étape `check-trailers` tourne même si l'étape de l'agent échoue (`always()`).
+- Branche imposée par le prompt : `claude/issue-<n>-<slug>` ; corps de PR avec `Closes #<n>` (la fusion ferme l'issue). Si la sortie `branch_name` de l'action est vide, le workflow lit l'API REST `pulls?state=all` (pas l'index de recherche, en retard de plusieurs secondes) : d'abord `claude/issue-<n>-*`, sinon `claude/*` ou `agent/*` qui cite `#<n>`, branche du dépôt seulement.
+
+### Verdict du job (T-466)
+L'étape de l'agent a `continue-on-error: true`. La dernière étape, « Verdict » (`run-ticket.sh verdict`), décide seule du statut du job d'après `mission-result.v1`, qui reçoit `steps.claude.outcome`, `max_turns` et l'issue du contrôle des trailers. Le premier motif qui s'applique décide :
+
+| Motif (`failure`) | Condition | Statut | Job |
+|---|---|---|---|
+| `model_mismatch` | modèle observé ≠ demandé | FAIL | rouge |
+| `turn_cap_exceeded` | session coupée par le CLI (`error_max_turns`) | FAIL | rouge |
+| `agent_error` | pas de résultat, `is_error`, ou fichier d'exécution absent | FAIL | rouge |
+| `trailers_refused` | `check-trailers` en échec | FAIL | rouge |
+| `no_branch` | aucune branche retrouvée | NOT_TESTED | rouge |
+| `turn_cap_exceeded` | session réussie au-delà du plafond, branche présente | NOT_TESTED | vert, avertissement |
+| `action_error` | étape de l'agent en échec sans autre explication | FAIL | rouge |
+| aucun | tout le reste | PASS | vert |
+
+Invariant (testé) : un job rouge ne porte jamais `PASS`, ni dans l'artefact, ni dans le commentaire de PR, ni dans le commentaire d'issue. Le commentaire de PR a `continue-on-error` : c'est un compte rendu, pas le livrable.
+
+### Job `report` (T-466)
+`needs: [plan, dev]`, `if: always()`. Il télécharge les artefacts `mission-result-*`, génère un jeton d'App neuf et commente chaque issue de la matrice (`run-ticket.sh report`) : statut corrigé, motif, branche, tours, coût, lien du run. Une issue sans artefact (job expiré, annulé ou interrompu) reçoit `statut FAIL`. L'orchestrateur suit les issues par l'API REST, sans webhook (audit du 2026-11-18, Q6).
+
+### Jeton d'App : 1 h de vie (limite connue)
+Un jeton d'installation d'App GitHub expire au bout de 1 h ([docs GitHub](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app)). Il est créé au début du job `dev` : après 60 min, `git push`, `gh pr create`, l'auto-merge et le commentaire de PR échouent. Hors Opus, `timeout-minutes` reste ≤ 55 (45 aujourd'hui, testé). Opus garde 90 min : un run de plus de 60 min perd ses écritures GitHub. Le job `report` génère son propre jeton, donc le commentaire d'issue survit. Correctif proposé, non implémenté : T-466, § Notes.
+
+### Outils autorisés de l'agent (T-466)
+`Bash(python3:*)` est retiré : il équivalait à un shell libre (`os.environ`, `subprocess`, réseau) et rendait cosmétiques les refus `env` et `printenv`. Préfixes autorisés : `python3 tools/*`, `python3 tests/*` (et leurs formes `-I`), `python3 -m unittest`, `tools/dev/check`, `tests/*`, `bash tests/*`, `gh pr list`, `gh search`. Jamais `python3 -c`, `python3 -` (heredoc), ni `gh api` : la lecture REST est faite par le workflow. `gh pr checks` est retiré : après l'auto-merge, l'agent termine sans attendre la CI. Les hooks (`.claude/hooks/`) et `settings.json` ne changent pas. Risque résiduel : un script écrit par l'agent dans `tools/` ou `tests/` (dans le périmètre du ticket) reste exécutable ; la garde de périmètre et la revue de PR le bornent.
 - Sortie : `mission-result.v1` (`docs/schema/mission-result.v1.json`), archivé en artefact ; le résumé du job affiche `total_cost_usd` et `num_turns`. Ni prompt ni sortie d'outil.
-- Tests : `tests/factory/run-ticket-test.sh`. Le job `agent-trailers` de `ci.yaml` (dans `needs` de `ci-ok`) exécute `check-trailers origin/main..HEAD` sur les PR de branche `claude/*` ou `agent/*` ou du bot de l'exécutant. Après chaque run, le workflow poste en commentaire de la PR une ligne (modèle observé, tours, coût, durée, refus de permission) avec le jeton de l'App ; si la sortie `branch_name` est vide, il retrouve la PR `claude/*` ou `agent/*` qui cite l'issue.
+- Tests : `tests/factory/run-ticket-test.sh`. Le job `agent-trailers` de `ci.yaml` (dans `needs` de `ci-ok`) exécute `check-trailers origin/main..HEAD` sur les PR de branche `claude/*` ou `agent/*` ou du bot de l'exécutant. Après chaque run, le workflow poste en commentaire de la PR une ligne (statut corrigé et motif, branche, modèle observé, tours, coût, durée, refus de permission) avec le jeton de l'App.
+
+## Garde de recouvrement et disjoncteur de quota (T-467)
+État : outils et tests livrés (STATIC) ; câblage dans `claude-agent.yml` à faire (section « Câblage à faire » de
+`backlog/T-467-*.md`). Tant que ce câblage n'est pas fusionné, rien ne bloque un lot : lancer la garde à la main avant
+le dispatch.
+- **Recouvrement** : `python3 -I tools/factory/overlap.py --tickets "101,102,103"` (issues ou `T-NNN`). Lit le
+  `## Périmètre de fichiers` de chaque ticket (rattaché par `github_issue:`) avec l'analyseur du dispatcher
+  (`tools/backlog/admission.py`). Code 4 : deux tickets se recoupent, lot refusé. Code 3 : une référence sans ticket ou
+  sans périmètre exploitable dans un lot de plus d'un ticket, lot refusé. Fichiers chauds : `.github/workflows/ci.yaml`,
+  `.github/CODEOWNERS`, `tools/dev/check`, `tools/dev/ci-map.tsv`, `AGENTS.md` ; `ci.yaml`, `ci-map.tsv` et `check`
+  sont couplés par le test de parité (T-460) : toucher l'un compte pour les trois. Remède : lancer l'un après la fusion
+  de l'autre.
+- **Disjoncteur de quota** (abonnement Max : un seul jeton, fenêtre de 5 h commune à tous les jobs) :
+  - `ledger.py detect --execution-file <sortie de l'action> --state <LIMIT.json>` ouvre le disjoncteur (code 11) si le
+    message final de la session est en erreur (`is_error`) et porte une forme officielle du message de limite
+    ([doc « Usage limits »](https://code.claude.com/docs/en/errors) : `You've hit your session limit · resets 3:45pm`,
+    `weekly limit · resets Mon 12:00am`, `Opus limit`, `Sonnet limit`). Les throttles (429, 529,
+    `Server is temporarily limiting requests`) et le texte d'un agent qui cite le message ne déclenchent rien.
+  - `ledger.py gate --state factory/LIMIT.json --model <modèle>` : `limited=true|false` pour le planificateur, code 11
+    si le lot ne doit pas partir. Une limite Opus ou Sonnet ne bloque que sa famille de modèles ; toute autre limite
+    bloque tout.
+  - Une fois câblé : `plan` n'émet pas de matrice si `factory/LIMIT.json` est sur `main` ; chaque job `dev` re-contrôle `main`
+    et les artefacts `factory-limit-*` des jobs frères du même run avant de lancer l'agent.
+  - Reprise : manuelle (T-326). Au reset annoncé (`resume_at`), Paul fusionne une PR qui supprime
+    `factory/LIMIT.json` (`ledger.py reset --state factory/LIMIT.json`). Relevé `/usage` : geste de Paul.
+- Tests : `tests/factory/overlap-test.sh`, `tests/factory/ledger-test.sh` (hors ligne, sans secret).
 
 ## Garde-fous
 - Déclencheur limité à l'acteur `SmadjaPaul` ; les bots et utilisateurs sans écriture sont refusés par l'action.

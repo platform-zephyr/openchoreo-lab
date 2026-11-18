@@ -11,25 +11,50 @@ Hors ligne : stdlib uniquement, aucun reseau, aucun secret.
 
 Sous-commandes :
   report  --results DIR               sommes par fenetre de 5 h et par semaine (JSON)
-  check   --state FILE                code 0 si l'usine peut lancer ; code 11 si le disjoncteur est ouvert
+  check   --state FILE [--model M]    code 0 si l'usine peut lancer ; code 11 si le disjoncteur est ouvert
+  gate    --state FILE [--model M]    comme check, et ecrit `limited=true|false` dans $GITHUB_OUTPUT (planificateur) ;
+                                      une limite propre a une famille (Opus, Sonnet) ne bloque pas les autres modeles
+  detect  --execution-file F --state FILE [--issue N] [--model M] [--now ISO]
+                                      lit la sortie de claude-code-action (JSON ou JSONL) ; si le message final est une
+                                      erreur de limite d'usage, ouvre le disjoncteur (code 11), sinon 0 (T-467)
   trip    --results DIR --state FILE  ouvre le disjoncteur s'il existe un resultat « limit » (code 11), sinon 0
   reset   --state FILE                referme le disjoncteur (geste manuel de Paul, au reset annonce)
 Le disjoncteur ne relance jamais : il consigne `resume_at` ; la reprise reste manuelle.
+
+Formes du message (doc officielle https://code.claude.com/docs/en/errors, section « Usage limits », lue le
+2026-11-18) : « You've hit your session limit · resets 3:45pm », « You've hit your weekly limit · resets Mon 12:00am »,
+« You've hit your Opus limit · resets 3:45pm », « You've hit your Sonnet limit · resets 3:45pm ». Un throttle serveur
+(« Server is temporarily limiting requests », « Request rejected (429) », 529 « Overloaded ») n'est PAS une limite
+d'abonnement : le disjoncteur l'ignore. En mode `-p`, l'erreur arrive dans le champ `result` du message final ; le
+sous-type peut rester `success` avec `is_error: true` (anthropics/claude-code#79500) : seul `is_error` compte.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, tzinfo
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 WINDOW = timedelta(hours=5)
 EXIT_OPEN = 11
 FIELDS = ("input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
-LIMIT_RE = re.compile(r"(session|usage|weekly|5-hour|rate)\s+limit", re.I)
-RESET_RE = re.compile(r"resets?\s+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", re.I)
+# Forme officielle (doc « Usage limits ») ; apostrophe droite ou typographique.
+OFFICIAL_RE = re.compile(r"you(?:'|\u2019| ha)ve hit your (session|weekly|opus|sonnet) limit", re.I)
+# Formes generiques (« 5-hour session limit reached » ; « Claude AI usage limit reached|<epoch> » des anciens CLI, vue
+# dans des issues amont, absente de la doc : NOT_PROVEN). « rate limit » est exclu : throttle, pas quota.
+LIMIT_RE = re.compile(r"\b(session|usage|weekly|5-hour)\s+limit\b", re.I)
+EPOCH_RE = re.compile(r"usage limit reached\|(\d{10})", re.I)
+RESET_RE = re.compile(
+    r"resets?\s+(?:at\s+)?(?:(mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?"
+    r"(?:\s*\(([^)]+)\))?", re.I)
+WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+FAMILY = {"opus": "claude-opus-", "sonnet": "claude-sonnet-"}
+# Un texte final plus long n'est pas un message d'erreur du CLI, mais un compte rendu d'agent qui peut le citer.
+MAX_ERROR_LEN = 600
 
 
 def parse_ts(value: str) -> datetime:
@@ -113,29 +138,111 @@ def is_limit(r: dict) -> bool:
     return bool(r.get("limit")) or str(r.get("status", "")).upper() == "LIMIT" or r.get("failure") == "session_limit"
 
 
+def _zone(name: str | None) -> tzinfo:
+    """Fuseau entre parentheses dans le message ; UTC sinon (fuseau des runners GitHub)."""
+    if name:
+        try:
+            return ZoneInfo(name.strip())
+        except (ZoneInfoNotFoundError, ValueError):
+            pass
+    return UTC
+
+
+def _to_24h(hour: int, ap: str) -> int:
+    if ap == "pm" and hour < 12:
+        return hour + 12
+    if ap == "am" and hour == 12:
+        return 0
+    return hour
+
+
 def reset_time(r: dict, now: datetime) -> datetime | None:
-    """Reset annonce : `limit.reset_at` (ISO) ou « resets 3pm » dans `limit.message` (prochaine occurrence, UTC)."""
+    """Reset annonce : `limit.reset_at` (ISO) ; sinon « resets 3pm » ou « resets Mon 12:00am » dans `limit.message`
+    (prochaine occurrence apres `now`, dans le fuseau du message ou en UTC) ; sinon « |<epoch> » des anciens CLI."""
     lim = r.get("limit") or {}
     if isinstance(lim, dict) and lim.get("reset_at"):
         return parse_ts(lim["reset_at"])
     msg = lim.get("message", "") if isinstance(lim, dict) else str(lim)
     m = RESET_RE.search(msg)
     if not m:
-        return None
-    hour, minute, ap = int(m.group(1)), int(m.group(2) or 0), (m.group(3) or "").lower()
-    if ap == "pm" and hour < 12:
-        hour += 12
-    if ap == "am" and hour == 12:
-        hour = 0
+        e = EPOCH_RE.search(msg)
+        return datetime.fromtimestamp(int(e.group(1)), UTC) if e else None
+    day, minute = m.group(1), int(m.group(3) or 0)
+    hour = _to_24h(int(m.group(2)), (m.group(4) or "").lower())
     if hour > 23 or minute > 59:
         return None
-    cand = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-    return cand if cand > now else cand + timedelta(days=1)
+    local = now.astimezone(_zone(m.group(5)))
+    cand = local.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    step = timedelta(days=7 if day else 1)
+    if day:
+        cand += timedelta(days=(WEEKDAYS.index(day.lower()[:3]) - cand.weekday()) % 7)
+    if cand <= local:
+        cand += step
+    return cand.astimezone(UTC)
+
+
+def limit_kind(text: str) -> str | None:
+    """`session`, `weekly`, `opus`, `sonnet` (forme officielle) ; `usage`, `5-hour` (forme generique) ; sinon None."""
+    m = OFFICIAL_RE.search(text) or LIMIT_RE.search(text)
+    return m.group(1).lower() if m else None
 
 
 def classify_message(text: str) -> bool:
-    """Vrai si un texte du CLI annonce une limite de session, d'usage ou hebdomadaire."""
-    return bool(LIMIT_RE.search(text))
+    """Vrai si un texte du CLI annonce une limite de session, d'usage, hebdomadaire ou de famille de modele."""
+    return limit_kind(text) is not None
+
+
+def load_messages(path: Path) -> list[dict]:
+    """Sortie de claude-code-action (`execution_file`) : tableau JSON ou JSONL ; lignes illisibles ignorees."""
+    raw = path.read_text(encoding="utf-8").strip()
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+        msgs = data if isinstance(data, list) else [data]
+    except json.JSONDecodeError:
+        msgs = []
+        for line in raw.splitlines():
+            try:
+                msgs.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return [m for m in msgs if isinstance(m, dict)]
+
+
+def detect_limit(messages: list[dict]) -> dict | None:
+    """Limite d'usage annoncee par le message final `result` en erreur (`is_error` vrai), sinon None.
+
+    Seul le message final compte : un tour d'agent qui cite le message (un ticket sur ce sujet) ne declenche rien. Un
+    texte final plus long que MAX_ERROR_LEN est un compte rendu, pas une erreur du CLI.
+    """
+    res = next((m for m in reversed(messages) if m.get("type") == "result"), None)
+    if not res or not res.get("is_error"):
+        return None
+    text = str(res.get("result") or "")
+    kind = limit_kind(text) if len(text) <= MAX_ERROR_LEN else None
+    if kind is None:
+        return None
+    return {"kind": kind, "message": text.strip()}
+
+
+def _write_state(state: Path, now: datetime, resume: datetime | None, **extra) -> None:
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({
+        "schema": "quota-breaker.v1", "state": "open", "tripped_at": now.isoformat(),
+        "resume_at": resume.isoformat() if resume else None, "resume": "manual", **extra,
+    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def detect(execution_file: Path, state: Path, now: datetime, issue: int | None = None,
+           model: str | None = None) -> int:
+    """Ouvre le disjoncteur (code 11) si la session s'est terminee sur une limite d'usage ; sinon 0, sans ecrire."""
+    lim = detect_limit(load_messages(execution_file))
+    if lim is None:
+        return 0
+    _write_state(state, now, reset_time({"limit": lim}, now), kind=lim["kind"], message=lim["message"],
+                 ticket_issue=issue, model=model, agent="claude-agent")
+    return EXIT_OPEN
 
 
 def trip(results: list[dict], state: Path, now: datetime) -> int:
@@ -143,22 +250,40 @@ def trip(results: list[dict], state: Path, now: datetime) -> int:
     if not hits:
         return 0
     last = hits[-1]
-    resume = reset_time(last, now)
-    state.parent.mkdir(parents=True, exist_ok=True)
-    state.write_text(json.dumps({
-        "schema": "quota-breaker.v1", "state": "open", "tripped_at": now.isoformat(),
-        "resume_at": resume.isoformat() if resume else None, "resume": "manual",
-        "ticket_issue": last.get("ticket_issue"), "agent": last["_agent"],
-    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _write_state(state, now, reset_time(last, now), ticket_issue=last.get("ticket_issue"), agent=last["_agent"])
     return EXIT_OPEN
 
 
-def check(state: Path) -> int:
-    if state.exists():
+def blocks(info: dict, model: str | None) -> bool:
+    """Une limite de famille (Opus, Sonnet) ne bloque que cette famille ; toute autre limite bloque tout."""
+    prefix = FAMILY.get(str(info.get("kind", "")).lower())
+    return not (prefix and model and not model.startswith(prefix))
+
+
+def check(state: Path, model: str | None = None) -> int:
+    if not state.exists():
+        return 0
+    try:
         info = json.loads(state.read_text(encoding="utf-8") or "{}")
-        print(f"disjoncteur ouvert : aucun lancement ; reprise manuelle de Paul a partir de {info.get('resume_at')}")
-        return EXIT_OPEN
-    return 0
+    except json.JSONDecodeError:
+        info = {}  # etat illisible : le disjoncteur reste ouvert (sens sur)
+    if not isinstance(info, dict):
+        info = {}
+    if not blocks(info, model):
+        print(f"limite {info.get('kind')} : {model} reste autorise (autre famille de modele)")
+        return 0
+    print(f"disjoncteur ouvert : aucun lancement ; reprise manuelle de Paul a partir de {info.get('resume_at')}")
+    return EXIT_OPEN
+
+
+def gate(state: Path, model: str | None = None) -> int:
+    """Pour le planificateur : `limited=true|false` dans $GITHUB_OUTPUT, code 11 si le lot ne doit pas partir."""
+    rc = check(state, model)
+    out = os.environ.get("GITHUB_OUTPUT")
+    if out:
+        with open(out, "a", encoding="utf-8") as f:
+            f.write(f"limited={'true' if rc else 'false'}\n")
+    return rc
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -166,8 +291,16 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     p_report = sub.add_parser("report")
     p_report.add_argument("--results", required=True, type=Path)
-    p_check = sub.add_parser("check")
-    p_check.add_argument("--state", required=True, type=Path)
+    for name in ("check", "gate"):
+        p_gate = sub.add_parser(name)
+        p_gate.add_argument("--state", required=True, type=Path)
+        p_gate.add_argument("--model")
+    p_detect = sub.add_parser("detect")
+    p_detect.add_argument("--execution-file", required=True, type=Path)
+    p_detect.add_argument("--state", required=True, type=Path)
+    p_detect.add_argument("--issue", type=int)
+    p_detect.add_argument("--model")
+    p_detect.add_argument("--now")
     p_trip = sub.add_parser("trip")
     p_trip.add_argument("--results", required=True, type=Path)
     p_trip.add_argument("--state", required=True, type=Path)
@@ -178,8 +311,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "report":
         print(json.dumps(report(load_results(args.results)), indent=2, sort_keys=True))
         return 0
-    if args.cmd == "check":
-        return check(args.state)
+    if args.cmd in ("check", "gate"):
+        return (check if args.cmd == "check" else gate)(args.state, args.model)
+    if args.cmd == "detect":
+        rc = detect(args.execution_file, args.state, now_utc(args.now), args.issue, args.model)
+        if rc:
+            print("limite d'usage detectee : disjoncteur ouvert, aucun lancement jusqu'a la reprise manuelle",
+                  file=sys.stderr)
+        return rc
     if args.cmd == "trip":
         rc = trip(load_results(args.results), args.state, now_utc(args.now))
         if rc:
