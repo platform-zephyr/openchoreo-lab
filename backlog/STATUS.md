@@ -6,8 +6,8 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 22 |
-| `todo` | 130 |
+| `in-progress` | 23 |
+| `todo` | 129 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 28 |
@@ -35,6 +35,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-461](T-461-indicateur-d-evasions.md) | Indicateur d'évasions de la CI : tools/dev/ci-escapes.py et ligne « Preuve locale » (SL-7) | 2/3 | Reste : rapport hebdomadaire daté. Le générateur (`--out`, fichiers `ci-escapes-AAAA-Www.{json,md}`) est testé sur fixture, mais aucun rapport réel n'a été produit (NOT_TESTED : lecture `gh` en ligne sur le dépôt, aucune planification hebdomadaire). Le ticket… | [#75](https://github.com/platform-zephyr/openchoreo-lab/issues/75) |
 | [T-466](T-466-durcissement-usine-verdict-prompt.md) | Durcissement de l'usine : plafonds de tours, étape Verdict, trailers always(), branche REST, prompt… | 10/10 | (ligne « Reste » absente) | — |
 | [T-467](T-467-garde-de-recouvrement-et-disjoncteur-de-quota.md) | Garde de recouvrement des périmètres et disjoncteur de quota Max pour le planificateur de l'usine | 4/5 | Premier critère ouvert : preuve RUNTIME datée : un dispatch de deux issues en recouvrement s'arrête au job `plan` sans job `dev` ; un | — |
+| [T-469](T-469-triage-echecs-suite-k3d.md) | Triage des cas FAIL préexistants de la suite k3d | 2/4 | Reste (critère 3) : dispatch daté de `k3d-integration` sur la branche `claude/t-469-triage-k3d`. Tant qu'il n'est pas fait, le ticket reste `in-progress`. | — |
 | [T-473](T-473-vue-status-du-backlog.md) | Vue d'état du backlog : fait, en cours, bloqué, prêt (backlog/STATUS.md généré) | 4/5 | Reste : critère 5, imposé par la CI dès la fusion de T-475 (run CI de la PR non encore observé). | — |
 | [T-475](T-475-ci-consolidation-status-historique-tests-usine.md) | Consolidation CI : fraîcheur de STATUS.md, --only partout, historique quality post-merge, tests de… | 5/7 | Premier critère ouvert : run CI de la PR : 18 jobs verts dont `ci-ok`, durées de `dev-factory`, `hooks`, `backlog`, `quality-coverage` | — |
 | [T-476](T-476-score-de-priorite-et-skill-orchestrateur.md) | Score de priorité du backlog (priority.py) et skill orchestrate-backlog | 4/6 | Reste : critères 5 et 6 (branchement CI hors périmètre de cette PR, T-475 modifie `ci.yaml` en parallèle ; mesure sur lots réels). | — |
@@ -64,7 +65,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-201](T-201-data-2.md) | 4 | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
 | [T-050](T-050-verdicts-kube-ops.md) | 3 | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
 | [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | 0 | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
-| [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
 | [T-215](T-215-pack-identite.md) | 55 | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
 | [T-431](T-431-reglages-depot-actions-securite.md) | 5 | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 0/5 | — |
