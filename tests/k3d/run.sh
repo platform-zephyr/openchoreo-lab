@@ -343,6 +343,19 @@ expect_ok T12c "secret de la cellule : clés password + uri (valeurs non affich�
 expect_ok T12d "Job psql idempotent terminé (REVOKE vérifié dans le log)" 'REVOKE CONNECT FROM PUBLIC verified' \
   kubectl logs -n lab-pg "job/$ALPHA_RRN-pg-init"
 
+# --------------------------------------------------------------------------- kgateway : moindre privilège (T-060)
+say "kgateway : le SA du contrôleur ne lit pas les Secrets du cluster (T-060, B6-sa-effective)"
+KGSA=system:serviceaccount:openchoreo-control-plane:kgateway
+i60=0
+for t in "list secrets -A" "watch secrets -A" "get secrets -n kube-system" "list secrets -n default" "list secrets -n lab-pg"; do
+  i60=$((i60 + 1))
+  expect_ok "T060-$i60" "SA kgateway : $t = no" '^no$' bash -c "kubectl auth can-i $t --as=$KGSA || true"
+done
+expect_ok T060-dp "SA kgateway : list secrets -n openchoreo-data-plane = yes (certificat TLS du Gateway)" '^yes$' \
+  kubectl auth can-i list secrets -n openchoreo-data-plane --as="$KGSA"
+expect_ok T060-ready "contrôleur kgateway Available après retrait du droit cluster-wide" 'True' \
+  kubectl -n openchoreo-control-plane get deploy kgateway -o 'jsonpath={.status.conditions[?(@.type=="Available")].status}'
+
 # --------------------------------------------------------------------------- empreinte
 say "Empreinte (kubectl top, k3d, 1 nœud)"
 run_capture FOOTPRINT bash -c '

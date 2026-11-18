@@ -37,6 +37,11 @@ render external-secrets external-secrets openchoreo-external-secrets \
   "$(fetch_chart external-secrets "$ESO_CHART" "$ESO_VERSION" "$ESO_TGZ_SHA256")" "$V/external-secrets.yaml" restricted
 render kgateway kgateway openchoreo-control-plane \
   "$(fetch_chart kgateway "$KGATEWAY_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_TGZ_SHA256")" "$V/kgateway.yaml" restricted
+# T-060 : le filtre RBAC doit accepter le rendu réel du chart et ne laisser aucun `secrets` au ClusterRole.
+n="$(python3 -I "$ROOT/tools/oke/kgateway-rbac.py" --rbac-only < "$OUT/kgateway.yaml" \
+  | yq -N 'select(.kind == "ClusterRole") | .rules[] | select((.resources // []) | contains(["secrets"])) | .verbs | join(",")')" \
+  || { log "kgateway : filtre RBAC en échec sur le rendu du chart"; rc=1; }
+[[ -z "$n" ]] || { log "kgateway : ClusterRole avec secrets après filtre : $n"; rc=1; }
 render openchoreo-control-plane openchoreo-control-plane openchoreo-control-plane \
   "$CP_TGZ" "$V/openchoreo-control-plane.yaml" restricted --set backstage.enabled=false
 render openchoreo-control-plane-portal openchoreo-control-plane openchoreo-control-plane \

@@ -99,6 +99,7 @@ step_5() { # kgateway (CRD puis contrôleur), namespace openchoreo-control-plane
   ctl="$(fetch_chart kgateway "$KGATEWAY_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_TGZ_SHA256")"
   run helm upgrade --install kgateway-crds "$crds" -n openchoreo-control-plane --wait
   run helm upgrade --install kgateway "$ctl" -n openchoreo-control-plane -f "$V/kgateway.yaml" --wait --timeout 5m
+  run "$ROOT/tools/oke/kgateway-rbac.sh"   # T-060 : Secrets bornés à 2 namespaces (B6-sa-effective)
 }
 
 # Copie la CA PUBLIQUE du cluster-gateway (ca.crt seulement) dans les ConfigMap des deux plans.

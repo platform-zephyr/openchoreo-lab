@@ -65,6 +65,7 @@ crds="$(fetch_chart kgateway-crds "$KGATEWAY_CRDS_CHART" "$KGATEWAY_VERSION" "$K
 ctl="$(fetch_chart kgateway "$KGATEWAY_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_TGZ_SHA256")"
 helm upgrade --install kgateway-crds "$crds" -n openchoreo-control-plane --wait
 helm upgrade --install kgateway "$ctl" -n openchoreo-control-plane -f "$V/kgateway.yaml" --wait --timeout 5m
+"$ROOT/tools/oke/kgateway-rbac.sh"   # T-060 : Secrets bornés à 2 namespaces (B6-sa-effective)
 
 log "6. OpenChoreo control plane"
 tgz="$(fetch_chart openchoreo-control-plane "$OPENCHOREO_CP_CHART" "$OPENCHOREO_VERSION" "$OPENCHOREO_CP_TGZ_SHA256")"
