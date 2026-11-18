@@ -7,10 +7,10 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | Statut | Tickets |
 |---|---|
 | `in-progress` | 16 |
-| `todo` | 135 |
+| `todo` | 134 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 22 |
+| `done` | 23 |
 | `dropped` | 27 |
 | **Total** | **248** |
 
@@ -59,7 +59,6 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-215](T-215-pack-identite.md) | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
 | [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | 0/3 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
-| [T-418](T-418-tests-outils-backlog.md) | Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui) | 0/2 | — |
 | [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
 | [T-421](T-421-indicateurs-quality-v1.md) | Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine | 0/2 | — |
 | [T-431](T-431-reglages-depot-actions-securite.md) | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 0/5 | — |
@@ -174,7 +173,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-412](T-412-verificateur-prior-art-ci.md) | Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop | T-411 (in-progress), T-331 (in-progress), T-332 (in-progress) | — |
 | [T-415](T-415-sous-agent-prior-art-scout.md) | Sous-agent `prior-art-scout` (lecture seule, budget borné) | T-411 (in-progress), T-341 (todo) | — |
 | [T-417](T-417-typage-mypy.md) | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | T-214 (todo) | — |
-| [T-419](T-419-retrait-seed-py.md) | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-418 (todo), T-214 (todo) | — |
+| [T-419](T-419-retrait-seed-py.md) | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-214 (todo) | — |
 | [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | T-412 (todo), T-322 (todo) | — |
 | [T-423](T-423-reduire-complexite-argo-guard.md) | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | T-001 (todo) | — |
 | [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | T-431 (todo) | — |
@@ -205,6 +204,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-330](T-330-reglages-de-projet-claude-settings-json.md) | Réglages de projet `.claude/settings.json` : permissions deny, mode dontAsk, sandbox, plafonds de sortie | 2026-11-18 | — | — |
 | [T-413](T-413-pyproject-ruff-shellcheck.md) | `pyproject.toml` (ruff, mypy, pytest, coverage), 13 bogues ruff à 0 et shellcheck sur les 59 scripts | 2026-11-18 | — | — |
 | [T-414](T-414-cliquet-maintenabilite.md) | Cliquet de maintenabilité `tools/quality/check.py` + `baseline.json` (seuils durs sur le code neuf) | 2026-11-18 | — | — |
+| [T-418](T-418-tests-outils-backlog.md) | Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui) | 2026-11-18 | — | — |
 | [T-430](T-430-rulesets-as-code.md) | Rulesets as-code : tools/github/apply.sh (--check/--apply) et main-dev.json alignés sur l'ADR-0002 | 2026-11-18 | — | — |
 | [T-450](T-450-nettoyage-gitleaksignore.md) | Nettoyer la dette de .gitleaksignore (129 emplacements) et le vider | 2026-11-18 | — | — |
 | [T-453](T-453-combler-ecart-check-static-ci.md) | Combler l'écart check --static ↔ CI (SL-1) | 2026-11-18 | — | — |
