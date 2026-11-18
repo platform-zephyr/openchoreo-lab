@@ -424,8 +424,10 @@ v11() {
     "kubectl -n lab-argocd get applications.argoproj.io -o json | jq -e '[.items[] | select(.spec.project == \"default\")] | length == 0'"
   expect_ok B11-authz-manual "Application lab-authz sans synchro automatique" bash -c \
     "kubectl -n lab-argocd get application lab-authz -o json | jq -e '.spec.syncPolicy.automated == null'"
-  expect_ok B11-lab-root-sync "Application lab-root Synced et Healthy" bash -c \
-    "kubectl -n lab-argocd get application lab-root -o json | jq -e '.status.sync.status==\"Synced\" and .status.health.status==\"Healthy\"'"
+  # Healthy, ou Progressing UNIQUEMENT parce que l'ApplicationSet lab-o n'a pas de statut tant que son contrôleur est à
+  # 0 réplica (T-487 : aucune app sur OKE avant accord de Paul). Degraded/Missing restent des échecs.
+  expect_ok B11-lab-root-sync "Application lab-root Synced et Healthy (ou Progressing avec le contrôleur ApplicationSet à 0 réplica)" bash -c \
+    "kubectl -n lab-argocd get application lab-root -o json | jq -e '.status.sync.status==\"Synced\" and (.status.health.status==\"Healthy\" or (.status.health.status==\"Progressing\" and ([.status.resources[]|select((.health.status // \"Healthy\") != \"Healthy\" and .kind != \"ApplicationSet\")]|length==0) and ([.status.resources[]|select(.kind==\"ApplicationSet\")]|length>=1)))' >/dev/null && [[ \$(kubectl -n lab-argocd get deploy argocd-applicationset-controller -o jsonpath='{.spec.replicas}') == 0 || \$(kubectl -n lab-argocd get application lab-root -o jsonpath='{.status.health.status}') == Healthy ]]"
   # lab-platform : synchro MANUELLE, volontairement non lancée tant que l'étape 10 (lab-pg, volume OCI) n'est pas autorisée.
   expect_ok B11-lab-platform-manual "Application lab-platform sans synchro automatique (adoption différée)" bash -c \
     "kubectl -n lab-argocd get application lab-platform -o json | jq -e '.spec.syncPolicy.automated == null'"
