@@ -25,6 +25,14 @@ Budget : OpenChoreo ≤ 1,5 GiB et ≤ 0,3 vCPU au repos = OBJECTIF d'optimisati
 - Atlas est le point d'arrivée ; les agents cloud ont accès aux dépôts (ADR-0012).
 - Chantiers ajoutés : observabilité (Grafana Cloud) et alerting, exploitation, montées de version automatisées, agent de remédiation déclenché sur échec avec escalade ntfy, coût dans le free tier, services IA en sandbox derrière un gateway (agentgateway), data platform légère sur le homelab pour mesurer la plateforme (DORA, maturité sécurité et cloud native). Vitesse maximale : un maximum d'agents en parallèle, les tickets qui accélèrent les suivants d'abord.
 
+## Faits et décisions de Paul du 2026-11-18 (fin de journée)
+- Le dépôt **reste public** : aucune donnée sensible (secret, identifiant de compte, IP, hôte interne, donnée personnelle, détail de faille) n'y entre ; audit et garde CI à mettre en place.
+- Homelab : mini-PC AMD Ryzen 7 PRO 8845HS, 64 Go de RAM, 1 To SSD, 14 To HDD ; Proxmox + VM Talos ; kube-ops y est entièrement déployé avec Argo CD.
+- Oracle : compte **PAYG**, limite Always Free A1 = **4 OCPU / 24 Go** (les valeurs 2/12 du dépôt viennent des comptes sans carte) ; toute dépense au-delà reste un MANDAT.
+- LLM : agents externes = mélange Claude Code (plan Max, ajustable au besoin réel) et DeepSeek ; services IA internes = DeepSeek (via le gateway). Choisir pour chaque tâche le modèle le moins cher qui suffit.
+- Vitesse : Claude doit pouvoir travailler **24 h/24**, avec le minimum d'interventions de Paul et autant d'agents en parallèle que le plan le permet.
+- Accès réseau complet donné aux sessions.
+
 ## Toujours INTERDIT (sans nouvelle autorisation écrite de Paul)
 Création du volume PostgreSQL OCI de 50 Go (`--confirm-storage`) ; toute exposition publique (Tunnel, Ingress, LoadBalancer) hors l'exception MCP ci-dessus ; LoadBalancer OCI facturable ; migration Talos ; modification de `kube-system`, de ressources de production ou de politiques cluster-wide non vérifiées ; `tofu apply`, Doppler, Cloudflare ; migration Authentik ; création par un agent d'une identité/clé/token d'accès ; secret affiché ou committé ; TLS désactivé ; contournement d'admission ; suppression de ressources hors du labo ; nouvelle étude comparative.
 Périmètre cluster : écriture dans `openchoreo-*`, `lab-*` (+ les namespaces de prérequis que l'installation crée et marque `part-of=openchoreo-lab`) et `dp-*` ; lecture seule ailleurs. Les noms imposés par OpenChoreo (`dp-*`, label sur `default`) sont des exceptions acquittées ci-dessus.
