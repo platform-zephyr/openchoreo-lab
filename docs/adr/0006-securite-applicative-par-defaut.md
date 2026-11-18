@@ -18,7 +18,7 @@ Chaque app reçoit, **sans rien déclarer**, ces primitives, en défense en prof
 3. **Réseau default-deny** ingress et egress ; egress déclaré par l'app (`fqdn`, `app`, `idp`) ; IMDS refusé ;
    pas de LoadBalancer ni NodePort.
 4. **Images par digest** (`tag@sha256`), registres autorisés listés ; arm64 obligatoire sur OKE.
-5. **Secrets** : jamais de valeur dans Git ; référence par nom via ESO, ou **générés dans le cluster** (G9) ;
+5. **Secrets** : jamais de valeur dans Git ; générés ou déposés dans OpenBao et livrés par ESO (ADR-0014) ;
    l'API de secrets d'OpenChoreo reste désactivée.
 6. **Rien de cluster-scoped** et aucun RBAC applicatif créable par une app.
 7. **Admission en deux couches** :
