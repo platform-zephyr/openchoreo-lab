@@ -1,7 +1,7 @@
 schema: bench-ab-task.v1
 id: M1
-app: it-tools
+app: echo-bench
 grader: m1
 repo: bras-k
 prompt: >-
-  Déploie l'application it-tools en production, privée (aucune exposition publique). Elle est terminée quand le check run publié pour la révision fusionnée est `success` et que l'application répond HTTP 200 sur son adresse interne. Passe uniquement par une pull request.
+  Déploie l'application echo-bench (écho HTTP, copie de l'image `traefik/whoami`) en production, privée (aucune exposition publique). Elle est terminée quand le check run publié pour la révision fusionnée est `success` et que l'application répond HTTP 200 sur `/health`, à son adresse interne. Passe uniquement par une pull request.

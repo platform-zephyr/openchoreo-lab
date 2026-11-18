@@ -1,7 +1,7 @@
 schema: bench-ab-task.v1
 id: M2
-app: vikunja
+app: miniflux
 grader: m2
 repo: bras-k
 prompt: >-
-  Déploie l'application vikunja avec une base PostgreSQL, en production, avec connexion locale (sans OIDC) et des données synthétiques. Elle est terminée quand le check run publié pour la révision fusionnée est `success` et qu'une ligne de test créée dans la base est lue par l'API de l'application. Passe uniquement par une pull request.
+  Déploie l'application miniflux avec une base PostgreSQL, en production, avec connexion locale (sans OIDC ; compte administrateur local, dont le mot de passe factice est fourni par le harnais dans la variable `ADMIN_PASSWORD`) et des données synthétiques. Elle est terminée quand le check run publié pour la révision fusionnée est `success` et qu'une ligne de test créée dans la base est lue par l'API de l'application. Passe uniquement par une pull request.
