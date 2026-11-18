@@ -162,16 +162,7 @@ metadata: {name: default-deny}
 spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
 EOP
 done
-# Le paramètre de la VAP-3 (NetworkPolicy default-deny) est lu par un informer : juste après sa création, un Pod peut
-# encore voir « no params found ». Attente bornée (15 s) avant de conclure ; un refus persistant reste une erreur.
-for ns in lab-vap-test dp-vap-app dp-vap-nopsa vap-plain; do
-  ok=non
-  for _ in $(seq 1 15); do
-    if pod target | kubectl -n "$ns" apply -f - >/dev/null 2>&1; then ok=oui; break; fi
-    sleep 1
-  done
-  [[ "$ok" == oui ]] || pod target | kubectl -n "$ns" apply -f - >/dev/null
-done
+for ns in lab-vap-test dp-vap-app dp-vap-nopsa vap-plain; do pod target | kubectl -n "$ns" apply -f - >/dev/null; done
 kubectl -n lab-pg create secret generic lab-pg-superuser --from-literal=username=factice --dry-run=client -o yaml \
   | kubectl apply -f - >/dev/null
 NODE="$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"; NODE="${NODE:-k3d-lab-sec-vap-server-0}"
