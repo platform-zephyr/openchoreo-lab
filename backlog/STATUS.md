@@ -6,13 +6,13 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 21 |
+| `in-progress` | 22 |
 | `todo` | 132 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 27 |
 | `dropped` | 27 |
-| **Total** | **255** |
+| **Total** | **256** |
 
 ## En cours (`in-progress`)
 
@@ -39,6 +39,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-475](T-475-ci-consolidation-status-historique-tests-usine.md) | Consolidation CI : fraîcheur de STATUS.md, --only partout, historique quality post-merge, tests de… | 5/7 | Premier critère ouvert : run CI de la PR : 18 jobs verts dont `ci-ok`, durées de `dev-factory`, `hooks`, `backlog`, `quality-coverage` | — |
 | [T-476](T-476-score-de-priorite-et-skill-orchestrateur.md) | Score de priorité du backlog (priority.py) et skill orchestrate-backlog | 4/6 | Reste : critères 5 et 6 (branchement CI hors périmètre de cette PR, T-475 modifie `ci.yaml` en parallèle ; mesure sur lots réels). | — |
 | [T-478](T-478-plafonds-natifs-executant.md) | Exécutant : plafonds natifs de Claude Code (--max-budget-usd, --permission-prompts none) et corps d… | 4/6 | Premier critère ouvert : run réel daté sur un ticket simple : `total_cost_usd` ≤ plafond, `permission_denials` sans répétition du même outil, tours comparés au run 44313706955 (79 tours) — NOT_TESTED (aucun dispatch après fu… | — |
+| [T-481](T-481-integrer-skills-mattpocock.md) | Intégrer les skills mattpocock/skills (MIT) pour les sessions, l'usine et l'orchestrateur, à SHA fi… | 4/6 | Premier critère ouvert : run réel de l'usine qui lit `mattpocock-tdd` (trace `Read` dans le fichier d'exécution) — NOT_TESTED (aucun dispatch) | — |
 
 ## Bloqué (`blocked`)
 
