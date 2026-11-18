@@ -20,6 +20,13 @@ This product includes software adapted from:
   .agents/skills/mattpocock-tdd, mattpocock-diagnosing-bugs, mattpocock-code-review, mattpocock-research,
   mattpocock-grilling, mattpocock-writing-for-agents. No upstream script is copied.
   (Full MIT text in LICENSES/MIT-mattpocock-skills.txt.)
+- SmadjaPaul/kube-ops (https://github.com/SmadjaPaul/kube-ops), PR #1620 commit
+  1ecb02f8da18ca986aa5178633b1e97c9ac4ed93 and PR #1629 commit 98a263fb2241dfac92b348ad1ad7f9d35a94cc30
+  MIT License, Copyright (c) 2025 theepicsaxguy. Copied unmodified below a 5-line source header (T-494,
+  checked by tools/oke/baseline-source.sh): platform/baseline/vap-baseline-{pod-hardening,automount-token,
+  image-digest}.yaml (k8s/components/baseline-vap/), platform/baseline/ccnp-imds.yaml
+  (k8s/clusters/oracle-a1/baseline/imds-deny.yaml), platform/install/values/cilium.yaml
+  (k8s/clusters/oracle-a1/bootstrap/cilium-values.yaml). (Full MIT text in LICENSES/MIT-kube-ops.txt.)
 - [only if copied] VizzleTF/homelab (https://github.com/VizzleTF/homelab)
   MIT License, Copyright (c) 2024-2026 VizzleTF. ApplicationSet template adapted from
   argocd/appsets/apps-appset.yaml. (Full MIT text in LICENSES/MIT-VizzleTF.txt.)

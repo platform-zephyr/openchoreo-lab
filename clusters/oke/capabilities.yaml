@@ -9,7 +9,7 @@ spec:
   availability: always
   gvisor: absent          # aucune preuve datee d'un pod sous runsc sur ce cluster
   admission: [psa, vap]   # pas de Kyverno
-  # Cible du gate : Cilium en chaining (aujourd'hui FLANNEL_OVERLAY, qui n'applique pas les NetworkPolicy [C]).
+  # Cilium en chaînage OCI VCN-native, posé par tools/oke/install.sh --step 0 (T-494), contrôlé par verify.sh --step 0.
   cilium: true
   privateEgressCIDRs: []
   # lab-pg n'est PAS admis sur OKE : CNPG demande un PVC et l'overlay impose oci-bv (>= 50 Go) = le dernier quota,

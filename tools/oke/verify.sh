@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # verify.sh : critères de sortie de la Phase B, étape par étape (docs/PHASE-B.md §2). Étapes 1-5 et
 # --security exécutées sur OKE le 2026-11-17 (journal $STATE_DIR/verify.log) ; 6 et suivantes NON exécutées.
-# Usage : tools/oke/verify.sh --step N (N = 1..12 ou 6b)   |   tools/oke/verify.sh --security   |   --all
+# Usage : tools/oke/verify.sh --step N (N = 0..12 ou 6b)   |   tools/oke/verify.sh --security   |   --all
+# Étape 0 (socle cluster, T-494) : Cilium en chaînage OCI, VAP/VAPB baseline-*, CCNP deny-imds et
+# allow-egress-unisolated, identiques à Git (kubectl diff --server-side : dry-run, rien n'est persisté).
 # Lecture seule, sauf : `kubectl apply --dry-run=server` (rien n'est persisté) et, pour --security,
 # un pod de sonde éphémère `lab-netprobe` dans openchoreo-control-plane (supprimé à la fin).
 # Sortie : une ligne PASS / FAIL / BLOCKED par test, horodatée ; journal dans $STATE_DIR/verify.log.
@@ -73,6 +75,61 @@ spec:
       resources: {requests: {cpu: 5m, memory: 16Mi}, limits: {cpu: 50m, memory: 32Mi}}
       securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
 EOF
+}
+
+# --- Étape 0 : socle cluster (platform/baseline/, platform/install/values/cilium.yaml) -------------------
+cilium_ready() {
+  local ds; ds="$(kubectl -n kube-system get ds cilium -o json)" || return 1
+  jq -e '.status.desiredNumberScheduled > 0 and .status.numberReady == .status.desiredNumberScheduled' <<<"$ds" >/dev/null
+}
+cilium_version() { # l'image de l'agent porte la version épinglée (versions.env), par digest
+  local img; img="$(kubectl -n kube-system get ds cilium -o jsonpath='{.spec.template.spec.containers[0].image}')" || return 1
+  [[ "$img" == *":v$CILIUM_VERSION@sha256:"* ]]
+}
+cilium_chaining() { # chaînage OCI VCN-native (guide amont) : generic-veth, cible oci, répertoire CNI non exclusif
+  local d; d="$(kubectl -n kube-system get configmap cilium-config -o json)" || return 1
+  jq -e '.data["cni-chaining-mode"] == "generic-veth" and .data["cni-chaining-target"] == "oci"
+         and .data["cni-exclusive"] == "false" and .data["routing-mode"] == "native"' <<<"$d" >/dev/null
+}
+baseline_as_git() { # 0 seulement si l'état vivant = Git (diff vide) ; 1 = écart ; > 1 = erreur => échec
+  kubectl diff --server-side --force-conflicts --field-manager=openchoreo-lab -f "$ROOT/platform/baseline/"
+}
+c1_excluded() {
+  local sel; sel="$(kubectl get ciliumclusterwidenetworkpolicy allow-egress-unisolated -o json)" || return 1
+  jq -e '[.spec.endpointSelector.matchExpressions[]
+          | select(.key == "io.cilium.k8s.namespace.labels.platform.smadja.dev/egress-isolated"
+                   and .operator == "NotIn" and .values == ["true"])] | length == 1' <<<"$sel" >/dev/null
+}
+pods_without_cep() { # affiche ns/pod des pods Running hors hostNetwork sans CiliumEndpoint ; échec si lecture KO
+  local pods ceps
+  pods="$(kubectl get pods -A -o json)" || return 2
+  ceps="$(kubectl get ciliumendpoints.cilium.io -A -o json)" || return 2
+  jq -r --slurpfile cep <(printf '%s' "$ceps") '
+    ([$cep[0].items[] | "\(.metadata.namespace)/\(.metadata.name)"]) as $c
+    | .items[] | select(.spec.hostNetwork != true and .status.phase == "Running")
+    | "\(.metadata.namespace)/\(.metadata.name)" | select(. as $k | ($c | index($k)) == null)' <<<"$pods"
+}
+v0() {
+  expect_ok B0-cilium "DaemonSet kube-system/cilium prêt" cilium_ready
+  expect_ok B0-cilium-version "image Cilium v$CILIUM_VERSION par digest (versions.env)" cilium_version
+  expect_ok B0-cilium-chaining "Cilium en chaînage OCI VCN-native (generic-veth, cible oci, non exclusif, routage natif)" cilium_chaining
+  local v p missing
+  for v in baseline-pod-hardening baseline-automount-token baseline-image-digest; do
+    expect_ok "B0-vap-$v" "VAP $v présente" kubectl get validatingadmissionpolicy "$v"
+    expect_ok "B0-vapb-$v" "VAPB $v présente" kubectl get validatingadmissionpolicybinding "$v"
+  done
+  for p in deny-imds allow-egress-unisolated; do
+    expect_ok "B0-ccnp-$p" "CCNP $p présente" kubectl get ciliumclusterwidenetworkpolicy "$p"
+  done
+  expect_ok B0-c1 "allow-egress-unisolated exclut platform.smadja.dev/egress-isolated=true (kube-ops #1629)" c1_excluded
+  expect_ok B0-git "VAP, VAPB et CCNP vivantes identiques à platform/baseline/ (kubectl diff --server-side vide)" baseline_as_git
+  # Refus réel (dry-run serveur) dans `default`, sans label PSA : seule baseline-pod-hardening peut refuser.
+  expect_deny B0-vap-deny "pod privileged+hostNetwork refusé par la VAP baseline-pod-hardening (namespace default, dry-run)" \
+    'baseline-pod-hardening' bad_pod default
+  if missing="$(pods_without_cep)"; then
+    if [[ -z "$missing" ]]; then res PASS B0-cep "tout pod Running hors hostNetwork a un CiliumEndpoint (politiques appliquées)"
+    else res FAIL B0-cep "pods sans CiliumEndpoint, hors politique (install.sh --step 0 les recrée) : $(tr '\n' ' ' <<<"$missing")"; fi
+  else res FAIL B0-cep "pods ou CiliumEndpoints illisibles"; fi
 }
 
 v1() {
@@ -501,7 +558,7 @@ security() {
 case "$MODE" in
   --step) declare -F "v$N" >/dev/null || die "étape inconnue : $N"; "v$N";;
   --security) security;;
-  --all) for n in 1 2 3 4 5 6 6b 7 8 9 10 11; do "v$n"; done; security;;
+  --all) for n in 0 1 2 3 4 5 6 6b 7 8 9 10 11; do "v$n"; done; security;;
   *) die "usage : $0 --step N | --security | --all";;
 esac
 log "FAIL=$FAILS BLOCKED=$BLOCKS (journal : $STATE_DIR/verify.log)"
