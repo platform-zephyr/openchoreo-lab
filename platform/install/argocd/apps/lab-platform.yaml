@@ -12,7 +12,7 @@
 # Projet lab-platform (changement PRIVILÉGIÉ). Les kinds cluster-scoped sont NOMMÉS dans l'AppProject
 # (revue B2) : un fichier ajouté sous policies/ ou data/ avec un autre nom (ex. VAP baseline-* de kube-ops,
 # Namespace kube-system) est refusé par Argo à la synchronisation. Les kinds APPLICATIFS (Component...)
-# relèvent du projet lab-apps (generated/), pas de celui-ci.
+# relèvent du projet lab-o (generated/), pas de celui-ci.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

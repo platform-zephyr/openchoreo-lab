@@ -6,7 +6,7 @@ signals:
   - "app-status.v1 de l'app a un verdict FAIL depuis 10 minutes"
 checks:
   - "golden-paths/_checks/run-all.sh --format json"
-  - "argocd app get lab-apps"
+  - "argocd app get lab-o-<app>"
   - "kubectl get pods -n dp-<projet>-<app>-<env>"
 allowed_actions:
   - diagnose

@@ -104,4 +104,4 @@ Un jeton d'installation d'App GitHub expire au bout de 1 h ([docs GitHub](https:
   sans bypass).
 ## Limites
 - Action en bêta : épinglée par SHA du tag v1 ; relire les changements avant mise à jour.
-- Conflits : `lab-apps.yaml` (une entrée par app) est le point chaud : le coordinateur groupe les entrées.
+- Conflits : depuis T-491, ajouter une app OKE n'édite plus `lab-apps.yaml` (ApplicationSet `lab-o`) : le point chaud disparaît.

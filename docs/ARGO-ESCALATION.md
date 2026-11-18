@@ -1,5 +1,7 @@
 # Escalade de privilèges par Argo CD : preuve négative (flux A2, PR #8)
 
+> **T-491 : renommage.** L'Application `lab-apps` est devenue l'ApplicationSet `lab-o` (une Application `lab-o-<app>` par app) et l'AppProject `lab-apps` l'AppProject `lab-o`. Ce document décrit l'état courant. Les preuves N* de `tests/argo-escalation/RESULTS.md` datent du 2026-11-17 sous l'ancien nom : **NOT_TESTED** sous `lab-o` tant que la suite n'est pas rejouée.
+
 > Preuves réelles : `tests/argo-escalation/RESULTS.md`, avec un vrai Argo CD v3.5.1 (chart 10.3.3, values du dépôt) sur un k3d jetable `lab-sec-argo`. Étiquette **k3d, pas OKE**. Script reproductible : `tests/argo-escalation/run.sh`. Frontière de confiance et décision : `docs/GITOPS-TRUST-BOUNDARY.md`.
 
 ## Conclusion
@@ -11,7 +13,7 @@
 - poser un Secret ;
 - écrire hors de `default`.
 
-Dans chacun de ces cas, Argo refuse la synchro (`… is not permitted in project lab-apps`), et l'API server ne reçoit rien.
+Dans chacun de ces cas, Argo refuse la synchro (`… is not permitted in project lab-o`), et l'API server ne reçoit rien.
 
 La synchro automatique de l'authz (`lab-authz`) est impossible, même si une PR ajoute `automated` : la fenêtre `deny` du projet l'empêche. La synchro manuelle reste possible. Il en va de même pour tout `platform/**` : `lab-platform` porte la même fenêtre. Un merge ne s'applique donc jamais seul.
 
@@ -33,7 +35,7 @@ La synchro automatique de l'authz (`lab-authz`) est impossible, même si une PR 
 |---|---|---|---|---|
 | `lab-root` | `platform/install/argocd/apps` | `lab-argocd` | `Application` seulement | auto |
 | `lab-platform` | `platform/**` (include fermé) | `default`, `lab-pg` | cluster : 5 types OpenChoreo, 2 VAP et VAPB `lab-*`, Namespace `lab-pg`, tous nommés ; namespacé : Environment, DeploymentPipeline, NetworkPolicy, Cluster CNPG | **manuelle forcée** (fenêtre `deny`) |
-| `lab-apps` | `generated/namespaces/default` | `default` | **aucun kind cluster-scoped** ; 9 kinds OpenChoreo applicatifs | manuelle (Phase C : auto possible) |
+| `lab-o` | `generated/namespaces/default` | `default` | **aucun kind cluster-scoped** ; 9 kinds OpenChoreo applicatifs | automatique sans prune (ApplicationSet `lab-o`) |
 | `lab-authz` | `platform/authz` | `lab-argocd` | `ClusterAuthzRole*` `lab-*` | **manuelle forcée** (fenêtre `deny`) |
 | `default` | — | — | rien (verrouillé) | — |
 
@@ -45,11 +47,11 @@ PASS = refusé comme attendu, avec observation de l'état Argo (opération, cond
 
 | Attaque | Type de PR | Barrière réelle | Barrière CI (`argo_guard`, contournable par la PR) | Preuve réelle |
 |---|---|---|---|---|
-| Application dans `generated/` | applicative | Argo : `lab-apps` sans kind Application | A1, G1 | N2b **PASS** |
-| ClusterRoleBinding, ClusterRole `*`, VAP nouvelle ou modifiée dans `generated/` | applicative | Argo : `lab-apps` sans kind cluster-scoped | S1, G1 | N5a, N5c, N5d, N5e **PASS** |
-| Namespace `kube-system` ou label PSA (`lab-pg`) depuis `generated/` | applicative | Argo : `lab-apps` sans Namespace | G1, S1 | N5b, N5g **PASS** |
-| Secret en clair dans `generated/` | applicative | Argo : Secret hors whitelist `lab-apps` | S1, G1 (+ gitleaks) | N5f **PASS** |
-| Objet applicatif hors de `default` (par exemple `kube-system`) | applicative | Argo : destination `lab-apps` = `default` seulement | — | N5h **PASS** |
+| Application dans `generated/` | applicative | Argo : `lab-o` sans kind Application | A1, G1 | N2b **PASS** |
+| ClusterRoleBinding, ClusterRole `*`, VAP nouvelle ou modifiée dans `generated/` | applicative | Argo : `lab-o` sans kind cluster-scoped | S1, G1 | N5a, N5c, N5d, N5e **PASS** |
+| Namespace `kube-system` ou label PSA (`lab-pg`) depuis `generated/` | applicative | Argo : `lab-o` sans Namespace | G1, S1 | N5b, N5g **PASS** |
+| Secret en clair dans `generated/` | applicative | Argo : Secret hors whitelist `lab-o` | S1, G1 (+ gitleaks) | N5f **PASS** |
+| Objet applicatif hors de `default` (par exemple `kube-system`) | applicative | Argo : destination `lab-o` = `default` seulement | — | N5h **PASS** |
 | Application enfant `project: default` | privilégiée (`apps/`) | Argo : `default` verrouillé (aucun dépôt, aucune destination) ; l'Application est créée mais inerte | A2 | N1 **PASS** |
 | Application hors `apps/` (dans `platform/policies`) | privilégiée | Argo : Application hors whitelist `lab-platform` | A1 | N2a **PASS** |
 | Application dans `kube-system` | privilégiée (`apps/`) | Argo : destination `lab-root` = `lab-argocd` | — | N3 **PASS** |
@@ -58,14 +60,14 @@ PASS = refusé comme attendu, avec observation de l'état Argo (opération, cond
 | Merge sur `platform/**` (VAP, PSA…) | privilégiée | Argo : fenêtre `deny` du projet `lab-platform`, donc geste opérateur obligatoire | A4, P3 | N9, N7a **PASS** |
 | ClusterRole `*` par `platform/**`, même synchronisé à la main | privilégiée | Argo : kinds cluster-scoped nommés de `lab-platform` | S1 | N6 **PASS** |
 | Baisse PSA de `lab-pg` par `platform/**`, synchronisée à la main | privilégiée | **aucune dans Argo** (Namespace nommé) : relecture opérateur | S3 | N7b **ACCEPTÉ par Argo** (attendu) |
-| Modifier les VAP ou le RBAC du cluster par une PR applicative | applicative | Argo `lab-apps` (cluster-scoped interdit) ; le RBAC du cluster n'est synchronisé par aucun projet (bootstrap) | S1 | N5a, N5c, N5e **PASS** |
+| Modifier les VAP ou le RBAC du cluster par une PR applicative | applicative | Argo `lab-o` (cluster-scoped interdit) ; le RBAC du cluster n'est synchronisé par aucun projet (bootstrap) | S1 | N5a, N5c, N5e **PASS** |
 
 **API server / VAP.** Aucune VAP du labo ne vise l'identité d'Argo : `lab-cluster-agent-scope` vise l'agent OpenChoreo et `lab-cell-pod-hardening` les pods `dp-*`. Le contrôleur Argo a `*/*/*`. **Toutes les barrières prouvées ci-dessus sont donc des barrières Argo (AppProject), pas des barrières de l'API.** C'est suffisant tant que les AppProject ne peuvent être changés que par l'opérateur. C'est le cas : aucun projet n'admet le kind AppProject (N8), et `project-*.yaml` est du bootstrap.
 
 ## Ce qui tourne en CI, et ce qui n'y tourne pas
 
 - **En CI** (job `platform`, inclus dans `ci-ok`) :
-  - `tools/oke/argo_guard.py` : nouvelles règles G1 et P3, A2/A3/A4 étendues à `lab-apps`/`lab-platform`, S1 par projet ;
+  - `tools/oke/argo_guard.py` : nouvelles règles G1 et P3, A2/A3/A4 étendues à `lab-o`/`lab-platform` (O1-O5 pour l'ApplicationSet `lab-o`), S1 par projet ;
   - `tests/argo-guard/run.sh` : 28 cas, dont 13 nouveaux pour le flux A2 ;
   - `kubeconform -strict` des AppProject et Application (`tools/oke/kubeconform-platform.sh`, inchangé, couvre `argocd/*.yaml` et `apps/*.yaml`) ;
   - shellcheck et yamllint de `tests/argo-escalation/`.
@@ -74,7 +76,7 @@ PASS = refusé comme attendu, avec observation de l'état Argo (opération, cond
 
 ## Impacts à reporter (hors périmètre de ce flux)
 
-- `tools/oke/verify.sh` (B11-projects) attend encore les projets `lab lab-authz lab-root` : il faut `lab-platform lab-apps lab-authz lab-root`. B11-lab-platform suppose une synchro faite : l'étape 11 doit inclure une synchro manuelle de `lab-platform`.
-- `tools/oke/uninstall.sh:188` supprime `lab-root lab-platform lab-authz` : il faut ajouter `lab-apps`.
+- `tools/oke/verify.sh` (B11-projects) attendait les projets `lab lab-authz lab-root` ; corrigé (T-491) : `lab-platform lab-o lab-authz lab-root`. B11-lab-platform suppose une synchro faite : l'étape 11 doit inclure une synchro manuelle de `lab-platform`.
+- `tools/oke/uninstall.sh` supprime les Applications `lab-root lab-platform lab-authz` (l.211) : l'ApplicationSet `lab-o` et ses Applications `lab-o-<app>` n'y figurent pas (hors périmètre T-491, à traiter).
 - `docs/CI-PLATFORM-CHECKS.md` décrit encore le projet `lab` et les règles d'avant A2.
 - `docs/APP-CONTRACT.md` §5 annonce `lab-platform` en selfHeal : ce n'est plus le cas (fenêtre `deny`).

@@ -10,7 +10,7 @@
 # [S] Argo réécrit l'annotation de suivi à l'apply (une app ne peut pas se faire passer pour lab-platform) :
 # à prouver au rejeu API server avec Argo (non disponible : pas de cluster libre).
 # Ce que la règle NE couvre PAS : un objet cluster-scoped sans aucune marque (Helm hors dp-*, kubectl
-# direct) — RBAC et argo_guard.py (AppProject lab-apps sans clusterResourceWhitelist) restent propriétaires.
+# direct) — RBAC et argo_guard.py (AppProject lab-o sans clusterResourceWhitelist) restent propriétaires.
 # failurePolicy Ignore : Kyverno arrêté, AppProject + RBAC + VAP-1 restent en place.
 # Tests : tests/kyverno/lab-cluster-scoped-provenance/
 apiVersion: policies.kyverno.io/v1

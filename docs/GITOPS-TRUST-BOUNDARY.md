@@ -7,7 +7,7 @@
 **Un seul dépôt, deux périmètres GitOps séparés DANS LE CLUSTER, et une identité d'agent distincte côté GitHub. Pas de second dépôt pour l'instant.**
 
 1. **Fait (ce flux), sans dépendre de GitHub.** Un AppProject par source :
-   - `lab-apps` : `generated/**`, synchro automatique possible, bornée aux kinds OpenChoreo namespacés dans `default` ;
+   - `lab-o` (ApplicationSet `lab-o`, une Application `lab-o-<app>` par app) : `generated/**`, synchro automatique sans prune, bornée aux kinds OpenChoreo namespacés dans `default` ;
    - `lab-platform` et `lab-authz` : `platform/**`, avec une fenêtre `deny` permanente (`manualSync: true`).
 
    Conséquence : **aucun merge ne modifie seul la plateforme**. Il faut une synchro manuelle de l'opérateur.
@@ -21,7 +21,7 @@
 | Niveau | Contenu | Qui merge | Qui applique |
 |---|---|---|---|
 | Plateforme (privilégié) | `platform/**` : RBAC, VAP, types OpenChoreo, authz, Argo (projets, Application), identité, données, `tools/oke/**`, `.github/**` | Paul (cible : revue code owner obligatoire) | l'opérateur, par synchro manuelle `lab-platform` / `lab-authz`, ou `install.sh` pour le bootstrap |
-| Applicatif (autonome) | `apps/**` → `generated/**` (`tools/appgen`) : app.yaml, versions, ressources, paramètres | agent, si `ci-ok` | Argo `lab-apps`, borné par l'AppProject |
+| Applicatif (autonome) | `apps/**` → `generated/**` (`tools/appgen`) : app.yaml, versions, ressources, paramètres | agent, si `ci-ok` | Argo `lab-o-<app>` (ApplicationSet `lab-o`), borné par l'AppProject `lab-o` |
 
 **Une PR qui touche `platform/**` n'est jamais une PR applicative**, même si elle vient d'un agent applicatif.
 
@@ -46,6 +46,6 @@
 
 ## Ce qui reste un canal indirect (hors Argo)
 
-- `SecretReference` (kind admis dans `lab-apps`) : la portée réelle dépend du `ClusterSecretStore` et de l'ESO. C'est le flux A1 (lecture des Secrets), à borner côté ESO.
+- `SecretReference` (kind admis dans `lab-o`) : la portée réelle dépend du `ClusterSecretStore` et de l'ESO. C'est le flux A1 (lecture des Secrets), à borner côté ESO.
 - Un Component choisit son `ClusterComponentType` parmi ceux qui existent. La borne est celle des CCT durcis (plateforme).
-- `tools/appgen` et `.github/**` : une PR applicative qui les modifie n'élargit pas ce qu'Argo `lab-apps` applique. Elle peut en revanche faire passer `ci-ok` sur un `generated/` qui n'est plus la sortie d'appgen. Le contenu reste borné par `lab-apps`.
+- `tools/appgen` et `.github/**` : une PR applicative qui les modifie n'élargit pas ce qu'Argo `lab-o` applique. Elle peut en revanche faire passer `ci-ok` sur un `generated/` qui n'est plus la sortie d'appgen. Le contenu reste borné par `lab-o`.
