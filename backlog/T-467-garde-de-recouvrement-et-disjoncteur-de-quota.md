@@ -28,7 +28,7 @@ Lever deux blocages du passage N = 3 → 6 → 10 (audit du premier run multi-is
    le planificateur n'émet plus de matrice. La reprise reste manuelle (T-326).
 
 ## Périmètre de fichiers
-tools/factory/, tests/factory/, docs/AGENT-RUNNERS.md
+tools/factory/, tests/factory/, docs/AGENT-RUNNERS.md, .github/workflows/claude-agent.yml
 
 ## Critères de fin
 - [x] `tools/factory/overlap.py` refuse (code 4) deux tickets dont les périmètres se recoupent, fichiers chauds compris ;
@@ -38,9 +38,11 @@ tools/factory/, tests/factory/, docs/AGENT-RUNNERS.md
   (session, weekly, Opus, Sonnet), ignore les throttles (429, 529, « Server is temporarily limiting requests ») et le
   texte d'agent qui cite le message ; `ledger.py gate` écrit `limited=true|false` pour le planificateur — STATIC PASS
   2026-11-18 : `tests/factory/ledger-test.sh` (14 tests)
-- [x] `docs/AGENT-RUNNERS.md` décrit la garde, le disjoncteur et la reprise manuelle
-- [ ] câblage dans `.github/workflows/claude-agent.yml` selon la section « Câblage à faire » — NOT_TESTED (fichier
-  modifié par un autre agent au moment de ce ticket ; à faire dans la PR suivante sur ce fichier)
+- [x] `docs/AGENT-RUNNERS.md` décrit la garde, le disjoncteur, le câblage et la reprise manuelle
+- [x] câblage dans `.github/workflows/claude-agent.yml` selon la section « Câblage à faire » (jobs `plan`, `dev`,
+  `report`, `breaker`) ; une issue d'un lot refusé reçoit un commentaire, aucun job `dev` — STATIC PASS 2026-11-18 :
+  `tests/factory/workflow-guard-test.sh` (12 tests : structure, rejeu des scripts `run:` avec un `gh` factice, 7
+  mutations du workflow toutes détectées), `tests/factory/run-ticket-test.sh` (66 PASS), actionlint propre
 - [ ] preuve RUNTIME datée : un dispatch de deux issues en recouvrement s'arrête au job `plan` sans job `dev` ; un
   `factory/LIMIT.json` sur `main` empêche la matrice ; un job frère s'arrête après la limite d'un autre job du même run
 
@@ -126,6 +128,30 @@ dire dans le résumé du run. Reprise : Paul fusionne une PR qui supprime `facto
 (`ledger.py reset --state factory/LIMIT.json`), au reset annoncé (`resume_at`).
 
 ## Notes
+Câblage livré (2026-11-18, niveau STATIC). Écarts avec « Câblage à faire », choisis ici :
+- `plan` : l'étape de garde publie `overlap=true|false` (au lieu de `>/dev/null`) ; une étape suivante commente chaque
+  issue numérique du lot refusé (jeton du workflow, `issues: write` sur `plan`), puis sort en code 4 : `plan` rouge,
+  aucun job `dev`, ni `report` ni `breaker`. Code 2 (usage) : `plan` rouge sans commentaire.
+- `dev` : les artefacts des jobs frères sont lus par `actions/download-artifact` (épinglé, déjà utilisé par `report`)
+  au lieu de `gh run download` ; fichiers dans `$RUNNER_TEMP`, hors de l'espace de travail (l'agent ne peut pas les
+  committer). Les deux dispositions de l'action sont lues (`path/LIMIT.json` pour un seul artefact, v5+, et
+  `path/<nom>/LIMIT.json`). Disjoncteur ouvert : étape « Arret par le disjoncteur » rouge et toutes les étapes `always()`
+  suivantes (branche, trailers, mission-result, commentaire de PR, archive, Verdict) sautées ; `report` affiche FAIL
+  sans mission-result pour cette issue (motif dédié `usage_limit` : suite, schéma hors périmètre).
+- `report` et `breaker` exigent `limited == 'false'` et `overlap == 'false'` au plan.
+- `breaker` : branche `claude/factory-limit-<run_id>-<run_attempt>` (une relance du run ne réutilise pas la branche) ;
+  le disjoncteur le plus récent par `tripped_at` ; sans jeton d'App ni `FACTORY_GH_TOKEN`, job rouge avec consigne.
+  Deux runs qui touchent la limite en même temps ouvrent deux PR : la seconde entre en conflit après la fusion de la
+  première (sans effet : le disjoncteur est déjà ouvert).
+NOT_PROVEN : `actions/download-artifact` voit les artefacts d'un job frère pendant que le run est en cours (attendu
+avec les artefacts v4+, non observé ici).
+
+Implémentations publiques consultées (câblage) :
+- https://github.com/actions/download-artifact/blob/3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c/README.md | MIT | adopté |
+  téléchargement par motif depuis le run courant ; un seul artefact trouvé est extrait dans `path/` (v5+).
+- https://github.com/actions/upload-artifact/blob/cf430e030ddbb5b0abf93d22962f4752f3646cd9/README.md | MIT | adopté |
+  v4+ : un artefact n'accepte pas d'envois de plusieurs jobs, d'où un nom par issue.
+
 Formes du message de limite : doc officielle https://code.claude.com/docs/en/errors, section « Usage limits », lue le
 2026-11-18 (`You've hit your session limit · resets 3:45pm`, `You've hit your weekly limit · resets Mon 12:00am`,
 `You've hit your Opus limit`, `You've hit your Sonnet limit`). La doc dit qu'un throttle serveur n'est pas une limite
