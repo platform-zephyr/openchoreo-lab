@@ -76,7 +76,11 @@ Un jeton d'installation d'App GitHub expire au bout de 1 h ([docs GitHub](https:
   sans périmètre exploitable dans un lot de plus d'un ticket, lot refusé. Fichiers chauds : `.github/workflows/ci.yaml`,
   `.github/CODEOWNERS`, `tools/dev/check`, `tools/dev/ci-map.tsv`, `AGENTS.md` ; `ci.yaml`, `ci-map.tsv` et `check`
   sont couplés par le test de parité (T-460) : toucher l'un compte pour les trois. Remède : lancer l'un après la fusion
-  de l'autre.
+  de l'autre. **Règle de finesse** : un dossier racine (`tools/`, `docs/`, `tests/`, `X/**`) accompagné, dans le même
+  ticket, d'au moins un chemin plus précis dessous est une ombrelle ignorée ; deux tickets ne se recoupent alors sous
+  ce dossier que s'ils déclarent tous deux un même sous-chemin. Un dossier racine seul reste une revendication de tout
+  son sous-arbre ; un fichier chaud n'est revendiqué que s'il est déclaré ou couvert par un dossier non raffiné. Le
+  JSON liste les ombrelles ignorées (`umbrellas`). Écrire donc des périmètres en chemins précis.
 - **Disjoncteur de quota** (abonnement Max : un seul jeton, fenêtre de 5 h commune à tous les jobs) :
   - `ledger.py detect --execution-file <sortie de l'action> --state <LIMIT.json>` ouvre le disjoncteur (code 11) si le
     message final de la session est en erreur (`is_error`) et porte une forme officielle du message de limite

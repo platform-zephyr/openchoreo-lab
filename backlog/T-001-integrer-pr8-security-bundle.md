@@ -20,7 +20,7 @@ github_issue: null
 Débloquer `main` : intégrer la remédiation et l'installation fail-closed (STATE.md §6.1), diff public neutre.
 
 ## Périmètre de fichiers
-tools/oke/, security/, docs/SECURITY-BUNDLE.md, tests/security-bundle/
+tools/oke/, security/, docs/SECURITY-BUNDLE.md, tests/security-bundle/, STATE.md (critère « STATE.md à jour »)
 
 ## Critères de fin
 - [ ] `ci-ok` vert sur la PR #8
