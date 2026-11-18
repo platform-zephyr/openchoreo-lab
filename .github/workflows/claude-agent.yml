@@ -1,0 +1,49 @@
+# Agents de développement sur runners GitHub (anthropics/claude-code-action, épinglé par SHA, tag v1).
+# Un label `agent:dev` posé PAR PAUL sur une issue = un job = un agent = une branche claude/* = une PR.
+# L'agent n'a AUCUN accès OKE/Doppler/OCI : seul le contenu du dépôt et le jeton de l'App Claude (courte durée,
+# ce dépôt seulement). Déploiement = merge puis Argo CD ; la preuve runtime reste au coordinateur.
+# Sécurité : déclencheur restreint à l'acteur propriétaire (une issue publique ne suffit pas), concurrence par issue,
+# pas de show_full_output (dépôt public : les journaux sont publics), pas de secret autre que le jeton Claude.
+# docs/AGENT-RUNNERS.md : mise en route.
+name: claude-agent
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: claude-agent-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  dev:
+    if: github.event.label.name == 'agent:dev' && github.event.sender.login == 'SmadjaPaul'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Outils de test statique (aucun accès cluster)
+        run: python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt "yamllint==1.38.0"
+      - uses: anthropics/claude-code-action@469588f42e6b1e94cd14ad09dccfeaec772ce0fd # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          label_trigger: "agent:dev"
+          base_branch: main
+          branch_prefix: "claude/"
+          claude_args: |
+            --model claude-sonnet-5-5
+            --max-turns 60
+            --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3:*),Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(yamllint:*),Bash(shellcheck:*)"
+            --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Aucun accès cluster ni secret. Une PR par issue, périmètre de fichiers de l'issue seulement ; apps/**, generated/** (via appgen) libres ; platform/, tools/, tests/, .github/ exigent l'approbation de Paul. N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
