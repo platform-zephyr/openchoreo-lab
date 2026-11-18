@@ -60,7 +60,7 @@
 | B-06, B-07 | conforme ; privileged dans `kube-system` (exclu du binding) | admis (PASS) |
 | B-10 / B-11 / B-12 | `auth` : sans automount=false refusé ; automount=false et annotation d'exception admis | PASS |
 | B-13 / B-14 | `auth` : tag seul **admis avec avertissement** (binding `Warn,Audit`, pas Deny) ; `vap-plain` : aucun avertissement | PASS |
-| **B-09** | **conteneur éphémère privileged hors dp-* (`pods/ephemeralcontainers`)** | **FAIL : admis.** La baseline kube-ops ne couvre pas cette sous-ressource. Dans dp-*/lab-pg, VAP-2 le refuse (V2-07b). À signaler à kube-ops. |
+| **B-09** | **conteneur éphémère privileged hors dp-* (`pods/ephemeralcontainers`)** | **FAIL : admis.** La baseline kube-ops ne couvre pas cette sous-ressource. Dans dp-*/lab-pg, VAP-2 le refuse (V2-07b). À signaler à kube-ops. Classé `KNOWN_FAIL` au niveau du cas depuis T-457 (`known-fail.sh`) : exécuté, verdict visible, non bloquant ; correction réelle : baseline de la VM lab (T-363). |
 
 Isolement : quand deux VAP refusent, l'API ne nomme qu'une politique. Pour R6 et VAP-2, le binding
 `baseline-pod-hardening` est retiré pendant ces deux blocs puis réappliqué (k3d jetable seulement).
