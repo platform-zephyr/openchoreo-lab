@@ -1,0 +1,36 @@
+{
+  "name": "openchoreo-lab (dev factory)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".",
+    "args": {
+      "HOST_UID": "${localEnv:HOST_UID:1000}",
+      "HOST_GID": "${localEnv:HOST_GID:1000}"
+    }
+  },
+  "remoteUser": "dev",
+  "containerUser": "dev",
+  "workspaceFolder": "/workspaces/openchoreo-lab",
+  "runArgs": [
+    "--platform=linux/arm64",
+    "--cpus=1",
+    "--memory=1g",
+    "--memory-swap=1g",
+    "--pids-limit=512",
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges:true",
+    "--init"
+  ],
+  "mounts": [
+    "source=openchoreo-lab-dev-pip,target=/home/dev/.cache/pip,type=volume",
+    "source=openchoreo-lab-dev-helm,target=/home/dev/.cache/helm,type=volume",
+    "source=openchoreo-lab-dev-phaseb,target=/home/dev/.cache/openchoreo-lab-phaseb,type=volume"
+  ],
+  "containerEnv": {
+    "DEV_FACTORY": "1",
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "safe.directory",
+    "GIT_CONFIG_VALUE_0": "*"
+  },
+  "postCreateCommand": "tools/dev/guard-check.sh"
+}
