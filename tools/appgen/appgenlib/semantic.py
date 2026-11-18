@@ -119,6 +119,19 @@ def _backup_errors(spec: dict, caps: dict) -> list[str]:
     return errs
 
 
+def _data_errors(spec: dict) -> list[str]:
+    """Classe de donnee (T-025, ADR-0008) : obligatoire avec une base ou un volume ; irreplaceable refuse."""
+    dclass = spec.get("data", {}).get("class")
+    if dclass is None:
+        if "database" in spec or volumes(spec):
+            return ["data.class obligatoire des qu'une base (database) ou un volume (storage) est declare "
+                    "(ephemeral | rebuildable | useful | irreplaceable)"]
+        return []
+    if dclass == "irreplaceable":
+        return ["data.class irreplaceable refuse : aucune restauration hors Oracle prouvee"]
+    return []
+
+
 def _delivery_errors(doc: dict, caps: dict, ctx: Context) -> list[str]:
     """Regles propres au parcours : composants natifs, ou limites du parcours helm."""
     spec = doc["spec"]
@@ -148,6 +161,7 @@ def semantic_check(doc: dict, dirname: str, cluster_gate_open: bool, ctx: Contex
     errs += _secret_errors(doc["metadata"]["name"], spec)
     errs += _oidc_errors(spec, caps)
     errs += _backup_errors(spec, caps)
+    errs += _data_errors(spec)
     if spec["exposure"]["mode"] == "public" and spec["exposure"]["auth"] == "none":
         errs.append("exposition publique sans authentification interdite")
     e_errs, warns = egress_errors(doc, ctx, caps)

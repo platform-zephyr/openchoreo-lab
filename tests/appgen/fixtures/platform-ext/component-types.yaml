@@ -109,6 +109,7 @@ spec:
         mountPath: {type: string}
         accessMode: {type: string, default: ReadWriteOnce, enum: [ReadWriteOnce, ReadWriteMany]}
         readOnly: {type: boolean, default: false}
+        dataClass: {type: string, default: "", enum: ["", ephemeral, rebuildable, useful, irreplaceable]}
       required: [mountPath]
   creates:
     - template: {apiVersion: v1, kind: PersistentVolumeClaim, metadata: {name: "${metadata.name}-${trait.instanceName}"}}

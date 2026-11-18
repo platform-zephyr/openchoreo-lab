@@ -33,6 +33,11 @@ spec:
         allowIdp:
           type: boolean
           default: false
+        # T-025 (G8, ADR-0008) : classe de donnee de l'app, label platform.smadja.dev/data-class du namespace.
+        dataClass:
+          type: string
+          enum: ["", ephemeral, rebuildable, useful, irreplaceable]
+          default: ""
         quota:
           type: object
           default: {}
@@ -74,7 +79,7 @@ spec:
               "platform.smadja.dev/cell": "restricted",
               "platform.smadja.dev/egress-isolated": "true",
               "platform.smadja.dev/pg-client": parameters.database ? "true" : "false"
-            })}
+            }, parameters.dataClass != "" ? {"platform.smadja.dev/data-class": parameters.dataClass} : {})}
 
     - id: cluster-agent-rolebinding
       template:

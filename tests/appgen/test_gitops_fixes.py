@@ -241,6 +241,7 @@ class A4StrategySwitch(Base):
         doc = whoami()
         doc["spec"]["profile"] = "stateful"
         doc["spec"]["storage"] = {"profile": "block-rwo", "mountPath": "/data", "size": "1Gi"}
+        doc["spec"]["data"] = {"class": "rebuildable"}
         doc["spec"]["update"] = {"strategy": "Recreate"}
         self.sb.add(doc)
         with self.assertRaisesRegex(appgen.AppError, "RollingUpdate -> Recreate"):
@@ -257,6 +258,7 @@ class A4StrategySwitch(Base):
         doc = whoami()
         doc["spec"]["profile"] = "stateful"
         doc["spec"]["storage"] = {"profile": "block-rwo", "mountPath": "/data", "size": "1Gi"}
+        doc["spec"]["data"] = {"class": "rebuildable"}
         doc["spec"]["update"] = {"strategy": "Recreate"}
         self.sb.add(doc)
         self.assertTrue(self.sb.render())
@@ -283,6 +285,7 @@ class A7QuotaSurge(Base):
         doc = whoami()
         doc["spec"]["profile"] = "stateful"
         doc["spec"]["storage"] = {"profile": "block-rwo", "mountPath": "/data", "size": "1Gi"}
+        doc["spec"]["data"] = {"class": "rebuildable"}
         doc["spec"]["update"] = {"strategy": "Recreate"}
         doc["spec"]["runtime"]["size"] = "medium"
         self.sb.add(doc)

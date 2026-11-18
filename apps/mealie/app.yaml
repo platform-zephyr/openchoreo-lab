@@ -38,5 +38,6 @@ spec:
     oidc: {provider: thunderid, issuer: https://thunder.lab.smadja.dev, clientId: mealie, clientSecretKey: MEALIE_OIDC_CLIENT_SECRET, allowedGroups: [family, admin], adminGroup: admin}
   exposure: {mode: private, auth: app-oidc}
   network: {egress: none, allowIdp: true}   # FQDN thunder.lab.smadja.dev refuse sur k3d (sans Cilium) ; a ajouter au gate OKE (NOTES.md)
+  data: {class: useful}
   backup: {class: none}   # donnees reelles : aucune sauvegarde admise sur le labo (NOTES.md) ; pilote uniquement
   observability: {metrics: {enabled: false}}

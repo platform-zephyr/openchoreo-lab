@@ -28,6 +28,7 @@ spec:
     - {env: CONFIG_ACCESS_KEY, key: AIOSTREAMS_CONFIG_ACCESS_KEY}
   exposure: {mode: public, host: aiostreams.lab.smadja.dev, auth: app-password}
   network: {egress: public-internet}
+  data: {class: rebuildable}
   backup: {class: regenerable}
   observability: {metrics: {enabled: false}}
   update: {strategy: Recreate}

@@ -31,5 +31,6 @@ spec:
     - {env: OOMOL_CONNECT_ENCRYPTION_KEY, key: OPEN_CONNECTOR_ENCRYPTION_KEY}
   exposure: {mode: private, auth: none}
   network: {egress: none}               # kube-ops n'autorise que paperless:80/8000 : ecart, voir NOTES.md
+  data: {class: rebuildable}
   backup: {class: regenerable}
   observability: {metrics: {enabled: false}}

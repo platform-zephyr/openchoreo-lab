@@ -9,7 +9,7 @@ spec:
     projectName: mealie
     componentName: mealie
   environment: production
-  releaseName: mealie-95adb7ee06
+  releaseName: mealie-e30e9be1f4
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1

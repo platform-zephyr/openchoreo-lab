@@ -9,7 +9,7 @@ spec:
     projectName: aiostreams
     componentName: aiostreams
   environment: production
-  releaseName: aiostreams-777d556c2a
+  releaseName: aiostreams-990b082a89
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1

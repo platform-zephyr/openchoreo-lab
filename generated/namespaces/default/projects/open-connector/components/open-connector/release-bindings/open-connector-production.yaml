@@ -9,7 +9,7 @@ spec:
     projectName: open-connector
     componentName: open-connector
   environment: production
-  releaseName: open-connector-d7cf33eec0
+  releaseName: open-connector-af07e43055
   componentTypeEnvironmentConfigs:
     size: medium
     replicas: 1

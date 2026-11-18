@@ -129,6 +129,31 @@ class NegativeCases(unittest.TestCase):
         doc["spec"]["backup"] = {"class": "irreplaceable", "rpo": "1h", "rto": "2h", "retention": "7d"}
         self.assertRefused(doc, "irreplaceable refuse")
 
+    def test_database_without_data_class_refused(self):
+        doc = base_miniflux()
+        del doc["spec"]["data"]
+        self.assertRefused(doc, "data.class obligatoire", "miniflux")
+
+    def test_volume_without_data_class_refused(self):
+        doc = appgen.load_yaml(ROOT / "apps" / "aiostreams" / "app.yaml")
+        del doc["spec"]["data"]
+        self.assertRefused(doc, "data.class obligatoire", "aiostreams")
+
+    def test_irreplaceable_data_class_refused(self):
+        doc = base_miniflux()
+        doc["spec"]["data"] = {"class": "irreplaceable"}
+        self.assertRefused(doc, "data.class irreplaceable refuse", "miniflux")
+
+    def test_unknown_data_class_refused(self):
+        doc = base_miniflux()
+        doc["spec"]["data"] = {"class": "precious"}
+        self.assertRefused(doc, "precious", "miniflux")
+
+    def test_stateless_without_data_class_accepted(self):
+        doc = base_whoami()
+        self.assertNotIn("data", doc["spec"])
+        self.assertEqual(errors_for(doc, "whoami"), [])
+
     def test_oidc_secret_key_not_declared(self):
         doc = base_miniflux()
         doc["spec"]["identity"]["oidc"]["clientSecretKey"] = "MINIFLUX_UNDECLARED"
@@ -295,6 +320,39 @@ class GeneratedTreeNoDrift(unittest.TestCase):
             out = Path(tmp) / "generated"
             appgen.write_tree(appgen.render_all(ROOT, REAL_PLATFORM, True), out)
             self.assertEqual(appgen.diff_trees(out, ROOT / "generated"), [])
+
+
+class DataClassLabels(unittest.TestCase):
+    """T-025 (G8) : la classe de donnee atteint namespace (CPT), PVC (trait) et base (Resource, CRT)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tree = appgen.render_all(ROOT, REAL_PLATFORM, True)
+
+    def _one(self, suffix: str) -> dict:
+        found = [v for k, v in self.tree.items() if k.endswith(suffix)]
+        self.assertEqual(len(found), 1, suffix)
+        return found[0]
+
+    def test_project_parameter_feeds_namespace_label(self):
+        self.assertEqual(self._one("projects/aiostreams/project.yaml")["spec"]["parameters"]["dataClass"],
+                         "rebuildable")
+        self.assertEqual(self._one("projects/mealie/project.yaml")["spec"]["parameters"]["dataClass"], "useful")
+
+    def test_trait_parameter_feeds_pvc_label(self):
+        comp = self._one("components/aiostreams/component.yaml")
+        self.assertEqual(comp["spec"]["traits"][0]["parameters"]["dataClass"], "rebuildable")
+
+    def test_resource_label_and_parameter(self):
+        res = self._one("resources/miniflux-db.yaml")
+        self.assertEqual(res["metadata"]["labels"]["platform.smadja.dev/data-class"], "rebuildable")
+        self.assertEqual(res["spec"]["parameters"]["dataClass"], "rebuildable")
+
+    def test_platform_templates_render_the_label(self):
+        for rel in ("project-types/cell-restricted.yaml", "traits/persistent-volume-claim.yaml",
+                    "resource-types/cnpg-lab-db.yaml"):
+            text = (REAL_PLATFORM / rel).read_text(encoding="utf-8")
+            self.assertIn('"platform.smadja.dev/data-class": parameters.dataClass', text, rel)
 
 
 if __name__ == "__main__":

@@ -97,7 +97,7 @@ def _component_params(spec: dict, comp: dict, exc: set[str]) -> dict:
     return params
 
 
-def _pvc_traits(comp: dict, vols: list[dict], platform: dict, caps: dict) -> tuple[list, list, dict, dict]:
+def _pvc_traits(comp: dict, vols: list[dict], platform: dict, caps: dict, data_class: str | None = None) -> tuple[list, list, dict, dict]:
     """Volumes -> (traits du Component, traits du profil de release, specs des traits figees, config par env)."""
     traits_ref: list[dict] = []
     traits_profile: list[dict] = []
@@ -113,6 +113,8 @@ def _pvc_traits(comp: dict, vols: list[dict], platform: dict, caps: dict) -> tup
             tparams["accessMode"] = ACCESS_MODE[v["profile"]]
         if v["readOnly"]:
             tparams["readOnly"] = True
+        if data_class:
+            tparams["dataClass"] = data_class   # T-025 : label data-class du PVC
         _require_params(trait, f"ClusterTrait '{tname}'", tparams)
         traits_ref.append({"kind": "ClusterTrait", "name": tname, "instanceName": v["name"], "parameters": tparams})
         traits_profile.append({"instanceName": v["name"], "kind": "ClusterTrait", "name": tname, "parameters": tparams})
@@ -230,7 +232,7 @@ def render_component(doc: dict, comp: dict, platform: dict, caps: dict, targeted
     cct = _cct(platform, cct_ref)
     params = _component_params(spec, comp, exc)
     _require_params(cct, f"ClusterComponentType '{cct_ref}'", params)
-    traits_ref, traits_profile, traits_release, trait_env = _pvc_traits(comp, vols, platform, caps)
+    traits_ref, traits_profile, traits_release, trait_env = _pvc_traits(comp, vols, platform, caps, spec.get("data", {}).get("class"))
 
     rendered[f"{cdir}/component.yaml"] = {
         "apiVersion": "openchoreo.dev/v1alpha1", "kind": "Component",

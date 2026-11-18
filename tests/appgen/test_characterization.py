@@ -103,6 +103,7 @@ class SemanticCheck(unittest.TestCase):
         doc = k3d(podinfo())
         doc["spec"]["exposure"] = {"mode": "public", "auth": "oidc", "host": "x.example.org"}
         doc["spec"]["storage"] = {"profile": "block-rwo", "mountPath": "/data", "size": "1Gi"}
+        doc["spec"]["data"] = {"class": "rebuildable"}
         doc["spec"]["backup"] = {"class": "none", "mechanism": "velero"}
         self.assertEqual(check(doc)[0], [
             "backup.mechanism 'velero' non admis sur le cluster 'k3d' (admis : none)",
@@ -134,6 +135,7 @@ class NativeErrors(unittest.TestCase):
             {"name": "f", "profile": "block-rwo", "mountPath": "/f", "size": "1Gi", "workload": "tcp"},
         ]
         doc["spec"]["database"] = {"instance": "nope"}
+        doc["spec"]["data"] = {"class": "rebuildable"}
         doc["spec"]["runtime"]["replicas"] = 2
         doc["spec"]["workloads"][1]["runtime"]["replicas"] = 3
         self.assertEqual(check(doc)[0], [

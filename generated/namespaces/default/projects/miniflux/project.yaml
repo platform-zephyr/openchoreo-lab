@@ -18,3 +18,4 @@ spec:
     egress: public-internet
     database: true
     allowIdp: true
+    dataClass: rebuildable

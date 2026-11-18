@@ -18,6 +18,7 @@ spec:
     egress: public-internet
     database: false
     allowIdp: false
+    dataClass: rebuildable
     quota:
       cpu: 300m
       memory: 512Mi

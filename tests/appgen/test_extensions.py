@@ -64,8 +64,7 @@ def podinfo() -> dict:
 
 def stateful(doc: dict, storage) -> dict:
     doc["spec"]["profile"] = "stateful"
-    doc["spec"]["storage"] = storage
-    doc["spec"]["update"] = {"strategy": "Recreate"}
+    doc["spec"].update(storage=storage, data={"class": "rebuildable"}, update={"strategy": "Recreate"})
     return doc
 
 
@@ -457,7 +456,8 @@ class Volumes(Base):
         base = "namespaces/default/projects/miniflux"
         comp = files[f"{base}/components/miniflux/component.yaml"]["spec"]
         media = next(t for t in comp["traits"] if t["instanceName"] == "media")
-        self.assertEqual(media["parameters"], {"mountPath": "/media", "accessMode": "ReadWriteMany", "readOnly": True})
+        self.assertEqual(media["parameters"], {"mountPath": "/media", "accessMode": "ReadWriteMany",
+                                               "readOnly": True, "dataClass": "rebuildable"})
         rb = files[f"{base}/components/miniflux/release-bindings/miniflux-production.yaml"]["spec"]
         self.assertEqual(rb["traitEnvironmentConfigs"]["media"]["storageClass"], "nfs-rwx")
         sts = files[f"{base}/components/miniflux-cache/component.yaml"]["spec"]

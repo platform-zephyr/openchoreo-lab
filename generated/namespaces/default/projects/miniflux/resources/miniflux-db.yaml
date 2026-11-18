@@ -4,6 +4,8 @@ kind: Resource
 metadata:
   name: miniflux-db
   namespace: default
+  labels:
+    platform.smadja.dev/data-class: rebuildable
   annotations:
     argocd.argoproj.io/sync-options: Prune=false
 spec:
@@ -15,3 +17,4 @@ spec:
   parameters:
     database: miniflux
     passwordKey: MINIFLUX_PG_PASSWORD
+    dataClass: rebuildable
