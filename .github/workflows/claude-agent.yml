@@ -8,6 +8,8 @@
 # L'agent n'a AUCUN accès OKE/Doppler/OCI : seul le contenu du dépôt et le jeton de l'App Claude (courte durée,
 # ce dépôt seulement). Déploiement = merge puis Argo CD ; la preuve runtime reste au coordinateur.
 # Gouverneur (T-311) : kill-switch factory/PAUSE, matrice max-parallel 3 (factory/config.yaml), dispatch manuel du pilote.
+# T-467 : disjoncteur de quota factory/LIMIT.json (tools/factory/ledger.py) et garde de recouvrement des perimetres
+# (tools/factory/overlap.py) dans plan ; re-controle et detection de la limite dans chaque job dev ; job breaker.
 # Sécurité : déclencheur restreint à l'acteur propriétaire (une issue publique ne suffit pas), concurrence par issue,
 # show_full_output seulement si l'entrée `debug` est vraie (dépôt public : les journaux sont publics), pas de secret autre que le jeton Claude.
 # docs/AGENT-RUNNERS.md : mise en route.
@@ -56,8 +58,14 @@ jobs:
     if: github.actor == 'SmadjaPaul'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
+    # issues: write : commentaire d'une issue refusee par la garde de recouvrement (T-467), jeton du workflow.
+    permissions:
+      contents: read
+      issues: write
     outputs:
       paused: ${{ steps.pause.outputs.paused }}
+      limited: ${{ steps.limit.outputs.limited }}
+      overlap: ${{ steps.overlap.outputs.overlap }}
       matrix: ${{ steps.matrix.outputs.matrix }}
       timeout_minutes: ${{ steps.limits.outputs.timeout_minutes }}
       max_turns: ${{ steps.limits.outputs.max_turns }}
@@ -69,6 +77,49 @@ jobs:
       - name: Kill-switch factory/PAUSE
         id: pause
         run: factory/pause-check.sh || [ "$?" -eq 10 ]
+      - name: Disjoncteur de quota factory/LIMIT.json (T-467)
+        id: limit
+        env:
+          MODEL: ${{ inputs.model }}
+        run: python3 -I tools/factory/ledger.py gate --state factory/LIMIT.json --model "$MODEL" || [ "$?" -eq 11 ]
+      - name: Garde de recouvrement des perimetres (T-467)
+        id: overlap
+        if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
+        env:
+          TICKETS: ${{ inputs.tickets }}
+        run: |
+          # Code 4 : deux tickets du lot se recoupent ; code 3 : reference sans ticket ou sans perimetre (lot > 1).
+          # Les motifs sont sur stderr (journal) ; le JSON overlap-guard.v1 sert au commentaire des issues.
+          rc=0
+          python3 -I tools/factory/overlap.py >"$RUNNER_TEMP/overlap.json" 2>"$RUNNER_TEMP/overlap.err" || rc=$?
+          cat "$RUNNER_TEMP/overlap.err" >&2
+          case "$rc" in
+            0) echo "overlap=false" >>"$GITHUB_OUTPUT" ;;
+            3 | 4) echo "overlap=true" >>"$GITHUB_OUTPUT" ;;
+            *) exit "$rc" ;;
+          esac
+      - name: Lot refuse par la garde de recouvrement (commentaire de chaque issue, aucun job dev)
+        if: steps.overlap.outputs.overlap == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo "**Lot refusé par la garde de recouvrement (T-467)** : aucun agent n'a été lancé pour cette issue."
+            echo
+            echo "Deux agents du même lot ne doivent jamais écrire au même endroit. Motifs :"
+            echo
+            sed 's/^/- /' "$RUNNER_TEMP/overlap.err"
+            echo
+            echo "Remède : relancer cette issue seule, ou après la fusion de l'autre. Run : ${RUN_URL}"
+          } >"$RUNNER_TEMP/overlap-comment.md"
+          cat "$RUNNER_TEMP/overlap-comment.md" >>"$GITHUB_STEP_SUMMARY"
+          for issue in $(jq -r '.refs[] | select(test("^[0-9]+$"))' "$RUNNER_TEMP/overlap.json"); do
+            gh issue comment "$issue" --body-file "$RUNNER_TEMP/overlap-comment.md"
+          done
+          echo "::error::lot refuse par la garde de recouvrement : aucun job dev"
+          exit 4
       - name: Plafonds du modele (effort valide, Sonnet plafonne a xhigh)
         id: limits
         env:
@@ -79,14 +130,14 @@ jobs:
           tools/factory/run-ticket.sh limits "$MODEL" | tee -a "$GITHUB_OUTPUT"
       - name: Matrice des issues
         id: matrix
-        if: steps.pause.outputs.paused == 'false'
+        if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false' && steps.overlap.outputs.overlap == 'false'
         env:
           TICKETS: ${{ inputs.tickets }}
         run: factory/plan-matrix.sh
 
   dev:
     needs: plan
-    if: needs.plan.outputs.paused == 'false'
+    if: needs.plan.outputs.paused == 'false' && needs.plan.outputs.limited == 'false' && needs.plan.outputs.overlap == 'false'
     name: "dev issue ${{ matrix.issue }}"
     runs-on: ubuntu-24.04-arm
     timeout-minutes: ${{ fromJSON(needs.plan.outputs.timeout_minutes) }}
@@ -102,6 +153,7 @@ jobs:
       pull-requests: write
       issues: write
       id-token: write
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -113,21 +165,51 @@ jobs:
         env:
           PAUSE_REF: origin/main
         run: factory/pause-check.sh || [ "$?" -eq 10 ]
-      - if: steps.pause.outputs.paused == 'false'
+      - name: Disjoncteurs des jobs freres du run (artefacts factory-limit-*, T-467)
+        if: steps.pause.outputs.paused == 'false'
+        # Aucun artefact tant qu'aucun job frere n'a touche la limite : l'absence n'est pas une erreur.
+        # Un motif qui ne trouve qu'un artefact l'extrait directement dans path/ (v5+), plusieurs dans path/<nom>/.
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: factory-limit-*
+          path: ${{ runner.temp }}/limit-run
+      - name: Disjoncteur de quota (re-controle origin/main et jobs freres, T-467)
+        id: limit
+        if: steps.pause.outputs.paused == 'false'
+        env:
+          MODEL: ${{ inputs.model }}
+        run: |
+          # Les jobs au-dela de max-parallel attendent : main ou un job frere a pu ouvrir le disjoncteur entre-temps.
+          # Fichiers hors de l'espace de travail : l'agent ne peut pas les committer.
+          limited=false
+          main="$RUNNER_TEMP/limit-main.json"
+          git show origin/main:factory/LIMIT.json >"$main" 2>/dev/null || rm -f "$main"
+          for f in "$main" "$RUNNER_TEMP"/limit-run/LIMIT.json "$RUNNER_TEMP"/limit-run/*/LIMIT.json; do
+            [ -f "$f" ] || continue
+            python3 -I tools/factory/ledger.py check --state "$f" --model "$MODEL" || limited=true
+          done
+          echo "limited=${limited}" >>"$GITHUB_OUTPUT"
+      - name: Arret par le disjoncteur (agent non lance)
+        if: steps.limit.outputs.limited == 'true'
+        run: |
+          echo "::error::disjoncteur de quota ouvert (factory/LIMIT.json ou job frere) : agent non lance ; reprise manuelle"
+          exit 1
+      - if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
       - name: Outils de test statique (aucun accès cluster)
-        if: steps.pause.outputs.paused == 'false'
+        if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         run: python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt "yamllint==1.38.0"
       - name: Identite git de l'executant (noreply impose)
-        if: steps.pause.outputs.paused == 'false'
+        if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         run: |
           git config user.name "Claude"
           git config user.email "noreply@anthropic.com"
       - name: Jeton de l'App de l'executant (si APP_ID et APP_PRIVATE_KEY existent)
         id: app
-        if: steps.pause.outputs.paused == 'false' && env.HAS_APP == 'true'
+        if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false' && env.HAS_APP == 'true'
         env:
           HAS_APP: ${{ secrets.APP_ID != '' && secrets.APP_PRIVATE_KEY != '' }}
         uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
@@ -136,7 +218,7 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
       - name: Ticket et périmètre pour les hooks (AGENT_TICKET_ID, AGENT_TICKET_SCOPE ; jamais LAB_COORDINATOR_SESSION)
-        if: steps.pause.outputs.paused == 'false'
+        if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         env:
           ISSUE: ${{ matrix.issue }}
         run: |
@@ -146,7 +228,7 @@ jobs:
           if [ "$rc" -eq 0 ]; then cat ticket-env.out >>"$GITHUB_ENV"; elif [ "$rc" -eq 3 ]; then echo "::warning::aucun ticket backlog pour l'issue ${ISSUE} : garde de périmètre inactive"; else exit "$rc"; fi
           rm -f ticket-env.out
       - id: claude
-        if: steps.pause.outputs.paused == 'false'
+        if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         # T-466 : l'action fait echouer son etape si num_turns depasse --max-turns, meme apres une session reussie
         # (run 44313706955 : 79 tours pour 60, PR fusionnee). Le statut du job est decide par l'etape Verdict.
         continue-on-error: true
@@ -172,9 +254,29 @@ jobs:
             --max-turns ${{ needs.plan.outputs.max_turns }}
             --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3 tools/*),Bash(python3 tests/*),Bash(python3 -I tools/*),Bash(python3 -I tests/*),Bash(python3 -m unittest:*),Bash(python3 -I -m unittest:*),Bash(tools/dev/check:*),Bash(tests/*),Bash(bash tests/*),Bash(git:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh search:*),Bash(gh pr merge --auto --squash:*),Bash(factory/pause-check.sh:*),Bash(yamllint:*),Bash(shellcheck:*)"
             --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Si factory/PAUSE existe sur origin/main, ne lance aucun merge automatique (factory/pause-check.sh) et arrête-toi. Aucun accès cluster ni secret. Ne lis jamais l'environnement (env, printenv, os.environ) : toutes les valeurs utiles sont dans ce prompt. Branche : claude/issue-${{ matrix.issue }}-<slug court>, rien d'autre. Chaque commit porte les trailers Ticket: T-NNN, Model: ${{ inputs.model }}, Effort: ${{ inputs.effort }}, Escalated-from: ${{ inputs.escalated_from }} (si non vide) et exactement Claude-Session: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} , et l'e-mail noreply@anthropic.com. Remplis le modèle .github/pull_request_template.md (statuts ; durée, tours et coût sont publiés par le workflow en commentaire : écris NOT_PROVEN) ; le corps de la PR contient Closes #${{ matrix.issue }}. Une PR par issue, périmètre de fichiers de l'issue seulement ; Mode dev (arbitrage 7) : tous les chemins du périmètre de l'issue sont autorisés, noyau compris (.github/ inclus), sauf STATE.md et backlog/ROADMAP.md ; la PR est fusionnée après ci-ok (arme l'auto-merge avec gh pr merge --auto --squash). Après l'auto-merge, termine la session : n'attends pas la CI ni la fusion. N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
+      - name: Detection de la limite d'usage Max (T-467)
+        id: quota
+        if: always() && steps.claude.outputs.execution_file != ''
+        env:
+          EXEC_FILE: ${{ steps.claude.outputs.execution_file }}
+          ISSUE: ${{ matrix.issue }}
+          MODEL: ${{ inputs.model }}
+        run: |
+          rc=0
+          python3 -I tools/factory/ledger.py detect --execution-file "$EXEC_FILE" --state "$RUNNER_TEMP/limit-out/LIMIT.json" \
+            --issue "$ISSUE" --model "$MODEL" || rc=$?
+          if [ "$rc" -eq 11 ]; then echo "tripped=true" >>"$GITHUB_OUTPUT"; echo "::error::limite d'usage Max : disjoncteur ouvert"
+          elif [ "$rc" -eq 0 ]; then echo "tripped=false" >>"$GITHUB_OUTPUT"; else exit "$rc"; fi
+      - name: Disjoncteur pour les jobs freres (artefact)
+        if: always() && steps.quota.outputs.tripped == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          # Un nom par issue : deux jobs qui touchent la limite en meme temps n'entrent pas en conflit (artefacts v4+).
+          name: factory-limit-${{ matrix.issue }}
+          path: ${{ runner.temp }}/limit-out/LIMIT.json
       - name: Branche de l'agent (sortie de l'action, sinon PR claude/issue-<n>-* par l'API REST pulls)
         id: branch
-        if: always() && steps.pause.outputs.paused == 'false'
+        if: always() && steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || secrets.FACTORY_GH_TOKEN || github.token }}
           GH_REPO: ${{ github.repository }}
@@ -197,7 +299,7 @@ jobs:
       - name: Controle des trailers et de l'identite (refus si absents)
         id: trailers
         # T-466 : always() ; sans lui, l'echec de l'etape claude sautait ce controle (runs 44307563892 et 44313706955).
-        if: always() && steps.pause.outputs.paused == 'false' && steps.branch.outputs.branch != ''
+        if: always() && steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false' && steps.branch.outputs.branch != ''
         continue-on-error: true
         env:
           BRANCH: ${{ steps.branch.outputs.branch }}
@@ -205,7 +307,7 @@ jobs:
           git fetch --no-tags origin main "$BRANCH"
           tools/factory/run-ticket.sh check-trailers "origin/main..origin/${BRANCH}"
       - name: Compte rendu mission-result.v1 (cout, tours, statut corrige ; sans sortie d'outil)
-        if: always() && steps.pause.outputs.paused == 'false'
+        if: always() && steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         env:
           EXEC_FILE: ${{ steps.claude.outputs.execution_file }}
           ISSUE: ${{ matrix.issue }}
@@ -221,7 +323,7 @@ jobs:
             "$CLAUDE_OUTCOME" "$MAX_TURNS" "$TRAILERS_OUTCOME" >"mission-result-${ISSUE}.json"
           python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print('status=',d['status'],'failure=',d.get('failure'),'model_observed=',d['model_observed'],'cost=',d['total_cost_usd'],'turns=',d['num_turns'])" "mission-result-${ISSUE}.json"
       - name: Commentaire de PR (statut corrige, modele, tours, cout, duree, refus ; jeton de l'App)
-        if: always() && steps.pause.outputs.paused == 'false' && steps.branch.outputs.branch != '' && hashFiles(format('mission-result-{0}.json', matrix.issue)) != ''
+        if: always() && steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false' && steps.branch.outputs.branch != '' && hashFiles(format('mission-result-{0}.json', matrix.issue)) != ''
         # Compte rendu, pas livrable : son echec (jeton d'App expire apres 1 h, Opus) ne decide pas du job.
         continue-on-error: true
         env:
@@ -236,14 +338,14 @@ jobs:
           tools/factory/run-ticket.sh comment "mission-result-${ISSUE}.json" >comment.txt
           gh pr comment "$pr" --body-file comment.txt
       - name: Archive mission-result
-        if: always() && steps.pause.outputs.paused == 'false'
+        if: always() && steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mission-result-${{ matrix.issue }}
           path: mission-result-${{ matrix.issue }}.json
           if-no-files-found: ignore
       - name: Verdict (seul juge du statut du job, d'apres mission-result et steps.claude.outcome)
-        if: always() && steps.pause.outputs.paused == 'false'
+        if: always() && steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         env:
           ISSUE: ${{ matrix.issue }}
           CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
@@ -257,7 +359,8 @@ jobs:
   # lien du run). Nouveau jeton d'App : celui du job dev peut avoir expire (1 h).
   report:
     needs: [plan, dev]
-    if: always() && needs.plan.result == 'success' && needs.plan.outputs.paused == 'false'
+    # T-467 : lot limite (disjoncteur) ou refuse (recouvrement) : aucun job dev, donc aucun compte rendu ici.
+    if: always() && needs.plan.result == 'success' && needs.plan.outputs.paused == 'false' && needs.plan.outputs.limited == 'false' && needs.plan.outputs.overlap == 'false'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     permissions:
@@ -299,3 +402,83 @@ jobs:
             cat "report-${issue}.md" >>"$GITHUB_STEP_SUMMARY"
             gh issue comment "$issue" --body-file "report-${issue}.md"
           done
+
+  # T-467 : persistance du disjoncteur entre deux runs. Si un job dev a touche la limite d'usage Max, une PR
+  # claude/factory-limit-<run>-<tentative> ajoute factory/LIMIT.json sur main (auto-merge, mode dev). Tant qu'elle n'est
+  # pas fusionnee, un nouveau dispatch n'est pas bloque. Reprise : PR de Paul qui supprime le fichier (ledger.py reset).
+  breaker:
+    needs: [plan, dev]
+    if: always() && needs.plan.result == 'success' && needs.plan.outputs.paused == 'false' && needs.plan.outputs.limited == 'false' && needs.plan.outputs.overlap == 'false'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Disjoncteurs des jobs dev (artefacts factory-limit-*)
+        # Aucun artefact quand aucune limite n'a ete touchee : l'absence n'est pas une erreur.
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: factory-limit-*
+          path: ${{ runner.temp }}/limit-run
+      - name: Disjoncteur le plus recent
+        id: pick
+        run: |
+          # Le plus recent par tripped_at (ISO 8601 UTC : ordre lexical = ordre chronologique).
+          f="$(for x in "$RUNNER_TEMP"/limit-run/LIMIT.json "$RUNNER_TEMP"/limit-run/*/LIMIT.json; do
+                 if [ -f "$x" ]; then printf '%s\t%s\n' "$(jq -r '.tripped_at // ""' "$x")" "$x"; fi
+               done | sort | tail -n 1 | cut -f 2)"
+          echo "file=${f}" >>"$GITHUB_OUTPUT"
+          if [ -z "$f" ]; then echo "aucune limite d'usage touchee dans ce run"; fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.pick.outputs.file != ''
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Jeton de l'App (neuf, pour la PR du disjoncteur)
+        id: app
+        if: steps.pick.outputs.file != '' && env.HAS_APP == 'true'
+        env:
+          HAS_APP: ${{ secrets.APP_ID != '' && secrets.APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+      - name: PR factory/LIMIT.json (auto-merge, mode dev)
+        if: steps.pick.outputs.file != ''
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || secrets.FACTORY_GH_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          SRC: ${{ steps.pick.outputs.file }}
+          MODEL: ${{ inputs.model }}
+          EFFORT: ${{ inputs.effort }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BRANCH: claude/factory-limit-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          {
+            echo "### Disjoncteur de quota ouvert (T-467)"
+            echo "Limite d'usage Max touchee pendant ce run. Tant que la PR de la branche ${BRANCH} n'est pas fusionnee, un nouveau dispatch n'est pas bloque."
+          } >>"$GITHUB_STEP_SUMMARY"
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::ni jeton d'App ni FACTORY_GH_TOKEN : factory/LIMIT.json non persiste ; l'ajouter par une PR"
+            exit 1
+          fi
+          gh auth setup-git
+          git config user.name "Claude"
+          git config user.email "noreply@anthropic.com"
+          git switch -c "$BRANCH"
+          cp "$SRC" factory/LIMIT.json
+          git add factory/LIMIT.json
+          printf '%s\n\n%s\n%s\n%s\n%s\n' "chore(factory): disjoncteur de quota ouvert (limite d'usage Max)" \
+            "Ticket: T-467" "Model: ${MODEL}" "Effort: ${EFFORT}" "Claude-Session: ${RUN_URL}" >"$RUNNER_TEMP/breaker-msg.txt"
+          git commit -q -F "$RUNNER_TEMP/breaker-msg.txt"
+          git push -q origin "$BRANCH"
+          {
+            echo "Limite d'usage Max touchee pendant le run ${RUN_URL} : factory/LIMIT.json ouvre le disjoncteur (T-467)."
+            echo
+            echo "Tant que ce fichier est sur main, le job plan n'emet aucune matrice. Reprise manuelle : au reset annonce (resume_at), une PR supprime factory/LIMIT.json (python3 tools/factory/ledger.py reset --state factory/LIMIT.json)."
+          } >"$RUNNER_TEMP/breaker-pr.md"
+          gh pr create --base main --head "$BRANCH" --title "chore(factory): disjoncteur de quota ouvert (T-467)" --body-file "$RUNNER_TEMP/breaker-pr.md"
+          gh pr merge "$BRANCH" --auto --squash

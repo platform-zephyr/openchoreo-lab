@@ -59,9 +59,15 @@ Un jeton d'installation d'App GitHub expire au bout de 1 h ([docs GitHub](https:
 - Tests : `tests/factory/run-ticket-test.sh`. Le job `agent-trailers` de `ci.yaml` (dans `needs` de `ci-ok`) exécute `check-trailers origin/main..HEAD` sur les PR de branche `claude/*` ou `agent/*` ou du bot de l'exécutant. Après chaque run, le workflow poste en commentaire de la PR une ligne (statut corrigé et motif, branche, modèle observé, tours, coût, durée, refus de permission) avec le jeton de l'App.
 
 ## Garde de recouvrement et disjoncteur de quota (T-467)
-État : outils et tests livrés (STATIC) ; câblage dans `claude-agent.yml` à faire (section « Câblage à faire » de
-`backlog/T-467-*.md`). Tant que ce câblage n'est pas fusionné, rien ne bloque un lot : lancer la garde à la main avant
-le dispatch.
+État : outils, tests et câblage dans `claude-agent.yml` livrés (STATIC) ; aucun run réel (NOT_TESTED en runtime).
+- **Câblage** : le job `plan` lance `ledger.py gate` puis `overlap.py` et publie `limited` et `overlap`. Un lot refusé
+  par la garde reçoit un commentaire sur chaque issue (motifs, remède, lien du run), puis `plan` échoue : aucun job `dev`.
+  Un disjoncteur ouvert sur `main` : `plan` réussit sans matrice, aucun job `dev`, ni `report` ni `breaker`. Chaque job
+  `dev` re-contrôle `origin/main` et les artefacts `factory-limit-*` des jobs frères ; s'il est ouvert, l'agent n'est pas
+  lancé et le job échoue (`report` affiche alors FAIL sans mission-result). Après l'agent, `ledger.py detect` lit le
+  fichier d'exécution et publie l'artefact `factory-limit-<issue>`. Le job `breaker` ouvre alors une PR
+  `claude/factory-limit-<run>-<tentative>` qui ajoute `factory/LIMIT.json` (jeton d'App, auto-merge). Tant que cette
+  PR n'est pas fusionnée, un nouveau dispatch n'est pas bloqué.
 - **Recouvrement** : `python3 -I tools/factory/overlap.py --tickets "101,102,103"` (issues ou `T-NNN`). Lit le
   `## Périmètre de fichiers` de chaque ticket (rattaché par `github_issue:`) avec l'analyseur du dispatcher
   (`tools/backlog/admission.py`). Code 4 : deux tickets se recoupent, lot refusé. Code 3 : une référence sans ticket ou
@@ -78,11 +84,10 @@ le dispatch.
   - `ledger.py gate --state factory/LIMIT.json --model <modèle>` : `limited=true|false` pour le planificateur, code 11
     si le lot ne doit pas partir. Une limite Opus ou Sonnet ne bloque que sa famille de modèles ; toute autre limite
     bloque tout.
-  - Une fois câblé : `plan` n'émet pas de matrice si `factory/LIMIT.json` est sur `main` ; chaque job `dev` re-contrôle `main`
-    et les artefacts `factory-limit-*` des jobs frères du même run avant de lancer l'agent.
   - Reprise : manuelle (T-326). Au reset annoncé (`resume_at`), Paul fusionne une PR qui supprime
     `factory/LIMIT.json` (`ledger.py reset --state factory/LIMIT.json`). Relevé `/usage` : geste de Paul.
-- Tests : `tests/factory/overlap-test.sh`, `tests/factory/ledger-test.sh` (hors ligne, sans secret).
+- Tests : `tests/factory/overlap-test.sh`, `tests/factory/ledger-test.sh`, `tests/factory/workflow-guard-test.sh`
+  (structure du câblage et rejeu des scripts `run:` des étapes de garde avec un `gh` factice ; hors ligne, sans secret).
 
 ## Garde-fous
 - Déclencheur limité à l'acteur `SmadjaPaul` ; les bots et utilisateurs sans écriture sont refusés par l'action.

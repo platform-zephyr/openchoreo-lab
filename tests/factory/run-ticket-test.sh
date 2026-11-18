@@ -198,7 +198,7 @@ t = next(i for i, s in enumerate(steps) if "ticket-env" in s.get("run", ""))
 c = next(i for i, s in enumerate(steps) if s.get("id") == "claude")
 assert t < c, "ticket-env doit preceder l'action"
 assert "GITHUB_ENV" in steps[t]["run"]
-assert steps[t]["if"] == "steps.pause.outputs.paused == 'false'"
+assert steps[t]["if"] == "steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'"  # T-467
 PY
 if grep -rn 'LAB_COORDINATOR_SESSION' "$ROOT/.github" "$RT" | grep -v '^[^:]*:[0-9]*:[[:space:]]*#' | grep -vq 'Jamais LAB_COORDINATOR_SESSION\|jamais LAB_COORDINATOR_SESSION\|reservee a la session'; then
   ko "LAB_COORDINATOR_SESSION posee ou citee hors commentaire par l'executant"
