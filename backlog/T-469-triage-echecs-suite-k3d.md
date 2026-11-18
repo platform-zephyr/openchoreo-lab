@@ -1,7 +1,7 @@
 ---
 id: T-469
 title: "Triage des cas FAIL préexistants de la suite k3d"
-status: in-progress
+status: done
 phase: P0
 adr: [0002]
 depends_on: [T-456]
@@ -26,7 +26,7 @@ tests/k3d/run.sh, tests/k3d/fixtures/10-projects.yaml, docs/CI-K3D.md, backlog/T
 ## Critères de fin
 - [x] Tableau cas par cas dans `## Notes` : cause prouvée (log du run 44313941923 ou d'un run plus récent), décision (corrigé ou KNOWN_FAIL)
 - [x] Chaque cas est corrigé ou marqué `KNOWN_FAIL` avec un motif écrit dans `tests/k3d/run.sh` et `docs/CI-K3D.md`
-- [ ] Un dispatch daté de la suite `k3d` ne montre aucun FAIL non motivé (lien du run et date ; k3d ≠ OKE)
+- [x] Un dispatch daté de la suite `k3d` ne montre aucun FAIL non motivé (run 44343243035, `workflow_dispatch` sur la branche, 2026-11-18, tête 0234cb3 : job `k3d k3d` PASS=52 FAIL=0 NOT_TESTED=1, les 4 suites et `k3d-ok` en succès ; avant : PASS=28 FAIL=24 au run 44313941923 ; RUNTIME, k3d ≠ OKE)
 - [ ] `tools/dev/check --static --changed` : verdict reporté dans la PR
 
 ## Notes
@@ -50,4 +50,4 @@ Cause racine R1 (classe : défaut de fixture, environnement CI) : `10-projects.y
 
 Total : 22 cas R1 + 2 tests périmés = 24. Aucun défaut produit trouvé, aucun `KNOWN_FAIL`, `platform/` inchangé. T12a-e restent PASS.
 
-Reste (critère 3) : dispatch daté de `k3d-integration` sur la branche `claude/t-469-triage-k3d`. Tant qu'il n'est pas fait, le ticket reste `in-progress`.
+Preuve (critère 3) : run 44343243035 (2026-11-18) vert, voir le critère. Hypothèse confirmée : la fixture `t-pipeline` fait créer les ReleaseBinding. Suite possible (non faite) : échec rapide quand un ReleaseBinding est absent au lieu de 11 `timeout`.
