@@ -3,7 +3,14 @@
 Source kube-ops : `k8s/applications/catalog/searxng/` @ origin/main ef50472 [C] (Deployment, ConfigMap settings.yml, ExternalSecret, HTTPRoute internal, CNP).
 
 ## Image
-- `searxng/searxng:2026.9.30-a9d990033`, digest index `sha256:a07a5cd2...` ; linux/arm64 present [C].
+- `docker.io/searxng/searxng:2026.9.30-a9d990033@sha256:a07a5cd2...` ; index verifie le 2026-11-18 : HTTP 200 sur le registre, `docker-content-digest` identique ; manifests linux/amd64 et linux/arm64 [C].
+
+## Cible OKE (cluster: oke, stateless)
+- `cluster: oke`, `profile: stateless` : aucun `storage`, aucun `database`, aucun PVC. Le schema et `clusters/oke/capabilities.yaml` n'admettent aucun volume ni base sur OKE : rien a deroger.
+- Secret : `SEARXNG_SECRET` seulement comme reference ESO (`secrets[]`, store `lab-store`). Aucune valeur dans Git ni dans le cluster par ce depot.
+- Sécurité : PSA restricted generee (runAsNonRoot, uid 65532 par defaut, seccomp, automount off, drop ALL, readOnlyRootFilesystem) + `emptyDir` `/tmp` 64Mi. Pas d'exposition publique (`exposure: private`, `auth: none`).
+- Egress `public-internet` conserve : les moteurs de recherche sont nombreux et changeants (allowlist FQDN non praticable). Il ouvre TCP 80/443 vers Internet hors RFC1918/CGNAT/link-local ; IMDS (169.254.0.0/16) exclu d'office. Plus strict que kube-ops (qui n'a aucune section egress) mais non minimal : a reduire si Paul fixe une liste de moteurs.
+- Preuve runtime sur OKE : NOT_TESTED. Points a verifier au premier demarrage : entrypoint sans USER dans l'image (ecriture de config dans un rootfs RO), uid 65532 accepte par l'image, endpoint `/healthz`.
 
 ## Ecarts fonctionnels (schema v2alpha1 actuel)
 1. **Pas de settings.yml** : le schema ne peut pas monter de ConfigMap. Consequences : `search.formats: [html, json]` de kube-ops ne peut pas etre reproduit (format JSON desactive) ; `server.image_proxy: true` de kube-ops ne peut pas etre active (reglage par defaut) ; `ui.static_use_hash` non applique.

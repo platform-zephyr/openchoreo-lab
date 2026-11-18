@@ -9,7 +9,7 @@ spec:
     projectName: searxng
     componentName: searxng
   environment: production
-  releaseName: searxng-6be25526ed
+  releaseName: searxng-a3dba8c695
   componentTypeEnvironmentConfigs:
     size: medium
     replicas: 1
