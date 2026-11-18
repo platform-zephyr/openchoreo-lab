@@ -12,7 +12,7 @@ set -euo pipefail
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
 kyv="${1:-${KYVERNO_BIN:-kyverno}}"
 command -v "$kyv" >/dev/null 2>&1 || { echo "kyverno introuvable : $kyv" >&2; exit 2; }
-"$kyv" version | head -1
+"$kyv" version >/dev/null
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
