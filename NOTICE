@@ -7,6 +7,10 @@ This product includes software adapted from:
   Apache License 2.0. Files adapted: samples/getting-started/component-types/service.yaml,
   samples/getting-started/component-traits/pvc-trait.yaml (unmodified),
   samples/getting-started/cluster-project-types/default.yaml.
+- Argo CD (https://github.com/argoproj/argo-cd), v3.5.1 commit 109ca7ca71139e514114499d294a492e7910a965
+  Apache License 2.0. platform/install/argocd/notifications/argocd-notifications-cm.yaml adapted from
+  docs/operator-manual/notifications/services/github.md (service `github`, `checkRun` template) and
+  docs/operator-manual/notifications/{triggers,subscriptions}.md (T-489).
 - openchoreo/sample-gitops (https://github.com/openchoreo/sample-gitops), commit 9c057d8
   Apache License 2.0. Repository layout; platform/infra/environments/*.yaml and
   platform/infra/deployment-pipelines/standard.yaml adapted.

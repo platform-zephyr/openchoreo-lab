@@ -1,0 +1,122 @@
+# BOOTSTRAP PRIVILÉGIÉ (T-489 ; posé par l'opérateur, jamais synchronisé par Argo : argo_guard A3 interdit à
+# lab-platform de viser platform/install/argocd/, et aucun projet n'a lab-argocd pour ConfigMap).
+# Argo CD Notifications publie UN check run GitHub par Application et par révision Git, sous l'identité de
+# l'App `openchoreo-status` (Checks + Commit statuses en écriture, Metadata en lecture ; docs/AGENT-IDENTITY.md).
+# Amont : service `github` et gabarit `checkRun` d'Argo CD v3.5.1 (docs/operator-manual/notifications/services/
+# github.md, notifications-engine pkg/services/github.go) ; permaliens dans le commit de T-489.
+#   - service.github : `$CLE` est remplacé, valeur scalaire par valeur scalaire, par la clé du Secret
+#     argocd-notifications-secret (alimenté par l'ExternalSecret voisin) ; aucune valeur ici.
+#   - gabarits : check run `argocd/<app>` sur `app.status.sync.revision` du dépôt source de l'app ;
+#     conclusion success / failure / neutral. Titre, résumé et texte : nom, projet, révision, statuts
+#     énumérés (sync, health, phase) seulement. JAMAIS health.message ni operationState.message (texte libre :
+#     peut contenir une IP, un hôte ou une erreur de fournisseur), ni argocdUrl (accès par port-forward).
+#   - triggers : gardés par le préfixe du nom (`lab-o-` : ApplicationSet lab-o ; `lab-k-` : bras K, T-212) et
+#     par une source unique (`spec.source`) ; oncePer = révision : au plus un check run par conclusion et par
+#     révision.
+#   - subscriptions : abonnement PAR DÉFAUT (sans annotation sur les Application, que l'ApplicationSet génère) ;
+#     le sélecteur amont ne filtre que des labels, d'où la garde par nom dans chaque trigger.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: lab-argocd
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    app.kubernetes.io/component: notifications-controller
+data:
+  service.github: |
+    appID: $OPENCHOREO_STATUS_APP_ID
+    installationID: $OPENCHOREO_STATUS_INSTALLATION_ID
+    privateKey: $OPENCHOREO_STATUS_PRIVATE_KEY
+
+  trigger.on-lab-success: |
+    - description: Application synchronisée et saine sur sa révision
+      when: >-
+        (app.metadata.name startsWith 'lab-o-' or app.metadata.name startsWith 'lab-k-') and app.spec.source != nil
+        and app.status.sync.status == 'Synced' and app.status.health.status == 'Healthy'
+      oncePer: app.status.sync.revision
+      send: [lab-check-success]
+
+  trigger.on-lab-failure: |
+    - description: Application dégradée ou synchronisation en échec
+      when: >-
+        (app.metadata.name startsWith 'lab-o-' or app.metadata.name startsWith 'lab-k-') and app.spec.source != nil
+        and (app.status.health.status == 'Degraded' or app.status.operationState?.phase in ['Error', 'Failed'])
+      oncePer: app.status.sync.revision
+      send: [lab-check-failure]
+
+  trigger.on-lab-neutral: |
+    - description: Application en cours de déploiement
+      when: >-
+        (app.metadata.name startsWith 'lab-o-' or app.metadata.name startsWith 'lab-k-') and app.spec.source != nil
+        and app.status.health.status == 'Progressing'
+      oncePer: app.status.sync.revision
+      send: [lab-check-neutral]
+
+  template.lab-check-success: |
+    message: "{{.app.metadata.name}} : success ({{.app.status.sync.status}}, {{.app.status.health.status}})"
+    github:
+      repoURLPath: "{{.app.spec.source.repoURL}}"
+      revisionPath: "{{.app.status.sync.revision}}"
+      checkRun:
+        name: "argocd/{{.app.metadata.name}}"
+        details_url: '{{trimSuffix ".git" .app.spec.source.repoURL}}/tree/{{.app.status.sync.revision}}/{{.app.spec.source.path}}'
+        status: completed
+        conclusion: success
+        output:
+          title: "{{.app.metadata.name}} : déployée et saine"
+          summary: "Argo CD : {{.app.metadata.name}} est Synced et Healthy sur {{.app.status.sync.revision}}."
+          text: |
+            app: {{.app.metadata.name}}
+            project: {{.app.spec.project}}
+            revision: {{.app.status.sync.revision}}
+            sync: {{.app.status.sync.status}}
+            health: {{.app.status.health.status}}
+            conclusion: success
+
+  template.lab-check-failure: |
+    message: "{{.app.metadata.name}} : failure ({{.app.status.sync.status}}, {{.app.status.health.status}})"
+    github:
+      repoURLPath: "{{.app.spec.source.repoURL}}"
+      revisionPath: "{{.app.status.sync.revision}}"
+      checkRun:
+        name: "argocd/{{.app.metadata.name}}"
+        details_url: '{{trimSuffix ".git" .app.spec.source.repoURL}}/tree/{{.app.status.sync.revision}}/{{.app.spec.source.path}}'
+        status: completed
+        conclusion: failure
+        output:
+          title: "{{.app.metadata.name}} : en échec"
+          summary: "Argo CD : {{.app.metadata.name}} est {{.app.status.health.status}} (synchro {{.app.status.sync.status}}) sur {{.app.status.sync.revision}}. Diagnostic : skill diagnose-app."
+          text: |
+            app: {{.app.metadata.name}}
+            project: {{.app.spec.project}}
+            revision: {{.app.status.sync.revision}}
+            sync: {{.app.status.sync.status}}
+            health: {{.app.status.health.status}}
+            phase: {{if .app.status.operationState}}{{.app.status.operationState.phase}}{{else}}none{{end}}
+            conclusion: failure
+
+  template.lab-check-neutral: |
+    message: "{{.app.metadata.name}} : neutral ({{.app.status.sync.status}}, {{.app.status.health.status}})"
+    github:
+      repoURLPath: "{{.app.spec.source.repoURL}}"
+      revisionPath: "{{.app.status.sync.revision}}"
+      checkRun:
+        name: "argocd/{{.app.metadata.name}}"
+        details_url: '{{trimSuffix ".git" .app.spec.source.repoURL}}/tree/{{.app.status.sync.revision}}/{{.app.spec.source.path}}'
+        status: completed
+        conclusion: neutral
+        output:
+          title: "{{.app.metadata.name}} : en cours de déploiement"
+          summary: "Argo CD : {{.app.metadata.name}} est Progressing (synchro {{.app.status.sync.status}}) sur {{.app.status.sync.revision}}. Verdict final dans un check run suivant."
+          text: |
+            app: {{.app.metadata.name}}
+            project: {{.app.spec.project}}
+            revision: {{.app.status.sync.revision}}
+            sync: {{.app.status.sync.status}}
+            health: {{.app.status.health.status}}
+            conclusion: neutral
+
+  subscriptions: |
+    - recipients: [github]
+      triggers: [on-lab-success, on-lab-failure, on-lab-neutral]

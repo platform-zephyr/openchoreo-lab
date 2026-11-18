@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # kubeconform-platform.sh : validation HORS CLUSTER (kubeconform -strict) de platform/install/manifests/*.yaml,
-# platform/install/argocd/**/*.yaml, platform/authz/*.yaml (CRD OpenChoreo du chart CP, docs/AGENT-ACCESS.md),
+# platform/install/argocd/**/*.yaml (dont notifications/, T-489), platform/authz/*.yaml (CRD OpenChoreo du chart CP, docs/AGENT-ACCESS.md),
 # platform/baseline/*.yaml et du rendu du chart Cilium de l'étape 0 (T-494) ; puis tools/oke/baseline-source.sh
 # (copies de kube-ops non modifiées, sans réseau).
 # Aucun accès à OKE ni à k3d.
@@ -48,5 +48,6 @@ mkdir -p "$W/schemas/cilium.io" && cp "$W/ext/cilium.io/"*.json "$W/schemas/cili
 kubeconform -strict -summary -schema-location default \
   -schema-location "$W/schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" \
   "$INSTALL_DIR"/manifests/*.yaml "$INSTALL_DIR"/argocd/*.yaml "$INSTALL_DIR"/argocd/apps/*.yaml \
+  "$INSTALL_DIR"/argocd/notifications/*.yaml \
   "$ROOT"/platform/authz/*.yaml "$ROOT"/platform/baseline/*.yaml "$W/cilium.yaml"
 "$ROOT/tools/oke/baseline-source.sh"

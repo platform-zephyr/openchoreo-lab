@@ -37,8 +37,16 @@ crds:
   keep: true
 dex:
   enabled: false
+# Notifications (T-489) : +1 pod. Publie un check run par app et par révision via l'App GitHub
+# `openchoreo-status`. ConfigMap et Secret NON créés par le chart : versionnés sous
+# platform/install/argocd/notifications/ (ConfigMap + ExternalSecret sur lab-store, aucune valeur ici).
 notifications:
-  enabled: false
+  enabled: true
+  cm: {create: false}
+  secret: {create: false}
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {cpu: 200m, memory: 128Mi}
 # Le chart 10.3.3 n'a PAS de clé applicationSet.enabled (ignorée : kube-ops #1620 la pose aussi, sans
 # effet) ; replicas: 0 évite le pod (1 IP VCN, ~40 Mi) tout en gardant la CRD inerte.
 applicationSet:
