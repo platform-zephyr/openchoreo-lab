@@ -475,7 +475,10 @@ mini_reset
 expect "gitleaks : appel du job secrets (git, config par défaut, valeurs masquées)" 0 env CHECK_ONLY=gitleaks "$MINI" tools/dev/check --static
 if grep -Eq '^git --config [^ ]+ --redact --no-banner --log-level warn \.$' "$W/gl.args"; then ok "  … arguments : git --config <défaut> --redact ... ."; else ko "  … arguments inattendus : $(cat "$W/gl.args")"; fi
 if [[ "$(cat "$W/gl.cfg")" == $'[extend]\nuseDefault = true' ]]; then ok "  … config = règles par défaut seules (pas .gitleaks.toml)"; else ko "  … config inattendue"; fi
-if grep -q 'gitleaks git --config' .github/workflows/ci.yaml && grep -q 'useDefault = true' .github/workflows/ci.yaml; then ok "  … identique au job secrets de ci.yaml"; else ko "  … ci.yaml ne contient plus le même appel"; fi
+# Depuis T-460 le job `secrets` appelle l'étape `gitleaks` de check (plus de commande inline) : on vérifie l'appel
+# strict dans ci.yaml ET que l'appel gitleaks de check (git --config, useDefault) est celui testé ci-dessus.
+if grep -q 'CHECK_ONLY="gitleaks" tools/dev/check --static --strict' .github/workflows/ci.yaml \
+  && grep -q 'gitleaks git --config' tools/dev/check && grep -q 'useDefault = true' tools/dev/check; then ok "  … job secrets de ci.yaml = étape gitleaks de check (strict)"; else ko "  … ci.yaml n'appelle plus l'étape gitleaks de check, ou check a changé d'appel"; fi
 expect "gitleaks : trouvaille = FAIL rc 1" 1 env CHECK_ONLY=gitleaks FAKE_FAIL=gitleaks "$MINI" tools/dev/check --static
 out_has "  … FAIL gitleaks" '^FAIL +gitleaks '
 
