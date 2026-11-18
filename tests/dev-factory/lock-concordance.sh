@@ -113,9 +113,10 @@ done
 # T-472 : paquets apt épinglés et sources figées à l'instant du lock (sans réseau).
 snap="${lock[DEBIAN_SNAPSHOT]:-}"
 [[ "$snap" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || ko "DEBIAN_SNAPSHOT absent ou invalide dans $LOCK"
-grep -Eq 'snapshot\.debian\.org/archive/debian-security/\$\{DEBIAN_SNAPSHOT\}' "$DF" &&
-  grep -Eq 'snapshot\.debian\.org/archive/debian/\$\{DEBIAN_SNAPSHOT\}' "$DF" ||
+if ! { grep -Eq 'snapshot\.debian\.org/archive/debian-security/\$\{DEBIAN_SNAPSHOT\}' "$DF" &&
+  grep -Eq 'snapshot\.debian\.org/archive/debian/\$\{DEBIAN_SNAPSHOT\}' "$DF"; }; then
   ko "Dockerfile : sources apt non réécrites vers snapshot.debian.org/\${DEBIAN_SNAPSHOT}"
+fi
 ! grep -Eq -- '--allow-downgrades|--allow-unauthenticated|Check-Valid-Until=true' "$DF" || ko "Dockerfile : option apt affaiblissant l'épinglage"
 apt_block="$(awk '/apt-get .*install/{f=1;next} f&&/rm -rf \/var\/lib\/apt\/lists/{f=0} f' "$DF")"
 npkg=0
