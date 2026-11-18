@@ -12,7 +12,7 @@ Dernière mise à jour : 2026-11-17 ~20:45Z. Lire ensuite `missions/MISSION.md` 
 - Un point de sécurité amont est en **coordination privée** : ne publie AUCUN détail dans ce dépôt public. Fichiers de sécurité locaux exclus de git (`.git/info/exclude`). **Handoff privé (hors dépôt)** : le retrouver avec `find ~/Library/Application\ Support/Claude -name HANDOFF-PRIVATE.md 2>/dev/null` (ne jamais en copier le contenu ici). Dépôt privé du bundle : `platform-zephyr/openchoreo-lab-security` (clone local à côté de ce dépôt ; `gh repo view` pour vérifier l'accès).
 
 ## 1b. Agents cloud (décisions de Paul, 2026-11-18)
-Backlog = issues GitHub de ce dépôt (pas Linear). Dev et prod = Environments OpenChoreo sur le même OKE, dev frugal. MCP joignable par Cloudflare Tunnel + Access (exception unique). Modèle et gestes de Paul : `docs/CLOUD-AGENTS.md`. Rien n'est encore exécuté sur OKE.
+Backlog = `backlog/` dans ce dépôt (ADR-0012 ; pas Linear ; une issue GitHub seulement pour lancer un agent). ADR 0001-0014 PROPOSÉS dans `docs/adr/` (PR #48). Dev et prod = Environments OpenChoreo sur le même OKE, dev frugal. MCP joignable par Cloudflare Tunnel + Access (exception unique). Modèle et gestes de Paul : `docs/CLOUD-AGENTS.md`. Doc, ADR et backlog seulement : rien n'est exécuté sur OKE pour ce modèle.
 
 ## 2. Accès OKE (un seul exécutant : le coordinateur ; les agents n'y ont pas accès)
 - Session bastion ouverte le 2026-11-17 ~20:06Z avec l'accord de Paul (TTL 3 h → expire ~23:06Z). Kubeconfig temporaire généré par le script d'accès (emplacement : handoff privé), contexte `context-oracle-a1-*` (jamais `admin@homeops`).

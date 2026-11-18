@@ -2,7 +2,7 @@
 id: T-041
 title: "Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur"
 status: todo
-phase: P4
+phase: P1
 adr: [0012]
 depends_on: []
 class: REVUE
@@ -17,6 +17,6 @@ Appliquer la proposition `docs/research/context-engineering/` dans ce dépôt.
 AGENTS.md, STATE.md, docs/, tools/, tests/
 
 ## Critères de fin
-- [ ] fichiers toujours chargés sous la taille cible
+- [ ] fichiers toujours chargés ≤ 130 lignes au total
 - [ ] check CI taille/liens/fraîcheur
 - [ ] aucune règle impérative perdue (diff relu)

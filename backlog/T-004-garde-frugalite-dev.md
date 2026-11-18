@@ -19,3 +19,4 @@ tools/appgen/, tests/appgen/
 ## Critères de fin
 - [ ] un test par refus
 - [ ] message d'erreur typé avec la correction attendue
+- [ ] contrôle des valeurs effectives après `overrides` (T-013)

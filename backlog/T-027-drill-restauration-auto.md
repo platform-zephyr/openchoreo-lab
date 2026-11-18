@@ -4,7 +4,7 @@ title: "Drill de restauration automatique et `restore-evidence`"
 status: todo
 phase: P2
 adr: [0008, 0011]
-depends_on: [T-026, T-005]
+depends_on: [T-026, T-005, T-012, T-075]
 class: AUTONOME
 github_issue: null
 ---

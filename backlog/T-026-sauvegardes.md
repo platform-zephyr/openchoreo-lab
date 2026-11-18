@@ -1,14 +1,14 @@
 ---
 id: T-026
-title: "Sauvegardes : CNPG → R2 par préfixe, mécanisme unique pour les volumes"
+title: "Sauvegarde des bases : CNPG → R2 par préfixe"
 status: todo
 phase: P2
 adr: [0008, 0009]
-depends_on: [T-025]
+depends_on: [T-025, T-023, T-030]
 class: AUTONOME + MANDAT
 github_issue: null
 ---
-# T-026 — Sauvegardes : CNPG → R2 par préfixe, mécanisme unique pour les volumes
+# T-026 — Sauvegarde des bases : CNPG → R2 par préfixe
 
 ## Intention
 La plateforme choisit le mécanisme selon la classe ; spike VolSync/restic vs Velero/Kopia pour les volumes.
@@ -17,6 +17,7 @@ La plateforme choisit le mécanisme selon la classe ; spike VolSync/restic vs Ve
 platform/resource-types/, tools/appgen/, docs/storage/
 
 ## Critères de fin
-- [ ] base : WAL + base backup vers R2 hors Oracle
-- [ ] volume : mécanisme choisi et mesuré
+- [ ] WAL + base backup vers R2 hors Oracle
+- [ ] jeton R2 hors cellule d'app ; bucket versionné ou object lock contre l'effacement
+- [ ] `irreplaceable` : copie chiffrée côté client + vérification d'intégrité
 - [ ] MANDAT Paul : jeton R2 limité au bucket (Tofu)

@@ -4,7 +4,7 @@ title: "Classe de donnée dans le contrat et labels `data-class` (G8)"
 status: todo
 phase: P2
 adr: [0008]
-depends_on: [T-010]
+depends_on: [T-002]
 class: AUTONOME
 github_issue: null
 ---

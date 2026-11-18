@@ -1,6 +1,6 @@
 ---
 id: T-009
-title: "Mesurer le budget réel d'OKE avec OpenChoreo, dev et futurs composants"
+title: "Estimer le budget OKE et tenir le registre des quotas gratuits"
 status: todo
 phase: P0
 adr: [0003, 0004]
@@ -8,10 +8,10 @@ depends_on: [T-001]
 class: AUTONOME
 github_issue: null
 ---
-# T-009 — Mesurer le budget réel d'OKE avec OpenChoreo, dev et futurs composants
+# T-009 — Estimer le budget OKE et tenir le registre des quotas gratuits
 
 ## Intention
-Savoir ce qui tient sur le nœud A1 (seuil 70 %) avant d'ajouter OpenBao, Kyverno, Crossplane ou des apps.
+Estimation initiale de ce qui tient sur le nœud A1 (seuil 70 %) et registre des quotas Always Free (volumes, IP, LB) avec contrôle périodique. Les composants futurs sont re-mesurés dans leur propre ticket.
 
 ## Périmètre de fichiers
 tools/oke/verify.sh (lecture), docs/
@@ -19,4 +19,4 @@ tools/oke/verify.sh (lecture), docs/
 ## Critères de fin
 - [ ] mesure datée (requests, usage, pods, IP)
 - [ ] tableau : composant → cluster recommandé
-- [ ] mise à jour de D1 dans DECISIONS-OPEN si besoin
+- [ ] registre des quotas gratuits (volumes orphelins, disque de boot) et contrôle périodique

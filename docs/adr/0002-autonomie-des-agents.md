@@ -18,6 +18,9 @@ Décisions liées : D-2026-11-15-03 et D-2026-11-16-07 (homelab-infra, autonomie
    - droits des agents et frontière GitOps : `platform/authz/`, `platform/cluster-agent/`, `platform/install/argocd/`,
      `argo_guard` et ses tests ;
    - admission qui borne les cellules (VAP) : `platform/policies/` et ses tests ;
+   - contrôle compensatoire et classes d'autonomie : `tools/k3d/`, `tests/k3d/`, `tests/gitops-k3d/`,
+     `tests/argo-escalation/`, `.agents/skills/platform-guardrails/` ;
+   - identité générée par la plateforme : `platform/identity/` (ADR-0007) ;
    - sécurité amont : `security/`, bundle et ses tests.
 3. **MANDAT (Paul seul)** reste réservé à ce qu'une PR ne peut pas faire : créer une identité, une clé ou un jeton ;
    un coût hors Always Free ; une suppression de données sans restauration prouvée ; un premier accès réseau

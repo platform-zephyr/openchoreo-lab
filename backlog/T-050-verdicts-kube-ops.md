@@ -2,9 +2,9 @@
 id: T-050
 title: "Verdict A-F pour chaque app de kube-ops"
 status: todo
-phase: P5
+phase: P1
 adr: [0005]
-depends_on: [T-011, T-014]
+depends_on: [T-008]
 class: AUTONOME
 github_issue: null
 ---

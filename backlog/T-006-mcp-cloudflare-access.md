@@ -4,7 +4,7 @@ title: "MCP OpenChoreo lisible depuis les sessions cloud (Tunnel + Access + auth
 status: todo
 phase: P0
 adr: [0010, 0007]
-depends_on: [T-001]
+depends_on: [T-001, T-060]
 class: REVUE + MANDAT
 github_issue: 52
 ---
@@ -22,4 +22,4 @@ platform/ (NetworkPolicy tunnel → MCP), docs/CLOUD-AGENTS.md, tests/mcp/
 - [ ] MANDAT Paul : hôte, application Access, service token, client Authentik, network secrets de l'environnement cloud
 
 ## Notes
-Vérifier : service token en un seul en-tête ; JWT reader par client_credentials injecté par le proxy.
+Inclure le déploiement/réglage de cloudflared et sa NetworkPolicy. Access exige normalement deux en-têtes de service token : l'injection en un seul en-tête est une hypothèse à prouver, sinon prévoir un relais.

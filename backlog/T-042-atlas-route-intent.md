@@ -5,7 +5,7 @@ status: todo
 phase: P4
 adr: [0012, 0013]
 depends_on: [T-041]
-class: REVUE
+class: REVUE + MANDAT
 github_issue: null
 ---
 # T-042 — Atlas : entrée de catalogue et skill de routage d'intention
@@ -20,3 +20,6 @@ dépôt Atlas (PR séparée)
 - [ ] entrée openchoreo-lab dans `repos/catalog.md`
 - [ ] skill `route-intent` + index machine-lisible
 - [ ] PR Atlas ouverte (accès en écriture à donner)
+
+## Notes
+Accès en écriture au dépôt Atlas à donner par Paul.

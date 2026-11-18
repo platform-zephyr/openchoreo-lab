@@ -29,6 +29,9 @@ Ces ADR ne changent rien au cluster. Un ADR passe d'**PROPOSÉ** à **ACTÉ** pa
 approuvée par Paul (`docs/adr/` fait partie du noyau protégé, ADR-0002). Un ADR acté n'est pas réécrit : il est
 **amendé** ou **remplacé** par un nouvel ADR, comme les décisions `D-AAAA-MM-JJ-NN` de homelab-infra.
 
+Les tickets de `backlog/` ne démarrent qu'une fois leurs ADR **ACTÉ** (ticket T-061 : fusion de la PR qui les acte et
+alignement de `missions/MISSION.md`).
+
 ## Rapport à l'existant
 
 kube-ops, homelab-infra et Atlas sont des **sources d'inspiration, pas des sources de vérité** (Paul, 2026-11-18). Un

@@ -4,7 +4,7 @@ title: "Kyverno en Enforce sur le golden path, exceptions générées"
 status: todo
 phase: P2
 adr: [0006]
-depends_on: [T-002, T-009]
+depends_on: [T-002, T-009, T-030]
 class: AUTONOME
 github_issue: null
 ---
@@ -18,5 +18,6 @@ platform/kyverno/, tests/kyverno/, tools/appgen/
 
 ## Critères de fin
 - [ ] suites de refus en CI k3d
-- [ ] homelab : Enforce ; OKE : selon T-009 (sinon VAP seules)
+- [ ] installé en `lab-*` ; homelab : Enforce
+- [ ] OKE seulement si Kyverno ≤ 400 Mi de requests et total < 70 % (re-mesure datée), sinon VAP seules
 - [ ] namespaces plateforme exclus, restauration non bloquée
