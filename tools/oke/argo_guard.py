@@ -85,8 +85,8 @@ LAB_PG_LABELS = {"app.kubernetes.io/part-of": "openchoreo-lab",
                  "pod-security.kubernetes.io/enforce": "restricted"}
 
 
-class Loader(yaml.SafeLoader):
-    """SafeLoader qui accepte les tags inconnus (blueprints Authentik `!Find`...) sans les exécuter."""
+class Loader(getattr(yaml, "CSafeLoader", yaml.SafeLoader)):
+    """SafeLoader (CSafeLoader si libyaml est disponible) qui accepte les tags inconnus (blueprints Authentik `!Find`...) sans les exécuter."""
 
 
 def _any_tag(loader, _suffix, node):
