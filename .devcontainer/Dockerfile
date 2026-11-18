@@ -25,12 +25,26 @@ ARG TARGETARCH
 
 # Paquets système figés (Debian bookworm, mêmes versions en amd64 et arm64). git pour les worktrees, shasum
 # (libdigest-sha-perl) pour les scripts tools/oke, flock pour sérialiser l'accès au cache partagé.
+# Reproductibilité (T-472) : l'image de base est construite depuis snapshot.debian.org à un instant donné (commentaire de
+# /etc/apt/sources.list.d/debian.sources : 20261104T212339Z), mais ses sources pointent vers l'archive vivante. Des versions
+# exactes prises sur l'archive vivante finissent donc plus anciennes que celles de la base (« Packages were downgraded »)
+# ou disparaissent. On réécrit les sources vers le MÊME instant (cet ARG = DEBIAN_SNAPSHOT de tools/dev/toolchain.lock) :
+# l'index apt devient immuable, les versions ci-dessous sont celles de cet instant (identiques en amd64 et arm64).
+# Montée de la base = nouveau digest + nouvel instant (celui de son debian.sources) + nouvelles versions, dans la même PR.
+# Check-Valid-Until=false : le Release d'un instantané est périmé par construction ; l'intégrité reste vérifiée par
+# la signature GPG (Signed-By) et les sha256 de l'index. HTTP simple : ca-certificates n'est pas encore installé.
+ARG DEBIAN_SNAPSHOT=20261104T212339Z
 RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
-      ca-certificates=20230311+deb12u1 \
+    sed -i \
+      -e "s#http://deb.debian.org/debian-security#http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}#" \
+      -e "s#http://deb.debian.org/debian\$#http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}#" \
+      /etc/apt/sources.list.d/debian.sources; \
+    grep -c "^URIs: http://snapshot.debian.org/archive/debian.*/${DEBIAN_SNAPSHOT}\$" /etc/apt/sources.list.d/debian.sources | grep -qx 2; \
+    apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Retries=5 update; \
+    apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Retries=5 install -y --no-install-recommends \
+      ca-certificates=20250419~deb12u2 \
       curl=7.88.1-10+deb12u15 \
-      xz-utils=5.4.1-1+deb12u1 \
+      xz-utils=5.4.1-1+deb12u2 \
       util-linux=2.38.1-5+deb12u3 \
       git=1:2.39.5-0+deb12u3 \
       libdigest-sha-perl=6.04-1; \
