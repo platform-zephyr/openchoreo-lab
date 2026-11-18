@@ -8,7 +8,7 @@
 
 Le pack est soigné : sha256 des charts, digests, PSA vérifiée statiquement, aucun LoadBalancer ni PVC rendu, CI épinglée par SHA, sans injection. Trois points bloquent pourtant la suite :
 
-1. **VAP-1 ne couvre pas `pods/exec`.** Elle ignore l'opération CONNECT et les sous-ressources. Or le chart du DP donne `pods/exec` au cluster-agent sur tout le cluster. Dès l'étape 7, un agent compromis peut exécuter des commandes dans n'importe quel pod, y compris les pods privilégiés de kube-system, et prendre la main sur le nœud.
+1. **VAP-1 doit compléter le moindre privilège du cluster-agent.** Sa couverture des opérations et des sous-ressources est incomplète, alors que le RBAC du chart DP est large. Durcissement attendu avant l'étape 7 : refus de `pods/exec` et des autres sous-ressources d'accès aux pods hors `dp-*`.
 2. **L'AppProject `lab` laisse une PR toucher au cluster entier.** Il autorise les kinds `Namespace` et `ValidatingAdmissionPolicy` sans restriction de nom. Une PR mergée peut donc réétiqueter `kube-system` ou réécrire les VAP baseline de kube-ops, avec le ClusterRole `*/*/*` d'Argo.
 3. **Le périmètre réel contredit `AGENTS.md` et `MISSION.md`.** Le pack écrit dans `cnpg-system` (namespace créé dès l'étape 1) et dans `default`. Il supprime aussi des `dp-*`.
 
@@ -16,13 +16,13 @@ Décompte : **3 bloquants, 12 importants, 12 mineurs.**
 
 ## Bloquants
 
-### B1. VAP-1 laisse passer `pods/exec` et les sous-ressources du cluster-agent (point 6)
-- **Preuve.** `platform/policies/vap-cluster-agent-scope.yaml:22-24` : `operations: [CREATE, UPDATE, DELETE]`, `resources: ["*"]`. Dans une VAP, `"*"` exclut les sous-ressources (il faut `"*/*"`), et CONNECT n'est pas listé.
+### B1. VAP-1 : moindre privilège du cluster-agent à compléter (point 6)
+- **Constat.** `platform/policies/vap-cluster-agent-scope.yaml:22-24` ne couvre ni toutes les opérations ni les sous-ressources. Dans une VAP, `"*"` exclut les sous-ressources (il faut `"*/*"`).
 - **RBAC rendu du chart DP 1.3.3** : permissions larges sur plusieurs ressources, dont des sous-ressources sensibles. Détail volontairement retiré de ce dépôt public (coordination privée en cours) ; voir le dossier privé.
-- **Scénario.** Le jeton de l'agent fuit, ou le CP est compromis et pilote l'agent. On lance alors `kubectl exec --as=…:cluster-agent-dataplane -n kube-system <pod cilium> -- sh`. La VAP n'est pas évaluée. Le pod est privilégié avec hostNetwork, ce qui donne root sur le nœud et l'accès à tout le cluster. `verify.sh` B7 ne teste que la création d'une ClusterRoleBinding, donc il passe.
+- **Impact.** Défense en profondeur incomplète : la VAP doit borner le cluster-agent aux namespaces `dp-*` pour toutes les opérations, en complément d'un RBAC réduit. `verify.sh` B7 ne couvrait pas ce cas.
 - **Correctif minimal.**
   - Dans VAP-1, passer à `operations: [CREATE, UPDATE, DELETE, CONNECT]` et `resources: ["*", "*/*"]`.
-  - Ajouter à `verify.sh v7` un `expect_deny` qui lance `kubectl exec --as=$sa -n openchoreo-control-plane <pod de sonde> -- true`, avec le motif `lab-cluster-agent-scope`.
+  - Ajouter à `verify.sh v7` un `expect_deny` qui vérifie le refus de `pods/exec` hors `dp-*` pour l'identité du cluster-agent, avec le motif `lab-cluster-agent-scope`.
 
 ### B2. L'AppProject `lab` permet à une PR de modifier `kube-system` ou les VAP de kube-ops (points 6, 7 et 8)
 - **Preuve.**

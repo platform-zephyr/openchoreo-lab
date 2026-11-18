@@ -1,6 +1,6 @@
 # Exigences de déploiement de kube-ops (base des ADR OpenChoreo)
 
-Date : 2026-11-18. Lecture seule sur `/home/user/smadjapaul/kube-ops` @ `ef50472` (clone superficiel). Complète `docs/KUBE-OPS-APP-MAP.md` (35 apps), non refait ici. Références `chemin:ligne` relatives à kube-ops. **[S]** = supposé ou non vérifiable dans ce clone. Aucun secret lu.
+Date : 2026-11-18. Lecture seule sur un clone local de kube-ops @ `ef50472` (clone superficiel). Complète `docs/KUBE-OPS-APP-MAP.md` (35 apps), non refait ici. Références `chemin:ligne` relatives à kube-ops. **[S]** = supposé ou non vérifiable dans ce clone. Aucun secret lu.
 
 ## 0. Conclusions
 
