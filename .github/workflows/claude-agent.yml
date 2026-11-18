@@ -121,6 +121,16 @@ jobs:
         run: |
           git config user.name "Claude"
           git config user.email "noreply@anthropic.com"
+      - name: Jeton de l'App de l'executant (si APP_ID et APP_PRIVATE_KEY existent)
+        id: app
+        if: steps.pause.outputs.paused == 'false' && env.HAS_APP == 'true'
+        env:
+          HAS_APP: ${{ secrets.APP_ID != '' && secrets.APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
       - id: claude
         if: steps.pause.outputs.paused == 'false'
         env:
@@ -132,7 +142,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Identité de l'exécutant (mode dev, T-304) : jeton fin avec la permission workflows ; ses PR déclenchent la CI.
-          github_token: ${{ secrets.FACTORY_GH_TOKEN }}
+          github_token: ${{ steps.app.outputs.token || secrets.FACTORY_GH_TOKEN }}
           show_full_output: ${{ inputs.debug }}
           prompt: "Traite l'issue #${{ matrix.issue }} de ce dépôt (lis-la avec gh issue view ${{ matrix.issue }}) selon AGENTS.md."
           base_branch: main
