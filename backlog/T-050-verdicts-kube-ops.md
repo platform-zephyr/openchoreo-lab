@@ -20,7 +20,7 @@ github_issue: null
 Passer le catalogue kube-ops dans `migrate-to-openchoreo` pour mesurer la couverture du contrat.
 
 ## Périmètre de fichiers
-docs/, apps/ (brouillons)
+docs/KUBE-OPS-VERDICTS.md (tableau app → archétype → manques, évolutions de contrat), apps/ (brouillons)
 
 ## Critères de fin
 - [ ] tableau app → archétype → manques

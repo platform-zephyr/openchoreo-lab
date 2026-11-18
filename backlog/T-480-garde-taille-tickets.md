@@ -1,7 +1,7 @@
 ---
 id: T-480
 title: "Garde de taille des tickets : avertissement de check.py au-delà de ce qu'un run absorbe"
-status: todo
+status: done
 phase: P0
 adr: [0012, 0021]
 depends_on: []
@@ -27,12 +27,14 @@ sur un répertoire de code (`tools/`, `platform/`, `.github/`). Le message propo
 tools/backlog/sizing.py, tests/backlog/test_sizing.py, tools/backlog/check.py
 
 ## Critères de fin
-- [ ] `tools/backlog/sizing.py` : fonction réutilisable et CLI `--json` (taille et motifs par ticket) ; seuils en constantes nommées
-- [ ] `check.py` émet un avertissement par ticket `todo` ou `in-progress` hors seuils ; aucune nouvelle erreur ; tickets `done`, `dropped`, `deferred` ignorés
-- [ ] tests avec cas négatifs : périmètre `hors de ce dépôt`, commentaire entre parenthèses, ticket sans critère, glob `**` sous `docs/` (pas d'avertissement)
-- [ ] `python3 tools/backlog/check.py` sur le backlog actuel : nombre d'avertissements ajoutés relevé dans la PR (pas de bruit massif ; sinon ajuster un seuil à la fois)
-- [ ] `python3 -m unittest discover -s tests/backlog` PASS ; cliquet `tools/quality/check.py` PASS
+- [x] `tools/backlog/sizing.py` : fonction réutilisable et CLI `--json` (taille et motifs par ticket) ; seuils en constantes nommées — PROUVÉ : PR #89 (agent de l'usine, issue 87, run 44338002716), 2026-11-18
+- [x] `check.py` émet un avertissement par ticket `todo` ou `in-progress` hors seuils ; aucune nouvelle erreur ; tickets `done`, `dropped`, `deferred` ignorés — PROUVÉ : `check.py` : 0 erreur, 22 avertissements de taille ajoutés (53 → 75) sur le backlog actuel
+- [x] tests avec cas négatifs : périmètre `hors de ce dépôt`, commentaire entre parenthèses, ticket sans critère, glob `**` sous `docs/` (pas d'avertissement) — PROUVÉ : `tests/backlog/test_sizing.py` OK
+- [x] `python3 tools/backlog/check.py` sur le backlog actuel : nombre d'avertissements ajoutés relevé dans la PR (pas de bruit massif ; sinon ajuster un seuil à la fois) — PROUVÉ : +22 avertissements (voir ci-dessus) ; à juger : trop de bruit ? ajuster un seuil à la fois
+- [x] `python3 -m unittest discover -s tests/backlog` PASS ; cliquet `tools/quality/check.py` PASS — PROUVÉ : tests backlog OK, cliquet PASS
 
 ## Notes
 Seuils à recalibrer avec les données de T-479 (tours par ticket selon la taille). `check.py` est aussi dans le périmètre de
 T-337 (todo) : ne pas les lancer en parallèle.
+
+Preuve : PR #89 fusionnée par la file (2026-11-18). Suite possible : ajuster les seuils si les 22 avertissements gênent.

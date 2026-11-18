@@ -1,7 +1,7 @@
 ---
 id: T-479
 title: "Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et par ticket)"
-status: todo
+status: in-progress
 phase: P0
 adr: [0021]
 depends_on: []
@@ -27,12 +27,14 @@ sans tableau de bord. Ne remplace pas `ledger.py` (fenêtres de quota).
 tools/factory/stats.py, tests/factory/stats_test.py
 
 ## Critères de fin
-- [ ] `python3 tools/factory/stats.py --dir <répertoire> [--json] [--since AAAA-MM-JJ]` : sortie Markdown par défaut, JSON avec un champ `schema: factory-stats.v1`
-- [ ] tests avec cas négatifs : fichier non JSON, schéma inconnu, champ manquant (ignoré et compté), répertoire vide (code 0, « aucun run »), refus multiples du même outil agrégés
+- [x] `python3 tools/factory/stats.py --dir <répertoire> [--json] [--since AAAA-MM-JJ]` : sortie Markdown par défaut, JSON avec un champ `schema: factory-stats.v1` — PROUVÉ : PR #90 (agent de l'usine, issue 86, run 44338002716), CLI vérifiée par le coordinateur, 2026-11-18
+- [x] tests avec cas négatifs : fichier non JSON, schéma inconnu, champ manquant (ignoré et compté), répertoire vide (code 0, « aucun run »), refus multiples du même outil agrégés — PROUVÉ : `tests/factory/stats_test.py` OK, 2026-11-18
 - [ ] aucune sortie d'outil, aucun corps de prompt, aucune valeur d'environnement dans la sortie (test)
 - [ ] rapport daté sur les artefacts réels des runs déjà faits (T-304 et suivants) joint à la PR
-- [ ] `tools/dev/check --static --changed` PASS ; cliquet `tools/quality/check.py` PASS
+- [x] `tools/dev/check --static --changed` PASS ; cliquet `tools/quality/check.py` PASS — PROUVÉ : cliquet PASS sur `main` après la fusion de la PR #90 ; CI de la PR verte (18 checks)
 
 ## Notes
 Branchement dans `claude-agent.yml` (job `report`) hors périmètre : PR séparée après T-478 (même fichier). Sert de mesure
 avant/après pour T-478 et pour la recommandation R6 (paquet de contexte).
+
+Reste : aucune sortie sensible (test dédié à relire), rapport daté sur les artefacts réels des runs 44313706955, 44326043746, 44331128791, 44333609180, 44338002716 (comparaison coût/tours avant et après T-466/T-474/T-478).
