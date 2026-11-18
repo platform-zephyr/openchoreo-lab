@@ -7,10 +7,10 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | Statut | Tickets |
 |---|---|
 | `in-progress` | 16 |
-| `todo` | 135 |
+| `todo` | 134 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 22 |
+| `done` | 23 |
 | `dropped` | 27 |
 | **Total** | **248** |
 
@@ -57,7 +57,6 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-201](T-201-data-2.md) | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
 | [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 0/4 | — |
 | [T-215](T-215-pack-identite.md) | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
-| [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | 0/3 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
 | [T-418](T-418-tests-outils-backlog.md) | Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui) | 0/2 | — |
 | [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
@@ -201,6 +200,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-302](T-302-corrections-de-l-arbre-detail-residuel.md) | Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets | 2026-11-18 | — | — |
 | [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 2026-11-18 | `PR #63`, `backlog/evidence/T-304-essai-executant-2026-11-18.md` | — |
 | [T-306](T-306-registre-identites.md) | Registre des identités et secrets `docs/state/identities.yaml` (noms, rôles, dates, jamais de valeur) | 2026-11-18 | — | — |
+| [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | 2026-11-18 | — | — |
 | [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 2026-11-18 | — | — |
 | [T-330](T-330-reglages-de-projet-claude-settings-json.md) | Réglages de projet `.claude/settings.json` : permissions deny, mode dontAsk, sandbox, plafonds de sortie | 2026-11-18 | — | — |
 | [T-413](T-413-pyproject-ruff-shellcheck.md) | `pyproject.toml` (ruff, mypy, pytest, coverage), 13 bogues ruff à 0 et shellcheck sur les 59 scripts | 2026-11-18 | — | — |
