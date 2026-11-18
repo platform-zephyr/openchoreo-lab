@@ -3,27 +3,31 @@
 Date : 2026-11-18. Objectif : nourrir les ADR d'un labo où des LLM ajoutent des applications et opèrent la plateforme (OpenChoreo, OKE + cluster local).
 
 ## Méthode et fiabilité des sources
-Seuls les hôtes GitHub étaient joignables depuis la session ; `www.harness.io`, `www.cycloid.io`, `tag-app-delivery.cncf.io`, `platformengineering.org`, `modelcontextprotocol.io`, `sre.google` et d'autres ont refusé la résolution DNS (hors liste réseau autorisée). Chaque source porte donc un niveau :
+Mise à jour du 2026-11-18 : le réseau est ouvert (lecture par `curl`). S1 (Harness), S2 (Cycloid), S10 (Datadog), S11 (Anthropic), S12 (Team Topologies), S13 (Humanitec, page produit) et S14 (Google SRE) ont été relus ; voir leurs marques [V]. Auparavant, seuls les hôtes GitHub étaient joignables. Chaque source porte donc un niveau :
 - **[L]** lue au texte (dépôts GitHub : CNCF TAG App Delivery, spécification MCP, OpenGitOps, Backstage, Score, OPA).
+- **[V AAAA-MM-JJ + URL]** lue en ligne le 2026-11-18 (`VERIFICATION-2026-11-18.md`).
 - **[E]** connue seulement par les extraits d'un moteur de recherche. Les points listés sont ceux que les extraits affirment ; ils ne valent pas lecture de l'article.
-Les deux sources imposées (Harness, Cycloid) sont en **[E]** : l'article Cycloid n'a pas été retrouvé (les extraits ne donnent que l'étape 1 d'un cadre « en 5 étapes »), à relire par le coordinateur une fois l'accès ouvert.
+Les deux sources imposées (Harness, Cycloid) ont été lues en entier le 2026-11-18 ([V]).
 
 ---
 
-## S1. Harness : « 5 best practices for building effective internal developer portals » [E]
-URL : https://www.harness.io/blog/5-best-practices-for-building-effective-internal-developer-portals
-1. Cinq pratiques annoncées : priorité à l'expérience développeur ; intégration fluide des outils ; découvrabilité ; collaboration ; automatisation avec gouvernance.
-2. Billet suite d'un article sur les pièges de l'adoption d'un portail (même éditeur).
-3. Les pages voisines de l'éditeur lient la gouvernance (contrôles de sécurité, audit) aux workflows de livraison.
-4. Lecture agentique : « découvrabilité » devient « interface déclarative et catalogue interrogeables par machine » ; « automatisation + gouvernance » devient « garde-fous exécutables ».
-Limite : détails non lus ; un portail humain n'est qu'une des surfaces.
+## S1. Harness : « 5 best practices for building effective internal developer portals » [V 2026-11-18 + https://www.harness.io/blog/5-best-practices-for-building-effective-internal-developer-portals]
+Article lu en entier (publié le 2024-10-17, mis à jour le 2026-08-31).
+1. Cinq pratiques confirmées : (1) priorité à l'expérience développeur (persona, libre-service, boucles de retour, vues par développeur) ; (2) intégration sur toute la chaîne (API d'abord, SSO, interface cohérente) ; (3) découvrabilité et documentation (métadonnées et étiquettes, documentation, recherche) ; (4) collaboration et partage de connaissance (contributions, commentaires, historique des changements) ; (5) automatisation et gouvernance (modèles de workflows, politiques de conformité, RBAC).
+2. Le billet est la suite d'un article sur les pièges de l'adoption d'un portail (même éditeur) : confirmé.
+3. Lecture agentique (interprétation du labo, pas de l'article) : « découvrabilité » devient « interface déclarative et catalogue interrogeables par machine » ; « automatisation + gouvernance » devient « garde-fous exécutables ».
+Limite : l'article ne parle pas d'agents IA ; un portail humain n'est qu'une des surfaces.
 
-## S2. Cycloid : « Internal developer portal best practices: a 5-step implementation framework » [E, partiel]
-URL : https://www.cycloid.io/blog/internal-developer-portal-best-practices-a-5-step-implementation-framework/
-1. Les extraits ne confirment que l'étape 1 d'un parcours « en 5 étapes » : mettre en place un catalogue de services et des formulaires.
-2. Cycloid présente ses « Stacks » comme des golden paths préconfigurés qui imposent bonnes pratiques, sécurité et automatisation.
-3. Un guide voisin traite chaque produit d'API comme un Stack avec spécification, configuration de passerelle, politiques et tests.
-Limite : étapes 2 à 5 non retrouvées ; ne pas citer ce cadre sans relecture.
+## S2. Cycloid : « Internal developer portal best practices: a 5-step implementation framework » [V 2026-11-18 + https://www.cycloid.io/blog/internal-developer-portal-best-practices-a-5-step-implementation-framework/]
+Article lu en entier ; **correction** : le cadre en cinq étapes est maintenant connu (l'extrait précédent ne donnait que l'étape 1, et la formulation « catalogue de services et formulaires » était approximative).
+1. **Catalogue de services avant le libre-service** : sans catalogue, le libre-service est du « shadow IT avec un écran de connexion » ; chez Cycloid, les *Stacks* servent de catalogue (modèles adossés à Git, propriétaire, base de conformité).
+2. **Modèles adossés à l'IaC dès le premier jour** : sans cela, le portail devient une source de vérité parallèle et dérive ; chaque action de provisionnement passe par Git (piste d'audit).
+3. **Garde-fous FinOps dans le workflow de provisionnement** : coût estimé avant le déploiement, planification de démarrage/arrêt des environnements hors production.
+4. **RBAC au niveau du modèle**, pas après le provisionnement : qui peut provisionner quoi, avant le clic ; organisations enfants pour l'isolation multi-locataire.
+5. **Instrumentation DORA dès la mise en service** : fréquence de déploiement, délai de livraison, taux d'échec de changement visibles dès le premier déploiement.
+Chiffres cités par l'article (à ne pas reprendre sans source primaire) : 40,9 % des initiatives d'ingénierie de plateforme sans valeur démontrée en 12 mois (State of Platform Engineering vol. 4) ; 21 % de dépenses cloud gaspillées (Harness, FinOps in Focus 2025) ; projection Gartner de 85 % d'organisations avec portail en 2028.
+Biais : article d'éditeur, les « principes portables » sont illustrés par le produit Cycloid.
+Lecture agentique pour le labo : les points 1, 2, 4 sont déjà le contrat (`apps/<nom>/app.yaml` en Git, `generated/`, classes d'autonomie) ; le point 3 correspond à `COST-FREE-TIER.md` ; le point 5 à `DATA-PLATFORM-METRICS.md` §A.
 
 ## S3. CNCF TAG App Delivery : Platforms White Paper [L]
 URL : https://tag-app-delivery.cncf.io/whitepapers/platforms/ (source lue : https://github.com/cncf/tag-app-delivery/blob/main/platforms-whitepaper/latest/index.md)
@@ -68,7 +72,7 @@ URL : https://backstage.io/docs/overview/adopting ; https://backstage.io/docs/fe
 2. Les templates encodent les pratiques de l'organisation et publient du code et de la configuration ; l'automatisation par « actions » composables.
 3. Mode « dry run » des actions du scaffolder : simuler sans effet réel avant d'exécuter.
 4. Le portail est une « plateforme de plateformes » : les équipes contributrices livrent leurs capacités par plugins et API.
-5. Complément [E] (extraits InfoQ/Backstage) : le golden path de Spotify est un chemin « opiniâtre et supporté », non obligatoire ; l'écart reste possible. https://www.infoq.com/news/2021/03/spotify-paved-paths
+5. Complément [E : non relu] (extraits InfoQ/Backstage) : le golden path de Spotify est un chemin « opiniâtre et supporté », non obligatoire ; l'écart reste possible. https://www.infoq.com/news/2021/03/spotify-paved-paths
 
 ## S9. Score : spécification de charge de travail [L]
 URL : https://score.dev/ (source : https://github.com/score-spec/spec)
@@ -77,36 +81,36 @@ URL : https://score.dev/ (source : https://github.com/score-spec/spec)
 3. Contrat dev/ops : si les exigences listées sont honorées, la charge tourne ; la plateforme sécurise les accès aux secrets.
 4. Pertinence : modèle direct du contrat `apps/<nom>/app.yaml` (intention, pas manifestes).
 
-## S10. Datadog : « Golden paths for AI agents » [E]
+## S10. Datadog : « Golden paths for AI agents » [V partiel 2026-11-18 + https://www.datadoghq.com/blog/golden-paths-for-ai-agents]
 URL : https://www.datadoghq.com/blog/golden-paths-for-ai-agents ; compagnon : https://www.datadoghq.com/blog/ai-development-golden-paths
 1. Les chemins conçus pour des humains doivent changer pour des agents : exécution synchrone et à faible latence.
 2. Chemins « hybrides » : l'agent assure les étapes de jugement, des vérifications déterministes décident si le flux avance.
 3. Un golden path dit quoi appeler et quand ; il ne rend pas à lui seul les capacités utilisables par un agent.
-4. Distinction entre chemins (workflows préférés) et contrôles (skills, hooks, tests) qui maintiennent l'agent sur le chemin ; mesurer l'effet avant de généraliser (rapport : agents 13 % plus rapides, moins de jetons grâce à une documentation racine).
+4. Distinction entre chemins (workflows préférés) et contrôles (skills, hooks, tests) qui maintiennent l'agent sur le chemin ; mesurer l'effet avant de généraliser (le chiffre « agents 13 % plus rapides » n'a pas été retrouvé sur la page lue : [NV]). Confirmé par la page : un golden path agentique se conçoit autour d'un « modèle d'exécution » (synchrone à faible latence pour le temps réel, durable et reprenable pour les tâches longues) et sépare les étapes probabilistes de l'agent des étapes déterministes (CI, politiques, autorisation, approbations) qui décident si le flux avance.
 5. Un billet voisin (« Operating shared platforms at agent scale ») traite de l'exploitation de plateformes partagées à l'échelle des agents (non lu).
 
-## S11. Anthropic : « Writing effective tools for agents » [E]
+## S11. Anthropic : « Writing effective tools for agents » [V 2026-11-18 + https://www.anthropic.com/engineering/writing-tools-for-agents]
 URL : https://www.anthropic.com/engineering/writing-tools-for-agents
 1. Concevoir les outils pour des agents, pas comme des API pour développeurs.
 2. Choisir quels outils construire (et lesquels ne pas construire), et les nommer avec des espaces de noms pour des frontières claires.
 3. Retourner un contexte utile et économe en jetons ; décrire précisément les outils (le prompt de l'outil compte).
 4. Messages d'erreur qui disent le format attendu ; boucles d'évaluation avec jeux de tests pour améliorer les outils.
 
-## S12. Team Topologies (synthèse de Martin Fowler) [E]
+## S12. Team Topologies (synthèse de Martin Fowler) [V 2026-11-18 + https://martinfowler.com/bliki/TeamTopologies.html : charge cognitive, libre-service, mode collaboration temporaire puis X-as-a-Service confirmés ; « plateforme viable la plus mince » non retrouvé dans les passages lus]
 URL : https://martinfowler.com/bliki/TeamTopologies.html
 1. But premier d'une plateforme : réduire la charge cognitive des équipes qui livrent (flux), pas seulement standardiser ou réduire les coûts.
 2. Libre-service par défaut ; la collaboration avec l'équipe plateforme est temporaire, en attendant le mode « X-as-a-Service ».
 3. « Plateforme viable la plus mince » : ne pas l'épaissir au-delà de l'utile.
 4. Charge extrinsèque (déploiement, configuration) à retirer ; l'équipe plateforme a elle aussi une charge cognitive limitée.
 
-## S13. Humanitec Platform Orchestrator et garde-fous pour agents [E]
+## S13. Humanitec Platform Orchestrator et garde-fous pour agents [V partiel 2026-11-18 + https://humanitec.com/product : l'Orchestrator choisit le module Terraform selon environnement, projet et classe de ressource, « no human in the loop », RBAC et gouvernance ; déploiements par vagues et billet Qovery non relus : [E]]
 URL : https://humanitec.com/product ; https://www.qovery.com/blog/policy-guardrails-ai-agents-infrastructure-automation-platforms
 1. Couche de gouvernance entre ce que demande l'agent et ce qui est provisionné ; mêmes règles que le déclencheur soit un humain ou une IA.
 2. Déploiements par vagues avec règles, pour contenir l'échec.
 3. L'agent ne détient jamais d'identifiants bruts : il appelle un petit nombre d'opérations pré-approuvées.
 4. Les garde-fous posés au niveau de l'orchestrateur ne se transmettent pas aux capacités individuelles : la plateforme doit les appliquer elle-même.
 
-## S14. Google SRE : toil, automatisation, post-mortems sans blâme [E]
+## S14. Google SRE : toil, automatisation, post-mortems sans blâme [V 2026-11-18 + https://sre.google/sre-book/eliminating-toil/ (toil : manuel, répétitif, automatisable, tactique, sans valeur durable, croît linéairement ; **plafond de 50 %**) et https://sre.google/sre-book/postmortem-culture/ (« Blameless postmortems are a tenet of SRE culture »)]
 URL : https://sre.google/sre-book/table-of-contents/ ; atelier : https://sre.google/workbook/table-of-contents/
 1. Toil = travail manuel, répétitif, automatisable, sans valeur durable ; plafond d'environ 50 % du temps sur l'opérationnel.
 2. Idéal : systèmes « automatiques et non seulement automatisés » (ils se réparent).
@@ -119,7 +123,7 @@ URL : https://www.openpolicyagent.org/ (source : https://github.com/open-policy-
 2. Le dépôt OPA contient un `AGENTS.md` pour guider les PR assistées par IA : l'écosystème traite déjà les agents comme contributeurs.
 3. Pour le labo, l'équivalent Kubernetes natif est déjà en place (ValidatingAdmissionPolicy, Kyverno selon `docs/KYVERNO-POLICY-CONTRACT.md`) ; OPA n'est cité que comme référence de politique-comme-code.
 
-## S16. Billets sur les agents comme utilisateurs de plateforme [E]
+## S16. Billets sur les agents comme utilisateurs de plateforme [E : non relus le 2026-11-18]
 - Warp : https://www.warp.dev/articles/internal-developer-platform-agentic-coding-tools ; Red Hat : https://www.redhat.com/pt-br/blog/why-developer-portals-matter-more-age-ai-agents ; DuploCloud : https://duplocloud.com/blog/agentic-internal-developer-platform/ ; SoftwareSeni : https://www.softwareseni.com/platform-engineering-2-0-rebuilding-for-the-agent-era ; PlatformCon : https://platformcon.com/sessions/agent-golden-paths-building-platform-guardrails-for-ai-that-operates-at-population-scale
 1. Les agents demandent des environnements, ouvrent des PR et consomment des golden paths à vitesse machine, sans le jugement d'un développeur.
 2. Taxonomie proposée humain / agent / hybride ; l'observabilité doit distinguer les changements d'agents de ceux des humains.
@@ -154,4 +158,4 @@ Chaque principe renvoie aux sources ; **(labo)** indique l'état déjà observé
 20. **Contrats versionnés et stables.** `apiVersion` du contrat, ajouts optionnels seulement, migrations explicites ; les agents lisent la version avant d'écrire. (S5, S9.)
 
 ## Non couvert (à faire quand l'accès réseau sera ouvert)
-Lecture directe de S1, S2, S10 à S14 ; platformengineering.org (non joignable, aucune extraction obtenue) ; documentation Kratix et Humanitec (une page README Kratix seulement) ; Cloud Native Maturity Model complet ; billet « Building effective agents » d'Anthropic.
+Lecture directe de S1, S2, S10 à S14 : **faite le 2026-11-18** (voir ci-dessus). Reste : S16, platformengineering.org (non joignable, aucune extraction obtenue) ; documentation Kratix et Humanitec (une page README Kratix seulement) ; Cloud Native Maturity Model : page d'accueil lue le 2026-11-18 (5 niveaux Build, Operate, Scale, Improve, Adapt ; version 4.0 bêta, quatre piliers People/Process/Policy/Technology, https://maturitymodel.cncf.io/), niveaux détaillés non lus ; billet « Building effective agents » d'Anthropic.

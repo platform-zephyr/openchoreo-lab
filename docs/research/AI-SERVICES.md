@@ -1,7 +1,8 @@
 # Recherche — Services IA : sandbox, gateway, identité et audit des IA
 
 Date : 2026-11-18 · Statut : recherche pour ADR (rien appliqué, aucun cluster touché, aucun secret).
-Marques : **[C]** lu dans un fichier du dépôt ou une page GitHub ouverte ; **[E]** connaissance du chercheur, non revérifiée ;
+Marques : **[C]** lu dans un fichier du dépôt ou une page GitHub ouverte ; **[V AAAA-MM-JJ + URL]** vérifié en ligne (voir
+`VERIFICATION-2026-11-18.md`) ; **[E]** connaissance du chercheur, non revérifiée ; **[NV]** introuvable ou non vérifiable ;
 **[S]** supposition à prouver. Preuve runtime : aucune ici (NOT_TESTED partout) ; k3d ≠ OKE.
 
 ## 1. Conclusion
@@ -9,7 +10,7 @@ Marques : **[C]** lu dans un fichier du dépôt ou une page GitHub ouverte ; **[
    gateway + clé virtuelle générée par la plateforme + une identité par agent + audit corrélé. Déclaré par
    `ai: {models, mcp}` dans `app.yaml`, jamais par une clé LLM dans l'app.
 2. **Sandbox = gVisor en mode `systrap`, pas Kata/Firecracker** : l'OKE Always Free est une VM arm64 sans virtualisation
-   imbriquée [E], donc ni KVM ni microVM ; gVisor n'en a pas besoin [E]. Talos a l'extension `siderolabs/gvisor` [C].
+   imbriquée [V partiel 2026-11-18 : un billet Oracle indique que les VM Ampere (arm64) ne prennent pas en charge la virtualisation imbriquée ; la page n'a pas pu être extraite, relevé par recherche web, https://blogs.oracle.com/linux/post/kvm-nested-virtualization-in-oci], donc ni KVM ni microVM ; gVisor n'en a pas besoin [V 2026-11-18 + https://gvisor.dev/docs/user_guide/platforms/ : `systrap` est la plateforme par défaut depuis mi-2023 et « yields better performance than KVM » dans une VM]. Talos a l'extension `siderolabs/gvisor` [V 2026-11-18 + https://github.com/siderolabs/extensions/tree/main/container-runtime/gvisor : niveau « core », construite pour `aarch64`, prérequis `user.max_user_namespaces: "11255"` qui désactive une recommandation KSPP].
    **Rien n'est prouvé** : kube-ops et homelab-infra le disent eux-mêmes (« isolation gVisor non prouvée ») [C].
 3. **Gateway = agentgateway, composant de plateforme** (`platform/ai-gateway/`), pas une `apps/<nom>` : c'est la cause
    n°6 de `apps/agentgateway/NOTES.md` [C]. Il détient les seules clés de fournisseur LLM.
@@ -28,18 +29,18 @@ Marques : **[C]** lu dans un fichier du dépôt ou une page GitHub ouverte ; **[
 - **Web lu** : github.com/kubernetes-sigs/agent-sandbox ; github.com/agentgateway/agentgateway ; github.com/kata-containers/kata-containers.
 - **Web bloqué** (hôte hors liste réseau de la session : à autoriser pour compléter) : agentgateway.dev, gvisor.dev,
   openchoreo.dev, tout hors GitHub. Donc la doc d'agentgateway (quotas, authz MCP), de gVisor (arm64, systrap) et la page
-  SRE agent d'OpenChoreo sont **[E]** ou lues dans les fichiers du dépôt.
+  SRE agent d'OpenChoreo étaient **[E]** ou lues dans les fichiers du dépôt ; elles ont été relues en ligne le 2026-11-18 (marques [V] ci-dessous).
 - `agent-runtime.md` (homelab-infra) n'existe pas ; remplacé par `talos-bootstrap.md` §gVisor et les manifests kube-ops.
 
 ## 3. Sandbox sur arm64
 | Option | Talos homelab | OKE A1 (1 nœud arm64) | Verdict |
 |---|---|---|---|
-| **gVisor (runsc)** | extension `siderolabs/gvisor` déjà dans le schematic ; sysctl `max_user_namespaces` ; RuntimeClass `gvisor` [C] ; **non prouvé** | arm64 supporté [E] ; il faut installer runsc + handler containerd sur un nœud managé (cloud-init/image perso) [E] | **Retenu**, homelab d'abord ; OKE après preuve |
-| Kata Containers | arm64 supporté (ARM Hyp) mais exige la virtualisation matérielle [C] ; Talos : pas d'extension officielle [E] | VM A1 sans virtualisation imbriquée [E] ; bare metal payant | Écarté |
-| Firecracker | KVM requis [E] | idem | Écarté |
-| **kubernetes-sigs/agent-sandbox** | CRDs `Sandbox`, `SandboxTemplate`, `SandboxClaim`, `SandboxWarmPool`, isolation déléguée à gVisor/Kata par RuntimeClass, K8s ≥ 1.25 [C] ; arm64 non mentionné [S] ; kube-ops cible v1.0.6, `replicas: 0` [C] | idem | **Pour les bacs d'exécution éphémères** (code lancé par un agent), pas pour les services IA durables |
+| **gVisor (runsc)** | extension `siderolabs/gvisor` déjà dans le schematic ; sysctl `max_user_namespaces` ; RuntimeClass `gvisor` [C] ; **non prouvé** | arm64 supporté [V 2026-11-18 + https://gvisor.dev/docs/user_guide/install/ : « supports x86_64 and ARM64, and requires Linux 5.6+ »] ; il faut installer runsc + handler containerd sur un nœud managé (cloud-init/image perso) [E] | **Retenu**, homelab d'abord ; OKE après preuve |
+| Kata Containers | arm64 supporté (ARM Hyp) mais exige la virtualisation matérielle [C] ; Talos : **extension officielle `kata-containers` existe** (niveau « extra », v4.3.1, plus variantes SNP/GPU) [V 2026-11-18 + https://github.com/siderolabs/extensions ; correction de « pas d'extension officielle »] ; reste écarté sur OKE faute de KVM | VM A1 sans virtualisation imbriquée [E] ; bare metal payant | Écarté |
+| Firecracker | KVM requis [E : non revérifié] | idem | Écarté |
+| **kubernetes-sigs/agent-sandbox** | CRDs `Sandbox`, `SandboxTemplate`, `SandboxClaim`, `SandboxWarmPool`, isolation déléguée à gVisor/Kata par RuntimeClass, K8s ≥ 1.25 (≥ 1.29 recommandé ; CRD Gateway API v1.5.0 : ≥ 1.31), délègue l'isolation à gVisor/Kata via `RuntimeClass`, exemple d'installation épinglé `v1.0.2` [V 2026-11-18 + https://github.com/kubernetes-sigs/agent-sandbox/blob/main/README.md] ; arm64 non mentionné dans le README [NV : à vérifier sur le manifeste multi-arch de l'image] ; kube-ops cible v1.0.6, `replicas: 0` [C] | idem | **Pour les bacs d'exécution éphémères** (code lancé par un agent), pas pour les services IA durables |
 | Sandbox hors cluster (Cloudflare Sandbox, conteneur éphémère) | n/a | n/a | Option v2 pour code non fiable sans aucun identifiant cluster ; premier accès Cloudflare = MANDAT (ADR-0002.3) |
-| Durcissement seul (PSA restricted, seccomp, `hostUsers: false`, NetworkPolicy) | oui | oui [E] | **Repli OKE** tant que gVisor n'y est pas prouvé : placement refusé pour les services `ai.sandbox: required` |
+| Durcissement seul (PSA restricted, seccomp, `hostUsers: false`, NetworkPolicy) | oui | oui [E : `hostUsers: false` non revérifié] | **Repli OKE** tant que gVisor n'y est pas prouvé : placement refusé pour les services `ai.sandbox: required` |
 
 Deux sens de « sandbox », à ne pas confondre :
 - **A. Sandbox du service IA** (LibreChat, un agent de remédiation, un serveur MCP tiers) : le pod entier tourne en gVisor.
@@ -49,10 +50,10 @@ Deux sens de « sandbox », à ne pas confondre :
   `automountServiceAccountToken: false`, rootfs RO, 1 Gi de `/tmp`) est repris [C].
 
 Risques mesurés [C] : kube-ops a vu un pod `sandboxd` évincé (`emptyDir` 256 Mi) ; les endpoints `sandboxd` sont non
-authentifiés (NetworkPolicy obligatoire). gVisor est incompatible avec certains syscalls/eBPF [E] : prévoir une exception nominative.
+authentifiés (NetworkPolicy obligatoire). gVisor n'implémente qu'un sous-ensemble de l'ABI Linux (`io_uring` non pris en charge complètement ; `bpf` seulement « Partial Support » : chargement de programmes CGROUP_DEVICE sans effet) [V 2026-11-18 + https://gvisor.dev/docs/user_guide/compatibility/ et https://gvisor.dev/docs/user_guide/compatibility/linux/arm64/] : prévoir une exception nominative.
 
 ## 4. Gateway LLM/MCP (agentgateway)
-Capacités [C pour la liste générale, GitHub ; détails [E]] : API unifiée compatible OpenAI vers OpenAI, Anthropic, Gemini,
+Capacités [C pour la liste générale, GitHub ; détails [V 2026-11-18 + https://agentgateway.dev/docs/kubernetes/latest/ , version documentée 1.7.x]] : clés virtuelles révocables par client (le proxy remplace la clé virtuelle par la clé fournisseur d'un Secret) et budgets de jetons par clé (seau à jetons, fenêtre de remplissage, par route ou par clé/utilisateur ; **le budget par clé exige le déploiement d'un serveur de rate limit**), pages https://agentgateway.dev/docs/kubernetes/latest/documentation/llm/cost-controls/virtual-keys/ et .../budget-limits/ ; autorisation d'accès aux outils MCP par CEL (https://agentgateway.dev/docs/kubernetes/latest/documentation/mcp/tool-access/) et authentification MCP OAuth (IdP dont Authentik, Keycloak, Okta…) ; les jetons en cache de prompt d'Anthropic ne sont pas comptés dans le débit rapporté, donc un budget débite plus que l'`input` annoncé. Liste générale : API unifiée compatible OpenAI vers OpenAI, Anthropic, Gemini,
 Bedrock ; contrôle de budget ; failover ; fédération MCP (stdio, HTTP, SSE, Streamable HTTP, OpenAPI→outils, OAuth) ;
 A2A ; authz CEL ; rate limiting ; auth JWT, clés API, OAuth ; OpenTelemetry ; Apache-2.0.
 Preuve d'usage [C] : kube-ops v1.6.0 standalone, `llm.policies.apiKey.mode: strict`, **une clé par consommateur** avec
@@ -107,13 +108,13 @@ Deux familles, un même modèle d'identité (`agent-id` stable) :
 - Secrets bornés : politique OpenBao par agent ; l'agent ne lit pas de valeur (critère T-023) ; clés de fournisseur invisibles.
 - **Audit « qui, quel outil, quel coût »** : le gateway journalise (OTel) `agent_id` (sub/nom de clé), modèle, tokens in/out, outil MCP
   appelé, décision d'authz, latence ; coût = tokens × barème versionné en Git (calcul hors gateway [S]). Sources croisées : audit
-  OpenChoreo (`surface: mcp`) [C], audit OpenBao (périphérique `file`/stdout) [E], événements Authentik, audit GitHub (bot),
+  OpenChoreo (`surface: mcp`) [C], audit OpenBao (périphérique `file` avec `file_path=stdout` pour un conteneur) [V 2026-11-18 + https://openbao.org/docs/audit/file/], événements Authentik, audit GitHub (bot),
   Argo CD. Clé de corrélation : `agent_id` + `trace_id`. Pas de contenu de prompt stocké par défaut (vie privée famille) ; échantillonné
   et purgé sous 14 jours si activé [S].
 - **Coupe-circuit** : désactiver le client Authentik ou supprimer la clé virtuelle (retrait du secret + redémarrage gateway) ; exercice chronométré.
 
 ## 7. MCP et skills externes : modèle de menace
-Menaces [E] : injection indirecte via sorties d'outils, « rug pull » (description d'outil modifiée après revue), serveur typosquatté,
+Menaces [E : synthèse du chercheur, non rattachée à une source unique] : injection indirecte via sorties d'outils, « rug pull » (description d'outil modifiée après revue), serveur typosquatté,
 exfiltration par la combinaison données privées + contenu non fiable + canal sortant.
 Règles proposées :
 1. **Allowlist en Git** (`platform/ai-gateway/mcp-allowlist.yaml`) : serveur, version, digest d'image, hash des descriptions d'outils,
@@ -125,10 +126,9 @@ Règles proposées :
 5. Un agent ne combine pas les trois côtés du triangle : s'il lit du contenu non fiable, il n'a ni secret ni écriture ni egress libre.
 Évaluation de non-régression : jeu de prompts d'injection joué en CI contre les skills (banc T-044).
 
-## 8. Agents internes d'OpenChoreo [C : mcp-ai-agents.md]
+## 8. Agents internes d'OpenChoreo [C : mcp-ai-agents.md ; relu en ligne le 2026-11-18, voir `docs/reference/openchoreo/mcp-ai-agents.md`]
 SRE (RCA d'alerte, clé `RCA_LLM_API_KEY`, fournisseur documenté OpenAI), FinOps (dimensionnement, OpenCost), portail (lecture seule, appelle les deux MCP).
-Recommandation : **désactivés** tant que (a) l'URL de base du fournisseur est configurable vers le gateway [S : page openchoreo.dev bloquée,
-à lire] ; (b) le plan d'observabilité tient sur OKE A1 (24 Go, 4 OCPU) [E] ; (c) clé = clé virtuelle dédiée avec budget bas. Ordre d'activation :
+Recommandation : **désactivés** tant que (a) l'URL de base du fournisseur est configurable vers le gateway [V 2026-11-18 : **oui pour l'agent SRE et le Portal Assistant**, valeurs de chart `rca.llm.baseUrl` et `portalAssistant.llm.baseUrl` (« OpenAI-compatible base URL… route through the ai-gateway-agentgateway module ») ; **aucune clé équivalente trouvée pour `finOpsAgent`** ; https://raw.githubusercontent.com/openchoreo/openchoreo/release-v1.3/install/helm/openchoreo-observability-plane/values.yaml et .../openchoreo-control-plane/values.yaml ; docs https://openchoreo.dev/docs/ai/sre-agent/] ; (b) le plan d'observabilité tient sur OKE A1 (**2 OCPU / 12 Go**, pas 4/24 [V 2026-11-18, voir COST-FREE-TIER.md] ; l'agent SRE demande 1 Gi de mémoire et 100m de CPU, limites 1,5 Gi / 250m, d'après les valeurs de chart) ; (c) clé = clé virtuelle dédiée avec budget bas. Ordre d'activation :
 SRE d'abord (valeur : cause racine), FinOps ensuite, portail si Backstage est retenu. Si l'URL de base n'est pas configurable : ne pas activer
 (ni clé en clair, ni egress direct) et ouvrir un amont.
 
@@ -141,7 +141,7 @@ Décisions liées : ADR-0002, ADR-0005, ADR-0006, ADR-0007, ADR-0010, ADR-0013, 
 ## Contexte
 - Les services IA reçoivent des entrées non fiables et des clés coûteuses ; kube-ops distribue déjà des clés par consommateur via
   agentgateway et prépare gVisor, sans preuve d'isolation. `apps/agentgateway` n'entre pas dans le schéma (NOTES.md).
-- OKE Always Free : un nœud arm64, sans virtualisation imbriquée [E] ; homelab Talos : extension gVisor prévue.
+- OKE Always Free : un nœud arm64 de 2 OCPU / 12 Go [V 2026-11-18], sans virtualisation imbriquée [V partiel] ; homelab Talos : extension gVisor prévue.
 - Les agents ont déjà des rôles OpenChoreo (AGENT-ACCESS) mais ni identité uniforme ni audit de coût.
 
 ## Décision
@@ -158,7 +158,7 @@ Décisions liées : ADR-0002, ADR-0005, ADR-0006, ADR-0007, ADR-0010, ADR-0013, 
 ## Conséquences
 - Nouveau composant de plateforme et schéma `ai:` ; nouvelle forme d'egress `{platform: ai-gateway}` ; Kyverno/VAP `ai=true`.
 - MANDAT : création des clés de fournisseur, du client Authentik racine du gateway, premier coût LLM (budget mensuel).
-- Coût : un pod de gateway (~100–200 Mi [E]), gVisor ajoute de la latence d'E/S et des incompatibilités syscalls [E].
+- Coût : un pod de gateway (~100–200 Mi [NV : non mesuré]), gVisor ajoute de la latence d'E/S [NV : non mesuré ici] et des incompatibilités syscalls [V 2026-11-18 + https://gvisor.dev/docs/user_guide/compatibility/].
 
 ## Alternatives écartées
 - Clé LLM par app (Doppler/OpenBao) : fuite et coût non bornés. Kata/Firecracker : pas de KVM sur A1. SPIFFE/SPIRE : charge d'exploitation.

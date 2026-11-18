@@ -28,7 +28,7 @@ Budget : OpenChoreo ≤ 1,5 GiB et ≤ 0,3 vCPU au repos = OBJECTIF d'optimisati
 ## Faits et décisions de Paul du 2026-11-18 (fin de journée)
 - Le dépôt **reste public** : aucune donnée sensible (secret, identifiant de compte, IP, hôte interne, donnée personnelle, détail de faille) n'y entre ; audit et garde CI à mettre en place.
 - Homelab : mini-PC AMD Ryzen 7 PRO 8845HS, 64 Go de RAM, 1 To SSD, 14 To HDD ; Proxmox + VM Talos ; kube-ops y est entièrement déployé avec Argo CD.
-- Oracle : compte **PAYG**, limite Always Free A1 = **4 OCPU / 24 Go** (les valeurs 2/12 du dépôt viennent des comptes sans carte) ; toute dépense au-delà reste un MANDAT.
+- Oracle : compte **PAYG**. Paul indiquait 4 OCPU / 24 Go gratuits ; la doc Oracle lue le 2026-11-18 donne **1 500 OCPU-h + 9 000 Go-h/mois = 2 OCPU / 12 Go gratuits pour tous les tenancies**, 4/24 étant un plafond de service facturé au-delà (`docs/research/VERIFICATION-2026-11-18.md`). On retient **2/12** tant que la facturation de Paul ne prouve pas le contraire ; toute dépense reste un MANDAT.
 - LLM : agents externes = mélange Claude Code (plan Max, ajustable au besoin réel) et DeepSeek ; services IA internes = DeepSeek (via le gateway). Choisir pour chaque tâche le modèle le moins cher qui suffit.
 - Vitesse : Claude doit pouvoir travailler **24 h/24**, avec le minimum d'interventions de Paul et autant d'agents en parallèle que le plan le permet.
 - Accès réseau complet donné aux sessions.
