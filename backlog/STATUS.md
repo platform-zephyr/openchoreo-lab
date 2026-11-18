@@ -6,13 +6,13 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 17 |
+| `in-progress` | 18 |
 | `todo` | 131 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 25 |
 | `dropped` | 27 |
-| **Total** | **248** |
+| **Total** | **249** |
 
 ## En cours (`in-progress`)
 
@@ -35,6 +35,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-466](T-466-durcissement-usine-verdict-prompt.md) | Durcissement de l'usine : plafonds de tours, étape Verdict, trailers always(), branche REST, prompt… | 8/10 | Premier critère ouvert : run réel (RUNTIME, preuve datée) : un dispatch de 2 issues ou plus montre le Verdict, le contrôle des trailers après un échec de l'agent, la branche retrouvée par REST et le commentaire `report` sur… | — |
 | [T-467](T-467-garde-de-recouvrement-et-disjoncteur-de-quota.md) | Garde de recouvrement des périmètres et disjoncteur de quota Max pour le planificateur de l'usine | 4/5 | Premier critère ouvert : preuve RUNTIME datée : un dispatch de deux issues en recouvrement s'arrête au job `plan` sans job `dev` ; un | — |
 | [T-473](T-473-vue-status-du-backlog.md) | Vue d'état du backlog : fait, en cours, bloqué, prêt (backlog/STATUS.md généré) | 3/5 | Premier critère ouvert : brancher `python3 tools/backlog/status.py --check` dans la CI (job `backlog` de `ci.yaml`, REVUE, point chaud : PR dédiée, sérialisée avec T-460) et dans `tools/dev/check` / `ci-map.tsv` | — |
+| [T-476](T-476-score-de-priorite-et-skill-orchestrateur.md) | Score de priorité du backlog (priority.py) et skill orchestrate-backlog | 4/6 | Reste : critères 5 et 6 (branchement CI hors périmètre de cette PR, T-475 modifie `ci.yaml` en parallèle ; mesure sur lots réels). | — |
 
 ## Bloqué (`blocked`)
 
@@ -48,144 +49,146 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 ## À faire, prêts (`todo`, dépendances toutes `done`)
 
-| Ticket | Titre | Critères | Issue |
-|---|---|---|---|
-| [T-001](T-001-integrer-pr8-security-bundle.md) | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0/3 | — |
-| [T-041](T-041-context-engineering.md) | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
-| [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
-| [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
-| [T-201](T-201-data-2.md) | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
-| [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 0/4 | — |
-| [T-215](T-215-pack-identite.md) | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
-| [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
-| [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
-| [T-431](T-431-reglages-depot-actions-securite.md) | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 0/5 | — |
-| [T-434](T-434-gestes-organisation-paul.md) | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | 0/3 | — |
-| [T-469](T-469-triage-echecs-suite-k3d.md) | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
+Score = tickets non terminés débloqués, directement ou transitivement ; file triée par `python3 tools/backlog/priority.py` (agent d'abord, score, étape, périmètre, id).
+
+| Ticket | Score | Titre | Critères | Issue |
+|---|---|---|---|---|
+| [T-001](T-001-integrer-pr8-security-bundle.md) | 86 | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0/3 | — |
+| [T-214](T-214-appgen-modulaire.md) | 72 | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 0/4 | — |
+| [T-041](T-041-context-engineering.md) | 8 | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
+| [T-100](T-100-obs-0.md) | 4 | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
+| [T-201](T-201-data-2.md) | 4 | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
+| [T-050](T-050-verdicts-kube-ops.md) | 3 | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
+| [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | 0 | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
+| [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
+| [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
+| [T-215](T-215-pack-identite.md) | 55 | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
+| [T-431](T-431-reglages-depot-actions-securite.md) | 5 | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 0/5 | — |
+| [T-434](T-434-gestes-organisation-paul.md) | 0 | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | 0/3 | — |
 
 ## À faire, bloqués par dépendance
 
-| Ticket | Titre | Attend | Issue |
-|---|---|---|---|
-| [T-003](T-003-env-development-promotion.md) | Environment `development`, promotion vers `production`, pins de release par environnement | T-001 (todo), T-002 (in-progress) | [#49](https://github.com/platform-zephyr/openchoreo-lab/issues/49) |
-| [T-004](T-004-garde-frugalite-dev.md) | Check CI de frugalité du dev | T-003 (todo) | [#50](https://github.com/platform-zephyr/openchoreo-lab/issues/50) |
-| [T-005](T-005-preuve-runtime-auto.md) | Preuve runtime automatique après sync (Job PostSync + publication) | T-003 (todo), T-364 (todo) | [#51](https://github.com/platform-zephyr/openchoreo-lab/issues/51) |
-| [T-006](T-006-mcp-cloudflare-access.md) | Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitH… | T-005 (todo) | [#52](https://github.com/platform-zephyr/openchoreo-lab/issues/52) |
-| [T-007](T-007-test-noyau-codeowners.md) | Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002 | T-215 (todo) | — |
-| [T-010](T-010-probes-quota.md) | Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4) | T-001 (todo), T-002 (in-progress) | — |
-| [T-011](T-011-archetype-d-worker-cron.md) | Archétype D : `spec.kind: worker \| cronjob` (G1) | T-010 (todo) | — |
-| [T-012](T-012-verify-contrat.md) | `spec.verify` : vérification fonctionnelle déclarée (G10) | T-005 (todo) | — |
-| [T-015](T-015-golden-path-ntfy.md) | Golden path n°2 (ntfy interne) : development puis production | T-003 (todo), T-005 (todo) | [#53](https://github.com/platform-zephyr/openchoreo-lab/issues/53) |
-| [T-020](T-020-kyverno-enforce.md) | Kyverno en Enforce sur le golden path, exceptions générées | T-002 (in-progress), T-364 (todo) | — |
-| [T-021](T-021-reseau-egress-imds.md) | Egress déclaré (FQDN Cilium) et IMDS refusé dans toutes les cellules | T-002 (in-progress), T-364 (todo) | — |
-| [T-022](T-022-spike-openbao.md) | OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill | T-404 (todo) | — |
-| [T-023](T-023-secrets-generate-provided.md) | Secrets `generate` et `provided` via OpenBao + ESO, statut `secret-missing` | T-005 (todo), T-022 (todo), T-060 (todo) | — |
-| [T-025](T-025-classe-donnees.md) | Classe de donnée dans le contrat et labels `data-class` (G8) | T-002 (in-progress), T-214 (todo) | — |
-| [T-026](T-026-sauvegardes.md) | Sauvegarde des bases : CNPG → R2 par préfixe | T-025 (todo), T-364 (todo), T-404 (todo) | — |
-| [T-027](T-027-drill-restauration-auto.md) | Drill de restauration automatique et `restore-evidence` | T-005 (todo), T-012 (todo), T-026 (todo), T-075 (todo) | — |
-| [T-028](T-028-exposition-publique.md) | Exposition `private \| internal \| public` : route par hôte (G6) et refus « public sans auth » | T-189 (todo), T-404 (todo) | — |
-| [T-031](T-031-placement-coupure.md) | Test de reprise et « jour 2 » du cluster lab (critère C4 révisé) | T-364 (todo) | — |
-| [T-040](T-040-recettes-apps.md) | Catalogue de recettes d'apps homelab vérifiées | T-010 (todo) | — |
-| [T-043](T-043-plan-compte-rendu.md) | Gabarits de plan et de compte rendu dans `add-app` | T-005 (todo) | — |
-| [T-044](T-044-banc-intentions.md) | Banc d'essai de 5 intentions A (MVP) | T-015 (todo), T-040 (todo), T-041 (todo), T-043 (todo), T-212 (todo) | — |
-| [T-051](T-051-premiere-app-familiale.md) | Première app familiale complète (OIDC + base + sauvegarde) sur le homelab | T-020 (todo), T-021 (todo), T-027 (todo), T-031 (todo), T-040 (todo), T-043 (todo), T-189 (todo), T-404 (todo) | — |
-| [T-060](T-060-residu-kgateway.md) | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | T-001 (todo) | — |
-| [T-062](T-062-lab-platform-auto.md) | `lab-platform` en synchronisation automatique (hors lab-pg) | T-001 (todo), T-002 (in-progress), T-363 (todo) | — |
-| [T-065](T-065-sante-periodique-alertes.md) | CronJob de statut périodique (réduit : sondes → T-103, revert → T-106, ntfy → T-107) | T-005 (todo), T-015 (todo) | — |
-| [T-067](T-067-retrait-app.md) | `appgen retire` : retrait d'une app avec export des données | T-025 (todo), T-026 (todo) | — |
-| [T-069](T-069-vap-data-class.md) | VAP : refus de DELETE des données `irreplaceable` (G8) | T-025 (todo) | — |
-| [T-070](T-070-garde-contrat.md) | Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/` | T-002 (in-progress) | — |
-| [T-071](T-071-doc-utilisateur.md) | Guide utilisateur : demander, suivre, annuler, déposer un secret | T-023 (todo), T-043 (todo) | — |
-| [T-074](T-074-retrait-thunderid.md) | Retirer ThunderID du contrat et des capacités ; Authentik seul | T-025 (todo), T-365 (todo) | — |
-| [T-075](T-075-sauvegarde-volumes.md) | Sauvegarde des volumes : spike VolSync/restic vs Velero/Kopia | T-025 (todo), T-364 (todo) | — |
-| [T-101](T-101-obs-1.md) | Collecte : Alloy de kube-ops réutilisé, budget de séries, sondes depuis healthPath | T-140 (todo) | — |
-| [T-106](T-106-obs-6.md) | Pont alerte -> agent : workflow remediate, dédoublonnage, budget, disjoncteur | T-005 (todo), T-100 (todo), T-164 (todo) | — |
-| [T-107](T-107-obs-7.md) | Escalade ntfy : contact points, script de notification, route différée | T-100 (todo) | — |
-| [T-109](T-109-obs-9.md) | Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane | T-022 (todo), T-100 (todo), T-107 (todo), T-364 (todo) | — |
-| [T-111](T-111-obs-11.md) | Drill de bout en bout : échec d'app -> alerte -> agent -> PR ou ntfy | T-100 (todo), T-106 (todo), T-107 (todo) | — |
-| [T-120](T-120-upg-1.md) | Renovate durci : catégories, âge minimal, limites de PR, dashboard, labels | T-002 (in-progress) | — |
-| [T-121](T-121-upg-2.md) | Renovate auto-hébergé avec GitHub App (CI déclenchée, postUpgradeTasks) | T-120 (todo), T-215 (todo) | — |
-| [T-122](T-122-upg-3.md) | upgrade-gate : classification exécutable des PR de montée | T-002 (in-progress), T-120 (todo) | — |
-| [T-123](T-123-upg-4.md) | Garde d'image : arm64, registre autorisé, signature cosign, provenance | T-122 (todo) | — |
-| [T-124](T-124-upg-5.md) | Porte de merge des apps : dev, preuve PASS, promotion automatique, revert automatique | T-003 (todo), T-005 (todo), T-122 (todo) | — |
-| [T-125](T-125-upg-6.md) | File sérialisée des montées en development et garde de budget | T-004 (todo), T-124 (todo), T-140 (todo) | — |
-| [T-131](T-131-upg-12.md) | Montées stateful : précondition de sauvegarde fraîche et restauration prouvée | T-026 (todo), T-027 (todo), T-122 (todo) | — |
-| [T-132](T-132-upg-13.md) | Runbook et preflight de montée Kubernetes OKE (nœud unique) | T-001 (todo), T-140 (todo) | — |
-| [T-140](T-140-cost-1.md) | Registre des limites free tier (valeur, date, source) et lint de péremption | T-001 (todo) | — |
-| [T-147](T-147-cost-8.md) | Alertes de coût : relier billing_cost_eur et cost-evidence à ntfy, règle de fraîcheur | T-026 (todo), T-065 (todo), T-140 (todo) | — |
-| [T-160](T-160-ai-1.md) | gVisor et vcluster jetables pour les agents sur le cluster lab | T-364 (todo) | — |
-| [T-161](T-161-ai-2.md) | Composant plateforme ai-gateway (agentgateway) sur k3d avec fournisseur factice | T-002 (in-progress), T-023 (todo) | — |
-| [T-162](T-162-ai-3.md) | Schéma et appgen : déclaration ai {models, mcp, budget} et clé virtuelle | T-010 (todo), T-023 (todo), T-161 (todo) | — |
-| [T-163](T-163-ai-4.md) | Admission : sandbox gVisor et egress gateway obligatoires pour ai=true | T-020 (todo), T-160 (todo), T-162 (todo) | — |
-| [T-164](T-164-ai-5.md) | Identité des agents : client Authentik par agent, inventaire et coupe-circuit | T-404 (todo) | — |
-| [T-165](T-165-ai-6.md) | Audit des IA : journal gateway corrélé (qui, outil, coût) | T-161 (todo), T-164 (todo) | — |
-| [T-166](T-166-ai-7.md) | Allowlist MCP et gateway MCP : authz par outil, épinglage, lecture seule | T-161 (todo), T-164 (todo) | — |
-| [T-167](T-167-ai-8.md) | Règles et banc d'injection de prompt : skills et contexte externes | T-044 (todo), T-166 (todo) | — |
-| [T-168](T-168-ai-9.md) | Bac d'exécution éphémère (agent-sandbox) pour le code lancé par les agents | T-160 (todo), T-163 (todo) | — |
-| [T-171](T-171-ai-12.md) | Premier service IA de référence (LibreChat ou équivalent) de bout en bout | T-162 (todo), T-163 (todo), T-165 (todo), T-166 (todo), T-404 (todo) | — |
-| [T-181](T-181-ids-2.md) | Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao | T-022 (todo), T-190 (todo), T-404 (todo) | — |
-| [T-184](T-184-ids-5.md) | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | T-022 (todo) | — |
-| [T-185](T-185-ids-6.md) | Transport des blueprints vers l'Authentik de production (ConfigMap dédié) | T-404 (todo) | — |
-| [T-186](T-186-ids-7.md) | Golden path utilisateur : arrivée et départ (users/<id>.yaml) | T-185 (todo) | — |
-| [T-189](T-189-ids-10.md) | `identity.mode: oidc \| proxy \| none` avec client OIDC généré et secret dans OpenBao | T-074 (todo), T-184 (todo), T-185 (todo) | — |
-| [T-190](T-190-ids-11.md) | `tools/secrets-migrate` : script idempotent Doppler → OpenBao sans affichage de valeur | T-184 (todo) | — |
-| [T-192](T-192-ids-13.md) | Bascule ESO vers OpenBao app par app (ombre, puis PR par app) | T-051 (todo), T-181 (todo) | — |
-| [T-193](T-193-ids-14.md) | Nettoyage Doppler : clés obsolètes, jetons orphelins, projets vides, liste fermée en CI | T-181 (todo), T-192 (todo) | — |
-| [T-194](T-194-ids-15.md) | Rotation et échéances : jetons Doppler, clés d'agents, secrets OIDC, clé de seal | T-181 (todo), T-184 (todo) | — |
-| [T-195](T-195-ids-16.md) | Audit : OpenBao, Doppler, Authentik ; rapport « qui a lu quoi » et alertes | T-065 (todo), T-184 (todo) | — |
-| [T-203](T-203-data-4.md) | Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets) | T-020 (todo), T-201 (todo) | — |
-| [T-204](T-204-data-5.md) | Grille de maturité cloud native CNCF automatisée (niveaux 1-5) | T-201 (todo) | — |
-| [T-211](T-211-porte-openchoreo.md) | Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04) | T-031 (todo), T-044 (todo), T-050 (todo), T-212 (todo), T-364 (todo) | — |
-| [T-212](T-212-backend-plain.md) | Backend « plain » d'appgen (spike 3 jours) : chart commun + Argo par cluster | T-214 (todo), T-363 (todo) | — |
-| [T-216](T-216-ci-registre.md) | CI extensible par registre de suites | T-002 (in-progress) | — |
-| [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | T-002 (in-progress) | — |
-| [T-218](T-218-acter-adr-0014-0019.md) | Acter les ADR 0014-0019 après le MVP | T-211 (todo) | — |
-| [T-301](T-301-reecriture-de-l-historique-et-purge.md) | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | T-303 (in-progress) | — |
-| [T-314](T-314-dispatcher-planifie-cron-15-min-et.md) | Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission | T-210 (in-progress), T-311 (in-progress), T-313 (in-progress) | — |
-| [T-315](T-315-merge-automatique-sous-conditions-app-de.md) | Merge automatique sous conditions : auto-merge natif pendant le dev, App de merge en FINAL | T-210 (in-progress), T-321 (todo) | — |
-| [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) | ntfy seulement si nécessaire et résumé quotidien unique | T-314 (todo) | — |
-| [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjon… | T-314 (todo) | — |
-| [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | Revue indépendante automatique avant merge (modèle différent, lecture seule) | T-002 (in-progress), T-313 (in-progress) | — |
-| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | T-303 (in-progress), T-305 (in-progress), T-311 (in-progress), T-313 (in-progress), T-411 (in-progress) | — |
-| [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md) | Environnement Claude Code cloud « openchoreo-lab-agent » : script d'installation, réseau, secrets r… | T-332 (in-progress) | — |
-| [T-337](T-337-definition-of-done-executable-verify-par.md) | Definition of done exécutable : `verify:` par critère et `done.py` avec preuve datée | T-332 (in-progress) | — |
-| [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenCh… | T-002 (in-progress), T-332 (in-progress) | — |
-| [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md) | Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi par chemins | T-002 (in-progress), T-216 (todo), T-332 (in-progress) | — |
-| [T-340](T-340-protocole-d-echec-et-de-reprise.md) | Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d'échec, skill `resume-ticket` | T-210 (in-progress), T-337 (todo) | — |
-| [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md) | Sous-agents de projet : `reviewer` (lecture seule) et `ci-triager` | T-337 (todo) | — |
-| [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR… | T-062 (todo), T-214 (todo) | — |
-| [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | T-332 (in-progress) | — |
-| [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md) | VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops) | T-360 (todo) | — |
-| [T-362](T-362-isolation-reseau-de-la-vm-lab.md) | Isolation réseau de la VM lab (UniFi, pare-feu) | T-361 (todo) | — |
-| [T-363](T-363-socle-de-la-plateforme-sur-la.md) | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stocka… | T-001 (todo), T-361 (todo), T-362 (todo) | — |
-| [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md) | OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab | T-001 (todo), T-360 (todo), T-363 (todo), T-365 (todo), T-366 (todo) | — |
-| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, sto… | T-214 (todo) | — |
-| [T-366](T-366-bundle-multi-arch-installateur-lab.md) | Bundle de sécurité multi-arch et installateur pour le cluster lab | T-001 (todo) | — |
-| [T-368](T-368-garde-fous-de-capacite-du-homelab.md) | Garde-fous de capacité du homelab : quotas lab-*, alertes RAM/NVMe/Tctl, budget versionné | T-360 (todo), T-363 (todo) | — |
-| [T-400](T-400-retrait-bypass-admin-ruleset.md) | Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation po… | T-007 (todo), T-215 (todo), T-435 (todo) | — |
-| [T-401](T-401-revue-securite-finale.md) | Revue de sécurité finale de la plateforme (prérequis de « plateforme finie ») | T-007 (todo), T-215 (todo), T-400 (todo), T-402 (todo), T-405 (todo), T-437 (todo), T-443 (todo) | — |
-| [T-402](T-402-garde-image-multi-arch.md) | Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64) | T-123 (todo), T-365 (todo) | — |
-| [T-403](T-403-rotation-secrets-dev.md) | Rotation des secrets et identités créés en mode dev (FINAL0) | T-215 (todo) | — |
-| [T-404](T-404-jalon-final0.md) | Jalon FINAL0 : identité d'usine, contournement retiré, secrets de dev tournés, revue des code owner… | T-007 (todo), T-215 (todo), T-400 (todo), T-403 (todo) | — |
-| [T-405](T-405-rotation-complete-final.md) | Rotation complète des secrets et identités du registre (FINAL) | T-404 (todo) | — |
-| [T-412](T-412-verificateur-prior-art-ci.md) | Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop | T-411 (in-progress), T-331 (in-progress), T-332 (in-progress) | — |
-| [T-415](T-415-sous-agent-prior-art-scout.md) | Sous-agent `prior-art-scout` (lecture seule, budget borné) | T-411 (in-progress), T-341 (todo) | — |
-| [T-417](T-417-typage-mypy.md) | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | T-214 (todo) | — |
-| [T-419](T-419-retrait-seed-py.md) | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-214 (todo) | — |
-| [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | T-412 (todo), T-322 (todo) | — |
-| [T-423](T-423-reduire-complexite-argo-guard.md) | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | T-001 (todo) | — |
-| [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | T-431 (todo) | — |
-| [T-433](T-433-protection-tags.md) | Protection des tags : core-baseline et v* (ruleset de type tag) | T-305 (in-progress) | — |
-| [T-435](T-435-k3d-ok-requis.md) | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | T-002 (in-progress) | — |
-| [T-436](T-436-labels-formulaires-issues.md) | Labels as-code et formulaires d'issue : issues vides coupées, proposition de ticket | T-431 (todo) | — |
-| [T-437](T-437-durcir-executant-environnement.md) | Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteu… | T-313 (in-progress), T-431 (todo) | — |
-| [T-439](T-439-essai-dependency-review.md) | Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation) | T-431 (todo) | — |
-| [T-443](T-443-attestations-provenance-releases.md) | Attestations de provenance et releases immuables (quand une image ou une archive est construite) | T-402 (todo), T-400 (todo) | — |
-| [T-461](T-461-indicateur-d-evasions.md) | Indicateur d'évasions de la CI : tools/dev/ci-escapes.py et ligne « Preuve locale » (SL-7) | T-460 (in-progress) | [#75](https://github.com/platform-zephyr/openchoreo-lab/issues/75) |
-| [T-465](T-465-nuit-check-complet.md) | Contrôle nocturne : check --full --k3d, dérive amont, évasions, alerte (SL-11) | T-461 (todo), T-451 (in-progress), T-452 (in-progress) | — |
-| [T-470](T-470-devcontainer-fichiers-alignes-lock.md) | Devcontainer : fichiers alignés sur le lock (sans build) | T-332 (in-progress) | [#74](https://github.com/platform-zephyr/openchoreo-lab/issues/74) |
-| [T-471](T-471-mesure-check-static-1vcpu.md) | Mesure de check --static sous 1 vCPU et 1 GiB | T-470 (todo) | — |
-| [T-472](T-472-build-periodique-devcontainer.md) | Build périodique du devcontainer hors ci-ok | T-470 (todo) | — |
+| Ticket | Score | Titre | Attend | Issue |
+|---|---|---|---|---|
+| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | 64 | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, sto… | T-214 (todo) | — |
+| [T-007](T-007-test-noyau-codeowners.md) | 47 | Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002 | T-215 (todo) | — |
+| [T-435](T-435-k3d-ok-requis.md) | 47 | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | T-002 (in-progress) | — |
+| [T-003](T-003-env-development-promotion.md) | 42 | Environment `development`, promotion vers `production`, pins de release par environnement | T-001 (todo), T-002 (in-progress) | [#49](https://github.com/platform-zephyr/openchoreo-lab/issues/49) |
+| [T-025](T-025-classe-donnees.md) | 21 | Classe de donnée dans le contrat et labels `data-class` (G8) | T-002 (in-progress), T-214 (todo) | — |
+| [T-010](T-010-probes-quota.md) | 20 | Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4) | T-001 (todo), T-002 (in-progress) | — |
+| [T-120](T-120-upg-1.md) | 19 | Renovate durci : catégories, âge minimal, limites de PR, dashboard, labels | T-002 (in-progress) | — |
+| [T-060](T-060-residu-kgateway.md) | 14 | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | T-001 (todo) | — |
+| [T-337](T-337-definition-of-done-executable-verify-par.md) | 12 | Definition of done exécutable : `verify:` par critère et `done.py` avec preuve datée | T-332 (in-progress) | — |
+| [T-043](T-043-plan-compte-rendu.md) | 12 | Gabarits de plan et de compte rendu dans `add-app` | T-005 (todo) | — |
+| [T-184](T-184-ids-5.md) | 12 | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | T-022 (todo) | — |
+| [T-040](T-040-recettes-apps.md) | 11 | Catalogue de recettes d'apps homelab vérifiées | T-010 (todo) | — |
+| [T-015](T-015-golden-path-ntfy.md) | 10 | Golden path n°2 (ntfy interne) : development puis production | T-003 (todo), T-005 (todo) | [#53](https://github.com/platform-zephyr/openchoreo-lab/issues/53) |
+| [T-020](T-020-kyverno-enforce.md) | 10 | Kyverno en Enforce sur le golden path, exceptions générées | T-002 (in-progress), T-364 (todo) | — |
+| [T-216](T-216-ci-registre.md) | 9 | CI extensible par registre de suites | T-002 (in-progress) | — |
+| [T-122](T-122-upg-3.md) | 9 | upgrade-gate : classification exécutable des PR de montée | T-002 (in-progress), T-120 (todo) | — |
+| [T-161](T-161-ai-2.md) | 9 | Composant plateforme ai-gateway (agentgateway) sur k3d avec fournisseur factice | T-002 (in-progress), T-023 (todo) | — |
+| [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | 8 | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenCh… | T-002 (in-progress), T-332 (in-progress) | — |
+| [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md) | 8 | Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi par chemins | T-002 (in-progress), T-216 (todo), T-332 (in-progress) | — |
+| [T-074](T-074-retrait-thunderid.md) | 8 | Retirer ThunderID du contrat et des capacités ; Authentik seul | T-025 (todo), T-365 (todo) | — |
+| [T-314](T-314-dispatcher-planifie-cron-15-min-et.md) | 7 | Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission | T-210 (in-progress), T-311 (in-progress), T-313 (in-progress) | — |
+| [T-075](T-075-sauvegarde-volumes.md) | 7 | Sauvegarde des volumes : spike VolSync/restic vs Velero/Kopia | T-025 (todo), T-364 (todo) | — |
+| [T-012](T-012-verify-contrat.md) | 7 | `spec.verify` : vérification fonctionnelle déclarée (G10) | T-005 (todo) | — |
+| [T-189](T-189-ids-10.md) | 7 | `identity.mode: oidc \| proxy \| none` avec client OIDC généré et secret dans OpenBao | T-074 (todo), T-184 (todo), T-185 (todo) | — |
+| [T-212](T-212-backend-plain.md) | 6 | Backend « plain » d'appgen (spike 3 jours) : chart commun + Argo par cluster | T-214 (todo), T-363 (todo) | — |
+| [T-027](T-027-drill-restauration-auto.md) | 6 | Drill de restauration automatique et `restore-evidence` | T-005 (todo), T-012 (todo), T-026 (todo), T-075 (todo) | — |
+| [T-044](T-044-banc-intentions.md) | 5 | Banc d'essai de 5 intentions A (MVP) | T-015 (todo), T-040 (todo), T-041 (todo), T-043 (todo), T-212 (todo) | — |
+| [T-051](T-051-premiere-app-familiale.md) | 4 | Première app familiale complète (OIDC + base + sauvegarde) sur le homelab | T-020 (todo), T-021 (todo), T-027 (todo), T-031 (todo), T-040 (todo), T-043 (todo), T-189 (todo), T-404 (todo) | — |
+| [T-123](T-123-upg-4.md) | 4 | Garde d'image : arm64, registre autorisé, signature cosign, provenance | T-122 (todo) | — |
+| [T-190](T-190-ids-11.md) | 4 | `tools/secrets-migrate` : script idempotent Doppler → OpenBao sans affichage de valeur | T-184 (todo) | — |
+| [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md) | 3 | Sous-agents de projet : `reviewer` (lecture seule) et `ci-triager` | T-337 (todo) | — |
+| [T-470](T-470-devcontainer-fichiers-alignes-lock.md) | 3 | Devcontainer : fichiers alignés sur le lock (sans build) | T-332 (in-progress) | [#74](https://github.com/platform-zephyr/openchoreo-lab/issues/74) |
+| [T-162](T-162-ai-3.md) | 3 | Schéma et appgen : déclaration ai {models, mcp, budget} et clé virtuelle | T-010 (todo), T-023 (todo), T-161 (todo) | — |
+| [T-412](T-412-verificateur-prior-art-ci.md) | 2 | Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop | T-411 (in-progress), T-331 (in-progress), T-332 (in-progress) | — |
+| [T-062](T-062-lab-platform-auto.md) | 2 | `lab-platform` en synchronisation automatique (hors lab-pg) | T-001 (todo), T-002 (in-progress), T-363 (todo) | — |
+| [T-004](T-004-garde-frugalite-dev.md) | 2 | Check CI de frugalité du dev | T-003 (todo) | [#50](https://github.com/platform-zephyr/openchoreo-lab/issues/50) |
+| [T-011](T-011-archetype-d-worker-cron.md) | 2 | Archétype D : `spec.kind: worker \| cronjob` (G1) | T-010 (todo) | — |
+| [T-124](T-124-upg-5.md) | 2 | Porte de merge des apps : dev, preuve PASS, promotion automatique, revert automatique | T-003 (todo), T-005 (todo), T-122 (todo) | — |
+| [T-163](T-163-ai-4.md) | 2 | Admission : sandbox gVisor et egress gateway obligatoires pour ai=true | T-020 (todo), T-160 (todo), T-162 (todo) | — |
+| [T-166](T-166-ai-7.md) | 2 | Allowlist MCP et gateway MCP : authz par outil, épinglage, lecture seule | T-161 (todo), T-164 (todo) | — |
+| [T-402](T-402-garde-image-multi-arch.md) | 2 | Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64) | T-123 (todo), T-365 (todo) | — |
+| [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | 1 | Revue indépendante automatique avant merge (modèle différent, lecture seule) | T-002 (in-progress), T-313 (in-progress) | — |
+| [T-415](T-415-sous-agent-prior-art-scout.md) | 1 | Sous-agent `prior-art-scout` (lecture seule, budget borné) | T-411 (in-progress), T-341 (todo) | — |
+| [T-340](T-340-protocole-d-echec-et-de-reprise.md) | 1 | Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d'échec, skill `resume-ticket` | T-210 (in-progress), T-337 (todo) | — |
+| [T-472](T-472-build-periodique-devcontainer.md) | 1 | Build périodique du devcontainer hors ci-ok | T-470 (todo) | — |
+| [T-461](T-461-indicateur-d-evasions.md) | 1 | Indicateur d'évasions de la CI : tools/dev/ci-escapes.py et ligne « Preuve locale » (SL-7) | T-460 (in-progress) | [#75](https://github.com/platform-zephyr/openchoreo-lab/issues/75) |
+| [T-471](T-471-mesure-check-static-1vcpu.md) | 1 | Mesure de check --static sous 1 vCPU et 1 GiB | T-470 (todo) | — |
+| [T-067](T-067-retrait-app.md) | 1 | `appgen retire` : retrait d'une app avec export des données | T-025 (todo), T-026 (todo) | — |
+| [T-028](T-028-exposition-publique.md) | 1 | Exposition `private \| internal \| public` : route par hôte (G6) et refus « public sans auth » | T-189 (todo), T-404 (todo) | — |
+| [T-192](T-192-ids-13.md) | 1 | Bascule ESO vers OpenBao app par app (ombre, puis PR par app) | T-051 (todo), T-181 (todo) | — |
+| [T-165](T-165-ai-6.md) | 1 | Audit des IA : journal gateway corrélé (qui, outil, coût) | T-161 (todo), T-164 (todo) | — |
+| [T-443](T-443-attestations-provenance-releases.md) | 1 | Attestations de provenance et releases immuables (quand une image ou une archive est construite) | T-402 (todo), T-400 (todo) | — |
+| [T-432](T-432-security-md.md) | 0 | SECURITY.md et politique de signalement privé | T-431 (todo) | — |
+| [T-217](T-217-vap-default-deny.md) | 0 | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | T-002 (in-progress) | — |
+| [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | 0 | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjon… | T-314 (todo) | — |
+| [T-006](T-006-mcp-cloudflare-access.md) | 0 | Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitH… | T-005 (todo) | [#52](https://github.com/platform-zephyr/openchoreo-lab/issues/52) |
+| [T-419](T-419-retrait-seed-py.md) | 0 | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412 (todo), T-415 (todo), T-214 (todo) | — |
+| [T-436](T-436-labels-formulaires-issues.md) | 0 | Labels as-code et formulaires d'issue : issues vides coupées, proposition de ticket | T-431 (todo) | — |
+| [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | 0 | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | T-412 (todo), T-322 (todo) | — |
+| [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | 0 | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR… | T-062 (todo), T-214 (todo) | — |
+| [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | 0 | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | T-332 (in-progress) | — |
+| [T-417](T-417-typage-mypy.md) | 0 | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | T-214 (todo) | — |
+| [T-423](T-423-reduire-complexite-argo-guard.md) | 0 | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | T-001 (todo) | — |
+| [T-439](T-439-essai-dependency-review.md) | 0 | Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation) | T-431 (todo) | — |
+| [T-465](T-465-nuit-check-complet.md) | 0 | Contrôle nocturne : check --full --k3d, dérive amont, évasions, alerte (SL-11) | T-461 (todo), T-451 (in-progress), T-452 (in-progress) | — |
+| [T-070](T-070-garde-contrat.md) | 0 | Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/` | T-002 (in-progress) | — |
+| [T-368](T-368-garde-fous-de-capacite-du-homelab.md) | 0 | Garde-fous de capacité du homelab : quotas lab-*, alertes RAM/NVMe/Tctl, budget versionné | T-360 (todo), T-363 (todo) | — |
+| [T-069](T-069-vap-data-class.md) | 0 | VAP : refus de DELETE des données `irreplaceable` (G8) | T-025 (todo) | — |
+| [T-071](T-071-doc-utilisateur.md) | 0 | Guide utilisateur : demander, suivre, annuler, déposer un secret | T-023 (todo), T-043 (todo) | — |
+| [T-186](T-186-ids-7.md) | 0 | Golden path utilisateur : arrivée et départ (users/<id>.yaml) | T-185 (todo) | — |
+| [T-101](T-101-obs-1.md) | 0 | Collecte : Alloy de kube-ops réutilisé, budget de séries, sondes depuis healthPath | T-140 (todo) | — |
+| [T-111](T-111-obs-11.md) | 0 | Drill de bout en bout : échec d'app -> alerte -> agent -> PR ou ntfy | T-100 (todo), T-106 (todo), T-107 (todo) | — |
+| [T-125](T-125-upg-6.md) | 0 | File sérialisée des montées en development et garde de budget | T-004 (todo), T-124 (todo), T-140 (todo) | — |
+| [T-131](T-131-upg-12.md) | 0 | Montées stateful : précondition de sauvegarde fraîche et restauration prouvée | T-026 (todo), T-027 (todo), T-122 (todo) | — |
+| [T-168](T-168-ai-9.md) | 0 | Bac d'exécution éphémère (agent-sandbox) pour le code lancé par les agents | T-160 (todo), T-163 (todo) | — |
+| [T-167](T-167-ai-8.md) | 0 | Règles et banc d'injection de prompt : skills et contexte externes | T-044 (todo), T-166 (todo) | — |
+| [T-203](T-203-data-4.md) | 0 | Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets) | T-020 (todo), T-201 (todo) | — |
+| [T-204](T-204-data-5.md) | 0 | Grille de maturité cloud native CNCF automatisée (niveaux 1-5) | T-201 (todo) | — |
+| [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md) | 69 | VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops) | T-360 (todo) | — |
+| [T-362](T-362-isolation-reseau-de-la-vm-lab.md) | 68 | Isolation réseau de la VM lab (UniFi, pare-feu) | T-361 (todo) | — |
+| [T-363](T-363-socle-de-la-plateforme-sur-la.md) | 67 | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stocka… | T-001 (todo), T-361 (todo), T-362 (todo) | — |
+| [T-366](T-366-bundle-multi-arch-installateur-lab.md) | 58 | Bundle de sécurité multi-arch et installateur pour le cluster lab | T-001 (todo) | — |
+| [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md) | 57 | OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab | T-001 (todo), T-360 (todo), T-363 (todo), T-365 (todo), T-366 (todo) | — |
+| [T-400](T-400-retrait-bypass-admin-ruleset.md) | 46 | Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation po… | T-007 (todo), T-215 (todo), T-435 (todo) | — |
+| [T-403](T-403-rotation-secrets-dev.md) | 45 | Rotation des secrets et identités créés en mode dev (FINAL0) | T-215 (todo) | — |
+| [T-404](T-404-jalon-final0.md) | 44 | Jalon FINAL0 : identité d'usine, contournement retiré, secrets de dev tournés, revue des code owner… | T-007 (todo), T-215 (todo), T-400 (todo), T-403 (todo) | — |
+| [T-005](T-005-preuve-runtime-auto.md) | 39 | Preuve runtime automatique après sync (Job PostSync + publication) | T-003 (todo), T-364 (todo) | [#51](https://github.com/platform-zephyr/openchoreo-lab/issues/51) |
+| [T-022](T-022-spike-openbao.md) | 29 | OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill | T-404 (todo) | — |
+| [T-023](T-023-secrets-generate-provided.md) | 13 | Secrets `generate` et `provided` via OpenBao + ESO, statut `secret-missing` | T-005 (todo), T-022 (todo), T-060 (todo) | — |
+| [T-026](T-026-sauvegardes.md) | 12 | Sauvegarde des bases : CNPG → R2 par préfixe | T-025 (todo), T-364 (todo), T-404 (todo) | — |
+| [T-140](T-140-cost-1.md) | 10 | Registre des limites free tier (valeur, date, source) et lint de péremption | T-001 (todo) | — |
+| [T-185](T-185-ids-6.md) | 9 | Transport des blueprints vers l'Authentik de production (ConfigMap dédié) | T-404 (todo) | — |
+| [T-031](T-031-placement-coupure.md) | 7 | Test de reprise et « jour 2 » du cluster lab (critère C4 révisé) | T-364 (todo) | — |
+| [T-164](T-164-ai-5.md) | 7 | Identité des agents : client Authentik par agent, inventaire et coupe-circuit | T-404 (todo) | — |
+| [T-021](T-021-reseau-egress-imds.md) | 6 | Egress déclaré (FQDN Cilium) et IMDS refusé dans toutes les cellules | T-002 (in-progress), T-364 (todo) | — |
+| [T-121](T-121-upg-2.md) | 4 | Renovate auto-hébergé avec GitHub App (CI déclenchée, postUpgradeTasks) | T-120 (todo), T-215 (todo) | — |
+| [T-065](T-065-sante-periodique-alertes.md) | 3 | CronJob de statut périodique (réduit : sondes → T-103, revert → T-106, ntfy → T-107) | T-005 (todo), T-015 (todo) | — |
+| [T-181](T-181-ids-2.md) | 3 | Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao | T-022 (todo), T-190 (todo), T-404 (todo) | — |
+| [T-160](T-160-ai-1.md) | 3 | gVisor et vcluster jetables pour les agents sur le cluster lab | T-364 (todo) | — |
+| [T-107](T-107-obs-7.md) | 2 | Escalade ntfy : contact points, script de notification, route différée | T-100 (todo) | — |
+| [T-132](T-132-upg-13.md) | 2 | Runbook et preflight de montée Kubernetes OKE (nœud unique) | T-001 (todo), T-140 (todo) | — |
+| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | 1 | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | T-303 (in-progress), T-305 (in-progress), T-311 (in-progress), T-313 (in-progress), T-411 (in-progress) | — |
+| [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) | 1 | ntfy seulement si nécessaire et résumé quotidien unique | T-314 (todo) | — |
+| [T-437](T-437-durcir-executant-environnement.md) | 1 | Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteu… | T-313 (in-progress), T-431 (todo) | — |
+| [T-211](T-211-porte-openchoreo.md) | 1 | Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04) | T-031 (todo), T-044 (todo), T-050 (todo), T-212 (todo), T-364 (todo) | — |
+| [T-106](T-106-obs-6.md) | 1 | Pont alerte -> agent : workflow remediate, dédoublonnage, budget, disjoncteur | T-005 (todo), T-100 (todo), T-164 (todo) | — |
+| [T-405](T-405-rotation-complete-final.md) | 1 | Rotation complète des secrets et identités du registre (FINAL) | T-404 (todo) | — |
+| [T-301](T-301-reecriture-de-l-historique-et-purge.md) | 0 | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | T-303 (in-progress) | — |
+| [T-433](T-433-protection-tags.md) | 0 | Protection des tags : core-baseline et v* (ruleset de type tag) | T-305 (in-progress) | — |
+| [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md) | 0 | Environnement Claude Code cloud « openchoreo-lab-agent » : script d'installation, réseau, secrets r… | T-332 (in-progress) | — |
+| [T-315](T-315-merge-automatique-sous-conditions-app-de.md) | 0 | Merge automatique sous conditions : auto-merge natif pendant le dev, App de merge en FINAL | T-210 (in-progress), T-321 (todo) | — |
+| [T-218](T-218-acter-adr-0014-0019.md) | 0 | Acter les ADR 0014-0019 après le MVP | T-211 (todo) | — |
+| [T-147](T-147-cost-8.md) | 0 | Alertes de coût : relier billing_cost_eur et cost-evidence à ntfy, règle de fraîcheur | T-026 (todo), T-065 (todo), T-140 (todo) | — |
+| [T-109](T-109-obs-9.md) | 0 | Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane | T-022 (todo), T-100 (todo), T-107 (todo), T-364 (todo) | — |
+| [T-193](T-193-ids-14.md) | 0 | Nettoyage Doppler : clés obsolètes, jetons orphelins, projets vides, liste fermée en CI | T-181 (todo), T-192 (todo) | — |
+| [T-194](T-194-ids-15.md) | 0 | Rotation et échéances : jetons Doppler, clés d'agents, secrets OIDC, clé de seal | T-181 (todo), T-184 (todo) | — |
+| [T-195](T-195-ids-16.md) | 0 | Audit : OpenBao, Doppler, Authentik ; rapport « qui a lu quoi » et alertes | T-065 (todo), T-184 (todo) | — |
+| [T-171](T-171-ai-12.md) | 0 | Premier service IA de référence (LibreChat ou équivalent) de bout en bout | T-162 (todo), T-163 (todo), T-165 (todo), T-166 (todo), T-404 (todo) | — |
+| [T-401](T-401-revue-securite-finale.md) | 0 | Revue de sécurité finale de la plateforme (prérequis de « plateforme finie ») | T-007 (todo), T-215 (todo), T-400 (todo), T-402 (todo), T-405 (todo), T-437 (todo), T-443 (todo) | — |
 
 ## Fait (`done`)
 
