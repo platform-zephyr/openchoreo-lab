@@ -10,10 +10,11 @@ Réponses en français, conclusion d'abord.
 
 ## 1. Lire l'état (dans cet ordre, 5 minutes)
 1. `git fetch origin && git merge origin/<ta branche>` puis `git merge origin/main` ; `git status` propre.
-2. `docs/state/HANDOFF-COORDINATEUR.md` (procédures, décisions de Paul), `backlog/NEXT.md` (quoi lancer), `backlog/STATUS.md` (généré).
+2. `docs/state/HANDOFF-COORDINATEUR.md` (procédures, décisions de Paul), `backlog/NEXT.md` (quoi lancer), `python3 tools/backlog/status.py` (vue d'état, non versionnée ; aussi dans le résumé du job CI `backlog`).
 3. `python3 tools/backlog/priority.py --top 10` (file par score), `python3 tools/backlog/next.py` (prêts, classe, modèle recalculés).
 4. PR et issues ouvertes (REST, voir §5) ; branches `worktree-agent-*` non intégrées : `git branch -a --no-merged`.
-Un ticket `in-progress` porte une ligne « Reste » : c'est son état réel, pas son en-tête.
+Statut dérivé (`backlog/README.md` § « Statut dérivé ») : cases + PR fusionnée (`Ticket: T-NNN`) ; il fait foi sur l'en-tête.
+`python3 tools/backlog/priority.py --diff` liste les écarts ; le reste à faire d'un ticket = ses cases décochées.
 
 ## 2. Choisir
 - Score (`tools/backlog/priority.py`) = tickets non terminés débloqués, directement ou transitivement ; départage : étape, petit périmètre, id. Un ticket `human` ou MANDAT passe après les tickets exécutables.
@@ -32,10 +33,10 @@ Un ticket `in-progress` porte une ligne « Reste » : c'est son état réel, pas
 
 ## 4. Intégrer et fusionner
 1. Brouillon d'abord : `git merge --no-ff worktree-agent-<id>` dans la branche coordinateur. Conflits connus : liste `needs` de `ci-ok` (garder l'union), `backlog/README.md`, fichier du ticket (version la plus avancée).
-2. Avant de pousser : `python3 tools/backlog/check.py` (0 erreur), `python3 -m unittest discover -s tests/backlog`, `python3 tools/quality/check.py` (cliquet), `python3 tools/backlog/status.py --write`, `python3 tools/backlog/roadmap.py`, puis `tools/dev/check --static --changed`. Jamais `seed.py`.
+2. Avant de pousser : `python3 tools/backlog/check.py` (0 erreur), `python3 -m unittest discover -s tests/backlog`, `python3 tools/quality/check.py` (cliquet), `python3 tools/backlog/roadmap.py`, puis `tools/dev/check --static --changed`. Jamais `seed.py`.
 3. Pousser (jamais de force-push), PR en brouillon (gabarit `.github/pull_request_template.md`, section « Implémentations publiques consultées », verdict et niveau du check local).
 4. Quand `ci-ok` est vert : `update_pull_request` (`draft: false`) puis `merge_pull_request` (`squash`). La file de fusion fait la CI finale.
-5. Après la fusion : `git fetch origin main && git merge origin/main` ; la branche coordinateur repart de `main`. Régénérer `STATUS.md`.
+5. Après la fusion : `git fetch origin main && git merge origin/main` ; la branche coordinateur repart de `main`.
 
 ## 5. Suivre
 - REST seulement : GraphQL est bloqué (`gh pr checks`, `gh pr view --json` échouent). `ci-ok` d'un commit : `gh api "repos/<owner>/<repo>/commits/<sha>/check-runs?per_page=50" --jq '[.check_runs[]|select(.name=="ci-ok")|.conclusion // "pending"]|first // "none"'`. Attendre avec l'outil Monitor et une boucle `until`, jamais `sleep` seul.
@@ -59,5 +60,6 @@ Copies vendorées de `mattpocock/skills` (MIT, SHA figé dans chaque en-tête, g
 - Un sous-agent qui rend « terminé » sans preuve par critère : ticket `in-progress`, ligne « Reste », case non cochée.
 - Tester aussi hors root (`runuser -u nobody`), les runners ne sont pas root ; `jsonschema` à installer dans les jobs qui valident `mission-result.v1`.
 - PR d'agent rouge pour un vrai défaut (ex. cliquet de qualité) : ne pas pousser sur sa branche ; un agent local la reprend, livre par ta branche ; fermer la PR du bot. Échec réseau : relancer une fois (`rerun_failed_jobs`).
-- Les agents de l'usine ne mettent pas le ticket à jour : cocher les critères et régénérer `STATUS.md` après leur fusion.
+- Les agents de l'usine ne mettent pas le ticket à jour : cocher les critères après leur fusion ; le statut suit seul (trailer `Ticket:`).
+- `backlog/STATUS.md` n'est plus versionné : plus de conflit de fusion sur ce fichier.
 - Un refus d'une garde n'est jamais à contourner : le signaler.

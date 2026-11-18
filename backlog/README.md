@@ -1,7 +1,7 @@
 # Backlog de la plateforme
 
 Source des tâches du labo (ADR-0012). Un fichier par ticket : `T-NNN-<slug>.md`. Vue d'ensemble : [INDEX.md](INDEX.md).
-**État (fait / en cours / à faire) : [STATUS.md](STATUS.md)** (généré par `python3 tools/backlog/status.py --write`, vérifié par `--check`). **Prochaines étapes : [NEXT.md](NEXT.md)** (tenu à la main). Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md` ; intégration 2 : [INTEGRATION-2.md](INTEGRATION-2.md) ; consensus n°2 et arbitrages de Paul : [INTEGRATION-3.md](INTEGRATION-3.md) ; arbitrage Fable : [INTEGRATION-4.md](INTEGRATION-4.md) ; qualité et GitHub : [INTEGRATION-5.md](INTEGRATION-5.md)). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
+**État (fait / en cours / à faire) : `python3 tools/backlog/status.py`** (vue publiée dans le résumé du job CI `backlog` ; `--write` écrit `STATUS.md` en local, fichier non versionné). **Prochaines étapes : [NEXT.md](NEXT.md)** (tenu à la main). Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md` ; intégration 2 : [INTEGRATION-2.md](INTEGRATION-2.md) ; consensus n°2 et arbitrages de Paul : [INTEGRATION-3.md](INTEGRATION-3.md) ; arbitrage Fable : [INTEGRATION-4.md](INTEGRATION-4.md) ; qualité et GitHub : [INTEGRATION-5.md](INTEGRATION-5.md)). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
 renvoie au fichier du ticket.
 
 ## En-tête d'un ticket
@@ -10,7 +10,7 @@ renvoie au fichier du ticket.
 ---
 id: T-NNN                 # unique, jamais réutilisé
 title: "…"
-status: todo              # todo | in-progress | blocked | deferred | done | dropped
+status: todo              # todo | in-progress | blocked | deferred | done | dropped (voir « Statut dérivé »)
 phase: P0                 # P0 … P5 (voir INDEX.md)
 adr: [0004]               # ADR de rattachement (docs/adr/)
 depends_on: [T-003]       # tickets qui doivent être `done` avant
@@ -38,7 +38,8 @@ Valeurs contrôlées par `tools/backlog/check.py` (job CI `backlog`, requis via 
   ticket actif sans périmètre exploitable ;
 - **avertissement** (CI verte) : `effort: max` sur Sonnet (plafond `xhigh`), ticket REVUE dont le périmètre touche le noyau
   (CODEOWNERS, `docs/adr/`, `docs/review/`) sans `model: claude-opus-5-5`, éléments de périmètre non exploitables dans un
-  périmètre qui en contient aussi d'exploitables.
+  périmètre qui en contient aussi d'exploitables, `STATUT-DÉRIVÉ` (en-tête contredit par le calcul), `RESTE` (toutes les
+  cases cochées, « Reste » non vide).
 
 Un périmètre exploitable est une liste, séparée par des virgules, de chemins ou de globs (`apps/<app>/`, `docs/**/*.md`) ;
 une parenthèse à la fin d'un élément est un commentaire. Un périmètre situé hors de ce dépôt s'écrit avec la mention
@@ -47,18 +48,35 @@ une parenthèse à la fin d'un élément est un commentaire. Un périmètre situ
 `tools/factory/overlap.py`, `docs/AGENT-RUNNERS.md`).
 
 Corps : `## Intention`, `## Périmètre de fichiers`, `## Critères de fin` (cases à cocher, chacune vérifiable :
-commande, test ou preuve runtime datée), `## Notes` (facultatif).
+commande, test ou preuve runtime datée), `## Notes` (facultatif). Ce qui reste à faire s'écrit en **cases décochées**,
+pas en paragraphe « Reste » (avertissement de `check.py` si toutes les cases sont cochées et qu'un « Reste » subsiste).
+
+## Statut dérivé
+
+`todo`, `in-progress` et `done` se calculent (`tools/backlog/derive.py`), sans réseau, depuis les cases et l'historique
+git local (`origin/main`, sinon `main`, sinon `HEAD` ; clone superficiel ou absence de git : l'en-tête fait foi) :
+- `done` : toutes les cases cochées et une PR fusionnée dans main pour le ticket : un commit portant la ligne
+  `Ticket: T-NNN` (trailer, injecté par `tools/factory/commit-trailers.sh`) ou une fusion squash `… (T-NNN) (#N)` ;
+- `in-progress` : une PR fusionnée, une branche `claude/*` (nom `t-NNN`, `issue-<github_issue>`, ou commit `Ticket:`)
+  ou une case cochée, sans être `done` ;
+- `todo` sinon.
+`blocked`, `deferred`, `dropped` restent des décisions manuelles de l'en-tête. Le champ `status:` reste accepté ; pour
+`todo`/`in-progress`/`done`, un désaccord avec le calcul est un avertissement de `check.py`, et le calcul fait foi pour
+`priority.py`, `next.py` et `status.py` (`priority.py --diff` liste les écarts). Rétro-compatibilité : un `done` déclaré
+dont toutes les cases sont cochées reste `done` même sans PR trouvée (clôtures antérieures aux trailers, gestes humains).
 
 ## Prendre un ticket (agent)
 
 1. Choisir un ticket `todo` dont toutes les dépendances sont `done`, de l'étape la plus basse (ROADMAP.md) ; `deferred` = gelé jusqu'à la porte OpenChoreo (ADR-0020) ou, pour DeepSeek, après le chantier.
-2. Passer `status: in-progress` dans la même PR que le travail (pas de PR de statut seule).
+2. Commits avec le trailer `Ticket: T-NNN` (le statut se dérive de la fusion) ; `status: in-progress` dans l'en-tête
+   reste permis dans la même PR, jamais en PR de statut seule.
 3. Livrer selon la classe : AUTONOME = merge après `ci-ok` ; REVUE = PR prête, Paul approuve ; MANDAT = la PR décrit
    le geste exact attendu de Paul (noms, jamais de valeurs).
    **Mode dev** (arbitrage 7, arbitrage Fable) : la revue des code owners est désactivée ; REVUE = merge après `ci-ok`
    (auto-merge armé par l'exécutant), comme AUTONOME. La revue revient à l'étape FINAL0 (T-400) sur `platform/authz/`,
    `platform/policies/` et `security/`, puis à FINAL.
-4. `status: done` seulement quand **tous** les critères de fin sont cochés avec leur preuve (lien ou fichier daté).
+4. Cocher un critère seulement avec sa preuve (lien ou fichier daté) ; le ticket devient `done` de lui-même quand toutes
+   les cases sont cochées et la PR fusionnée (`status: done` écrit à la main reste accepté).
 5. Un ticket bloqué passe `blocked` avec une ligne `Bloqué par :` dans `## Notes`.
 
 Outils : `tools/backlog/seed.py` (génération initiale, à remplacer par l'édition directe des tickets), `check.py` (en-têtes, graphe, routage ; tests : `python3 -m unittest discover -s tests/backlog`), `roadmap.py` (ROADMAP.md).
