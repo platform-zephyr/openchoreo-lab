@@ -33,5 +33,6 @@ spec:
     oidc: {provider: thunderid, issuer: https://thunder.lab.smadja.dev, clientId: miniflux, clientSecretKey: MINIFLUX_OAUTH2_CLIENT_SECRET, adminGroup: admin}
   exposure: {mode: public, host: miniflux.lab.smadja.dev, auth: app-oidc}
   network: {egress: public-internet, allowIdp: true}
+  data: {class: rebuildable}
   backup: {class: regenerable}
   observability: {metrics: {enabled: false}}

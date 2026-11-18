@@ -13,6 +13,7 @@ from typing import Any
 from appgenlib.catalog import catalog_entity
 from appgenlib.config import (
     CPT_EXT_PARAMS,
+    DATA_CLASS_LABEL,
     DB_INSTANCE,
     NS,
     PIPELINE,
@@ -35,6 +36,8 @@ def project_params(doc: dict, caps: dict, index: dict) -> dict:
     params: dict[str, Any] = {"egress": profile, "database": "database" in spec,
                               "allowIdp": bool(net.get("allowIdp", False))}
     params.update(egress_project_params(doc, caps, index))
+    if "data" in spec:
+        params["dataClass"] = spec["data"]["class"]
     inst = spec.get("database", {}).get("instance", DB_INSTANCE)
     if "database" in spec and inst != DB_INSTANCE:
         params["databaseNamespace"] = caps["databaseInstances"][inst]["namespace"]
@@ -108,11 +111,12 @@ def _database_files(name: str, spec: dict, caps: dict, pins: dict, files: dict) 
     files[f"{base}/resources/{name}-db.yaml"] = {
         "apiVersion": "openchoreo.dev/v1alpha1", "kind": "Resource",
         "metadata": {"name": f"{name}-db", "namespace": NS,
+                     "labels": {DATA_CLASS_LABEL: spec["data"]["class"]},
                      "annotations": {SYNC_OPTIONS_KEY: SYNC_OPTIONS["Resource"]}},
         "spec": {
             "owner": {"projectName": name},
             "type": {"kind": "ClusterResourceType", "name": crt},
-            "parameters": {"database": dbname, "passwordKey": passkey},
+            "parameters": {"database": dbname, "passwordKey": passkey, "dataClass": spec["data"]["class"]},
         },
     }
     for env in spec["environments"]:

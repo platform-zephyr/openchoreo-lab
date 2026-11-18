@@ -306,6 +306,15 @@
             "allowIdp": { "type": "boolean", "default": false, "description": "Egress vers le namespace de l'IdP du labo (ThunderID)." }
           }
         },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["class"],
+          "description": "T-025, ADR-0008 (G8). Classe de la donnee de l'app. Obligatoire des qu'une base (database) ou un volume (storage) est declare (regle semantique, CI). Propagee en label platform.smadja.dev/data-class sur le namespace de cellule, le PVC et la base. irreplaceable : refuse par la CI tant qu'aucune restauration hors Oracle n'est prouvee (comme backup.class).",
+          "properties": {
+            "class": { "enum": ["ephemeral", "rebuildable", "useful", "irreplaceable"] }
+          }
+        },
         "backup": {
           "type": "object",
           "additionalProperties": false,

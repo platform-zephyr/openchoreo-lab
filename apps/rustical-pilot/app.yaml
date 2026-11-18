@@ -33,5 +33,6 @@ spec:
     oidc: {provider: thunderid, issuer: https://thunder.lab.smadja.dev, clientId: rustical-pilot, clientSecretKey: RUSTICAL_PILOT_OIDC_CLIENT_SECRET, allowedGroups: [family, admin], adminGroup: admin}
   exposure: {mode: private, auth: app-oidc}
   network: {egress: none, allowIdp: true}   # FQDN refuse sur k3d (sans Cilium) ; a ajouter au gate OKE (NOTES.md)
+  data: {class: rebuildable}
   backup: {class: regenerable}   # donnees synthetiques = regenerables ; aucune donnee reelle (NOTES.md)
   observability: {metrics: {enabled: false}}

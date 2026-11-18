@@ -1,5 +1,7 @@
 # Copied unmodified from openchoreo/openchoreo v1.3.3, samples/getting-started/component-traits/pvc-trait.yaml
 # Apache License 2.0 (see NOTICE). Not part of the Helm chart: the chart ships no ClusterTrait.
+# Modified by T-025 (G8, ADR-0008): optional `dataClass` parameter, added as label
+# platform.smadja.dev/data-class on the PVC. Nothing else changed.
 ---
 apiVersion: openchoreo.dev/v1alpha1
 kind: ClusterTrait
@@ -46,6 +48,12 @@ spec:
           default: false
           title: Read only
           description: "Mounts the volume as read-only in the container."
+        dataClass:
+          type: string
+          default: ""
+          enum: ["", ephemeral, rebuildable, useful, irreplaceable]
+          title: Data class
+          description: "Data class of the app (ADR-0008). Propagated as label platform.smadja.dev/data-class on the PVC."
       required:
         - mountPath
 
@@ -86,7 +94,7 @@ spec:
         metadata:
           name: ${metadata.name}-${trait.instanceName}
           namespace: ${metadata.namespace}
-          labels: ${metadata.labels}
+          labels: '${oc_merge(metadata.labels, parameters.dataClass != "" ? {"platform.smadja.dev/data-class": parameters.dataClass} : {})}'
         spec:
           accessModes:
             - ${parameters.accessMode}

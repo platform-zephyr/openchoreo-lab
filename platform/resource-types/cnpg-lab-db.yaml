@@ -30,11 +30,16 @@ spec:
   parameters:
     openAPIV3Schema:
       type: object
-      required: [database]
+      required: [database, dataClass]
       properties:
         database:
           type: string
           pattern: "^[a-z][a-z0-9_]{1,30}$"
+        # T-025 (G8, ADR-0008) : classe de donnee de l'app (data.class), propagee en label
+        # platform.smadja.dev/data-class sur chaque objet rendu.
+        dataClass:
+          type: string
+          enum: [ephemeral, rebuildable, useful, irreplaceable]
   outputs:
     - name: host
       value: "lab-pg-rw.lab-pg.svc.cluster.local"
@@ -61,7 +66,7 @@ spec:
         metadata:
           name: ${metadata.name}-pg
           namespace: lab-pg
-          labels: ${metadata.labels}
+          labels: '${oc_merge(metadata.labels, {"platform.smadja.dev/data-class": parameters.dataClass})}'
         spec:
           length: 32
           digits: 8
@@ -76,7 +81,7 @@ spec:
         metadata:
           name: ${metadata.name}-pg-role
           namespace: lab-pg
-          labels: ${metadata.labels}
+          labels: '${oc_merge(metadata.labels, {"platform.smadja.dev/data-class": parameters.dataClass})}'
         spec:
           # "0" : synchronisé une seule fois ; le générateur est sans état.
           refreshInterval: "0"
@@ -98,7 +103,7 @@ spec:
         metadata:
           name: ${metadata.name}-pg-role
           namespace: lab-pg
-          labels: ${metadata.labels}
+          labels: '${oc_merge(metadata.labels, {"platform.smadja.dev/data-class": parameters.dataClass})}'
         spec:
           refreshInterval: 1h
           updatePolicy: Replace
@@ -125,7 +130,7 @@ spec:
         metadata:
           name: ${metadata.name}-pg-init
           namespace: lab-pg
-          labels: ${metadata.labels}
+          labels: '${oc_merge(metadata.labels, {"platform.smadja.dev/data-class": parameters.dataClass})}'
         spec:
           backoffLimit: 10
           template:
@@ -194,7 +199,7 @@ spec:
         metadata:
           name: ${metadata.name}-pg
           namespace: ${metadata.namespace}
-          labels: ${metadata.labels}
+          labels: '${oc_merge(metadata.labels, {"platform.smadja.dev/data-class": parameters.dataClass})}'
         spec:
           refreshInterval: 1h
           secretStoreRef:

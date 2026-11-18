@@ -18,6 +18,7 @@ spec:
     egress: none
     database: false
     allowIdp: true
+    dataClass: useful
     quota:
       cpu: 300m
       memory: 512Mi

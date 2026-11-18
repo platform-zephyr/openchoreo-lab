@@ -21,6 +21,7 @@ spec:
         databaseNamespace: {type: string, default: lab-pg}
         databaseCluster: {type: string, default: lab-pg}
         podSecurity: {type: string, enum: [restricted, baseline], default: restricted}
+        dataClass: {type: string, enum: ["", ephemeral, rebuildable, useful, irreplaceable], default: ""}
         egressCIDRs:
           type: array
           default: []
