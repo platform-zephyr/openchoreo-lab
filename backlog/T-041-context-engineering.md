@@ -20,7 +20,7 @@ github_issue: null
 Appliquer la proposition `docs/research/context-engineering/` dans ce dépôt.
 
 ## Périmètre de fichiers
-AGENTS.md, STATE.md, docs/, tools/, tests/
+AGENTS.md, CLAUDE.md, STATE.md, missions/MISSION.md (en-tête de fraîcheur), docs/state/journal/, docs/adr/README.md, golden-paths/README.md (périmés), tools/context-check/, tests/context-check/, .github/workflows/ci.yaml (job du check de contexte ; couplé à tools/dev/check et ci-map.tsv)
 
 ## Critères de fin
 - [ ] fichiers toujours chargés ≤ 130 lignes au total
