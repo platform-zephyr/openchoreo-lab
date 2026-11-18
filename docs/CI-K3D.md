@@ -33,6 +33,11 @@ Non lancé : `phase2-whoami` (absent d'`origin/main`, dépend du k3d partagé et
 ## 4. Limites connues
 
 - `k3d` / RRB `t-alpha-db` non Ready : cause prouvée par le diagnostic, ce n'est pas un problème d'ordre de démarrage. Le PushSecret `r-*-pg-role` écrit dans la clé `lab-pg-roles/<nom>` du store `lab-store` (provider Kubernetes d'ESO 2.0.1), et ESO refuse le `/` (`invalid resource name`). La clé est définie dans `platform/resource-types/cnpg-lab-db.yaml` (l.114, l.212) et contrôlée par `platform/policies/vap-cluster-agent-scope.yaml`. Corriger impose un changement de contrat (classe REVUE).
+- Triage T-469 des 24 FAIL du run 44313941923 (2026-11-18, PR #69) : une seule cause d'environnement en explique 22. Détail cas par cas : `backlog/T-469-triage-echecs-suite-k3d.md`.
+  - Cause racine (défaut de fixture, pas du produit) : les Project de `tests/k3d/fixtures/10-projects.yaml` citaient le `DeploymentPipeline` `default`, absent de la CI (le bootstrap n'installe que `standard`, sans chemin de promotion). Journal du controller-manager : `DeploymentPipeline "default" not found`. Avec `autoDeploy: true`, aucun ReleaseBinding n'est créé : aucun pod de cellule, 11 attentes `timeout` (5 x 300 s, 6 x 180 s), sondes A/B vides. Cascade : T01g, T02, T03a, T04a, T05, T06a-c, T06e, T07b-d, T08a-d, T09a/b (+3 REVOKE), T10.
+  - Correctif (fixture `t-pipeline` development vers production) : NOT_TESTED tant qu'un dispatch daté ne l'a pas confirmé.
+  - T03f et T03i : tests périmés face aux VAP durcies (R3 labels PSA et `cell`, R6 gabarit du Job). Refus voulus, pas des défauts produit. Tests alignés sur le gabarit réel.
+  - Aucun cas n'est classé `KNOWN_FAIL` : aucune cause ne justifie de garder un cas rouge. `run.sh` n'a pas de mécanisme `KNOWN_FAIL` par cas (voir `tests/vap/known-fail.sh`) et n'en a pas besoin ici.
 - Test T08f (IMDS) : NOT_TESTED par conception, comme sur k3d local.
 - Le dispatch manuel n'est possible qu'une fois le workflow sur `main`.
 - Le k3s n'est pas épinglé par digest, seulement par tag de version.
