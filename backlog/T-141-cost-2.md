@@ -1,13 +1,14 @@
 ---
 id: T-141
 title: "Estimation du budget OKE et contrôle périodique des quotas gratuits (cost-evidence.v1)"
-status: todo
+status: dropped
 phase: P0
 adr: [0003, 0004, 0017]
 depends_on: [T-001, T-140]
 class: AUTONOME + MANDAT
 velocity: false
 lane: coût
+stage: —
 github_issue: null
 ---
 # T-141 — Estimation du budget OKE et contrôle périodique des quotas gratuits (cost-evidence.v1)
@@ -30,3 +31,5 @@ T-009 est absorbé : ses 3 critères sont repris et complétés. La clé OCI de 
 Absorbe : T-009.
 
 Proposé par la recherche `cost` (clé T-141).
+
+Fusion coût (consensus du 2026-11-18). Fusionné dans T-140.

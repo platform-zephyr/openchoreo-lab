@@ -2,12 +2,13 @@
 id: T-012
 title: "`spec.verify` : vérification fonctionnelle déclarée (G10)"
 status: todo
-phase: P1
+phase: P2
 adr: [0011, 0013]
-depends_on: [T-005]
+depends_on: [T-005, T-061]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
+stage: I1
 github_issue: null
 ---
 # T-012 — `spec.verify` : vérification fonctionnelle déclarée (G10)

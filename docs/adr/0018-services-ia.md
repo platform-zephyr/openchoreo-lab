@@ -19,6 +19,9 @@ Décisions liées : ADR-0002, ADR-0005, ADR-0006, ADR-0007, ADR-0010, ADR-0013, 
 7. **Agents OpenChoreo** désactivés par défaut ; activation seulement via une clé du gateway.
 8. Un agent ne peut ni créer sa clé, ni élargir son budget, ni modifier l'allowlist (noyau, ADR-0002.5).
 
+**Amendement (consensus du 2026-11-18)** : aucun service IA sur OKE (runtime CRI-O sur nœud unique : changer le node
+pool couperait le control plane) ; les services IA tournent sur le homelab.
+
 ## Conséquences
 - Nouveau composant de plateforme et schéma `ai:` ; nouvelle forme d'egress `{platform: ai-gateway}` ; Kyverno/VAP `ai=true`.
 - MANDAT : création des clés de fournisseur, du client Authentik racine du gateway, premier coût LLM (budget mensuel).

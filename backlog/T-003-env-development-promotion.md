@@ -4,10 +4,11 @@ title: "Environment `development`, promotion vers `production`, pins de release 
 status: todo
 phase: P0
 adr: [0004]
-depends_on: [T-001, T-002]
+depends_on: [T-001, T-002, T-061]
 class: AUTONOME
 velocity: true
 lane: contrat-appgen
+stage: S1
 github_issue: 49
 ---
 # T-003 — Environment `development`, promotion vers `production`, pins de release par environnement

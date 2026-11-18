@@ -4,10 +4,11 @@ title: "`appgen retire` : retrait d'une app avec export des données"
 status: todo
 phase: P2
 adr: [0001, 0008, 0013]
-depends_on: [T-025, T-026]
+depends_on: [T-025, T-026, T-061]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
+stage: I1
 github_issue: null
 ---
 # T-067 — `appgen retire` : retrait d'une app avec export des données

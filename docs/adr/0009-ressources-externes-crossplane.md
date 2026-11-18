@@ -31,6 +31,12 @@ Décisions liées : D-2026-11-14-04 (OpenTofu via ARC), D-2026-11-14-05 (secrets
 5. **Un objet = un seul état** : une ressource migrée de Tofu vers Crossplane est importée puis retirée du state
    Tofu, jamais gérée par les deux.
 
+6. **Amendement (consensus du 2026-11-18) : Crossplane différé, pas supprimé.** v1 = une application Cloudflare Access
+   wildcard (Tofu, une fois) + routes déclarées par app. Crossplane n'entre (spike T-029 : homelab, 3 jours max,
+   `deletionPolicy: Orphan`, mémoire et CRD mesurés, repli Tofu) que si l'un de ces déclencheurs survient :
+   (a) une app publique exige des groupes différents ; (b) un client non navigateur casse Access ; (c) plus de 3 apps
+   publiques exigent chacune leur propre politique. D'ici là T-029 et T-076 sont `blocked`.
+
 ## Conséquences
 - L'agent ne touche plus `homelab-infra` pour une nouvelle app : tout est dans `app.yaml`.
 - Le droit de Crossplane sur Cloudflare (jeton limité à Access) est une identité créée par Paul (MANDAT), une fois.

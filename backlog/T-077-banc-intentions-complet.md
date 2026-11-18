@@ -1,13 +1,14 @@
 ---
 id: T-077
 title: "Banc complet de 10 intentions (OIDC, base, publique, worker, supprime)"
-status: todo
+status: deferred
 phase: P5
 adr: [0013]
 depends_on: [T-042, T-051, T-067]
 class: AUTONOME
 velocity: false
 lane: intention
+stage: après-porte
 github_issue: null
 ---
 # T-077 — Banc complet de 10 intentions (OIDC, base, publique, worker, supprime)
@@ -22,3 +23,6 @@ tests/intents/
 - [ ] ≥ 8/10 PASS runtime sans intervention humaine
 - [ ] ≤ 1 question en moyenne
 - [ ] rapport daté
+
+## Notes
+Différé après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).

@@ -4,10 +4,11 @@ title: "Drill de restauration automatique et `restore-evidence`"
 status: todo
 phase: P2
 adr: [0008, 0011]
-depends_on: [T-005, T-012, T-026, T-075]
+depends_on: [T-005, T-012, T-026, T-061, T-075]
 class: AUTONOME
 velocity: false
 lane: donnees
+stage: I1
 github_issue: null
 ---
 # T-027 — Drill de restauration automatique et `restore-evidence`

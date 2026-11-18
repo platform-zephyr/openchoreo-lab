@@ -1,13 +1,14 @@
 ---
 id: T-143
 title: "Mesure R2 : Go, objets et opérations par bucket, alerte avant 10 Go"
-status: todo
+status: dropped
 phase: P2
 adr: [0008, 0009, 0017]
 depends_on: [T-026, T-140]
 class: AUTONOME + MANDAT
 velocity: false
 lane: sauvegardes
+stage: —
 github_issue: null
 ---
 # T-143 — Mesure R2 : Go, objets et opérations par bucket, alerte avant 10 Go
@@ -27,3 +28,5 @@ tools/cost/r2_usage.py, platform/ (CronJob homelab), docs/storage/
 MANDAT : toute règle de suppression ou jeton R2. Verrous de bucket et rétention gonflent le stockage.
 
 Proposé par la recherche `cost` (clé T-143).
+
+Mesure R2 avec les sauvegardes (consensus du 2026-11-18). Fusionné dans T-026.

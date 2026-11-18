@@ -2,12 +2,13 @@
 id: T-031
 title: "Règle de placement et test de coupure du homelab"
 status: todo
-phase: P3
+phase: P1
 adr: [0003]
-depends_on: [T-030]
+depends_on: [T-030, T-061]
 class: AUTONOME + MANDAT
 velocity: false
 lane: hybride
+stage: S3
 github_issue: null
 ---
 # T-031 — Règle de placement et test de coupure du homelab

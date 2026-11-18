@@ -8,6 +8,7 @@ depends_on: [T-001]
 class: REVUE + MANDAT
 velocity: false
 lane: securite
+stage: —
 github_issue: null
 ---
 # T-068 — Sécurité et attribution des agents

@@ -11,11 +11,15 @@ Décisions liées : ADR-0002, ADR-0004, ADR-0006, ADR-0008, ADR-0011, D-2026-11-
 2. **Trois niveaux** par catégorie : AUTO (Renovate fusionne seul), ASSISTÉ (un agent traite et fusionne sur preuves PASS), MANDAT (préparation autonome, application par Paul dans une fenêtre approuvée). Le tableau de `docs/research/UPGRADES.md` §2 fait foi.
 3. **La politique est dans le noyau** : `.github/renovate.json`, `upgrade-gate`, `ops/maintenance-windows.yaml` ne se modifient que par Paul ; aucun agent ne peut élargir son automerge (ADR-0002 §5).
 4. **Porte des apps** : CI k3d + déploiement `development` + `app-status` RUNTIME PASS, puis promotion ; en échec, `git revert` automatique. Une montée à la fois en dev (ADR-0004).
-5. **Jamais d'automerge** : 0.x, noyau, données `important/irreplaceable`, source d'image nouvelle, image sans `linux/arm64`. Stateful : sauvegarde fraîche prouvée avant toute montée ; majeure PG ou migration de schéma = MANDAT.
+5. **Jamais d'automerge** : 0.x, noyau, données `useful/irreplaceable`, source d'image nouvelle, image sans `linux/arm64`. Stateful : sauvegarde fraîche prouvée avant toute montée ; majeure PG ou migration de schéma = MANDAT.
 6. **Âge minimal** par catégorie (3 à 30 jours) avec `internalChecksFilter: strict` ; les CVE contournent l'âge, pas la preuve.
 7. **Plateforme** : OpenChoreo une mineure à la fois (CRD, bundle reconstruit), OKE et Talos par fenêtre déclarée ; l'agent prépare, répète sur k3d, résume ; il n'applique pas.
 8. **Supply chain** : digest obligatoire ; signature cosign vérifiée pour les éditeurs qui signent ; provenance et Scorecard en signaux ; actions GitHub jamais en AUTO.
 9. **Veille** : un agent résume chaque release (champs fermés), le texte amont reste non fiable.
+**Amendement (consensus du 2026-11-18)** : pas d'automerge des digests d'actions GitHub ni des digests d'apps tant que la
+porte des apps (T-124) n'est pas prouvée ; un fichier de refus de versions (ajout seul) empêche Renovate de reproposer une
+version revertée.
+
 ## Conséquences
 - Nouvelle surface : `upgrade-gate`, `bump-versions`, runbooks OpenChoreo/OKE/Talos, `docs/reference/versions.md`, App GitHub pour Renovate (MANDAT).
 - Coût : temps de CI k3d, un créneau dev occupé par montée ; coupure assumée du nœud unique pendant les fenêtres.

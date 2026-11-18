@@ -1,13 +1,14 @@
 ---
 id: T-208
 title: "Gouvernance des données de mesure (classes, rétention, purge, pseudonymes)"
-status: todo
-phase: P2
+status: deferred
+phase: P5
 adr: [0008, 0019]
 depends_on: [T-025, T-061]
 class: AUTONOME
 velocity: false
 lane: données
+stage: après-porte
 github_issue: null
 ---
 # T-208 — Gouvernance des données de mesure (classes, rétention, purge, pseudonymes)
@@ -25,3 +26,5 @@ docs/data/METRICS-DATA-POLICY.md, tools/metrics/retention/
 
 ## Notes
 Proposé par la recherche `data-platform` (clé T-208).
+
+Différé après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).

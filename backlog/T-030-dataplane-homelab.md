@@ -2,12 +2,13 @@
 id: T-030
 title: "Enregistrer le homelab comme `ClusterDataPlane` (chemin NetBird L4)"
 status: todo
-phase: P0
+phase: P1
 adr: [0003]
-depends_on: [T-001]
+depends_on: [T-001, T-061]
 class: REVUE + MANDAT
 velocity: false
 lane: hybride
+stage: S2
 github_issue: null
 ---
 # T-030 — Enregistrer le homelab comme `ClusterDataPlane` (chemin NetBird L4)

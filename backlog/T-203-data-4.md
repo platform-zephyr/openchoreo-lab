@@ -2,12 +2,13 @@
 id: T-203
 title: "Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets)"
 status: todo
-phase: P2
+phase: P4
 adr: [0006, 0019]
-depends_on: [T-020, T-201]
+depends_on: [T-020, T-061, T-201]
 class: AUTONOME
 velocity: false
 lane: données
+stage: I8
 github_issue: null
 ---
 # T-203 — Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets)

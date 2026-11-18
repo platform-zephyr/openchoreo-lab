@@ -1,69 +1,57 @@
 import re,glob,functools,collections
-T={}
+ALL={}
 for f in sorted(glob.glob('/home/user/openchoreo-lab/backlog/T-*.md')):
     s=open(f).read(); g=lambda k: re.search(rf'^{k}: (.*)$',s,re.M).group(1).strip()
-    if g('status')=='dropped': continue
-    T[g('id')]=dict(f=f.split('/')[-1],ph=g('phase'),deps=[d.strip() for d in g('depends_on').strip('[]').split(',') if d.strip()],
+    ALL[g('id')]=dict(f=f.split('/')[-1],st=g('status'),stage=g('stage'),deps=[d.strip() for d in g('depends_on').strip('[]').split(',') if d.strip()],
                     v=g('velocity')=='true',lane=g('lane'),cls=g('class'),title=g('title').strip('"'))
+T={k:v for k,v in ALL.items() if v['st']=='todo'}
 @functools.lru_cache(None)
-def W(n): return max([W(d)+1 for d in T[n]['deps']]+[0])
-children=collections.defaultdict(set)
+def W(n): return max([W(d)+1 for d in T[n]['deps'] if d in T]+[0])
+ch=collections.defaultdict(set)
 for n,x in T.items():
-    for d in x['deps']: children[d].add(n)
+    for d in x['deps']:
+        if d in T: ch[d].add(n)
 @functools.lru_cache(None)
 def desc(n):
-    r=set(children[n])
-    for c in children[n]: r|=desc(c)
+    r=set(ch[n])
+    for c in ch[n]: r|=desc(c)
     return frozenset(r)
-@functools.lru_cache(None)
-def tail(n): return 1+max([tail(c) for c in children[n]]+[0])
-for n in T: T[n]['w']=W(n); T[n]['unlock']=len(desc(n)); T[n]['tail']=tail(n)
-crit=[n for n in T if T[n]['w']+T[n]['tail']==max(T[m]['w']+T[m]['tail'] for m in T)]
-waves=collections.defaultdict(list)
-for n,x in T.items(): waves[x['w']].append(n)
+for n in T: T[n]['w']=W(n); T[n]['u']=len(desc(n))
+ORDER=['S0','S1','S2','S3','PORTE','I1','I1bis','I2','I3','I4','I5','I6','I7','I8','I9']
+NAMES={'S0':'MVP — socle de confiance','S1':'MVP — preuve automatique','S2':'MVP — deux moteurs en parallèle (OpenChoreo et plain)','S3':'MVP — golden path et intentions',
+ 'PORTE':"Porte d'adoption OpenChoreo (2026-12-04)",'I1':'Données','I1bis':'Archétypes D et E','I2':'Secrets et identité','I3':'Exposition, admission, première app familiale',
+ 'I4':'Exploitation : observabilité, remédiation, ntfy','I5':'Montées de version','I6':'Migration Doppler, rotation, audit','I7':'Services IA (homelab)','I8':'Mesure (DORA, maturité)','I9':'Divers'}
+def L(n): return f"[{n}]({ALL[n]['f']})"
 def human(x): return 'MANDAT' in x['cls'] or 'REVUE' in x['cls']
-out=[]
-for w in sorted(waves):
-    L=sorted(waves[w],key=lambda n:(-T[n]['v'],-(n in crit),-T[n]['unlock'],n))
-    lanes=collections.Counter(T[n]['lane'] for n in L)
-    out.append((w,L,lanes))
-import json
-json.dump({'crit':sorted(crit,key=lambda n:T[n]['w']),'waves':{w:L for w,L,_ in out}},open('/tmp/roadmap.json','w'))
-for w,L,lanes in out:
-    print(f"VAGUE {w}: {len(L)} tickets, humains {sum(human(T[n]) for n in L)}, couloirs max {lanes.most_common(1)}")
-    for n in L[:40]: print('  ',n,('V' if T[n]['v'] else ' '),('C' if n in crit else ' '),f"u{T[n]['unlock']:<3}",T[n]['lane'][:14].ljust(14),T[n]['cls'][:22].ljust(22),T[n]['title'][:60])
-print('critique:',' -> '.join(sorted(crit,key=lambda n:T[n]['w'])))
+md=["""# Feuille de route (générée depuis `backlog/`)
 
-# ---- écriture de backlog/ROADMAP.md ----
-def link(n): return f"[{n}]({T[n]['f']})"
-md=[]
-md.append("""# Feuille de route (générée depuis `backlog/`)
+Ordonnancement issu du **consensus avec la revue adverse** (`docs/review/CONSENSUS.md`, 2026-11-18). Objectif de Paul : finir le
+plus vite possible avec un maximum d'agents en parallèle ; ce qui accélère passe devant.
 
-Ordonnancement du 2026-11-18. **Objectif de Paul : finir le plus vite possible, avec un maximum d'agents en parallèle ; tout
-ticket qui accélère les suivants passe devant.** Ce fichier est régénéré à partir des en-têtes des tickets.
-
-## Stratégie
-1. **Vagues** : un ticket est dans la vague *n* si sa plus longue chaîne de dépendances fait *n*. Tous les tickets d'une vague
-   peuvent avancer en parallèle dès que la vague précédente est terminée (en pratique : dès que **leurs** dépendances le sont).
-2. **Priorité dans une vague** : d'abord les tickets `velocity` (outillage, CI, preuve, contexte, dispatch), puis ceux qui
-   débloquent le plus de tickets (`débloque`).
-3. **Couloirs** : un couloir = une zone de fichiers. Au plus **2 agents par couloir** en même temps (1 pour `contrat-appgen`,
-   point chaud de conflits) ; nombre total d'agents borné par le plafond LLM (T-145) et 4 jobs parallèles par défaut sur
-   l'abonnement.
-4. **Gestes humains en lot** : les tickets REVUE/MANDAT attendent Paul. Pour ne pas bloquer les agents, Paul traite ses gestes
-   **par lot, une fois par vague** (liste ci-dessous) ; les agents préparent tout le reste (PR prêtes, demande exacte sans valeur).
-5. **Le premier accélérateur est le dispatcher (T-210)** : sans lui, chaque lancement d'agent attend un humain.
-""")
-md.append("## Top accélérateurs\n\n| Ticket | Titre | Vague | Débloque |\n|---|---|---|---|")
-for n in sorted([n for n in T if T[n]['v']],key=lambda n:(T[n]['w'],-T[n]['unlock']))[:20]:
-    md.append(f"| {link(n)} | {T[n]['title']} | {T[n]['w']} | {T[n]['unlock']} |")
-md.append("\n## Gestes de Paul par vague (MANDAT = geste ; REVUE = approbation de PR)\n")
-for w,L,_ in out:
-    H=[n for n in L if human(T[n])]
-    if not H: continue
-    md.append(f"- **Vague {w}** : " + " ; ".join(f"{link(n)} ({T[n]['cls']})" for n in H))
-for w,L,lanes in out:
-    md.append(f"\n## Vague {w} — {len(L)} tickets, {len(lanes)} couloirs\n\n| Ticket | Titre | Couloir | Classe | Vélocité | Débloque |\n|---|---|---|---|---|---|")
-    for n in L:
-        md.append(f"| {link(n)} | {T[n]['title']} | {T[n]['lane']} | {T[n]['cls']} | {'oui' if T[n]['v'] else ''} | {T[n]['unlock']} |")
+## Règles
+1. **Étapes dans l'ordre** : MVP (S0 → S3), puis la **porte OpenChoreo** (ADR-0020), puis des **incréments** (I1 → I8) dont un
+   ou deux sont ouverts à la fois. Une étape peut démarrer dès que les dépendances de ses tickets sont `done`.
+2. **Dans une étape** : par vague de dépendances, d'abord les tickets `velocity`, puis ceux qui débloquent le plus.
+3. **Parallélisme** : plafond de 4 agents (abonnement, T-145) ; au plus 2 par couloir, 1 sur `contrat-appgen` avant T-214.
+4. **Gestes de Paul par lot** : une fois par étape (liste ci-dessous). Les agents préparent les PR et les demandes exactes.
+5. **MVP** = une app A sur le homelab, en prod, livrée à partir d'une phrase, avec preuve datée sans coordinateur.
+"""]
+md.append("## Gestes de Paul par étape\n")
+for st in ORDER:
+    H=[n for n in T if T[n]['stage']==st and human(T[n])]
+    if H: md.append(f"- **{st}** : "+" ; ".join(f"{L(n)} ({T[n]['cls']})" for n in sorted(H,key=lambda n:(T[n]['w'],n))))
+for st in ORDER:
+    N=[n for n in T if T[n]['stage']==st]
+    if not N: continue
+    md.append(f"\n## {st} — {NAMES[st]} ({len(N)} tickets)\n\n| Ticket | Titre | Vague | Couloir | Classe | Vélocité | Débloque |\n|---|---|---|---|---|---|---|")
+    for n in sorted(N,key=lambda n:(T[n]['w'],-T[n]['v'],-T[n]['u'],n)):
+        x=T[n]; md.append(f"| {L(n)} | {x['title']} | {x['w']} | {x['lane']} | {x['cls']} | {'oui' if x['v'] else ''} | {x['u']} |")
+G=[n for n,x in ALL.items() if x['st'] in ('deferred','blocked')]
+md.append(f"\n## Gelés jusqu'à la porte ou bloqués par un déclencheur ({len(G)})\n")
+md.append(", ".join(f"{L(n)} ({ALL[n]['st']})" for n in sorted(G)))
+D=[n for n,x in ALL.items() if x['st']=='dropped']
+md.append(f"\n\n## Absorbés ou supprimés ({len(D)})\n\n"+", ".join(L(n) for n in sorted(D)))
 open('/home/user/openchoreo-lab/backlog/ROADMAP.md','w').write('\n'.join(md)+'\n')
+for st in ORDER:
+    N=[n for n in T if T[n]['stage']==st]
+    if N: print(st,len(N),'humains',sum(human(T[n]) for n in N))

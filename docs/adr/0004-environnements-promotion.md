@@ -24,7 +24,7 @@ Décisions liées : ADR-0003, ADR-0011, D-2026-11-15-05 (seuil 70 %), `docs/CLOU
 - PR plateforme : Environment `development`, `promotionPaths`, pins par environnement dans `appgen`.
 - Check CI de frugalité (≤ 2 apps en dev, taille, pas de stockage).
 - La promotion en production peut rester autonome (ADR-0002) pour une app A/D ; elle est REVUE pour une app avec
-  données `important`/`irreplaceable` (ADR-0008).
+  données `useful`/`irreplaceable` (ADR-0008).
 
 ## Alternatives écartées
 - **Second cluster de dev** : hors Always Free.

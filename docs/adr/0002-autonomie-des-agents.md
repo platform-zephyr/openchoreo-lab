@@ -21,7 +21,14 @@ Décisions liées : D-2026-11-15-03 et D-2026-11-16-07 (homelab-infra, autonomie
    - contrôle compensatoire et classes d'autonomie : `tools/k3d/`, `tests/k3d/`, `tests/gitops-k3d/`,
      `tests/argo-escalation/`, `.agents/skills/platform-guardrails/` ;
    - identité générée par la plateforme : `platform/identity/` (ADR-0007) ;
-   - sécurité amont : `security/`, bundle et ses tests.
+   - sécurité amont : `security/`, bundle et ses tests ;
+   - **règle générale (consensus du 2026-11-18)** : tout script de garde exécuté par un job requis par `ci-ok`, et tout
+     script que le coordinateur exécute avec des droits cluster (`tools/oke/`), est noyau ; de même les consignes lues
+     par tous les agents (`.agents/`), le calcul des classes du dispatcher (`tools/backlog/`), les identités et secrets
+     de plateforme (`users/`, `groups/`, `identities/`, `platform/secrets/`), `ops/`, `tools/metrics/`. Le produit testé
+     (`tools/appgen/appgen.py`) reste libre ;
+   - **les agents n'agissent jamais avec le compte admin de Paul** : compte agent rôle Write + GitHub App plateforme
+     (T-215), sinon `CODEOWNERS` ne protège rien.
 3. **MANDAT (Paul seul)** reste réservé à ce qu'une PR ne peut pas faire : créer une identité, une clé ou un jeton ;
    un coût hors Always Free ; une suppression de données sans restauration prouvée ; un premier accès réseau
    externe (Cloudflare, DNS) tant qu'il n'est pas déclaré par Crossplane (ADR-0009).
@@ -40,7 +47,8 @@ Décisions liées : D-2026-11-15-03 et D-2026-11-16-07 (homelab-infra, autonomie
 - **Aucun noyau** : un agent pourrait se donner des droits (authz, Argo, CI) ; perte du seul invariant indispensable.
 
 ## Vérification
-- Test CI : la liste du noyau dans `CODEOWNERS` est égale à celle de cet ADR (test à écrire).
+- Test CI (T-007) : `CODEOWNERS` couvre la liste de cet ADR **et** tous les scripts appelés par `ci.yaml` ; essai réel :
+  une PR du noyau ouverte par l'identité agent ne peut pas être fusionnée.
 - Indicateur : délai médian issue → merge pour une PR hors noyau ; part des PR fusionnées sans humain.
 
 ## Références

@@ -1,13 +1,14 @@
 ---
 id: T-076
 title: "Application Cloudflare Access générée par app (Crossplane)"
-status: todo
-phase: P2
+status: blocked
+phase: P5
 adr: [0010, 0009]
 depends_on: [T-028, T-029]
 class: AUTONOME
 velocity: false
 lane: exposition
+stage: après-porte
 github_issue: null
 ---
 # T-076 — Application Cloudflare Access générée par app (Crossplane)
@@ -21,3 +22,8 @@ tools/appgen/, platform/
 ## Critères de fin
 - [ ] preuve : création et retrait sans geste
 - [ ] `deletionPolicy: Orphan` vérifié
+
+## Notes
+
+
+Bloqué par : déclencheur ADR-0009 §6 non atteint.

@@ -8,6 +8,7 @@ depends_on: []
 class: REVUE
 velocity: true
 lane: ci
+stage: S0
 github_issue: null
 ---
 # T-002 — CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue

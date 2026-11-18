@@ -4,10 +4,11 @@ title: "Plafond LLM : concurrence des agents, tours, durée et consommation par 
 status: todo
 phase: P1
 adr: [0002, 0017]
-depends_on: [T-043, T-164]
+depends_on: [T-061, T-215]
 class: REVUE + MANDAT
 velocity: true
 lane: agents
+stage: S2
 github_issue: null
 ---
 # T-145 — Plafond LLM : concurrence des agents, tours, durée et consommation par PR

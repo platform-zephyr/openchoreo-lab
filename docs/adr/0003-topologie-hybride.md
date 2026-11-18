@@ -30,6 +30,10 @@ ADR-0004, ADR-0008 ; `docs/architecture/MULTI-DATAPLANE.md`
 7. **Interface standard** : ce qui diffère entre clusters (stockage, admission, edge) est caché par les capacités et
    les types de la plateforme ; l'app ne connaît que `cluster`.
 
+8. **Nomenclature OKE figée** (consensus du 2026-11-18) : ≤ 33 pods et requests ≤ 70 % ; liste fermée : control plane
+   OpenChoreo (si adopté), **un seul Argo CD** (T-213), cloudflared, chemin NetBird, OpenBao, Alloy, et les rares apps
+   demandées par Paul. **Backstage hors OKE.** L'emplacement d'Authentik est tranché par T-213. Aucun service IA sur OKE.
+
 ## Conséquences
 - Chantiers : enregistrement du data plane homelab, chemin NetBird + SAN du cluster-gateway, capacités homelab, preuve
   du comportement quand le homelab est coupé (les workloads tournent, les changements attendent).

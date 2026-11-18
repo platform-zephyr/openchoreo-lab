@@ -2,12 +2,13 @@
 id: T-040
 title: "Catalogue de recettes d'apps homelab vérifiées"
 status: todo
-phase: P4
+phase: P1
 adr: [0013]
-depends_on: [T-010]
+depends_on: [T-010, T-061]
 class: AUTONOME
 velocity: false
 lane: intention
+stage: S3
 github_issue: null
 ---
 # T-040 — Catalogue de recettes d'apps homelab vérifiées
@@ -19,6 +20,5 @@ Faits vérifiés pour les apps courantes (image multi-arch par digest, port, san
 recipes/, tools/, tests/
 
 ## Critères de fin
-- [ ] format + 10 recettes
+- [ ] format + 5 recettes
 - [ ] CI : digest existant et arm64
-- [ ] agent de rafraîchissement documenté

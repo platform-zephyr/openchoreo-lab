@@ -4,10 +4,11 @@ title: "VAP : refus de DELETE des données `irreplaceable` (G8)"
 status: todo
 phase: P2
 adr: [0008, 0006]
-depends_on: [T-025]
+depends_on: [T-025, T-061]
 class: REVUE
 velocity: false
 lane: securite
+stage: I1
 github_issue: null
 ---
 # T-069 — VAP : refus de DELETE des données `irreplaceable` (G8)
