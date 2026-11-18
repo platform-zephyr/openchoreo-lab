@@ -8,11 +8,13 @@ Workflow : `.github/workflows/k3d-integration.yml`. Non bloquant : l'agrégat `k
 - Outils épinglés (k3d 5.9.0, yq 4.54.3, helm v3.22.1) vérifiés par sha256. Noyau `rancher/k3s:v1.36.1-k3s1`.
 - Aucun secret. Permissions `contents: read`. Preuves (`tests/<suite>/evidence`) et journal publiés en artefacts publics, rétention 14 jours. Les diagnostics n'affichent que des `describe` et des journaux, jamais de valeur de Secret.
 - `tools/k3d/ci-bootstrap.sh` installe OpenChoreo 1.3.3 minimal (étapes 1 à 9 de `tools/oke/install.sh`, mêmes charts, values et sha256 de `platform/install/versions.env`). Sans les gardes OKE, sans Cilium (NetworkPolicy de l'étape 2), sans Argo CD (étape 11), sans Backstage (`--set backstage.enabled=false`, comme l'étape 6).
-- Limite : la CI installe le chart OpenChoreo standard ; un PASS en CI ne prouve pas l'installation durcie utilisée sur OKE.
+- Limite « chart sans security bundle » : la CI installe le chart OpenChoreo standard, SANS le security bundle exigé par `tools/oke/install.sh` (`docs/SECURITY-BUNDLE.md`). Un PASS en CI ne prouve pas l'installation durcie utilisée sur OKE. La limite est rappelée dans le résumé de chaque job `bootstrap=oc`.
+- Pas de déclencheur `merge_group` : `k3d-integration` n'est pas un check requis. À ajouter seulement quand `k3d-ok` le devient (§6).
+- Audit API server (suite `vap`) : une sonde vérifie que `/var/log/lab-audit.log` reçoit des événements. Sinon les tests `AUD-*` sont NOT_TESTED (jamais PASS) et le résumé le dit.
 
 ## 2. Contournements temporaires
 
-- Environnement `development` dérivé de `40-openchoreo-env.yaml` dans `tools/k3d/ci-bootstrap.sh`. Attendu par `tests/k3d/fixtures`, absent de `platform/`. La CI teste donc une plateforme légèrement différente d'OKE. TEMPORAIRE : issue #49 l'ajoutera au manifeste de plateforme ; une fois #49 fusionnée, retirer ce bloc `yq`.
+- Environnement `development` : `tools/k3d/ci-bootstrap.sh` ne l'invente PAS si `platform/` le fournit (recherche d'un `Environment` nommé `development`). Absent aujourd'hui : il est alors dérivé de `production` (bruyant, noté dans le résumé du job). La CI teste donc une plateforme légèrement différente d'OKE. TEMPORAIRE : issue #49 l'ajoutera au manifeste de plateforme ; le contournement s'éteint alors tout seul, puis retirer le bloc.
 
 ## 3. Suites (résultats du run de référence, 2026-11-18)
 
@@ -23,7 +25,7 @@ Statuts : PASS, FAIL (non bloquant, visible), KNOWN_FAIL (échec connu document�
 | `vap` | `lab-sec-vap` (audit API server activé) | non | FAIL | 91 PASS, 1 FAIL : B-09 (écart kube-ops connu, `tests/vap/RESULTS.md`). AUD-* : PASS avec preuves d'audit réelles (40, 9, 1 événements). Job environ 1 min |
 | `argo-escalation` | `argo-esc` | non (installe Argo) | PASS | Job environ 23 min |
 | `k3d` | `openchoreo` | oui (environ 4 min) | FAIL | Bloque au test T12 / RRB `t-alpha-db` (voir §4). Job environ 11 min |
-| `gitops-k3d` | `gitops` | oui | KNOWN_FAIL | Le patch T-DEPLOY cherche l'ancre `isProduction: true` suivie de `---` dans `40-openchoreo-env.yaml`, que main a changée. T-ARGO-HEALTH est déjà FAIL connu. Job environ 4 min |
+| `gitops-k3d` (gardé dans la matrice, jamais retiré) | `gitops` | oui | KNOWN_FAIL | Le patch T-DEPLOY cherche l'ancre `isProduction: true` suivie de `---` dans `40-openchoreo-env.yaml`, que main a changée. T-ARGO-HEALTH est déjà FAIL connu. Job environ 4 min |
 
 Non lancé : `phase2-whoami` (absent d'`origin/main`, dépend du k3d partagé et d'une image locale seca1).
 
