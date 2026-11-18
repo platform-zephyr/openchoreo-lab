@@ -2,12 +2,18 @@
 # Executant minimal de l'usine (T-313, ADR-0021/0022) : plafonds par modele, arguments claude, controle des trailers,
 # compte rendu mission-result.v1. Aucun secret lu, aucun reseau, aucun prompt consigne.
 # Sous-commandes :
-#   limits <model>                       -> timeout_minutes=N / max_turns=N (Opus 90/150 ; Sonnet, Haiku 45/60)
+#   limits <model>                       -> timeout_minutes=N / max_turns=N (Opus 90/200 ; Sonnet, Haiku 45/100 ; T-466)
 #   effort <model> <effort>              -> effort valide (Sonnet et Haiku plafonnes a xhigh), sinon code 2
 #   claude-args <model> <effort>         -> lignes pour claude_args (--model, --effort, --max-turns)
 #   check-trailers <git-range>           -> code 1 si un commit n'a pas noreply@anthropic.com ou un trailer requis
-#   result <execution_file> <issue> <model> <effort> [escalated_from] [branch]
-#                                        -> JSON mission-result.v1 sur stdout, resume Markdown sur $GITHUB_STEP_SUMMARY
+#   result <execution_file> <issue> <model> <effort> [escalated_from] [branch] [claude_outcome] [max_turns] [trailers_outcome]
+#                                        -> JSON mission-result.v1 sur stdout, resume Markdown sur $GITHUB_STEP_SUMMARY.
+#                                           Statut et motif (T-466) : table « Verdict » de docs/AGENT-RUNNERS.md.
+#                                           execution_file vide ou absent : aucune session, statut FAIL (agent_error).
+#   verdict <mission-result.json>        -> code 0 si le job doit reussir (PASS, ou NOT_TESTED/turn_cap_exceeded avec
+#                                           avertissement), sinon code 1. Seul juge du statut du job (T-466).
+#   report <issue> <mission-result.json|-> <run_url>
+#                                        -> commentaire Markdown d'issue (job report) ; sans fichier : statut FAIL
 #   ticket-env <T-NNN|issue>             -> lignes KEY=VALUE pour $GITHUB_ENV : AGENT_TICKET_ID et, si le ticket liste des chemins,
 #                                           AGENT_TICKET_SCOPE (lus par .claude/hooks/pretool-scope-guard.sh, T-331). Jamais
 #                                           LAB_COORDINATOR_SESSION (reservee a la session coordinatrice). Sans ticket : code 3.
@@ -18,8 +24,10 @@ die() { echo "run-ticket: $*" >&2; exit 2; }
 
 cmd_limits() {
   case "${1:-}" in
-    claude-opus-5-5) echo "timeout_minutes=90"; echo "max_turns=150" ;;
-    claude-sonnet-5-5 | claude-haiku-5-5) echo "timeout_minutes=45"; echo "max_turns=60" ;;
+    # T-466 : plafonds de tours calibres sur la mesure (T-460 : 79 tours pour un ticket moyen). La vraie coupure reste
+    # timeout-minutes. Hors Opus, timeout <= 55 min : le jeton d'App expire au bout de 1 h (docs/AGENT-RUNNERS.md).
+    claude-opus-5-5) echo "timeout_minutes=90"; echo "max_turns=200" ;;
+    claude-sonnet-5-5 | claude-haiku-5-5) echo "timeout_minutes=45"; echo "max_turns=100" ;;
     *) die "modele inconnu : '${1:-}'" ;;
   esac
 }
@@ -61,11 +69,15 @@ cmd_check_trailers() {
 }
 
 cmd_result() {
-  local file="${1:?fichier execution requis}" issue="${2:?issue}" model="${3:?modele}" effort="${4:?effort}"
-  EXEC_FILE="$file" ISSUE="$issue" MODEL="$model" EFFORT="$effort" ESC="${5:-}" BRANCH="${6:-}" python3 -I - <<'PY'
+  local file="${1?fichier execution requis (vide si absent)}" issue="${2:?issue}" model="${3:?modele}" effort="${4:?effort}"
+  EXEC_FILE="$file" ISSUE="$issue" MODEL="$model" EFFORT="$effort" ESC="${5:-}" BRANCH="${6:-}" OUTCOME="${7:-}" \
+    MAX_TURNS="${8:-}" TRAILERS="${9:-}" python3 -I - <<'PY'
 import json, os
 
 def load(path):
+    # Fichier absent (action interrompue avant la session) : aucun message, donc agent_error.
+    if not path or not os.path.isfile(path):
+        return []
     raw = open(path, encoding="utf-8").read().strip()
     if not raw:
         return []
@@ -79,6 +91,7 @@ msgs = load(os.environ["EXEC_FILE"])
 res = next((m for m in reversed(msgs) if m.get("type") == "result"), {})
 init = next((m for m in msgs if m.get("type") == "system" and m.get("subtype") == "init"), {})
 usage = res.get("usage") or {}
+max_turns = int(os.environ["MAX_TURNS"]) if os.environ["MAX_TURNS"].isdigit() else 0
 out = {
     "schema": "mission-result.v1",
     "ticket_issue": int(os.environ["ISSUE"]),
@@ -86,7 +99,6 @@ out = {
     "model_observed": init.get("model") or "",
     "effort": os.environ["EFFORT"],
     "escalated_from": os.environ["ESC"] or None,
-    "status": "FAIL" if (res.get("is_error") or not res) else "PASS",
     "branch": os.environ["BRANCH"] or None,
     "num_turns": int(res.get("num_turns") or 0),
     "duration_ms": int(res.get("duration_ms") or 0),
@@ -96,6 +108,8 @@ out = {
     "ci_failures": 0,
     "checks": {"static": "NOT_TESTED", "ci": "NOT_TESTED", "runtime": "NOT_TESTED"},
 }
+if max_turns:
+    out["max_turns"] = max_turns
 # Refus de permission : noms d'outils seulement (Bash : premier mot de la commande), jamais le contenu.
 den = []
 for d in res.get("permission_denials") or []:
@@ -103,24 +117,73 @@ for d in res.get("permission_denials") or []:
     cmd = str((d.get("tool_input") or {}).get("command", "")).split()
     den.append(name + (":" + cmd[0] + (" " + cmd[1] if len(cmd) > 1 else "") if name == "Bash" and cmd else ""))
 out["permission_denials"] = den
+# Verdict (T-466) : le premier motif qui s'applique decide. PASS exige le modele demande, une session reussie, des
+# trailers non refuses, une branche, le plafond de tours tenu et une etape claude reussie (claude_outcome).
 obs, req = out["model_observed"], out["model_requested"]
-if out["status"] == "PASS" and not out["branch"]:
-    # Un run sans branche ne livre rien : jamais un PASS (essai T-304 : trois runs verts sans PR).
-    out["status"] = "NOT_TESTED"
-    out["failure"] = "no_branch"
+outcome, trailers = os.environ["OUTCOME"], os.environ["TRAILERS"]
+subtype = res.get("subtype") or "success"
+status, failure = "PASS", None
 if obs and not obs.startswith(req):
-    out["status"] = "FAIL"
-    out["failure"] = "model_mismatch"
+    status, failure = "FAIL", "model_mismatch"
+elif subtype == "error_max_turns":
+    # Session coupee par le CLI au plafond : livraison inachevee.
+    status, failure = "FAIL", "turn_cap_exceeded"
+elif not res or res.get("is_error") or subtype != "success":
+    status, failure = "FAIL", "agent_error"
+elif trailers == "failure":
+    status, failure = "FAIL", "trailers_refused"
+elif not out["branch"]:
+    # Un run sans branche ne livre rien : jamais un PASS (essai T-304 : trois runs verts sans PR).
+    status, failure = "NOT_TESTED", "no_branch"
+elif max_turns and out["num_turns"] > max_turns:
+    # Session reussie au-dela du plafond : l'action fait alors echouer son etape (run 44313706955, 79 tours pour 60).
+    # Livraison presente, budget depasse : job vert avec avertissement, statut jamais PASS.
+    status, failure = "NOT_TESTED", "turn_cap_exceeded"
+elif outcome not in ("", "success"):
+    status, failure = "FAIL", "action_error"
+out["status"] = status
+if failure:
+    out["failure"] = failure
 print(json.dumps(out, indent=2, sort_keys=True))
 summ = os.environ.get("GITHUB_STEP_SUMMARY")
 if summ:
     with open(summ, "a", encoding="utf-8") as f:
         f.write(f"### mission-result.v1 issue #{out['ticket_issue']}\n\n| champ | valeur |\n|---|---|\n"
-                f"| statut | {out['status']} |\n| modele | {obs or 'NOT_TESTED'} |\n"
-                f"| total_cost_usd | {out['total_cost_usd']} |\n| num_turns | {out['num_turns']} |\n"
+                f"| statut | {out['status']} |\n| motif | {failure or 'aucun'} |\n| modele | {obs or 'NOT_TESTED'} |\n"
+                f"| total_cost_usd | {out['total_cost_usd']} |\n| num_turns | {out['num_turns']} (plafond {max_turns or '?'}) |\n"
                 f"| duree_ms | {out['duration_ms']} |\n"
                 f"| refus_de_permission | {', '.join(den) or 'aucun'} |\n")
 PY
+}
+
+cmd_verdict() {
+  local file="${1:?mission-result.json requis}"
+  [[ -s "$file" ]] || { echo "::error::verdict FAIL : aucun mission-result (session non executee ou interrompue)"; return 1; }
+  python3 -I - "$file" <<'PY'
+import json, sys
+
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+st, why = d.get("status"), d.get("failure")
+if st == "PASS":
+    print(f"verdict PASS : issue #{d['ticket_issue']}, branche {d.get('branch')}")
+    sys.exit(0)
+if st == "NOT_TESTED" and why == "turn_cap_exceeded":
+    print(f"::warning::verdict {st} ({why}) : {d['num_turns']} tours pour un plafond de {d.get('max_turns', '?')} ; "
+          "livraison presente, job vert, statut non PASS")
+    sys.exit(0)
+print(f"::error::verdict {st} ({why or 'motif inconnu'}) : issue #{d.get('ticket_issue')}")
+sys.exit(1)
+PY
+}
+
+cmd_report() {
+  local issue="${1:?issue requise}" file="${2:?mission-result.json ou -}" run_url="${3:?url du run requise}"
+  [[ "$issue" =~ ^[0-9]+$ ]] || die "issue invalide : '$issue'"
+  if [[ "$file" == "-" || ! -s "$file" ]]; then
+    printf 'Usine (claude-agent) : statut **FAIL** (aucun mission-result : job non execute, interrompu ou expire). Run : %s\n' "$run_url"
+    return 0
+  fi
+  printf 'Usine (claude-agent) : %s\n\nRun : %s\n' "$(cmd_comment "$file")" "$run_url"
 }
 
 cmd_ticket_env() {
@@ -167,7 +230,8 @@ import json, sys
 
 d = json.load(open(sys.argv[1], encoding="utf-8"))
 den = ", ".join(d.get("permission_denials") or []) or "aucun"
-print(f"mission-result.v1 : statut {d['status']} | modele {d['model_observed'] or 'NOT_TESTED'} | effort {d['effort']} | "
+st = d["status"] + (f" ({d['failure']})" if d.get("failure") else "")
+print(f"mission-result.v1 : statut {st} | branche {d.get('branch') or 'aucune'} | modele {d['model_observed'] or 'NOT_TESTED'} | effort {d['effort']} | "
       f"{d['num_turns']} tours | {d['total_cost_usd']:.3f} USD | {d['duration_ms'] / 1000:.0f} s | refus de permission : {den}")
 PY
 }
@@ -182,5 +246,7 @@ case "$sub" in
   result) cmd_result "$@" ;;
   ticket-env) cmd_ticket_env "$@" ;;
   comment) cmd_comment "$@" ;;
-  *) die "usage : run-ticket.sh limits|effort|claude-args|check-trailers|result|ticket-env|comment ..." ;;
+  verdict) cmd_verdict "$@" ;;
+  report) cmd_report "$@" ;;
+  *) die "usage : run-ticket.sh limits|effort|claude-args|check-trailers|result|verdict|report|ticket-env|comment ..." ;;
 esac

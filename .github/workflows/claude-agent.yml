@@ -1,7 +1,9 @@
 # Agents de développement sur runners GitHub (anthropics/claude-code-action, épinglé par SHA, tag v1).
 # T-313 : lancement manuel UNIQUEMENT (workflow_dispatch : issues, modèle, effort). Une issue = un job = une session neuve
 # = une branche claude/* = une PR. Plus de déclencheur par label (un label posé par GITHUB_TOKEN ne déclenche rien).
-# Plafonds par modèle (tools/factory/run-ticket.sh) : Opus 90 min / 150 tours ; Sonnet et Haiku 45 min / 60 tours.
+# Plafonds par modèle (tools/factory/run-ticket.sh) : Opus 90 min / 200 tours ; Sonnet et Haiku 45 min / 100 tours (T-466).
+# Jeton d'App : 1 h de vie. Hors Opus, timeout <= 55 min ; Opus 90 min = limite connue (docs/AGENT-RUNNERS.md, T-466).
+# Statut du job : étape Verdict (mission-result.v1) ; job report : commentaire de chaque issue, statut corrigé.
 # Sortie : mission-result.v1 (docs/schema/mission-result.v1.json) archivé en artefact, résumé du job sans sortie d'outil.
 # L'agent n'a AUCUN accès OKE/Doppler/OCI : seul le contenu du dépôt et le jeton de l'App Claude (courte durée,
 # ce dépôt seulement). Déploiement = merge puis Argo CD ; la preuve runtime reste au coordinateur.
@@ -145,6 +147,9 @@ jobs:
           rm -f ticket-env.out
       - id: claude
         if: steps.pause.outputs.paused == 'false'
+        # T-466 : l'action fait echouer son etape si num_turns depasse --max-turns, meme apres une session reussie
+        # (run 44313706955 : 79 tours pour 60, PR fusionnee). Le statut du job est decide par l'etape Verdict.
+        continue-on-error: true
         env:
           GIT_AUTHOR_NAME: Claude
           GIT_AUTHOR_EMAIL: noreply@anthropic.com
@@ -156,16 +161,18 @@ jobs:
           # Identité de l'exécutant (mode dev, T-304) : jeton fin avec la permission workflows ; ses PR déclenchent la CI.
           github_token: ${{ steps.app.outputs.token || secrets.FACTORY_GH_TOKEN }}
           show_full_output: ${{ inputs.debug }}
-          prompt: "Traite l'issue #${{ matrix.issue }} de ce dépôt (lis-la avec gh issue view ${{ matrix.issue }}) selon AGENTS.md."
+          prompt: "Traite l'issue #${{ matrix.issue }} de ce dépôt (lis-la avec gh issue view ${{ matrix.issue }}) selon AGENTS.md. Branche obligatoire : claude/issue-${{ matrix.issue }}-<slug court>. Le corps de la PR contient la ligne Closes #${{ matrix.issue }}."
           base_branch: main
           branch_prefix: "claude/"
+          # T-466 : pas de Bash(python3:*) (equivaut a un shell libre) ; prefixes etroits sur des scripts versionnes.
+          # Jamais `gh api` (lecture REST par le workflow seulement) ; `gh pr checks` retire : l'agent n'attend pas la CI.
           claude_args: |
             --model ${{ inputs.model }}
             --effort ${{ inputs.effort }}
             --max-turns ${{ needs.plan.outputs.max_turns }}
-            --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3:*),Bash(git:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh pr merge --auto --squash:*),Bash(factory/pause-check.sh:*),Bash(yamllint:*),Bash(shellcheck:*)"
-            --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Si factory/PAUSE existe sur origin/main, ne lance aucun merge automatique (factory/pause-check.sh) et arrête-toi. Aucun accès cluster ni secret. Chaque commit porte les trailers Ticket: T-NNN, Model: ${{ inputs.model }}, Effort: ${{ inputs.effort }}, Escalated-from: ${{ inputs.escalated_from }} (si non vide) et Claude-Session, et l'e-mail noreply@anthropic.com. Remplis le modèle .github/pull_request_template.md (durée, tours, coût, statuts). Une PR par issue, périmètre de fichiers de l'issue seulement ; Mode dev (arbitrage 7) : tous les chemins du périmètre de l'issue sont autorisés, noyau compris (.github/ inclus), sauf STATE.md et backlog/ROADMAP.md ; la PR est fusionnée après ci-ok (arme l'auto-merge avec gh pr merge --auto --squash). N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
-      - name: Branche de l'agent (sortie de l'action, sinon PR claude/* ou agent/* qui cite l'issue)
+            --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3 tools/*),Bash(python3 tests/*),Bash(python3 -I tools/*),Bash(python3 -I tests/*),Bash(python3 -m unittest:*),Bash(python3 -I -m unittest:*),Bash(tools/dev/check:*),Bash(tests/*),Bash(bash tests/*),Bash(git:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh search:*),Bash(gh pr merge --auto --squash:*),Bash(factory/pause-check.sh:*),Bash(yamllint:*),Bash(shellcheck:*)"
+            --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Si factory/PAUSE existe sur origin/main, ne lance aucun merge automatique (factory/pause-check.sh) et arrête-toi. Aucun accès cluster ni secret. Ne lis jamais l'environnement (env, printenv, os.environ) : toutes les valeurs utiles sont dans ce prompt. Branche : claude/issue-${{ matrix.issue }}-<slug court>, rien d'autre. Chaque commit porte les trailers Ticket: T-NNN, Model: ${{ inputs.model }}, Effort: ${{ inputs.effort }}, Escalated-from: ${{ inputs.escalated_from }} (si non vide) et exactement Claude-Session: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} , et l'e-mail noreply@anthropic.com. Remplis le modèle .github/pull_request_template.md (statuts ; durée, tours et coût sont publiés par le workflow en commentaire : écris NOT_PROVEN) ; le corps de la PR contient Closes #${{ matrix.issue }}. Une PR par issue, périmètre de fichiers de l'issue seulement ; Mode dev (arbitrage 7) : tous les chemins du périmètre de l'issue sont autorisés, noyau compris (.github/ inclus), sauf STATE.md et backlog/ROADMAP.md ; la PR est fusionnée après ci-ok (arme l'auto-merge avec gh pr merge --auto --squash). Après l'auto-merge, termine la session : n'attends pas la CI ni la fusion. N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
+      - name: Branche de l'agent (sortie de l'action, sinon PR claude/issue-<n>-* par l'API REST pulls)
         id: branch
         if: always() && steps.pause.outputs.paused == 'false'
         env:
@@ -174,22 +181,31 @@ jobs:
           FROM_ACTION: ${{ steps.claude.outputs.branch_name }}
           ISSUE: ${{ matrix.issue }}
         run: |
-          # Essai T-304 : l'agent ouvre parfois la PR lui-meme ; branch_name est alors vide et rien n'etait controle ni commente.
+          # T-466 : API REST pulls, pas l'index de recherche (T-304 : PR creee 19 s avant la fin, recherche vide).
+          # Priorite au nom impose claude/issue-<n>-* ; sinon claude/* ou agent/* qui cite #<n>. Branche du depot seulement.
+          [[ "$ISSUE" =~ ^[0-9]+$ ]] || { echo "issue invalide"; exit 2; }
           b="$FROM_ACTION"
           if [ -z "$b" ]; then
-            b="$(gh pr list --state all --search "#${ISSUE} in:title,body" --json headRefName,createdAt \
-              --jq '[.[] | select(.headRefName | test("^(claude|agent)/"))] | sort_by(.createdAt) | last | .headRefName // empty')" || b=""
+            b="$(gh api "repos/${GH_REPO}/pulls?state=all&sort=created&direction=desc&per_page=50" --jq "
+              [.[] | select(.head.repo.full_name == \"${GH_REPO}\")
+                   | select((.head.ref | startswith(\"claude/issue-${ISSUE}-\"))
+                            or ((.head.ref | test(\"^(claude|agent)/\"))
+                                and (((.title // \"\") + \" \" + (.body // \"\")) | test(\"#${ISSUE}([^0-9]|$)\"))))]
+              | sort_by([(.head.ref | startswith(\"claude/issue-${ISSUE}-\")), .created_at]) | last | .head.ref // empty")" || b=""
           fi
           echo "branch=$b" >>"$GITHUB_OUTPUT"
       - name: Controle des trailers et de l'identite (refus si absents)
-        if: steps.pause.outputs.paused == 'false' && steps.branch.outputs.branch != ''
+        id: trailers
+        # T-466 : always() ; sans lui, l'echec de l'etape claude sautait ce controle (runs 44307563892 et 44313706955).
+        if: always() && steps.pause.outputs.paused == 'false' && steps.branch.outputs.branch != ''
+        continue-on-error: true
         env:
           BRANCH: ${{ steps.branch.outputs.branch }}
         run: |
           git fetch --no-tags origin main "$BRANCH"
           tools/factory/run-ticket.sh check-trailers "origin/main..origin/${BRANCH}"
-      - name: Compte rendu mission-result.v1 (cout et tours, sans sortie d'outil)
-        if: always() && steps.pause.outputs.paused == 'false' && steps.claude.outputs.execution_file != ''
+      - name: Compte rendu mission-result.v1 (cout, tours, statut corrige ; sans sortie d'outil)
+        if: always() && steps.pause.outputs.paused == 'false'
         env:
           EXEC_FILE: ${{ steps.claude.outputs.execution_file }}
           ISSUE: ${{ matrix.issue }}
@@ -197,11 +213,17 @@ jobs:
           EFFORT: ${{ inputs.effort }}
           ESC: ${{ inputs.escalated_from }}
           BRANCH: ${{ steps.branch.outputs.branch }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          MAX_TURNS: ${{ needs.plan.outputs.max_turns }}
+          TRAILERS_OUTCOME: ${{ steps.trailers.outcome }}
         run: |
-          tools/factory/run-ticket.sh result "$EXEC_FILE" "$ISSUE" "$MODEL" "$EFFORT" "$ESC" "$BRANCH" >"mission-result-${ISSUE}.json"
-          python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print('model_observed=',d['model_observed'],'cost=',d['total_cost_usd'],'turns=',d['num_turns'])" "mission-result-${ISSUE}.json"
-      - name: Commentaire de PR (modele, tours, cout, duree, refus ; jeton de l'App)
+          tools/factory/run-ticket.sh result "$EXEC_FILE" "$ISSUE" "$MODEL" "$EFFORT" "$ESC" "$BRANCH" \
+            "$CLAUDE_OUTCOME" "$MAX_TURNS" "$TRAILERS_OUTCOME" >"mission-result-${ISSUE}.json"
+          python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print('status=',d['status'],'failure=',d.get('failure'),'model_observed=',d['model_observed'],'cost=',d['total_cost_usd'],'turns=',d['num_turns'])" "mission-result-${ISSUE}.json"
+      - name: Commentaire de PR (statut corrige, modele, tours, cout, duree, refus ; jeton de l'App)
         if: always() && steps.pause.outputs.paused == 'false' && steps.branch.outputs.branch != '' && hashFiles(format('mission-result-{0}.json', matrix.issue)) != ''
+        # Compte rendu, pas livrable : son echec (jeton d'App expire apres 1 h, Opus) ne decide pas du job.
+        continue-on-error: true
         env:
           # Le jeton de l'App (ou celui de l'executant) : le commentaire vient du bot, pas de github-actions.
           GH_TOKEN: ${{ steps.app.outputs.token || secrets.FACTORY_GH_TOKEN }}
@@ -220,3 +242,60 @@ jobs:
           name: mission-result-${{ matrix.issue }}
           path: mission-result-${{ matrix.issue }}.json
           if-no-files-found: ignore
+      - name: Verdict (seul juge du statut du job, d'apres mission-result et steps.claude.outcome)
+        if: always() && steps.pause.outputs.paused == 'false'
+        env:
+          ISSUE: ${{ matrix.issue }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+        run: |
+          # T-466 : job rouge si FAIL ou no_branch ; vert avec avertissement si turn_cap_exceeded avec livraison ;
+          # jamais un statut PASS pour un job en echec. Sans mission-result : rouge.
+          echo "steps.claude.outcome=${CLAUDE_OUTCOME}"
+          tools/factory/run-ticket.sh verdict "mission-result-${ISSUE}.json"
+
+  # T-466 : compte rendu sur chaque issue, meme si un job dev a echoue, expire ou ete annule (statut corrige,
+  # lien du run). Nouveau jeton d'App : celui du job dev peut avoir expire (1 h).
+  report:
+    needs: [plan, dev]
+    if: always() && needs.plan.result == 'success' && needs.plan.outputs.paused == 'false'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Jeton de l'App (neuf, pour le commentaire d'issue)
+        id: app
+        if: env.HAS_APP == 'true'
+        env:
+          HAS_APP: ${{ secrets.APP_ID != '' && secrets.APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+      - name: mission-result de chaque issue
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: mission-result-*
+          path: results
+          merge-multiple: true
+      - name: Commentaire de chaque issue (statut corrige)
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || secrets.FACTORY_GH_TOKEN || github.token }}
+          GH_REPO: ${{ github.repository }}
+          MATRIX: ${{ needs.plan.outputs.matrix }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for issue in $(python3 -c "import json,os;print(' '.join(str(i) for i in json.loads(os.environ['MATRIX'])['issue']))"); do
+            f="results/mission-result-${issue}.json"
+            [ -s "$f" ] || f="-"
+            tools/factory/run-ticket.sh report "$issue" "$f" "$RUN_URL" >"report-${issue}.md"
+            cat "report-${issue}.md" >>"$GITHUB_STEP_SUMMARY"
+            gh issue comment "$issue" --body-file "report-${issue}.md"
+          done
