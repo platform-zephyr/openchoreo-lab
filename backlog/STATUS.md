@@ -6,11 +6,11 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 22 |
-| `todo` | 132 |
+| `in-progress` | 24 |
+| `todo` | 129 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 27 |
+| `done` | 28 |
 | `dropped` | 27 |
 | **Total** | **256** |
 
@@ -27,6 +27,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | 4/4 | (ligne « Reste » absente) | — |
 | [T-332](T-332-commande-unique-tools-dev-check-static.md) | Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée | 1/3 | Reste aussi : empreintes linux-amd64 dans `toolchain.lock` (VM cloud x86_64) ; les contrôles de T-303, T-306, T-330, T-331 s'activent seuls (NOT_TESTED tant que leur script manque). | — |
 | [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 3/4 | Premier critère ouvert : essai daté : un agent traite un ticket `complet` de test et rend une section valide (preuve STATIC dans la PR) | — |
+| [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 2/3 | Premier critère ouvert : coût en tokens d'une revue consigné (T-326) : plafond écrit, coût réel NOT_TESTED jusqu'au premier run | — |
 | [T-421](T-421-indicateurs-quality-v1.md) | Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine | 0/2 | Premier critère ouvert : schéma JSON versionné, une ligne par merge sur `main`, aucune valeur secrète | — |
 | [T-451](T-451-ci-speed-csafeloader-alerte-post-merge.md) | CI plus rapide : CSafeLoader dans appgen et argo_guard, alerte des échecs k3d post-merge | 3/5 | Premier critère ouvert : un run `ci` réel montre `platform` et `appgen` sous 30 s, et le premier `hit` du cache des charts de `platform-render` (lien du run) | — |
 | [T-452](T-452-reactiver-les-suites-k3d-quand-et-comment.md) | Réactiver les suites k3d : quand et sous quelle forme (étude) | 2/3 | Reste ouvert : critère 3 (le `schedule` nocturne) à la fin de S1. | — |
@@ -39,6 +40,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-475](T-475-ci-consolidation-status-historique-tests-usine.md) | Consolidation CI : fraîcheur de STATUS.md, --only partout, historique quality post-merge, tests de… | 5/7 | Premier critère ouvert : run CI de la PR : 18 jobs verts dont `ci-ok`, durées de `dev-factory`, `hooks`, `backlog`, `quality-coverage` | — |
 | [T-476](T-476-score-de-priorite-et-skill-orchestrateur.md) | Score de priorité du backlog (priority.py) et skill orchestrate-backlog | 4/6 | Reste : critères 5 et 6 (branchement CI hors périmètre de cette PR, T-475 modifie `ci.yaml` en parallèle ; mesure sur lots réels). | — |
 | [T-478](T-478-plafonds-natifs-executant.md) | Exécutant : plafonds natifs de Claude Code (--max-budget-usd, --permission-prompts none) et corps d… | 4/6 | Premier critère ouvert : run réel daté sur un ticket simple : `total_cost_usd` ≤ plafond, `permission_denials` sans répétition du même outil, tours comparés au run 44313706955 (79 tours) — NOT_TESTED (aucun dispatch après fu… | — |
+| [T-479](T-479-statistiques-usine-par-run.md) | Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et… | 3/5 | Reste : aucune sortie sensible (test dédié à relire), rapport daté sur les artefacts réels des runs 44313706955, 44326043746, 44331128791, 44333609180, 44338002716 (comparaison coût/tours avant et après T-466/T-474/T-478). | [#86](https://github.com/platform-zephyr/openchoreo-lab/issues/86) |
 | [T-481](T-481-integrer-skills-mattpocock.md) | Intégrer les skills mattpocock/skills (MIT) pour les sessions, l'usine et l'orchestrateur, à SHA fi… | 4/6 | Premier critère ouvert : run réel de l'usine qui lit `mattpocock-tdd` (trace `Read` dans le fichier d'exécution) — NOT_TESTED (aucun dispatch) | — |
 
 ## Bloqué (`blocked`)
@@ -63,9 +65,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-100](T-100-obs-0.md) | 4 | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
 | [T-201](T-201-data-2.md) | 4 | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
 | [T-050](T-050-verdicts-kube-ops.md) | 3 | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
-| [T-479](T-479-statistiques-usine-par-run.md) | 0 | Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et par ticket) | 0/5 | [#86](https://github.com/platform-zephyr/openchoreo-lab/issues/86) |
-| [T-480](T-480-garde-taille-tickets.md) | 0 | Garde de taille des tickets : avertissement de check.py au-delà de ce qu'un run absorbe | 0/5 | [#87](https://github.com/platform-zephyr/openchoreo-lab/issues/87) |
-| [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | 0 | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
 | [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
 | [T-215](T-215-pack-identite.md) | 55 | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
@@ -226,6 +225,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-468](T-468-corriger-check-selftest.md) | Corriger le FAIL de check-selftest (test périmé après T-460) | — | — | — |
 | [T-474](T-474-trailers-injectes-par-hook-git.md) | Trailers de commit injectés par un hook git du workflow (Ticket, Model, Effort, Escalated-from, Claude-Session) | 2026-11-18 | — | — |
 | [T-477](T-477-etude-art-anterieur-usine.md) | Étude : art antérieur des usines d'agents à réutiliser (FACTORY-PRIOR-ART) | 2026-11-18 | — | — |
+| [T-480](T-480-garde-taille-tickets.md) | Garde de taille des tickets : avertissement de check.py au-delà de ce qu'un run absorbe | 2026-11-18 | `PR #89` | [#87](https://github.com/platform-zephyr/openchoreo-lab/issues/87) |
 
 ## Gelés et abandonnés
 
