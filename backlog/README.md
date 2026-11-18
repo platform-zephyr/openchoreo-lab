@@ -1,7 +1,7 @@
 # Backlog de la plateforme
 
 Source des tâches du labo (ADR-0012). Un fichier par ticket : `T-NNN-<slug>.md`. Vue d'ensemble : [INDEX.md](INDEX.md).
-Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md`). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
+Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md` ; intégration 2 : [INTEGRATION-2.md](INTEGRATION-2.md)). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
 renvoie au fichier du ticket.
 
 ## En-tête d'un ticket
@@ -17,10 +17,18 @@ depends_on: [T-003]       # tickets qui doivent être `done` avant
 class: AUTONOME           # AUTONOME | REVUE | MANDAT (platform-guardrails), combinables : "AUTONOME + MANDAT"
 velocity: false           # true : accélère nettement les suivants
 lane: ci                  # couloir de fichiers (parallélisme sans conflit)
-stage: S0                 # S0-S3 (MVP), PORTE, I1-I8 (incréments), après-porte
+stage: S0                 # S0-S3 (MVP), PORTE, I1-I9 (incréments), après-porte
+model: claude-sonnet-5-5  # claude-haiku-5-5 | claude-sonnet-5-5 | claude-opus-5-5 | human (geste de Paul seul)
+effort: high              # low | medium | high | xhigh | max (Sonnet ≤ xhigh) ; `none` avec `human`
+routing: R99-defaut       # règle de backlog/proposals/model-routing.yaml qui a fixé le modèle (ADR-0023 proposé)
 github_issue: null        # numéro si un agent a été lancé
 ---
 ```
+
+`model` et `effort` sont obligatoires sur un ticket `todo` ou `in-progress` (`check.py`). Ils viennent de la **première
+règle** de routage qui s'applique (couloir, chemins du périmètre, type de tâche) ; un modèle proposé par l'auteur ne fait
+que monter au-dessus du plancher de la règle, jamais descendre. Le dispatcher (T-210, T-382) recalcule le plancher depuis
+les chemins réellement touchés.
 
 Corps : `## Intention`, `## Périmètre de fichiers`, `## Critères de fin` (cases à cocher, chacune vérifiable :
 commande, test ou preuve runtime datée), `## Notes` (facultatif).

@@ -4,11 +4,14 @@ title: "Spike Crossplane sur le homelab (provider Cloudflare pour Access)"
 status: blocked
 phase: P5
 adr: [0009]
-depends_on: [T-030, T-061, T-140]
+depends_on: [T-061, T-140, T-364]
 class: AUTONOME + MANDAT
 velocity: false
 lane: exposition
 stage: après-porte
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-029 — Spike Crossplane sur le homelab (provider Cloudflare pour Access)

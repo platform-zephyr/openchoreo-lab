@@ -9,6 +9,9 @@ class: AUTONOME + MANDAT
 velocity: false
 lane: preuve
 stage: I4
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-065 — CronJob de statut périodique (réduit : sondes → T-103, revert → T-106, ntfy → T-107)

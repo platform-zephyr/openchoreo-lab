@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: après-porte
+model: claude-sonnet-5-5
+effort: high
+routing: R99-defaut
 github_issue: null
 ---
 # T-013 — Surcharges par environnement (G12)

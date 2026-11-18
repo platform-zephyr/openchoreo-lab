@@ -1,28 +1,37 @@
 ---
 id: T-215
-title: "Pack identité : compte agent (rôle Write) et GitHub App plateforme"
+title: "Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1"
 status: todo
 phase: P0
 adr: [0002]
 depends_on: []
-class: MANDAT
+class: REVUE + MANDAT
 velocity: true
 lane: gouvernance
 stage: S0
+model: claude-opus-5-5
+effort: high
+routing: R01-noyau-securite
 github_issue: null
 ---
-# T-215 — Pack identité : compte agent (rôle Write) et GitHub App plateforme
+# T-215 — Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1
 
 ## Intention
-Une identité agent sans droit d'admin et une seule GitHub App (statut de commit, Renovate, dispatch, remédiation). Aucun agent n'agit avec le compte admin de Paul.
+Une identité agent sans droit d'admin et une seule GitHub App (statut de commit, Renovate, dispatch, remédiation). Aucun agent n'agit avec le compte admin de Paul. Ajoute le mandat de lot (étape, tickets, chemins, plafonds de diff et de dépense, expiration) signé par PR dans le noyau ; l'App reçoit les permissions de dispatch et de merge sous conditions (merge effectif : T-315).
 
 ## Périmètre de fichiers
-docs/AGENT-IDENTITY.md, .github/
+docs/AGENT-IDENTITY.md, docs/AGENT-PR-MODEL.md, missions/mandates/, .github/ (CODEOWNERS : ligne missions/mandates/)
 
 ## Critères de fin
 - [ ] compte agent rôle Write créé par Paul
 - [ ] GitHub App plateforme installée sur ce dépôt seulement, permissions minimales listées
 - [ ] essai réel : une PR du noyau ouverte par l'agent n'est pas fusionnable
+- [ ] (repris de FAC-1) schéma `mandate.v1` + validateur ; un mandat expiré ou hors liste de chemins est refusé (test négatif)
+- [ ] (repris de FAC-1) App : permissions listées (Contents RW, Pull requests RW, Actions RW, Metadata R), installée sur ce dépôt seul ; essai : une PR du noyau ouverte par l'App n'est pas fusionnable
+- [ ] (repris de FAC-1) essai daté : une session cloud ouvre une PR du noyau ; l'identité de l'auteur et la non-fusionnabilité sont consignées
+- [ ] GITHUB_TOKEN ne déclenche pas la CI sur les PR qu'il ouvre et plafonne à 1 000 req/h (vérification du 2026-11-18) : dispatch, Renovate et remédiation passent par l'App
 
 ## Notes
 Absorbe les parties GitHub de T-005, T-106, T-121, T-164 et T-210.
+
+MANDAT : création de l'App, option « Allow auto-merge ». Le mandat n'ouvre jamais secret, accès, dépense hors free tier, apply, INTERDIT (platform-guardrails). Fusion de FAC-1.

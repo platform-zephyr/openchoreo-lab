@@ -9,6 +9,9 @@ class: REVUE
 velocity: true
 lane: ci
 stage: S0
+model: claude-sonnet-5-5
+effort: high
+routing: R07-ci-github-actions
 github_issue: null
 ---
 # T-007 — Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002
@@ -25,3 +28,4 @@ tests/, .github/workflows/ci.yaml
 - [ ] couvre aussi tools/k3d, tests/k3d, tests/gitops-k3d, tests/argo-escalation, platform-guardrails, platform/identity
 - [ ] compare CODEOWNERS aux scripts appelés par ci.yaml et aux ADR 0002/0014/0016/0017/0019
 - [ ] essai réel avec l'identité agent (T-215)
+- [ ] couvre aussi .claude/, factory/, missions/mandates/, backlog/routing.yaml (ADR-0021/0022/0023/0022/0023)

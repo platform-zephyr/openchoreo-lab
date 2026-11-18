@@ -9,6 +9,9 @@ class: REVUE
 velocity: true
 lane: données
 stage: I8
+model: claude-sonnet-5-5
+effort: high
+routing: R07-ci-github-actions
 github_issue: null
 ---
 # T-201 — Ingestion GitHub vers Parquet et métriques DORA par agent
@@ -26,6 +29,7 @@ tools/metrics/ingest/, .github/workflows/metrics.yml (noyau : revue Paul)
 - [ ] (repris de T-202) chaque formule testée sur valeurs attendues
 - [ ] (repris de T-202) effectif n publié, 'insuffisant' sous n<5
 - [ ] (repris de T-202) dimension agent, classe, app, cluster
+- [ ] ingestion budgétée sous 1 000 req/h (limite du jeton Actions) ou par l'App
 
 ## Notes
 Le workflow est sous .github/ donc REVUE. Phase 0 sans cluster.

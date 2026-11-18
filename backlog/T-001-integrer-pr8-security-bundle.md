@@ -9,6 +9,9 @@ class: REVUE
 velocity: true
 lane: socle-oke
 stage: S0
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-001 — Fusionner la PR #8 (installation fail-closed avec le security bundle)

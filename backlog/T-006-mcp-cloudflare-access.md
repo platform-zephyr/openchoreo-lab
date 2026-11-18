@@ -9,6 +9,9 @@ class: REVUE + MANDAT
 velocity: false
 lane: acces-mcp
 stage: après-porte
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: 52
 ---
 # T-006 — MCP OpenChoreo lisible depuis les sessions cloud (Tunnel + Access + authz)

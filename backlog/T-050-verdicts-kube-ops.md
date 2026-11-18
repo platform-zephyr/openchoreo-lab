@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: migration
 stage: S3
+model: claude-sonnet-5-5
+effort: high
+routing: R99-defaut
 github_issue: null
 ---
 # T-050 — Verdict A-F pour chaque app de kube-ops

@@ -1,6 +1,6 @@
 ---
 id: T-022
-title: "Spike OpenBao : placement, stockage, déscellement, sauvegarde"
+title: "OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill"
 status: todo
 phase: P2
 adr: [0014]
@@ -9,9 +9,12 @@ class: AUTONOME + MANDAT
 velocity: false
 lane: secrets
 stage: I2
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
-# T-022 — Spike OpenBao : placement, stockage, déscellement, sauvegarde
+# T-022 — OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill
 
 ## Intention
 Qualifier OpenBao sur OKE : backend (PostgreSQL plateforme ou Raft), auto-unseal hors cluster, sauvegarde chiffrée hors Oracle, coût.
@@ -25,5 +28,10 @@ docs/storage/, platform/ (brouillon), tests/
 - [ ] drill perte + restauration
 - [ ] backend sans nouveau volume OCI, sinon MANDAT explicite pour le volume
 - [ ] MANDAT Paul : clé d'auto-unseal, stockage des clés de récupération (Doppler + hors ligne)
-- [ ] pod OpenBao inscrit dans la nomenclature OKE avant installation
+- [ ] pod OpenBao inscrit dans le budget du cluster lab (T-360) avant installation ; OKE, s'il sert, lit Doppler
 - [ ] exercice perte + restauration réussi et daté AVANT toute migration
+- [ ] (repris de HOME-10) Raft local sur un seul volume du cluster lab, snapshot chiffré hors site (hors Oracle)
+- [ ] option backend PostgreSQL (production ready, HA depuis 2.7.0) comparée à Raft ; dépendance circulaire CNPG ↔ OpenBao tranchée et écrite (vérification du 2026-11-18)
+
+## Notes
+Intégration 2 : absorbe HOME-10 (variante lab prioritaire). Seal statique : décision de Paul (CONSENSUS).

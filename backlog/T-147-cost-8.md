@@ -9,6 +9,9 @@ class: AUTONOME + MANDAT
 velocity: false
 lane: alertes
 stage: I4
+model: claude-sonnet-5-5
+effort: high
+routing: R99-defaut
 github_issue: null
 ---
 # T-147 — Alertes de coût : relier billing_cost_eur et cost-evidence à ntfy, règle de fraîcheur

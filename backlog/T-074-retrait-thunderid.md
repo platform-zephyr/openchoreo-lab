@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: I2
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-074 — Retirer ThunderID du contrat et des capacités ; Authentik seul

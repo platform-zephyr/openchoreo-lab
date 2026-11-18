@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: true
 lane: contrat-appgen
 stage: S3
+model: claude-opus-5-5
+effort: high
+routing: R01-noyau-securite
 github_issue: null
 ---
 # T-010 — Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4)

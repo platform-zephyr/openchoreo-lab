@@ -9,6 +9,9 @@ class: REVUE
 velocity: true
 lane: ci
 stage: S1
+model: claude-sonnet-5-5
+effort: high
+routing: R07-ci-github-actions
 github_issue: null
 ---
 # T-216 — CI extensible par registre de suites

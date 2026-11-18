@@ -1,7 +1,7 @@
 ---
 id: T-145
 title: "Plafond LLM : concurrence des agents, tours, durée et consommation par PR"
-status: todo
+status: dropped
 phase: P1
 adr: [0002, 0017]
 depends_on: [T-061, T-215]
@@ -29,3 +29,5 @@ Borner les agents parallèles : concurrence par groupe, --max-turns et timeout e
 L'abonnement n'expose pas de facture par token : ne pas promettre d'euros par agent. Risque n°1 du domaine.
 
 Proposé par la recherche `cost` (clé T-145).
+
+Le gouverneur de quota (FAC-2) couvre concurrence, tours, durée et règle de clé API. Fusionné dans T-311 (intégration 2 du 2026-11-18).

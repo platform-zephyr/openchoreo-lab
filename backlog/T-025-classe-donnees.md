@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: I1
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-025 — Classe de donnée dans le contrat et labels `data-class` (G8)

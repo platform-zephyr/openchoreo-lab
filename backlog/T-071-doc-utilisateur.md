@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: intention
 stage: I2
+model: claude-sonnet-5-5
+effort: medium
+routing: R12-recherche-documentation
 github_issue: null
 ---
 # T-071 — Guide utilisateur : demander, suivre, annuler, déposer un secret
