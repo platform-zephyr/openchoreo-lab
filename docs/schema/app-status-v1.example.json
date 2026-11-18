@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "app-status.v1",
+  "app": "whoami",
+  "environment": "production",
+  "cluster": "k3d",
+  "archetype": "A-stateless-http",
+  "source": {
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "release": "whoami-20261118-1"
+  },
+  "level": "RUNTIME",
+  "verdict": "FAIL",
+  "timestamp": "2026-11-18T12:00:00Z",
+  "summary": { "PASS": 2, "FAIL": 1, "NOT_TESTED": 0, "BLOCKED": 0 },
+  "cause": { "type": "check_failed", "retryable": false, "rule": "G5" },
+  "checks": [
+    { "id": "G1", "script": "check-gitops.sh", "status": "PASS", "message": "appgen check : aucune dérive entre apps/ et generated/" },
+    { "id": "G3", "script": "check-gitops.sh", "status": "PASS", "message": "Component 'whoami' présent, autoDeploy=false" },
+    { "id": "G5", "script": "check-gitops.sh", "status": "FAIL", "message": "ReleaseBinding whoami-production Ready (obtenu 'False', attendu 'True')", "cause": { "type": "check_failed", "retryable": false, "rule": "G5" } }
+  ]
+}
