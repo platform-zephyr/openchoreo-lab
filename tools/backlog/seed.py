@@ -1156,6 +1156,131 @@ for k in ("T-326", "T-311", "T-322"): route(X[k])
 for x in T:
     if x.get("stage") in ("FINAL0",): x["phase"] = "P4"
 
+# ===== Intégration 5 (qualité et GitHub) =====
+# Entrées : backlog/proposals/quality.yaml (QA-0..13, rapport docs/research/PRIOR-ART-MAINTAINABILITY.md, ADR-0024 proposé)
+# et backlog/proposals/github.yaml (GH-1..14, rapport docs/research/GITHUB-CONFIG.md). Détail : backlog/INTEGRATION-5.md.
+# Ids : QA-n -> T-(410+n) ; GH-n -> T-(429+n) ; nettoyage .gitleaksignore -> T-450. Un id absent = proposition fusionnée (voir INTEGRATION-5.md).
+I5 = "(intégration 5, 2026-11-18)"
+_P5 = {}
+for _f in ("quality", "github"):
+    for _p in yaml.safe_load(open(ROOT + f"/backlog/proposals/{_f}.yaml")):
+        _P5[_p["key"]] = _p
+def f5(key, id, slug, stage, deps, cls=None, extra_done=(), extra_notes="", drop_done=(), status=None, adr=None):
+    p = _P5[key]
+    done = [d for d in p["done"] if not any(s in d for s in drop_done)] + list(extra_done)
+    notes = f"Proposition {key} ({'backlog/proposals/' + ('quality' if key.startswith('QA') else 'github') + '.yaml'}), intégrée {I5}." + (" " + p["notes"] if p.get("notes") else "")
+    if extra_notes: notes += "\n\n" + extra_notes
+    fmk(id, slug, p["title"], stage, adr or [a for a in p["adr"] if a != "NEW-QA"] + (["0024"] if key.startswith("QA") and "NEW-QA" in p["adr"] else []),
+        deps, cls or p["class"], p["scope"], p["intent"], done, notes, p.get("parallel_lane", "divers"), "P0", bool(p.get("velocity")))
+    if status: X[id]["status"] = status
+    if X[id].get("routing") == "R2-texte":
+        note(id, "Routage R2 (ADR-0023) : Haiku `medium`, revue Sonnet en check requis (2 refus → Sonnet) ; ne touche ni l'en-tête du ticket ni backlog/proposals/. "
+             "Le dispatcher relance en Sonnet si le diff réel sort du périmètre texte.")
+DEVMODE = "Mode dev (arbitrage 7) : la revue des code owners est suspendue jusqu'à FINAL0 ; la protection de CODEOWNERS ne joue qu'à partir de là, la CI (`ci-ok`) reste la seule garde d'ici là."
+
+# --- QA-0 : l'ADR-0024 est versionné (docs/adr/0024-art-anterieur-maintenabilite.md, PROPOSÉ) ; il est acté par T-061b
+X["T-061b"]["adr"] = sorted(set(X["T-061b"]["adr"] + ["0024"]))
+X["T-061b"]["title"] = X["T-061b"]["title"].replace("0022, 0023)", "0022, 0023, 0024)")
+X["T-061b"]["done"].append("ADR-0024 (art antérieur et maintenabilité) acté ou amendé")
+note("T-061b", f"QA-0 fusionné {I5} : le fichier docs/adr/0024-art-anterieur-maintenabilite.md existe (PROPOSÉ) ; il n'y a pas de ticket T-410.")
+
+# --- Qualité : S0 (s'applique à tous les tickets suivants)
+f5("QA-1", "T-411", "skill-prior-art-gabarit-pr", "S0", ["T-313"],
+   extra_notes="Dépend de T-313 : le gabarit `.github/pull_request_template.md` est créé par T-313. AGENTS.md est aussi touché par T-041 : le second fusionné rebase. " + DEVMODE)
+f5("QA-3", "T-413", "pyproject-ruff-shellcheck", "S0", ["T-008"],
+   extra_notes="Touche `tools/` et `tests/` en large : à fusionner avant T-214 et les autres tickets de code (un seul agent, ROADMAP règle 3). T-214 en dépend.")
+f5("QA-4", "T-414", "cliquet-maintenabilite", "S0", ["T-413"],
+   extra_notes="Le cliquet gèle les 9 fonctions de complexité > 20 ; T-214 les abaisse puis abaisse la ligne de base dans sa PR. " + DEVMODE)
+# --- Qualité : S1
+f5("QA-2", "T-412", "verificateur-prior-art-ci", "S1", ["T-411", "T-413", "T-331", "T-332"],
+   extra_notes="L'essai sur 3 PR réelles se fait sur les PR du pilote si elles existent, sinon sur 3 PR d'essai.")
+f5("QA-5", "T-415", "sous-agent-prior-art-scout", "S1", ["T-411", "T-330", "T-341"],
+   extra_notes="Même dossier `.claude/agents/` que T-341 : sérialisé après lui.")
+f5("QA-8", "T-418", "tests-outils-backlog", "S1", ["T-008", "T-413"],
+   extra_notes="T-008 a livré 24 tests (`tests/backlog/`) : ce ticket mesure la couverture, comble les règles non couvertes et ajoute `crd2schema.py`.")
+f5("QA-9", "T-419", "retrait-seed-py", "S1", ["T-412", "T-414", "T-415", "T-418", "T-214"],
+   extra_done=["`seed.py` génère le backlog par patchs successifs : avant suppression, un diff de `rm -f backlog/T-*.md && seed.py` contre `backlog/` ne montre aucune différence utile (statuts et cases cochées déjà portés par les fichiers)",
+               "à la réalisation : `check.py`, `roadmap.py` et `identities_lint.py` restent ; `seed.py` disparaît ; les tickets deviennent la source, édités directement (`backlog/README.md` : plus de procédure de régénération)"],
+   extra_notes="Placé APRÈS tous les autres tickets QA de S1 (T-412, T-414, T-415, T-418) et T-214 : tant que des intégrations de propositions passent par seed.py, il reste l'outil de génération. "
+               "Toute nouvelle intégration de propositions après ce ticket se fait par édition directe des fichiers de tickets suivie de `check.py` et `roadmap.py`. Statuts et cases cochées sont déjà dans les fichiers : rien à migrer.")
+# --- Qualité : S2, S3
+f5("QA-7", "T-417", "typage-mypy", "S2", ["T-214", "T-413"])
+f5("QA-10", "T-420", "revue-hebdomadaire-maintenabilite", "S2", ["T-414"],
+   extra_notes="Le trieur T-320 est différé après la porte : la tâche planifiée est lancée à la main ou à côté de lui quand il existera ; pas de dépendance gelée.")
+f5("QA-12", "T-422", "mesure-effet-art-anterieur-pilote", "S2", ["T-412", "T-322"],
+   extra_notes="Le banc T-346 est différé après la porte : comparaison avec/sans seulement indicative.")
+f5("QA-13", "T-423", "reduire-complexite-argo-guard", "S2", ["T-414", "T-001"],
+   extra_notes="Dépend de T-001 : la PR #8 touche `tools/oke/`. " + DEVMODE)
+f5("QA-11", "T-421", "indicateurs-quality-v1", "S3", ["T-414"],
+   extra_notes="Le rapport de l'usine T-323 est différé après la porte : la section qualité de ce rapport s'ajoutera quand il existera ; les lignes `quality.v1` sont écrites dès ce ticket.")
+# --- QA-6 fusionné dans T-214
+X["T-214"]["title"] = "Découper appgen en paquet de modules à comportement constant (avant le couloir contrat)"
+X["T-214"]["intent"] = _P5["QA-6"]["intent"]
+X["T-214"]["scope"] = "tools/appgen/, tests/appgen/, .github/workflows/ci.yaml (chemin du script seulement)"
+X["T-214"]["done"] = list(_P5["QA-6"]["done"])
+deps_plus("T-214", "T-413", "T-414")
+note("T-214", f"QA-6 fusionné {I5} : mêmes objectifs (couloir contrat parallélisable) et critères mesurables ; pas de ticket T-416. Après T-413 (ruff) pour ne pas se marcher dessus, et T-414 pour abaisser la ligne de base dans la même PR. {_P5['QA-6']['notes']}")
+deps_plus("T-322", "T-413")
+note("T-322", f"T-413 ajouté aux prérequis {I5} : T-214 (liste figée) en dépend. T-411 et T-414 (S0) sont recommandés avant l'heure 0 : décision de Paul (backlog/INTEGRATION-5.md).")
+
+# --- GitHub : S0
+f5("GH-1", "T-430", "rulesets-as-code", "S0", [],
+   extra_done=["`tools/apply-branch-protection.sh` ne réactive PAS la revue des code owners avant FINAL0 : `require_code_owner_review` y vaut `false` (test hors ligne) ; la valeur `true` n'existe que dans `main-final.json` (T-400)"],
+   extra_notes="Écart constaté dans `tools/apply-branch-protection.sh` : sa charge utile en ligne contient `\"require_code_owner_review\": true` (ligne 36). En mode dev (arbitrage 7 de Paul, CONSENSUS-2) l'option doit rester `false` jusqu'à FINAL0 : l'appliquer en l'état bloquerait les PR du noyau que les agents fusionnent eux-mêmes. "
+               "Ce ticket corrige l'écart (JSON `main-dev.json`, script en enveloppe). La revue des code owners est réactivée seulement par T-400 (FINAL0, sur `platform/authz/`, `platform/policies/` et `security/`) puis à FINAL. Geste de Paul : `--apply` avec un jeton admin ; l'agent n'en a pas.")
+f5("GH-2", "T-431", "reglages-depot-actions-securite", "S0", ["T-430"])
+f5("GH-3", "T-432", "security-md", "S0", ["T-431"],
+   extra_notes="Aucun SECURITY.md n'existe aujourd'hui : pas de doublon. Le texte peut être écrit avant T-431, la fusion attend l'activation du signalement privé.")
+f5("GH-4", "T-433", "protection-tags", "S0", ["T-305", "T-430"])
+f5("GH-5", "T-434", "gestes-organisation-paul", "S0", [],
+   extra_done=["chaque geste est listé dans `docs/GESTES-PAUL.md` quand T-325 l'aura généré (jusque-là : dans le runbook)"], drop_done=["ajouté au calendrier"])
+# --- GitHub : S1
+f5("GH-6", "T-435", "k3d-ok-requis", "S1", ["T-002", "T-430"],
+   extra_notes="T-400 (FINAL0) requiert `k3d-ok` dans `main-final.json` : T-400 dépend de ce ticket.")
+f5("GH-7", "T-436", "labels-formulaires-issues", "S1", ["T-431"])
+f5("GH-8", "T-437", "durcir-executant-environnement", "S1", ["T-313", "T-431"],
+   extra_notes="Complète T-313 sans le dupliquer : T-313 livre l'exécutant minimal et reste prérequis du pilote (non alourdi) ; ici le secret passe dans l'environnement `agent-runner` limité à `main` et l'auteur de l'issue est contrôlé. Un seul agent par fichier : après T-313.")
+# --- GitHub : S3, FINAL
+f5("GH-10", "T-439", "essai-dependency-review", "S3", ["T-431"])
+f5("GH-9", "T-438", "project-v2-miroir-backlog", "après-porte", ["T-325"], status="deferred",
+   extra_notes="Différé après la porte (règle d'usine : aucun geste de Paul mesuré supprimé ; INDEX.md suffit). À abandonner si le tableau INDEX.md suffit.")
+f5("GH-14", "T-443", "attestations-provenance-releases", "FINAL", ["T-402", "T-400"],
+   extra_notes="Dépend de T-400 (GH-12 y est fusionné : `main-final.json`). T-401 consigne le résultat ou NOT_APPLICABLE.")
+# --- GH-12 fusionné dans T-400
+X["T-400"]["scope"] += ", .github/rulesets/main-final.json, .github/CODEOWNERS, tools/github/apply.sh"
+deps_plus("T-400", "T-430", "T-435")
+X["T-400"]["done"] += ["`main-final.json` (GH-12) : `bypass_actors` vide, revue des code owners active, approbation du dernier push, `ci-ok` lié à l'App GitHub Actions (integration_id 15368), `k3d-ok` requis ; `--check final` PASS après application par Paul (lecture datée)",
+    "essai : un statut `ci-ok` publié par une identité Write est ignoré",
+    "CODEOWNERS par étapes : FINAL0 réduit à `platform/authz/`, `platform/policies/`, `security/` ; noyau complet à FINAL ; team `core-owners` créée"]
+note("T-400", f"GH-12 fusionné {I5} (pas de T-441) : charge utile `main-final.json` préparée ici ; elle n'est appliquée qu'à FINAL0, jamais avant (mode dev). Un auteur ne peut pas approuver sa propre PR : Paul n'écrit plus le noyau directement une fois la revue active, sauf réactivation ponctuelle.")
+# --- GH-13 fusionné dans T-401, GH-14 consigné par T-401
+X["T-401"]["scope"] += ", tests/github-config/, docs/proofs/"
+deps_plus("T-401", "T-437", "T-443")
+X["T-401"]["done"] += ["partie GitHub (GH-13) : `--check final` et essais avec l'identité App (push direct sur `main` refusé, ruleset non modifiable, statut `ci-ok` forgé ignoré, workflow poussé sur une branche sans accès au secret d'environnement, suppression de `core-baseline` refusée) ; tableau PASS/FAIL/NOT_TESTED daté, aucun jeton affiché",
+    "attestations de provenance (T-443) : preuve ou NOT_APPLICABLE consigné"]
+note("T-401", f"GH-13 fusionné {I5} (pas de T-442).")
+# --- GH-11 : décision à arbitrer, T-215 gardé
+note("T-215", f"Décision à arbitrer par Paul {I5} (GH-11, pas de ticket T-440) : une seule App (texte actuel) ou deux Apps, `openchoreo-agents` (Contents, Pull requests, Actions, Metadata ; SANS la permission workflows) et `openchoreo-renovate` (Contents, Pull requests, Workflows, Metadata ; sans merge), aucune des deux dans `bypass_actors`. "
+     "Motif : Renovate doit modifier `.github/workflows/` (pins d'actions), permission qu'aucun agent ne doit avoir (ADR-0002 §5) ; une App ne coûte ni siège ni licence. "
+     "Si Paul choisit deux Apps, ajouter ici : permissions des deux Apps dans `identities.yaml` (noms seulement) ; essai : une PR de l'App agents sur `.github/workflows/` est refusée au push ; essai : une PR de l'App Renovate sur `.github/workflows/` n'est pas fusionnable sans Paul ; clés privées en secrets d'environnement `factory` (branche `main` seule) ; et T-121 prend l'App Renovate. Alternative écartée : PAT fin (droits de Paul, durée longue).")
+note("T-121", f"Si Paul choisit deux Apps (note de T-215, GH-11), Renovate utilise l'App `openchoreo-renovate` {I5}.")
+
+# --- T-303 : implémenté sur une autre branche (information du coordinateur), `in-progress`, 4 critères cochés
+X["T-303"]["status"] = "in-progress"
+X["T-303"]["done"][0] = "job CI `leak-guard` requis par `ci-ok`, échoue sur un OCID, une IPv4 non documentaire, un e-mail hors noreply, un chemin local, un hôte interne"
+X["T-303"]["done"][1] = "aucune valeur réelle dans .gitleaks.toml ; motifs propriétaires lus depuis un secret CI"
+X["T-303"]["checked"] = [0, 1, 2, 3]
+note("T-303", "Garde gitleaks et règles maison implémentées dans une autre branche (fusion après l'intégration 5). Critère restant : même script en local, en CI et dans le hook Stop (dépend de T-331).\n\n"
+     "Dette initiale de 129 emplacements dans .gitleaksignore (IP privées réelles dans docs/ et apps/*/NOTES.md, chemins /Users dans tests/*/evidence) : ticket de nettoyage à créer (T-450).")
+fmk("T-450", "nettoyage-gitleaksignore", "Nettoyer la dette de .gitleaksignore (129 emplacements) et le vider", "S1", ["0002", "0006"], ["T-303"], "REVUE",
+    "docs/, apps/*/NOTES.md, tests/*/evidence, .gitleaksignore",
+    "Remplacer les IP privées réelles de docs/ et des `apps/*/NOTES.md` par des valeurs documentaires (plages réservées RFC 5737/3849) et les chemins locaux `/Users/...` de `tests/*/evidence` par des chemins génériques, puis vider `.gitleaksignore`. Aucune valeur réelle n'est recopiée dans la PR.",
+    ["les 129 emplacements de `.gitleaksignore` sont traités (IP réelles → valeurs documentaires, chemins locaux → chemins génériques)",
+     "`.gitleaksignore` vidé (ou supprimé) ; la garde `leak-guard` (T-303) reste verte sur tout l'arbre",
+     "aucune preuve datée n'a perdu son sens (les `evidence` gardent leur structure et leurs dates)",
+     "garde T-303 verte sur la PR ; aucune valeur réelle dans le diff"],
+    f"Demande du coordinateur {I5} : dette initiale laissée par T-303. Ne touche pas l'historique git (réécrit par Paul, T-301).", "ci", "P0")
+
 SP={"S0":"P0","S1":"P0","S2":"P1","S3":"P1","PORTE":"P1","I1":"P2","I1bis":"P2","I2":"P2","I3":"P2","I4":"P3","I5":"P3","I6":"P3","I7":"P4","I8":"P4","FINAL0":"P4","FINAL":"P4","I9":"P4","après-porte":"P5"}
 for x in T:
     if x.get("stage") in SP: x["phase"]=SP[x["stage"]]
@@ -1186,7 +1311,7 @@ stage: {x.get('stage','I9')}
 {x['scope']}
 
 ## Critères de fin
-""" + "\n".join(f"- [ ] {d}" for d in x['done']) + "\n"
+""" + "\n".join(f"- [{'x' if i in x.get('checked', ()) else ' '}] {d}" for i, d in enumerate(x['done'])) + "\n"
     if x["notes"]:
         body += f"\n## Notes\n{x['notes']}\n"
     open(os.path.join(B, f"{x['id']}-{x['slug']}.md"), "w").write(body)

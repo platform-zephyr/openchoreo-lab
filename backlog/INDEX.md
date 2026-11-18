@@ -19,7 +19,7 @@ Généré à partir des en-têtes ; ne pas éditer à la main.
 | [T-141](T-141-cost-2.md) | Estimation du budget OKE et contrôle périodique des quotas gratuits (cost-evidence.v1) | T-001, T-140 | AUTONOME + MANDAT | — | 0003, 0004, 0017 |
 | [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | T-008 | REVUE | claude-sonnet-5-5 | 0002, 0012, 0013 |
 | [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | T-002 | REVUE | claude-opus-5-5 | 0006, 0002 |
-| [T-214](T-214-appgen-modulaire.md) | Découper appgen en modules (avant le couloir contrat) | — | AUTONOME | claude-sonnet-5-5 | 0001, 0005 |
+| [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | T-413, T-414 | AUTONOME | claude-sonnet-5-5 | 0001, 0005 |
 | [T-216](T-216-ci-registre.md) | CI extensible par registre de suites | T-002 | REVUE | claude-sonnet-5-5 | 0002 |
 | [T-300](T-300-rendre-le-depot-prive-le-temps.md) | Rendre le dépôt privé le temps de la purge (geste de Paul, réversible) | — | MANDAT | human | 0002 |
 | [T-301](T-301-reecriture-de-l-historique-et-purge.md) | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | T-302, T-303 | MANDAT | human | 0002 |
@@ -32,7 +32,7 @@ Généré à partir des en-têtes ; ne pas éditer à la main.
 | [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) | ntfy seulement si nécessaire et résumé quotidien unique | T-061, T-061b, T-314 | AUTONOME + MANDAT | claude-sonnet-5-5 | 0015, 0021 |
 | [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle | T-314 | AUTONOME | claude-sonnet-5-5 | 0021 |
 | [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | Revue indépendante automatique avant merge (modèle différent, lecture seule) | T-002, T-313 | REVUE | claude-sonnet-5-5 | 0002, 0021 |
-| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | T-008, T-302, T-303, T-304, T-305, T-306, T-311, T-313, T-326, T-330 | AUTONOME + MANDAT | claude-sonnet-5-5 | 0017, 0021 |
+| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | T-008, T-302, T-303, T-304, T-305, T-306, T-311, T-313, T-326, T-330, T-413 | AUTONOME + MANDAT | claude-sonnet-5-5 | 0017, 0021 |
 | [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | T-008 | AUTONOME | claude-sonnet-5-5 | 0013, 0021 |
 | [T-330](T-330-reglages-de-projet-claude-settings-json.md) | Réglages de projet `.claude/settings.json` : permissions deny, mode dontAsk, sandbox, plafonds de sortie | — | REVUE | claude-sonnet-5-5 | 0022 |
 | [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | T-303, T-330, T-332 | REVUE | claude-sonnet-5-5 | 0022 |
@@ -49,12 +49,28 @@ Généré à partir des en-têtes ; ne pas éditer à la main.
 | [T-363](T-363-socle-de-la-plateforme-sur-la.md) | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stockage) | T-001, T-061, T-061b, T-361, T-362 | REVUE + MANDAT | claude-sonnet-5-5 | 0003, 0014 |
 | [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md) | OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab | T-001, T-061, T-061b, T-360, T-363, T-365, T-366 | REVUE + MANDAT | claude-sonnet-5-5 | 0003, 0020 |
 | [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | T-214 | AUTONOME | claude-sonnet-5-5 | 0003 |
-| [T-061b](T-061b-acter-autres-adr.md) | Acter les autres ADR (0001, 0003-0006, 0010-0013, 0020, 0022, 0023) et les amendements du consensus n°2 (T-061b) | — | MANDAT | claude-sonnet-5-5 | 0003, 0020, 0022, 0023 |
+| [T-061b](T-061b-acter-autres-adr.md) | Acter les autres ADR (0001, 0003-0006, 0010-0013, 0020, 0022, 0023, 0024) et les amendements du consensus n°2 (T-061b) | — | MANDAT | claude-sonnet-5-5 | 0003, 0020, 0022, 0023, 0024 |
 | [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | T-311, T-313 | REVUE | claude-sonnet-5-5 | 0017, 0021 |
 | [T-366](T-366-bundle-multi-arch-installateur-lab.md) | Bundle de sécurité multi-arch et installateur pour le cluster lab | T-001, T-061, T-061b | REVUE + MANDAT | claude-opus-5-5 | 0003, 0020 |
 | [T-306](T-306-registre-identites.md) | Registre des identités et secrets `docs/state/identities.yaml` (noms, rôles, dates, jamais de valeur) | — | REVUE | claude-sonnet-5-5 | 0002, 0022 |
 | [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | T-008, T-210, T-306, T-311, T-313 | REVUE + MANDAT | claude-sonnet-5-5 | 0002, 0021 |
 | [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | T-302, T-303, T-304, T-326, T-330 | MANDAT | claude-sonnet-5-5 | 0002 |
+| [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | T-313 | REVUE | claude-haiku-5-5 | 0024 |
+| [T-413](T-413-pyproject-ruff-shellcheck.md) | `pyproject.toml` (ruff, mypy, pytest, coverage), 13 bogues ruff à 0 et shellcheck sur les 59 scripts | T-008 | REVUE | claude-sonnet-5-5 | 0024 |
+| [T-414](T-414-cliquet-maintenabilite.md) | Cliquet de maintenabilité `tools/quality/check.py` + `baseline.json` (seuils durs sur le code neuf) | T-413 | REVUE | claude-sonnet-5-5 | 0024 |
+| [T-412](T-412-verificateur-prior-art-ci.md) | Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop | T-411, T-413, T-331, T-332 | REVUE | claude-sonnet-5-5 | 0024 |
+| [T-415](T-415-sous-agent-prior-art-scout.md) | Sous-agent `prior-art-scout` (lecture seule, budget borné) | T-411, T-330, T-341 | REVUE | claude-sonnet-5-5 | 0024 |
+| [T-418](T-418-tests-outils-backlog.md) | Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui) | T-008, T-413 | AUTONOME | claude-sonnet-5-5 | 0024 |
+| [T-419](T-419-retrait-seed-py.md) | Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 % | T-412, T-414, T-415, T-418, T-214 | AUTONOME | claude-sonnet-5-5 | 0024 |
+| [T-430](T-430-rulesets-as-code.md) | Rulesets as-code : tools/github/apply.sh (--check/--apply) et main-dev.json alignés sur l'ADR-0002 | — | REVUE | claude-sonnet-5-5 | 0002 |
+| [T-431](T-431-reglages-depot-actions-securite.md) | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | T-430 | REVUE + MANDAT | claude-sonnet-5-5 | 0002, 0006 |
+| [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | T-431 | AUTONOME | claude-haiku-5-5 | 0006 |
+| [T-433](T-433-protection-tags.md) | Protection des tags : core-baseline et v* (ruleset de type tag) | T-305, T-430 | REVUE + MANDAT | claude-sonnet-5-5 | 0002 |
+| [T-434](T-434-gestes-organisation-paul.md) | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | — | MANDAT | claude-haiku-5-5 | 0002 |
+| [T-435](T-435-k3d-ok-requis.md) | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | T-002, T-430 | REVUE | claude-sonnet-5-5 | 0002, 0004 |
+| [T-436](T-436-labels-formulaires-issues.md) | Labels as-code et formulaires d'issue : issues vides coupées, proposition de ticket | T-431 | REVUE | claude-sonnet-5-5 | 0012 |
+| [T-437](T-437-durcir-executant-environnement.md) | Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteurs | T-313, T-431 | REVUE + MANDAT | claude-sonnet-5-5 | 0002, 0021 |
+| [T-450](T-450-nettoyage-gitleaksignore.md) | Nettoyer la dette de .gitleaksignore (129 emplacements) et le vider | T-303 | REVUE | claude-sonnet-5-5 | 0002, 0006 |
 
 ### P1 — Golden path complet
 
@@ -87,6 +103,12 @@ Généré à partir des en-têtes ; ne pas éditer à la main.
 | [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR d'agents | T-061, T-061b, T-062, T-214 | REVUE | claude-opus-5-5 | 0001, 0022 |
 | [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | T-330, T-332 | AUTONOME | claude-sonnet-5-5 | 0018, 0022 |
 | [T-368](T-368-garde-fous-de-capacite-du-homelab.md) | Garde-fous de capacité du homelab : quotas lab-*, alertes RAM/NVMe/Tctl, budget versionné | T-061, T-061b, T-360, T-363 | AUTONOME + REVUE | claude-sonnet-5-5 | 0017 |
+| [T-417](T-417-typage-mypy.md) | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | T-214, T-413 | AUTONOME | claude-sonnet-5-5 | 0024 |
+| [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | T-414 | AUTONOME | claude-haiku-5-5 | 0024 |
+| [T-422](T-422-mesure-effet-art-anterieur-pilote.md) | Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite) | T-412, T-322 | AUTONOME | claude-sonnet-5-5 | 0024 |
+| [T-423](T-423-reduire-complexite-argo-guard.md) | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | T-414, T-001 | REVUE | claude-opus-5-5 | 0024 |
+| [T-421](T-421-indicateurs-quality-v1.md) | Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine | T-414 | AUTONOME | claude-sonnet-5-5 | 0019 |
+| [T-439](T-439-essai-dependency-review.md) | Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation) | T-431 | REVUE | claude-sonnet-5-5 | 0016 |
 
 ### P2 — Primitives (sécurité, secrets, identité, données, exposition)
 
@@ -175,12 +197,13 @@ Généré à partir des en-têtes ; ne pas éditer à la main.
 | [T-203](T-203-data-4.md) | Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets) | T-020, T-061, T-061b, T-201 | AUTONOME | claude-sonnet-5-5 | 0006, 0019 |
 | [T-204](T-204-data-5.md) | Grille de maturité cloud native CNCF automatisée (niveaux 1-5) | T-061, T-061b, T-072, T-201 | AUTONOME | claude-sonnet-5-5 | 0019 |
 | [T-215](T-215-pack-identite.md) | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | T-061, T-061b | REVUE + MANDAT | claude-opus-5-5 | 0002 |
-| [T-400](T-400-retrait-bypass-admin-ruleset.md) | Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation ponctuelle | T-007, T-215 | REVUE + MANDAT | claude-opus-5-5 | 0002 |
-| [T-401](T-401-revue-securite-finale.md) | Revue de sécurité finale de la plateforme (prérequis de « plateforme finie ») | T-007, T-215, T-400, T-402, T-405 | MANDAT | claude-opus-5-5 | 0002, 0006, 0021, 0022 |
+| [T-400](T-400-retrait-bypass-admin-ruleset.md) | Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation ponctuelle | T-007, T-215, T-430, T-435 | REVUE + MANDAT | claude-opus-5-5 | 0002 |
+| [T-401](T-401-revue-securite-finale.md) | Revue de sécurité finale de la plateforme (prérequis de « plateforme finie ») | T-007, T-215, T-400, T-402, T-405, T-437, T-443 | MANDAT | claude-opus-5-5 | 0002, 0006, 0021, 0022 |
 | [T-402](T-402-garde-image-multi-arch.md) | Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64) | T-123, T-365 | AUTONOME | claude-opus-5-5 | 0003, 0006 |
 | [T-403](T-403-rotation-secrets-dev.md) | Rotation des secrets et identités créés en mode dev (FINAL0) | T-215, T-306 | MANDAT | claude-opus-5-5 | 0002, 0022 |
 | [T-404](T-404-jalon-final0.md) | Jalon FINAL0 : identité d'usine, contournement retiré, secrets de dev tournés, revue des code owners réactivée | T-007, T-215, T-400, T-403 | MANDAT | claude-opus-5-5 | 0002 |
 | [T-405](T-405-rotation-complete-final.md) | Rotation complète des secrets et identités du registre (FINAL) | T-306, T-404 | MANDAT | claude-opus-5-5 | 0002, 0022 |
+| [T-443](T-443-attestations-provenance-releases.md) | Attestations de provenance et releases immuables (quand une image ou une archive est construite) | T-402, T-400 | REVUE | claude-opus-5-5 | 0016 |
 
 ### P5 — Migration depuis kube-ops
 
@@ -232,3 +255,4 @@ Généré à partir des en-têtes ; ne pas éditer à la main.
 | [T-389](T-389-agentgateway-fournisseur-deepseek-cles-virtuelle.md) | agentgateway : fournisseur DeepSeek, clés virtuelles par usage, budget bloquant (fournisseur factice d'abord) | T-023, T-061, T-161, T-388 | REVUE + MANDAT | claude-sonnet-5-5 | 0018, 0023 |
 | [T-390](T-390-garde-de-confidentialite-aucun-log-de.md) | Garde de confidentialité : aucun log de production ni secret vers un fournisseur autre qu'Anthropic | T-025, T-061, T-389 | REVUE | claude-opus-5-5 | 0008, 0018, 0023 |
 | [T-392](T-392-revue-trimestrielle-du-routage-retraits-de.md) | Revue trimestrielle du routage : retraits de modèles, nouveaux modèles, dérive des tarifs | T-061, T-323, T-388 | AUTONOME | claude-sonnet-5-5 | 0016, 0023 |
+| [T-438](T-438-project-v2-miroir-backlog.md) | Project v2 « Pilote » : vue en lecture du backlog (facultatif) | T-325 | AUTONOME + MANDAT | claude-sonnet-5-5 | 0012 |

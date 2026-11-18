@@ -33,13 +33,14 @@ exécutables, pas par des approbations.
 | [0021](0021-usine-agents-24-7.md) | Usine d'agents 24/7 (version réduite : règle d'usine, pilote, paliers, PAUSE) | PROPOSÉ |
 | [0022](0022-harness-environnements-agents.md) | Harness et environnements de dev des agents | PROPOSÉ |
 | [0023](0023-routage-des-modeles.md) | Routage des modèles par tâche (3 règles) | PROPOSÉ |
+| [0024](0024-art-anterieur-maintenabilite.md) | Art antérieur et maintenabilité (recherche bornée, cliquet de qualité) | PROPOSÉ |
 
 Ces ADR ne changent rien au cluster. Un ADR passe d'**PROPOSÉ** à **ACTÉ** par la fusion de la PR qui le modifie,
 approuvée par Paul (`docs/adr/` fait partie du noyau protégé, ADR-0002). Un ADR acté n'est pas réécrit : il est
 **amendé** ou **remplacé** par un nouvel ADR, comme les décisions `D-AAAA-MM-JJ-NN` de homelab-infra.
 
 Les tickets de `backlog/` ne démarrent qu'une fois leurs ADR **ACTÉ** : T-061 (T-061a) acte ADR-0002 et ADR-0021 (prérequis du
-pilote 24 h), T-061b acte ADR 0001, 0003-0006, 0010-0013, 0020, 0022 et 0023 en parallèle du pilote, T-218 acte ADR 0014-0019
+pilote 24 h), T-061b acte ADR 0001, 0003-0006, 0010-0013, 0020, 0022, 0023 et 0024 en parallèle du pilote, T-218 acte ADR 0014-0019
 après le MVP (consensus du 2026-11-18 et consensus n°2, `docs/review/CONSENSUS-2.md`).
 
 Amendements du 2026-11-18 (consensus n°2 et arbitrages de Paul) : ADR-0002 (sécurité de dev, étape FINAL), ADR-0003 (CP
