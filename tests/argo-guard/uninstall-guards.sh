@@ -36,6 +36,7 @@ case "$a" in
     n="${a#get crd }"; n="${n%% *}"
     jq -r --arg n "$n" '.items[] | select(.metadata.name == $n) | "customresourcedefinition.apiextensions.k8s.io/" + .metadata.name' "$FIX/crds.json";;
   "-n lab-argocd get applications.argoproj.io -o name") cat "$FIX/apps.txt" 2>/dev/null || true;;
+  "-n lab-argocd get applications.argoproj.io -o json") if [[ -f "$FIX/apps.json" ]]; then cat "$FIX/apps.json"; else echo '{"items":[]}'; fi;;
   "get components.openchoreo.dev -A -o name") cat "$FIX/components.txt" 2>/dev/null || true;;
   "get ns -l platform.smadja.dev/cell=restricted -o name") cat "$FIX/cells.txt" 2>/dev/null || true;;
   "get ns "*" --ignore-not-found -o name"|"get namespace "*" --ignore-not-found -o name")
@@ -151,6 +152,32 @@ unset HELM_LIST_EMPTY
 if [[ $RC == 0 ]] && grep -q '^WRITE kubectl delete namespace dp-default-x' "$LOGF" \
   && grep -q '^WRITE kubectl delete namespace lab-pg' "$LOGF"; then ok=0; else ok=1; fi
 verdict P3c-positif-undo1 $ok "rc=$RC, écritures=$(writes)"
+
+# T-487-a : étape 11 : ApplicationSet lab-o puis Applications lab-o-* (étiquette du labo) supprimés, dans cet ordre ;
+# une Application étrangère (sans étiquette ou sans préfixe lab-o-) n'est jamais supprimée.
+reset; cluster_crds "$(crd applications.argoproj.io argoproj.io applications Namespaced)"
+cat > "$FIX/apps.json" <<'JSON'
+{"items":[
+ {"metadata":{"name":"lab-o-whoami","labels":{"app.kubernetes.io/part-of":"openchoreo-lab"}}},
+ {"metadata":{"name":"lab-o-echo","labels":{"app.kubernetes.io/part-of":"openchoreo-lab"}}},
+ {"metadata":{"name":"lab-o-etranger"}},
+ {"metadata":{"name":"team-x-app","labels":{"app.kubernetes.io/part-of":"openchoreo-lab"}}}]}
+JSON
+run_uninstall --step 11 --apply
+as_line="$(grep -n '^WRITE kubectl delete .*applicationsets.argoproj.io lab-o$' "$LOGF" | head -1 | cut -d: -f1)"
+ap_line="$(grep -n '^WRITE kubectl delete .*applications.argoproj.io lab-o-whoami lab-o-echo$' "$LOGF" | head -1 | cut -d: -f1)"
+if [[ $RC == 0 && -n "$as_line" && -n "$ap_line" ]] && (( as_line < ap_line )) \
+  && ! grep -E '^WRITE .*(lab-o-etranger|team-x-app)' "$LOGF" | grep -q .; then ok=0; else ok=1; fi
+verdict T487a-appset-puis-apps $ok "rc=$RC, ApplicationSet ligne=${as_line:-absente}, Applications ligne=${ap_line:-absente}"
+
+# T-487-b : une Application lab-o-* avec resources-finalizer => REFUS (cascade), aucune suppression d'Application lab-o-*.
+reset; cluster_crds "$(crd applications.argoproj.io argoproj.io applications Namespaced)"
+cat > "$FIX/apps.json" <<'JSON'
+{"items":[{"metadata":{"name":"lab-o-whoami","labels":{"app.kubernetes.io/part-of":"openchoreo-lab"},"finalizers":["resources-finalizer.argocd.argoproj.io"]}}]}
+JSON
+run_uninstall --step 11 --apply
+if [[ $RC != 0 ]] && grep -q 'resources-finalizer' <<<"$OUT" && ! grep -q '^WRITE .*applications.argoproj.io lab-o-' "$LOGF"; then ok=0; else ok=1; fi
+verdict T487b-finalizer-cascade-refuse $ok "rc=$RC"
 
 # Aucun appel non prévu par les mocks (sinon un chemin de code n'a pas été simulé).
 if grep -q UNHANDLED "$LOGF"; then echo "appel non simulé :"; grep UNHANDLED "$LOGF"; fail=$((fail + 1)); fi
