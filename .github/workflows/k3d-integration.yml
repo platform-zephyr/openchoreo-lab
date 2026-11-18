@@ -1,0 +1,224 @@
+# Suites d'intégration k3d, un cluster JETABLE par job (un runner par suite, rien d'état partagé).
+# Non bloquant : le check requis reste `ci-ok` (ci.yaml). Agrégat propre : `k3d-ok`.
+# Aucun secret : ni `secrets.*` ni jeton. Actions épinglées par SHA ; binaires épinglés par sha256.
+# Plan pour le rendre requis : docs/CI-K3D.md §4.
+name: k3d-integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k3d-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Binaires linux-arm64 (runners ubuntu-24.04-arm). Empreintes = fichiers de checksums publiés par chaque projet
+  # (k3d : checksums.txt ; yq : checksums ; helm : .sha256sum sur get.helm.sh). Ne pas modifier sans revoir les empreintes.
+  K3D_VERSION: "5.9.0"
+  K3D_SHA256: "03cde5cf23e6e8e67de5a039ecf26e5b85aca82fba3e5d13dadf904cd218a250"
+  YQ_VERSION: "4.54.3"
+  YQ_SHA256: "89f69310b61b68d1245065a1241d1fc843f7a36cd6103ffd77ad987613bd1b67"
+  HELM_VERSION: "v3.22.1"
+  HELM_SHA256: "4c29e286b279d170fa048ddfc3e4e83dcd069ca9c52102766ba672d7149e694d"
+  # Noyau k3s : doit rester >= 1.34 (OpenChoreo 1.3.3). Même tag que le k3d de référence (tests/k3d/RESULTS.md).
+  K3S_IMAGE: "rancher/k3s:v1.36.1-k3s1"
+
+jobs:
+  gate:
+    # Décide si la suite tourne : workflow_dispatch, label `k3d`, ou fichiers touchés sous platform/, tools/oke/,
+    # tools/appgen/, tests/ (ou ce workflow).
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          run=false
+          if [ "$EVENT" != "pull_request" ]; then
+            run=true
+          elif jq -e 'index("k3d") != null' <<<"$LABELS" >/dev/null; then
+            run=true
+          elif git diff --name-only "$BASE" "$HEAD" \
+              | grep -Eq '^(platform/|tools/oke/|tools/appgen/|tests/|\.github/workflows/k3d-integration\.yml$)'; then
+            run=true
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "evenement=$EVENT run=$run"
+
+  suite:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # vap : VAP sur un vrai API server, aucun OpenChoreo requis.
+          - suite: vap
+            cluster: lab-sec-vap
+            bootstrap: none
+            timeout: 25
+            command: tests/vap/run.sh --label ci
+            evidence: tests/vap/evidence
+          # argo-escalation : Argo CD réel + CRD OpenChoreo ; installe Argo lui-même.
+          - suite: argo-escalation
+            cluster: argo-esc
+            bootstrap: none
+            timeout: 30
+            command: tests/argo-escalation/run.sh all
+            evidence: tests/argo-escalation/evidence
+          # k3d : banc Phase A (OpenChoreo 1.3.3 CP+DP, ESO, CNPG, lab-pg). Attend le cluster `openchoreo`.
+          - suite: k3d
+            cluster: openchoreo
+            bootstrap: oc
+            timeout: 60
+            command: tests/k3d/run.sh
+            evidence: tests/k3d/evidence
+          # gitops-k3d : Git -> Argo CD -> OpenChoreo ; a besoin du bootstrap OpenChoreo et de Python (PyYAML, jsonschema).
+          - suite: gitops-k3d
+            cluster: gitops
+            bootstrap: oc
+            timeout: 60
+            command: tests/gitops-k3d/run.sh all
+            evidence: tests/gitops-k3d/evidence
+    name: k3d ${{ matrix.suite }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Outils epingles (sha256)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
+          cd "$RUNNER_TEMP"
+          curl -fsSLo k3d "https://github.com/k3d-io/k3d/releases/download/v${K3D_VERSION}/k3d-linux-arm64"
+          echo "${K3D_SHA256}  k3d" | sha256sum -c -
+          install -m 0755 k3d "$bin/k3d"
+          curl -fsSLo yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_arm64"
+          echo "${YQ_SHA256}  yq" | sha256sum -c -
+          install -m 0755 yq "$bin/yq"
+          curl -fsSLo helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-arm64.tar.gz"
+          echo "${HELM_SHA256}  helm.tgz" | sha256sum -c -
+          tar -xzf helm.tgz linux-arm64/helm
+          install -m 0755 linux-arm64/helm "$bin/helm"
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/k3d" version
+          "$bin/yq" --version
+          "$bin/helm" version --short
+          kubectl version --client
+
+      - name: Python (gitops-k3d seulement)
+        if: matrix.suite == 'gitops-k3d'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Dependances Python (gitops-k3d seulement, versions figees)
+        if: matrix.suite == 'gitops-k3d'
+        shell: bash
+        run: python3 -m pip install --disable-pip-version-check "PyYAML==6.0.2" "jsonschema==4.23.0"
+
+      - name: Cluster k3d jetable
+        shell: bash
+        run: |
+          set -euo pipefail
+          start=$SECONDS
+          k3d cluster create "${{ matrix.cluster }}" \
+            --image "$K3S_IMAGE" --agents 0 \
+            --k3s-arg "--disable=traefik@server:0" \
+            --wait --timeout 300s
+          # Le cluster est lu par les suites via KUBECONFIG (chemin par défaut de k3d, jamais le Mac).
+          echo "KUBECONFIG=$HOME/.kube/config" >> "$GITHUB_ENV"
+          echo "cluster prêt en $((SECONDS - start)) s"
+          kubectl get nodes -o wide
+
+      - name: Bootstrap OpenChoreo 1.3.3 (matrice bootstrap=oc)
+        if: matrix.bootstrap == 'oc'
+        shell: bash
+        env:
+          OKE_PHASEB_STATE: ${{ runner.temp }}/oc-bootstrap
+        run: |
+          set -euo pipefail
+          start=$SECONDS
+          tools/k3d/ci-bootstrap.sh "${{ matrix.cluster }}"
+          echo "bootstrap OpenChoreo en $((SECONDS - start)) s"
+
+      - name: Suite ${{ matrix.suite }}
+        shell: bash
+        env:
+          # Pas de chemin Mac : les scripts utilisent KUBECONFIG tel quel.
+          KUBECONFIG: ${{ env.KUBECONFIG }}
+        run: |
+          set -o pipefail
+          start=$SECONDS
+          set +e
+          ${{ matrix.command }} 2>&1 | tee "$RUNNER_TEMP/suite.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          dur=$((SECONDS - start))
+          echo "suite=${{ matrix.suite }} rc=$rc duree=${dur}s" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$rc" -eq 0 ]; then echo "RESULTAT: PASS" | tee -a "$GITHUB_STEP_SUMMARY"; else echo "RESULTAT: FAIL" | tee -a "$GITHUB_STEP_SUMMARY"; fi
+          exit "$rc"
+
+      - name: Diagnostic cluster (echec seulement)
+        if: failure()
+        shell: bash
+        run: |
+          {
+            kubectl get pods -A -o wide
+            echo ---
+            kubectl get events -A --sort-by=.lastTimestamp | tail -300
+          } > "$RUNNER_TEMP/diagnostic.txt" 2>&1 || true
+
+      - name: Preuves (artifact, sans secret)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: k3d-${{ matrix.suite }}
+          path: |
+            ${{ matrix.evidence }}
+            ${{ runner.temp }}/suite.log
+            ${{ runner.temp }}/diagnostic.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Suppression du cluster
+        if: always()
+        shell: bash
+        run: k3d cluster delete "${{ matrix.cluster }}" || true
+
+  k3d-ok:
+    # Agregat NON requis (ci-ok ne l'inclut pas). Vert si la suite n'a pas tourne (gate=false) ou si toutes ont passe.
+    if: always()
+    needs: [gate, suite]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+      - name: Agregation
+        env:
+          GATE: ${{ needs.gate.result }}
+          SUITE: ${{ needs.suite.result }}
+        run: |
+          echo "gate=$GATE suite=$SUITE"
+          if [ "$GATE" != "success" ]; then echo "gate en echec" >&2; exit 1; fi
+          if [ "$SUITE" = "skipped" ]; then echo "suites non lancees (aucun declencheur)"; exit 0; fi
+          if [ "$SUITE" != "success" ]; then echo "au moins une suite k3d a echoue" >&2; exit 1; fi
