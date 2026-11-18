@@ -6,11 +6,11 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 20 |
+| `in-progress` | 19 |
 | `todo` | 131 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 25 |
+| `done` | 26 |
 | `dropped` | 27 |
 | **Total** | **251** |
 
@@ -23,7 +23,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md) | Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes) | 4/5 | Premier critère ouvert : (repris de HAR-6) même script en local, en CI et dans le hook Stop (T-331) ; seuls fichier et ligne sont affichés, jamais la valeur | — |
 | [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 3/3 | Reste (2026-11-18) : le ticket reste `in-progress` car le tag précède la fin de S0 (T-303, T-306… encore ouverts à sa pose) et n'est pas signé. Geste de Paul : soit accepter explicitement ce tag comme référence (les PR du noyau d'agents viennent après lui), s… | — |
 | [T-311](T-311-gouverneur-de-quota-ledger-5-h.md) | Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 réelle (max-parallel ou groupes par… | 1/3 | Premier critère ouvert : factory/PAUSE présent = aucun lancement, aucun merge automatique (test) — STATIC PASS : tests/factory/pause-test.sh (lancement) ; NOT_TESTED : run réel, désarmement d'un auto-merge déjà armé | — |
-| [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 5/9 | Premier critère ouvert : lancement manuel avec une liste d'ID : N PR parallèles sur couloirs distincts (preuve datée) | — |
+| [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 6/9 | Premier critère ouvert : lancement manuel avec une liste d'ID : N PR parallèles sur couloirs distincts (preuve datée) | — |
 | [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | 4/4 | (ligne « Reste » absente) | — |
 | [T-332](T-332-commande-unique-tools-dev-check-static.md) | Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée | 1/3 | Reste aussi : empreintes linux-amd64 dans `toolchain.lock` (VM cloud x86_64) ; les contrôles de T-303, T-306, T-330, T-331 s'activent seuls (NOT_TESTED tant que leur script manque). | — |
 | [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 3/4 | Premier critère ouvert : essai daté : un agent traite un ticket `complet` de test et rend une section valide (preuve STATIC dans la PR) | — |
@@ -32,10 +32,9 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-452](T-452-reactiver-les-suites-k3d-quand-et-comment.md) | Réactiver les suites k3d : quand et sous quelle forme (étude) | 2/3 | Reste ouvert : critère 3 (le `schedule` nocturne) à la fin de S1. | — |
 | [T-458](T-458-ancre-gitops-k3d-obsolete.md) | Réparer l'ancre obsolète de gitops-k3d (correction G1 déjà dans main) | 0/3 | Premier critère ouvert : ancre réparée, la suite va au-delà de T-DEPLOY | — |
 | [T-460](T-460-parite-ci-check.md) | Parité ci.yaml ↔ tools/dev/check : ci-map.tsv et test de parité (SL-6) | 3/3 | Reste : run CI vert de la PR T-475 (critère 2 prouvé en STATIC seulement), puis `status: done` ; issue 66 à fermer après relecture. LOCAL-ONLY restants : `guard-check`, `toolchain-lock`, `check-selftest`, `identities` (raisons dans `ci-map.tsv`). | [#66](https://github.com/platform-zephyr/openchoreo-lab/issues/66) |
-| [T-466](T-466-durcissement-usine-verdict-prompt.md) | Durcissement de l'usine : plafonds de tours, étape Verdict, trailers always(), branche REST, prompt… | 8/10 | Premier critère ouvert : run réel (RUNTIME, preuve datée) : un dispatch de 2 issues ou plus montre le Verdict, le contrôle des trailers après un échec de l'agent, la branche retrouvée par REST et le commentaire `report` sur… | — |
+| [T-466](T-466-durcissement-usine-verdict-prompt.md) | Durcissement de l'usine : plafonds de tours, étape Verdict, trailers always(), branche REST, prompt… | 10/10 | (ligne « Reste » absente) | — |
 | [T-467](T-467-garde-de-recouvrement-et-disjoncteur-de-quota.md) | Garde de recouvrement des périmètres et disjoncteur de quota Max pour le planificateur de l'usine | 4/5 | Premier critère ouvert : preuve RUNTIME datée : un dispatch de deux issues en recouvrement s'arrête au job `plan` sans job `dev` ; un | — |
 | [T-473](T-473-vue-status-du-backlog.md) | Vue d'état du backlog : fait, en cours, bloqué, prêt (backlog/STATUS.md généré) | 4/5 | Reste : critère 5, imposé par la CI dès la fusion de T-475 (run CI de la PR non encore observé). | — |
-| [T-474](T-474-trailers-injectes-par-hook-git.md) | Trailers de commit injectés par un hook git du workflow (Ticket, Model, Effort, Escalated-from, Cla… | 6/8 | Premier critère ouvert : run réel (RUNTIME, preuve datée) : un dispatch montre l'étape `hooks` verte, des commits de l'agent avec les 5 trailers et `check-trailers` PASS | — |
 | [T-475](T-475-ci-consolidation-status-historique-tests-usine.md) | Consolidation CI : fraîcheur de STATUS.md, --only partout, historique quality post-merge, tests de… | 5/7 | Premier critère ouvert : run CI de la PR : 18 jobs verts dont `ci-ok`, durées de `dev-factory`, `hooks`, `backlog`, `quality-coverage` | — |
 | [T-476](T-476-score-de-priorite-et-skill-orchestrateur.md) | Score de priorité du backlog (priority.py) et skill orchestrate-backlog | 4/6 | Reste : critères 5 et 6 (branchement CI hors périmètre de cette PR, T-475 modifie `ci.yaml` en parallèle ; mesure sur lots réels). | — |
 
@@ -221,6 +220,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-463](T-463-spike-politiques-sans-cluster.md) | Spike : tests de politiques Kyverno et VAP sans cluster (SL-9) | 2026-11-18 | — | — |
 | [T-464](T-464-regles-d-agent-local-d-abord.md) | Règles d'agent « local d'abord » dans AGENTS.md et les skills (SL-10) | 2026-11-18 | — | — |
 | [T-468](T-468-corriger-check-selftest.md) | Corriger le FAIL de check-selftest (test périmé après T-460) | — | — | — |
+| [T-474](T-474-trailers-injectes-par-hook-git.md) | Trailers de commit injectés par un hook git du workflow (Ticket, Model, Effort, Escalated-from, Claude-Session) | 2026-11-18 | — | — |
 
 ## Gelés et abandonnés
 
@@ -230,3 +230,4 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 ## Anomalies de lecture
 
 - T-331 : `in-progress` sans ligne « Reste » dans les notes
+- T-466 : `in-progress` sans ligne « Reste » dans les notes

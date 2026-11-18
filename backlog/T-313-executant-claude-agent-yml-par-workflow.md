@@ -30,7 +30,7 @@ Remplacer le déclencheur par label (acteur SmadjaPaul) par workflow_dispatch(ti
 - [ ] (repris de MOD-5) trailers Model, Effort, Escalated-from sur chaque PR d'agent ; mission-result.v1 contient modèle, effort, escalade, tokens, tours, durée, échecs CI, sans aucun prompt
 - [x] (repris de HAR-3) le résumé du job affiche total_cost_usd et num_turns, aucune sortie d'outil
 - [x] `show_full_output` absent ; aucun secret hors jeton Claude
-- [ ] config git `noreply` et trailers (Ticket, Model, Effort, Claude-Session) imposés par l'exécutant dès S0 ; un commit d'agent sans trailer ou avec un e-mail personnel est refusé par la CI (test)
+- [x] config git `noreply` et trailers (Ticket, Model, Effort, Claude-Session) imposés par l'exécutant dès S0 ; un commit d'agent sans trailer ou avec un e-mail personnel est refusé par la CI (test) — PROUVÉ (RUNTIME) : un commit d'agent sans trailer est refusé : run 44326043746, contrôle `check-trailers` du workflow (FAIL `trailers_refused`) et job CI `agent-trailers` sur la PR #77 ; accepté avec trailers injectés : run 44331128791 (issue 74, PR #81 du bot : 27 tours, 0,66 $, statut PASS, commit avec les 5 trailers injectés par le hook, 18 checks verts dont `agent-trailers`, branche `claude/issue-74-…` retrouvée, commentaire `report`), 2026-11-18
 - [x] plafonds par modèle : Opus 90 min et 150 tours ; Sonnet et Haiku 45 min et 60 tours (`timeout-minutes`, `--max-turns`)
 
 ## Notes
