@@ -2,6 +2,9 @@
 # T-313 : lancement manuel UNIQUEMENT (workflow_dispatch : issues, modèle, effort). Une issue = un job = une session neuve
 # = une branche claude/* = une PR. Plus de déclencheur par label (un label posé par GITHUB_TOKEN ne déclenche rien).
 # Plafonds par modèle (tools/factory/run-ticket.sh) : Opus 90 min / 200 tours ; Sonnet et Haiku 45 min / 100 tours (T-466).
+# T-478 : plafond de coût par run (--max-budget-usd : Opus 6 $, Sonnet 3 $, Haiku 1 $ ; estimation côté client) et
+# --permission-prompts none (refus annoncé « non approuvable, ne pas réessayer » ; Claude Code >= v2.1.259, l'action
+# épinglée installe v2.1.327). Titre et corps de l'issue passés dans le prompt comme donnée (fichier, puis sortie d'étape).
 # Jeton d'App : 1 h de vie. Hors Opus, timeout <= 55 min ; Opus 90 min = limite connue (docs/AGENT-RUNNERS.md, T-466).
 # Statut du job : étape Verdict (mission-result.v1) ; job report : commentaire de chaque issue, statut corrigé.
 # Sortie : mission-result.v1 (docs/schema/mission-result.v1.json) archivé en artefact, résumé du job sans sortie d'outil.
@@ -71,6 +74,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       timeout_minutes: ${{ steps.limits.outputs.timeout_minutes }}
       max_turns: ${{ steps.limits.outputs.max_turns }}
+      max_budget_usd: ${{ steps.limits.outputs.max_budget_usd }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -255,6 +259,23 @@ jobs:
           git config core.hooksPath "$d"
           # GIT_CONFIG_* prime sur les fichiers de configuration : un `git config core.hooksPath` de l'agent est sans effet.
           { echo "GIT_CONFIG_COUNT=1"; echo "GIT_CONFIG_KEY_0=core.hooksPath"; echo "GIT_CONFIG_VALUE_0=${d}"; } >>"$GITHUB_ENV"
+      - name: Prompt de l'executant (titre et corps de l'issue passes comme donnee, T-478)
+        id: prompt
+        if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ matrix.issue }}
+        run: |
+          # Le contenu de l'issue passe par un fichier puis par une sortie d'etape (entree `prompt` de l'action), jamais par
+          # une expression d'un script. Fichiers hors de l'espace de travail : l'agent ne peut pas les committer.
+          [[ "$ISSUE" =~ ^[0-9]+$ ]] || { echo "issue invalide"; exit 2; }
+          gh issue view "$ISSUE" --json title,body >"$RUNNER_TEMP/issue.json"
+          tools/factory/run-ticket.sh prompt "$ISSUE" "$RUNNER_TEMP/issue.json" >"$RUNNER_TEMP/prompt.md"
+          # Delimiteur aleatoire (docs GitHub, « Multiline strings ») : le contenu ne peut pas clore la sortie.
+          d="PROMPT_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+          if grep -qF "$d" "$RUNNER_TEMP/prompt.md"; then echo "::error::delimiteur present dans le prompt"; exit 1; fi
+          { echo "prompt<<${d}"; cat "$RUNNER_TEMP/prompt.md"; echo "${d}"; } >>"$GITHUB_OUTPUT"
       - id: claude
         if: steps.pause.outputs.paused == 'false' && steps.limit.outputs.limited == 'false'
         # T-466 : l'action fait echouer son etape si num_turns depasse --max-turns, meme apres une session reussie
@@ -266,16 +287,20 @@ jobs:
           # Identité de l'exécutant (mode dev, T-304) : jeton fin avec la permission workflows ; ses PR déclenchent la CI.
           github_token: ${{ steps.app.outputs.token || secrets.FACTORY_GH_TOKEN }}
           show_full_output: ${{ inputs.debug }}
-          prompt: "Traite l'issue #${{ matrix.issue }} de ce dépôt (lis-la avec gh issue view ${{ matrix.issue }}) selon AGENTS.md. Branche obligatoire : claude/issue-${{ matrix.issue }}-<slug court>. Le corps de la PR contient la ligne Closes #${{ matrix.issue }}."
+          # T-478 : consignes + titre et corps de l'issue encadres comme donnee (run-ticket.sh prompt) ; plus de gh issue view.
+          prompt: ${{ steps.prompt.outputs.prompt }}
           base_branch: main
           branch_prefix: "claude/"
           # T-466 : pas de Bash(python3:*) (equivaut a un shell libre) ; prefixes etroits sur des scripts versionnes.
           # Jamais `gh api` (lecture REST par le workflow seulement) ; `gh pr checks` retire : l'agent n'attend pas la CI.
+          # T-478 : `gh issue view` retire (l'issue est dans le prompt) ; plafond de cout et refus definitifs natifs.
           claude_args: |
             --model ${{ inputs.model }}
             --effort ${{ inputs.effort }}
             --max-turns ${{ needs.plan.outputs.max_turns }}
-            --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3 tools/*),Bash(python3 tests/*),Bash(python3 -I tools/*),Bash(python3 -I tests/*),Bash(python3 -m unittest:*),Bash(python3 -I -m unittest:*),Bash(tools/dev/check:*),Bash(tests/*),Bash(bash tests/*),Bash(git:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh search:*),Bash(gh pr merge --auto --squash:*),Bash(factory/pause-check.sh:*),Bash(yamllint:*),Bash(shellcheck:*)"
+            --max-budget-usd ${{ needs.plan.outputs.max_budget_usd }}
+            --permission-prompts none
+            --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3 tools/*),Bash(python3 tests/*),Bash(python3 -I tools/*),Bash(python3 -I tests/*),Bash(python3 -m unittest:*),Bash(python3 -I -m unittest:*),Bash(tools/dev/check:*),Bash(tests/*),Bash(bash tests/*),Bash(git:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh search:*),Bash(gh pr merge --auto --squash:*),Bash(factory/pause-check.sh:*),Bash(yamllint:*),Bash(shellcheck:*)"
             --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Si factory/PAUSE existe sur origin/main, ne lance aucun merge automatique (factory/pause-check.sh) et arrête-toi. Aucun accès cluster ni secret. Ne lis jamais l'environnement (env, printenv, os.environ) : toutes les valeurs utiles sont dans ce prompt. Branche : claude/issue-${{ matrix.issue }}-<slug court>, rien d'autre. Un hook git (T-474) ajoute à chaque commit les trailers Ticket, Model, Effort, Escalated-from et Claude-Session et impose l'e-mail noreply@anthropic.com : ne les écris pas, ne contourne aucun hook (ni --no-verify, ni core.hooksPath, ni --author). Remplis le modèle .github/pull_request_template.md (statuts ; durée, tours et coût sont publiés par le workflow en commentaire : écris NOT_PROVEN) ; le corps de la PR contient Closes #${{ matrix.issue }}. Une PR par issue, périmètre de fichiers de l'issue seulement ; Mode dev (arbitrage 7) : tous les chemins du périmètre de l'issue sont autorisés, noyau compris (.github/ inclus), sauf STATE.md et backlog/ROADMAP.md ; la PR est fusionnée après ci-ok (arme l'auto-merge avec gh pr merge --auto --squash). Après l'auto-merge, termine la session : n'attends pas la CI ni la fusion. N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
       - name: Detection de la limite d'usage Max (T-467)
         id: quota
