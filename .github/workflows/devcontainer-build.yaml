@@ -1,0 +1,49 @@
+# Build périodique du devcontainer (T-472, ADR-0022), HORS du chemin requis : ce workflow n'est pas dans les `needs`
+# de ci-ok de ci.yaml et n'est pas un check requis. Un build rouge est un signal (run rouge, job en échec), pas un blocage de PR.
+# Un runner natif par architecture (pas d'émulation QEMU) ; aucune action tierce hors checkout, épinglée par SHA de commit.
+# Aucun secret, aucun push d'image : construction seule.
+name: devcontainer-build
+
+on:
+  schedule:
+    - cron: "17 3 * * 1" # chaque lundi, 03:17 UTC (minute décalée : le début d'heure est chargé)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devcontainer-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Construire l'image (linux/${{ matrix.arch }})
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          docker buildx build --platform "linux/${ARCH}" --load \
+            -t "openchoreo-lab-dev:${ARCH}" -f .devcontainer/Dockerfile .devcontainer
+      - name: Vérifier les outils de l'image
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          docker run --rm --platform "linux/${ARCH}" "openchoreo-lab-dev:${ARCH}" \
+            bash -c 'uname -m; helm version --short; yq --version; kubeconform -v; gitleaks version; actionlint -version | head -n1; yamllint --version'

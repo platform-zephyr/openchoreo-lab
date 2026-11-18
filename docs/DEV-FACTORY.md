@@ -22,6 +22,10 @@ scripts existants (`tests/*`, `tools/appgen`, `tools/oke`). Outil : `tools/dev/d
 - **Jamais montés** : `~/.kube`, `~/.oci`, `~/.cache/oke-access`, `~/.config/gh`, Doppler, AWS, `~/.ssh`, socket Docker.
   Aucune variable sensible ; `containerEnv` ne contient que `DEV_FACTORY=1` et la config `safe.directory`.
 
+- Build périodique (T-472) : `.github/workflows/devcontainer-build.yaml` (`schedule` hebdomadaire + `workflow_dispatch`) construit
+  l'image en amd64 et arm64 (runner natif par architecture). Hors `ci-ok` et non requis : un build rouge est un signal, pas un blocage.
+  `tests/dev-factory/run.sh` vérifie statiquement cette propriété. Exécution réelle sur GitHub : `NOT_TESTED` tant qu'aucun dispatch n'est daté.
+
 ## Reprise après compaction
 
 - Registre hors Git : `~/.local/state/openchoreo-lab-dev/agents.json` (agent-id = tâche, branche, worktree, conteneur).

@@ -24,8 +24,8 @@ Construire le devcontainer en amd64 et arm64 sur un calendrier (workflow `schedu
 .github/workflows/devcontainer-build.yaml, tests/dev-factory/run.sh
 
 ## Critères de fin
-- [ ] Nouveau workflow `devcontainer-build.yaml` : `schedule` + `workflow_dispatch`, matrice amd64/arm64, actions épinglées par SHA, permissions minimales, absent de `ci-ok`
-- [ ] `actionlint` et `yamllint` : PASS (`tools/dev/check --static --changed`)
+- [x] Nouveau workflow `devcontainer-build.yaml` : `schedule` + `workflow_dispatch`, matrice amd64/arm64, actions épinglées par SHA, permissions minimales, absent de `ci-ok` (preuve statique 2026-11-18 : `tests/dev-factory/run.sh` PASS)
+- [x] `actionlint` et `yamllint` : PASS (`tools/dev/check --static --changed`, 2026-11-18, actionlint 0.2s, yamllint 0.4s)
 - [ ] Un dispatch daté construit les deux architectures (lien du run) ; sans dispatch : `NOT_TESTED`
 
 ## Notes

@@ -103,6 +103,25 @@ else
   ko "runArgs sans limites CPU/RAM ou sans --cap-drop=ALL"
 fi
 
+# Build périodique (T-472) : hors ci-ok, planifié, deux architectures, actions épinglées par SHA (statique, sans réseau).
+DB=".github/workflows/devcontainer-build.yaml"
+if python3 -I - "$DB" "$CI" <<'PYEOF'
+import re, sys, yaml
+wf = yaml.safe_load(open(sys.argv[1])); ci = yaml.safe_load(open(sys.argv[2]))
+on = wf.get(True, wf.get("on"))
+errs = []
+if "schedule" not in on or "workflow_dispatch" not in on: errs.append("schedule + workflow_dispatch requis")
+if set(on) - {"schedule", "workflow_dispatch"}: errs.append("déclencheur pull_request/push interdit (hors chemin requis)")
+if wf.get("permissions") != {"contents": "read"}: errs.append("permissions != contents: read")
+arch = {m["arch"] for j in wf["jobs"].values() for m in j["strategy"]["matrix"]["include"]}
+if arch != {"amd64", "arm64"}: errs.append("matrice != amd64 + arm64")
+if "devcontainer-build" in (ci["jobs"]["ci-ok"].get("needs") or []) or any(k.startswith("build-") or k == "build" for k in ci["jobs"]): errs.append("job de build dans ci.yaml / ci-ok")
+for u in re.findall(r"uses:\s*(\S+)", open(sys.argv[1]).read()):
+    if not re.search(r"@[0-9a-f]{40}$", u): errs.append(f"action non épinglée par SHA : {u}")
+print("\n".join(errs)); sys.exit(1 if errs else 0)
+PYEOF
+then ok "devcontainer-build.yaml : planifié, amd64+arm64, SHA, hors ci-ok"; else ko "devcontainer-build.yaml non conforme"; fi
+
 # Hooks git locaux (SL-4, T-459) : NOT_TESTED (rc 0) si pre-commit ou un outil manque.
 if "$PWD/tests/dev-factory/precommit-test.sh" >"$W/precommit" 2>&1; then
   ok "hooks git : $(tail -n1 "$W/precommit")"
