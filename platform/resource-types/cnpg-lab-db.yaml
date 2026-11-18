@@ -7,7 +7,9 @@
 # Doppler posée à la main. Il est GÉNÉRÉ dans le cluster :
 #   1. generator Password (lab-pg) -> ExternalSecret refreshInterval "0" -> Secret <name>-pg-role
 #      (stable : le générateur n'est appelé qu'une fois) ;
-#   2. PushSecret (lab-pg) -> store ${dataplane.secretStore}, clé lab-pg-roles/<name> ;
+#   2. PushSecret (lab-pg) -> store ${dataplane.secretStore}, clé lab-pg-roles-<name> ;
+#      séparateur « - » (T-456) : le provider kubernetes d'ESO prend remoteKey comme NOM de Secret
+#      (DNS-1123, « / » refusé : invalid resource name) ; « - » reste valide pour OpenBao/Vault ;
 #   3. ExternalSecret (cellule dp-*) lit cette clé et compose l'URI ;
 #   4. Job psql idempotent (lab-pg) : rôle, base, REVOKE CONNECT FROM PUBLIC.
 # Le secret superuser `lab-pg-superuser` (généré par CNPG) ne quitte jamais lab-pg.
@@ -111,7 +113,7 @@ spec:
             - match:
                 secretKey: password
                 remoteRef:
-                  remoteKey: lab-pg-roles/${metadata.name}
+                  remoteKey: lab-pg-roles-${metadata.name}
                   property: password
 
     # 3. Rôle + base + REVOKE, idempotent, dans lab-pg (seul endroit où vit le superuser).
@@ -209,5 +211,5 @@ spec:
           data:
             - secretKey: password
               remoteRef:
-                key: lab-pg-roles/${metadata.name}
+                key: lab-pg-roles-${metadata.name}
                 property: password

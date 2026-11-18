@@ -317,6 +317,8 @@ expect_ok T12a "mot de passe généré (ESO Password) dans lab-pg : 32 caractèr
   bash -c "kubectl get secret -n lab-pg $ALPHA_RRN-pg-role -o jsonpath='{.data.password}' | base64 -d | wc -c | tr -d ' '"
 expect_ok T12b "PushSecret vers le store du data plane : Synced" 'Synced' \
   kubectl get pushsecret -n lab-pg "$ALPHA_RRN-pg-role" -o 'jsonpath={.status.conditions[0].reason}'
+expect_ok T12e "clé du coffre lab-pg-roles-<nom> (séparateur « - », T-456) dans lab-secrets : clé password (valeur non affichée)" '^password$' \
+  bash -c "kubectl get secret -n lab-secrets lab-pg-roles-$ALPHA_RRN -o json | jq -r '.data | keys | join(\" \")'"
 expect_ok T12c "secret de la cellule : clés password + uri (valeurs non affichées)" '^password uri$' \
   bash -c "kubectl get secret -n $NA $ALPHA_RRN-pg -o json | jq -r '.data | keys | join(\" \")'"
 expect_ok T12d "Job psql idempotent terminé (REVOKE vérifié dans le log)" 'REVOKE CONNECT FROM PUBLIC verified' \
