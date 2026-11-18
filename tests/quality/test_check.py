@@ -76,11 +76,26 @@ class PureRules(unittest.TestCase):
         cov = {"files": {"tools/x.py": {"executed_lines": [2, 3, 4], "missing_lines": [12]}}}
         self.assertEqual(check.diff_coverage(added, cov), (3, 4))
 
-    def test_appgen_floor(self):
-        low = {"files": {check.APPGEN: {"summary": {"percent_covered": 84.9}}}}
-        high = {"files": {check.APPGEN: {"summary": {"percent_covered": 85.0}}}}
-        self.assertEqual(len(check.check_coverage(low)), 1)
-        self.assertEqual(check.check_coverage(high), [])
+    @staticmethod
+    def pkg_cov(**files):
+        return {"files": {f"tools/appgen/appgenlib/{n}.py": {"summary": {"covered_lines": c, "num_statements": t}}
+                          for n, (c, t) in files.items()}}
+
+    def test_appgen_floor_targets_package(self):
+        self.assertEqual(check.APPGEN, "tools/appgen/appgenlib/")
+        self.assertEqual(check.check_coverage(self.pkg_cov(a=(85, 100))), [])
+        self.assertEqual(len(check.check_coverage(self.pkg_cov(a=(84, 100)))), 1)
+
+    def test_package_floor_aggregates_and_ignores_facade(self):
+        cov = self.pkg_cov(a=(100, 100), b=(0, 100))  # agrégat 50 %
+        cov["files"]["tools/appgen/appgen.py"] = {"summary": {"covered_lines": 5, "num_statements": 5}}
+        self.assertEqual(len(check.check_coverage(cov)), 1)
+        self.assertEqual(round(check.package_percent(self.pkg_cov(a=(9, 10), b=(1, 10))), 1), 50.0)
+
+    def test_uncovered_package_fails_floor(self):
+        self.assertEqual(len(check.check_coverage({"files": {}})), 1)
+        facade_only = {"files": {"tools/appgen/appgen.py": {"summary": {"covered_lines": 5, "num_statements": 5}}}}
+        self.assertEqual(len(check.check_coverage(facade_only)), 1)
 
     def test_report_fields(self):
         cur = self.cur(

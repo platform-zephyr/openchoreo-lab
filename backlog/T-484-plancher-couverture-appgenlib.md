@@ -23,8 +23,8 @@ Depuis T-214, `tools/appgen/appgen.py` n'est plus qu'une façade (couverte à 10
 tools/quality/check.py, tests/quality/
 
 ## Critères de fin
-- [ ] `APPGEN` désigne `tools/appgen/appgenlib/` avec un plancher d'au moins 85 % (couverture actuelle du paquet : 96,5 %) ; test : un paquet non couvert fait échouer le plancher
-- [ ] le cliquet `python3 tools/quality/check.py` reste PASS
+- [x] `APPGEN` désigne `tools/appgen/appgenlib/` avec un plancher d'au moins 85 % (couverture actuelle du paquet : 96,5 %) ; test : un paquet non couvert fait échouer le plancher
+- [x] le cliquet `python3 tools/quality/check.py` reste PASS
 - [ ] `tools/dev/check --static --changed` : verdict reporté dans la PR
 
 ## Notes
