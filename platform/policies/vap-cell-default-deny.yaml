@@ -13,6 +13,8 @@
 #   - seuls les Pods sont couverts (CREATE) ; un Deployment est admis puis ses pods sont refusés ;
 #   - la mise à jour et la suppression de la NetworkPolicy elle-même restent gardées par Kyverno
 #     lab-security-objects-guard (platform/kyverno/policies) ; ce fichier n'en double pas la portée ;
+#   - un namespace dp-* sans le label de cellule échappe à cette VAP (le sélecteur du binding est un label) ;
+#     VAP-1 R3 impose ce label à tout dp-* écrit par le cluster-agent ;
 #   - lab-pg n'est pas une cellule : hors périmètre.
 # Tests : tests/vap/run.sh (V3-*). Preuve runtime k3d à produire (NOT_TESTED tant que le banc n'a pas tourné).
 apiVersion: admissionregistration.k8s.io/v1
@@ -56,6 +58,15 @@ metadata:
   name: lab-cell-default-deny
 spec:
   policyName: lab-cell-default-deny
+  # OBLIGATOIRE : l'API server résout le paramètre (et applique parameterNotFoundAction Deny) AVANT d'évaluer
+  # les matchConditions (policy_dispatcher.go : « MatchConditions expressions are not evaluated here »).
+  # Sans ce sélecteur, chaque Pod de tout namespace sans `default-deny` (kube-system compris) serait refusé.
+  # Pas de préfixe possible dans un sélecteur : label de cellule (posé par le CPT, verrouillé par VAP-1 R3
+  # et Kyverno lab-security-objects-guard) ET matchCondition dp-* (nom) de la politique.
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        platform.smadja.dev/cell: restricted
   paramRef:
     name: default-deny
     parameterNotFoundAction: Deny

@@ -145,6 +145,8 @@ for ns in openchoreo-data-plane lab-vap-test lab-pg vap-plain auth dp-vap-nopsa 
 done
 nsyaml dp-vap-app restricted oui | kubectl apply -f - >/dev/null
 kubectl label ns lab-vap-test lab-pg vap-plain auth dp-vap-nopsa lab-vap-test=bench --overwrite >/dev/null
+# VAP-3 : le binding sélectionne les cellules par label ; les dp-* du banc le portent (dp-vap-app l'a via nsyaml).
+kubectl label ns dp-vap-nopsa dp-vap-nonp dp-vap-allow dp-vap-half platform.smadja.dev/cell=restricted --overwrite >/dev/null
 kubectl -n "$AGENT_NS" create sa "$AGENT_SA" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 kubectl -n dp-vap-app create sa app --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 kubectl -n lab-vap-test create sa other --dry-run=client -o yaml | kubectl apply -f - >/dev/null
