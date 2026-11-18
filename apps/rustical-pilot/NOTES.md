@@ -8,7 +8,7 @@ Source kube-ops : `k8s/applications/platform/rustical-pilot/` + `k8s/optional/ru
 - Runtime : NOT_TESTED. Les gates pilote de kube-ops (README : connexion OIDC a deux utilisateurs, CRUD CalDAV/CardDAV synthetique, rollback GitOps) restent a executer.
 
 ## Ecarts de securite vs kube-ops
-1. **FQDN et CIDR non declares** : kube-ops autorise `auth.smadja.dev:443`, la VIP Gateway interne `10.0.20.192/32` et le serveur Authentik. Ici `egress: none` + `allowIdp: true`. `thunder.lab.smadja.dev` est refuse en egress FQDN sur k3d (pas de Cilium). Au gate OKE : `egress: [{fqdn: thunder.lab.smadja.dev, ports: [443]}]`.
+1. **FQDN et CIDR non declares** : kube-ops autorise `auth.smadja.dev:443`, la VIP Gateway interne `192.0.2.192/32` et le serveur Authentik. Ici `egress: none` + `allowIdp: true`. `thunder.lab.smadja.dev` est refuse en egress FQDN sur k3d (pas de Cilium). Au gate OKE : `egress: [{fqdn: thunder.lab.smadja.dev, ports: [443]}]`.
 2. **Mot de passe local** : kube-ops met `RUSTICAL_FRONTEND__ALLOW_PASSWORD_LOGIN: "true"`. Je l'ai retire : appgen refuse toute variable d'environnement dont le nom ressemble a un secret (`PASSWORD`). Le comportement par defaut de RustiCal est [S] a verifier ; si le login mot de passe est actif, le pilote a une voie d'auth hors OIDC. Extension requise pour le desactiver proprement : liste blanche de booleens de config ou option `identity` (ex. `passwordLogin: false`).
 3. **Sonde** : `healthPath: /` [S]. kube-ops utilise `rustical health` (exec).
 4. **Secrets renommes** : `APP_RUSTICAL_OIDC_CLIENT_ID/SECRET` devient `RUSTICAL_PILOT_OIDC_CLIENT_ID/SECRET` (prefixe `RUSTICAL_PILOT_`). Action Paul : renommer dans Doppler.

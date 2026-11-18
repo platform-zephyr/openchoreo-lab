@@ -1,6 +1,6 @@
 # K02 — remise des values du labo (keep)
 # date : 2026-11-17T20:29:42Z
-$ helm upgrade external-secrets /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/external-secrets-2.0.1.tgz -n openchoreo-external-secrets -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/values/external-secrets.yaml
+$ helm upgrade external-secrets /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/external-secrets-2.0.1.tgz -n openchoreo-external-secrets -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/values/external-secrets.yaml
 Release "external-secrets" has been upgraded. Happy Helming!
 NAME: external-secrets
 LAST DEPLOYED: Tue Nov 17 21:29:40 2026

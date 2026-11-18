@@ -618,7 +618,7 @@ Chaque test produit une sortie brute archivée dans `evidence/phase0/<n>.txt`. L
 | 5 | preRender (CCT) | Endpoint `external` avec `publicAuth: none` | « exposition publique sans authentification interdite » |
 | 6 | Quota (CPT) | Service `type: LoadBalancer` ou 2ᵉ PVC dans une cellule | `exceeded quota: cell-quota` (et postRender sur le Service) |
 | 7 | Default-deny (CPT) | Pod whoami vers `miniflux.<dp-ns>:8080` | timeout ; DNS OK |
-| 8 | Egress (CPT) | whoami vers `https://example.com` : timeout. Miniflux vers `https://example.com` : 200. Miniflux vers `169.254.169.254`, `10.0.0.1:443` : timeout | comme indiqué |
+| 8 | Egress (CPT) | whoami vers `https://example.com` : timeout. Miniflux vers `https://example.com` : 200. Miniflux vers `169.254.169.254`, `198.51.100.1:443` : timeout | comme indiqué |
 | 9 | Isolation SQL (CRT) | 2ᵉ Resource `pgcanary` dans un projet jetable. Credentials Miniflux vers la base `pgcanary` | `FATAL: permission denied for database "pgcanary"` (REVOKE CONNECT) |
 | 10 | Isolation réseau PG | whoami (sans `pg-client`) vers `lab-pg-rw:5432` | timeout |
 | 11 | Secret admin | `kubectl get secret lab-pg-superuser -n dp-*` (absent) ; `auth can-i get secrets -n lab-pg --as=<SA de cellule>` | `NotFound` ; `no` |

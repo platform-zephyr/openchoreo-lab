@@ -1,11 +1,11 @@
 # I02 — SANS NŒUD : helm upgrade --install des étapes 3-5 (mêmes tgz, values, namespaces ; sans --wait)
 # date : 2026-11-17T20:29:28Z
 $ bash -c 
-      helm upgrade --install cert-manager '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/cert-manager-v1.19.4.tgz' -n openchoreo-cert-manager -f '/Users/paul/Developer/Perso/openchoreo-lab/platform/install/values/cert-manager.yaml' &&
-      helm upgrade --install external-secrets '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/external-secrets-2.0.1.tgz' -n openchoreo-external-secrets -f '/Users/paul/Developer/Perso/openchoreo-lab/platform/install/values/external-secrets.yaml' &&
-      kubectl apply --server-side --field-manager=openchoreo-lab -f '/Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/20-eso-lab-store.yaml' &&
+      helm upgrade --install cert-manager '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/cert-manager-v1.19.4.tgz' -n openchoreo-cert-manager -f '/Users/example/Developer/Perso/openchoreo-lab/platform/install/values/cert-manager.yaml' &&
+      helm upgrade --install external-secrets '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/external-secrets-2.0.1.tgz' -n openchoreo-external-secrets -f '/Users/example/Developer/Perso/openchoreo-lab/platform/install/values/external-secrets.yaml' &&
+      kubectl apply --server-side --field-manager=openchoreo-lab -f '/Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/20-eso-lab-store.yaml' &&
       helm upgrade --install kgateway-crds '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/kgateway-crds-v2.3.11.tgz' -n openchoreo-control-plane &&
-      helm upgrade --install kgateway '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/kgateway-v2.3.11.tgz' -n openchoreo-control-plane -f '/Users/paul/Developer/Perso/openchoreo-lab/platform/install/values/kgateway.yaml'
+      helm upgrade --install kgateway '/private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/kgateway-v2.3.11.tgz' -n openchoreo-control-plane -f '/Users/example/Developer/Perso/openchoreo-lab/platform/install/values/kgateway.yaml'
 Release "cert-manager" does not exist. Installing it now.
 NAME: cert-manager
 LAST DEPLOYED: Tue Nov 17 21:29:23 2026

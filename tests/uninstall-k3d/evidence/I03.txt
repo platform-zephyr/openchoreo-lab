@@ -1,6 +1,6 @@
 # I03 — Argo CD épinglé dans lab-argocd (--no-hooks)
 # date : 2026-11-17T20:29:30Z
-$ helm upgrade --install argocd /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/argo-cd-10.3.3.tgz -n lab-argocd -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/values/argocd.yaml --no-hooks
+$ helm upgrade --install argocd /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state/charts/argo-cd-10.3.3.tgz -n lab-argocd -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/values/argocd.yaml --no-hooks
 Release "argocd" does not exist. Installing it now.
 NAME: argocd
 LAST DEPLOYED: Tue Nov 17 21:29:29 2026

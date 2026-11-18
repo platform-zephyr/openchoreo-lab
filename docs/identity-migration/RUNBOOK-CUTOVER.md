@@ -15,7 +15,7 @@
 | G1 | Emplacement de stockage attribué à `authentik-db` (option S1 ou S2, accord de Paul) | décision écrite ; quota ≤ 200 Go |
 | G2 | Capacité : requests au repos < 70 %, IP de pods ≤ 31 avec la marge du préflight | `verify.sh` (méthode du MAX) |
 | G3 | Drill de restauration hors Oracle PASS, sens (a) **et** (b) (P2), RTO ≤ 30 min, RPO mesuré | empreintes égales, horodatages |
-| G4 | M10 fait : homelab passé par l'URL publique, aucun `hostAliases` ni egress `10.0.20.192` pour `auth`, `auth` retiré du DNS split, outpost manuel en service | DEPENDENCIES §2 vide ; logins OK via Cloudflare |
+| G4 | M10 fait : homelab passé par l'URL publique, aucun `hostAliases` ni egress `192.0.2.192` pour `auth`, `auth` retiré du DNS split, outpost manuel en service | DEPENDENCIES §2 vide ; logins OK via Cloudflare |
 | G5 | Accès de secours testés **le jour même** : kubeconfig Talos hors OIDC, admin local d'Argo, Bastion OKE, admin Authentik par NetBird ou port-forward | une commande lue par accès |
 | G6 | Gel des changements Authentik (PLT-312, PLT-316) depuis la répétition | aucun merge sous `k8s/infrastructure/auth/` |
 | G7 | Aucun autre apply ni bascule en cours (états `cloudflare`, `netbird`, `doppler`) [HI:docs/decisions.md:623-626] | file ARC vide |

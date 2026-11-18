@@ -19,7 +19,7 @@ La mission dit que Polyfin dépend du media-share 2 Ti. **kube-ops ne le monte p
 2. **Base** : `polyfin-db` CNPG avec WAL R2. `lab-pg` sans sauvegarde, `cnpg` non admis.
 3. **OIDC Authentik** (`auth.smadja.dev`, issuer natif) : non admis.
 4. **Egress FQDN** ≥ 10 hôtes (addons Eclipse, TorBox, Tidal, GitHub raw, Authentik) : refus k3d, gate Cilium sur OKE. Pas de wildcard. `public-internet` interdit.
-5. **IP privée** `10.0.20.192/32` (AIOStreams via gateway, `hostAliases`) : `privateEgressCIDRs` vide, E16 absent.
+5. **IP privée** `192.0.2.192/32` (AIOStreams via gateway, `hostAliases`) : `privateEgressCIDRs` vide, E16 absent.
 6. **ConfigMap monté** (liste de radios, `/iptv` en lecture seule) : pas de fichier monté dans le schéma.
 7. **Sondes** `/healthz` et `/readyz` : E10 absent.
 8. Le contrôle AIOStreams (`egress app: aiostreams`) est plausible via E3, mais AIOStreams lui-même n'est pas encore un descripteur validé.

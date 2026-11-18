@@ -13,7 +13,7 @@ Notation des sources : `[KO:chemin:ligne]`, `[HI:chemin:ligne]`, `[OCL:chemin:li
 | Blocage n°1 : stockage | Il reste **un seul emplacement de 50 Go** (150/200 Go occupés : boot + 2 volumes `csi-…` non attachés) [OCL:docs/storage/OKE-AUDIT-2026-11-17.md:48]. `lab-pg` (étape 10 du pilote) le réclame aussi [OCL:docs/PHASE-B.md:21]. Proposition : **Authentik prend cet emplacement**, `lab-pg` va sur le Data Plane Talos ou attend que Paul ait identifié et libéré les volumes `csi-…`. |
 | Blocage n°2 : capacité | Elle tient au repos (≈ 62 % CPU en requests [E], sous le seuil de 70 %). La marge disparaît pendant un rollout (≈ 67 %) et pendant une répétition sur OKE (≈ 78 %, au-dessus du seuil). Les IP de pods (~31 au plus) sont aussi tendues. |
 | Blocage n°3 : preuve | Aucune restauration hors Oracle n'est prouvée (`NOT_TESTED`) [HI:docs/architecture/oke-target-architecture.md:228]. Elle est **obligatoire avant la bascule** (D-2026-11-11-17, D-2026-11-15-11). |
-| Risques principaux de la bascule | (1) Un Authentik homelab relancé par Argo, ou des pods homelab qui gardent des `hostAliases` vers `10.0.20.192` : **split-brain**. (2) L'outpost proxy géré redéployé sur OKE, sans route vers le LAN. (3) Des écritures perdues au retour arrière. (4) La désinstallation de la pile du labo qui supprimerait les CRD d'ESO, donc les Secrets d'Authentik. |
+| Risques principaux de la bascule | (1) Un Authentik homelab relancé par Argo, ou des pods homelab qui gardent des `hostAliases` vers `192.0.2.192` : **split-brain**. (2) L'outpost proxy géré redéployé sur OKE, sans route vers le LAN. (3) Des écritures perdues au retour arrière. (4) La désinstallation de la pile du labo qui supprimerait les CRD d'ESO, donc les Secrets d'Authentik. |
 | Fenêtre estimée | **20 à 40 min** de coupure du login [E] ; le plan l'estimait à 15-30 min, sans mesure [HI:docs/architecture/oke-migration-plan.md:9]. Retour arrière : environ 10 min [E]. |
 
 ## 1. Conserver le domaine et l'issuer
@@ -82,7 +82,7 @@ Sans geste humain là où c'est possible : les blueprints restent en Git, les se
 | TLS | terminé à la bordure Cloudflare (certificat universel) ; tunnel chiffré ; HTTP en clair dans le cluster jusqu'au Service. Authentik doit voir `https` : en-têtes `X-Forwarded-*` de cloudflared et `trusted_proxy_cidrs` [KO:…/values.yaml:141] (le CIDR des pods VCN-native fait partie de `10.0.0.0/8`) : à prouver (T-P4). |
 | Pas de Cloudflare Access devant `auth` | sinon dépendance circulaire [HI:docs/architecture/oke-target-architecture.md:119] |
 | Depuis OKE (CP OpenChoreo, Backstage, apps du DP OKE) | URL publique `https://auth.smadja.dev` (épingle à cheveux OKE → Cloudflare → tunnel → OKE), egress par FQDN [OCL:platform/identity/network-policy-api-idp.yaml:26-29]. Ne pas court-circuiter par le Service interne : l'`iss` et le certificat doivent rester ceux du nom public. |
-| Depuis le homelab (DP Talos, Argo, Grafana, apiserver) | URL publique. Retirer les `hostAliases` vers `10.0.20.192` et l'entrée DNS split LAN (ExternalDNS privé à partir de la route `internal` [KO:k8s/infrastructure/auth/authentik/httproute.yaml:7-13]), puis élargir l'egress des politiques qui ciblent `10.0.20.192/32` (inventaire : DEPENDENCIES §2). |
+| Depuis le homelab (DP Talos, Argo, Grafana, apiserver) | URL publique. Retirer les `hostAliases` vers `192.0.2.192` et l'entrée DNS split LAN (ExternalDNS privé à partir de la route `internal` [KO:k8s/infrastructure/auth/authentik/httproute.yaml:7-13]), puis élargir l'egress des politiques qui ciblent `192.0.2.192/32` (inventaire : DEPENDENCIES §2). |
 | Limite de débit | règle `auth.smadja.dev` à 60 req/60 s par IP [HI:terraform/cloudflare/README.md:176], derrière `enable_rate_limit` (état non vérifié). Tout OKE sort par une seule IP NAT : agents, API et Backstage partageraient ce quota. À vérifier avant la bascule (T-P10). |
 
 ## 7. Restauration hors Oracle (exigée avant la bascule)
@@ -162,7 +162,7 @@ Tous en lecture seule, ou sur une ressource jetable, sans toucher la production.
 | T-P3 | `GET /application/o/<slug>/jwks/` pour chaque provider, `kid` archivé | inventaire des `kid` avant la bascule | nul (public) |
 | T-P4 | Répétition : discovery servie via cloudflared → Service, puis comparer `issuer` et `*_endpoint` à T-P3 | égalité stricte (schéma `https`) | jetable |
 | T-P5 | `kustomize build --enable-helm` de l'overlay OKE Authentik + kubeconform + VAP en `--dry-run=server` | rendu valide, aucun LoadBalancer, PSA restricted | nul |
-| T-P6 | Inventaire (Git) des consommateurs : `hostAliases`, `10.0.20.192`, `auth.smadja.dev` | liste fermée, comparée à DEPENDENCIES §2 | nul |
+| T-P6 | Inventaire (Git) des consommateurs : `hostAliases`, `192.0.2.192`, `auth.smadja.dev` | liste fermée, comparée à DEPENDENCIES §2 | nul |
 | T-P7 | Requête SQL en lecture sur une **restauration jetable** : fichiers référencés dans `/media` | aucun, sinon plan de copie | jetable |
 | T-P8 | Noms Doppler présents (`APP_AUTHENTIK_*`, R2 RO et RW), jamais les valeurs | tous présents | nul |
 | T-P9 | Lecture OCI des 2 volumes `csi-…` (§10.2, étapes 1-4) | namespace/PVC identifiés | nul (RO) |

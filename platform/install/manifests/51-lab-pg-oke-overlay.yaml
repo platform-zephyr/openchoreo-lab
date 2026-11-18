@@ -1,7 +1,7 @@
 # Overlay OKE pour lab-pg (étape 10, APRÈS platform/data/lab-pg-namespace.yaml) :
 #  1. CiliumNetworkPolicy vers kube-apiserver : remplace, sur OKE, la NetworkPolicy `allow-apiserver` de
 #     platform/data (ipBlock 172.18.0.0/16 = réseau docker de k3d). Sous Cilium, un ipBlock ne
-#     sélectionne pas l'identité réservée kube-apiserver (endpoint privé 10.0.2.65:6443, hors nœuds) :
+#     sélectionne pas l'identité réservée kube-apiserver (endpoint privé 203.0.113.65:6443, hors nœuds) :
 #     toEntities est la forme correcte (même forme que kube-ops #1620, cilium-egress.yaml).
 #     La NP k3d reste en place, inoffensive (elle n'ouvre qu'un CIDR docker absent sur OKE).
 #  2. ResourceQuota + LimitRange du namespace lab-pg.

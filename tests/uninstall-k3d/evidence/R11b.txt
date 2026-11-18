@@ -1,6 +1,6 @@
 # R11b — --step 10 --apply après l'étape 11 (Application à finalizer restante)
 # date : 2026-11-17T20:30:33Z
-$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 10 --apply
+$ /Users/example/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --step 10 --apply
 20:30:33Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
 20:30:33Z ABANDON : étape 10 : Application Argo présente dans lab-argocd (selfHeal recréerait les objets) : uninstall.sh --step 11 d'abord
 # rc=2

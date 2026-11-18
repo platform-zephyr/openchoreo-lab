@@ -1,1 +1,1 @@
-politiques : /Users/paul/Developer/Perso/openchoreo-lab/platform/policies (d962f18f6356)
+politiques : /Users/example/Developer/Perso/openchoreo-lab/platform/policies (d962f18f6356)

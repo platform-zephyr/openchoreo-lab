@@ -5,10 +5,10 @@
 # cri-o sur le nœud, hors réseau de pod : aucune règle FQDN de registre n'est nécessaire.
 #
 # kube-apiserver : CiliumNetworkPolicy toEntities/fromEntities (un ipBlock ne sélectionne pas l'identité
-# réservée kube-apiserver ; endpoint privé OKE 10.0.2.65:6443, Service kubernetes 443).
+# réservée kube-apiserver ; endpoint privé OKE 203.0.113.65:6443, Service kubernetes 443).
 # Webhooks (cert-manager :10250, controller-manager OpenChoreo :9443, CNPG :9443) : ingress depuis
 # l'entité kube-apiserver. [S] à prouver sur OKE (verify.sh) : identité vue par Cilium pour les appels
-# du control plane managé. Repli minimal si refus : fromCIDR 10.0.2.65/32 sur le seul port du webhook.
+# du control plane managé. Repli minimal si refus : fromCIDR 203.0.113.65/32 sur le seul port du webhook.
 #
 # CONFLIT C1 (docs/PHASE-B.md §6) : la CCNP kube-ops `allow-egress-unisolated` (toEntities: all, tous
 # namespaces hors auth/backstage/hindsight/databases) s'ajoute à ces règles (union Cilium) : tant

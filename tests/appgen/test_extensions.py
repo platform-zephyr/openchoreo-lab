@@ -36,7 +36,7 @@ def caps_doc(**spec_overrides) -> dict:
 
 RICH_CAPS = caps_doc(
     cilium=True,
-    privateEgressCIDRs=["10.0.20.192/32"],
+    privateEgressCIDRs=["172.18.0.192/32"],
     databaseInstances={
         "lab-pg": {"resourceType": "cnpg-lab-db", "namespace": "lab-pg", "cluster": "lab-pg", "backup": "none"},
         "pg-shared": {"resourceType": "cnpg-shared-db", "namespace": "data", "cluster": "pg-shared", "backup": "cnpg"},
@@ -175,7 +175,7 @@ class EgressK3d(Base):
 
     def test_private_cidr_refused_by_default(self):
         doc = whoami()
-        doc["spec"]["network"]["egress"] = [{"cidr": "10.0.20.192/32", "ports": [443]}]
+        doc["spec"]["network"]["egress"] = [{"cidr": "172.18.0.192/32", "ports": [443]}]
         self.assertRefused(doc, "privateEgressCIDRs")
 
     def test_cidr_not_network_address_refused(self):
@@ -234,7 +234,7 @@ class EgressCilium(Base):
         doc["spec"]["network"]["egress"] = [
             {"fqdn": "api.minimax.io", "ports": [443]},
             {"fqdnPattern": "*.eu.r2.cloudflarestorage.com", "ports": [443]},
-            {"cidr": "10.0.20.192/32", "ports": [443]},
+            {"cidr": "172.18.0.192/32", "ports": [443]},
         ]
         self.sb.add(doc)
         self.assertEqual(self.sb.errors(), [])
@@ -245,7 +245,7 @@ class EgressCilium(Base):
         self.assertEqual(cnp["metadata"]["annotations"]["platform.smadja.dev/enforced"], "true")
         self.assertEqual(len(cnp["spec"]["egress"]), 3)   # DNS + 2 FQDN
         np = files["previews/whoami/production/networkpolicy-egress-allowlist.yaml"]
-        self.assertEqual(np["spec"]["egress"][0]["to"][0]["ipBlock"], {"cidr": "10.0.20.192/32"})
+        self.assertEqual(np["spec"]["egress"][0]["to"][0]["ipBlock"], {"cidr": "172.18.0.192/32"})
 
     def test_metadata_fqdn_refused(self):
         doc = whoami()
