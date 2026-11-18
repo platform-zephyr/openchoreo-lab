@@ -80,7 +80,7 @@ else ko "ecart de modele non detecte"; fi
 # 5. Workflow.
 wf="$ROOT/.github/workflows/claude-agent.yml"
 if grep -qE '^ *show_full_output:' "$wf"; then ko "show_full_output present"; else ok "show_full_output absent"; fi
-eq "secrets : seul le jeton Claude" "$(grep -o 'secrets\.[A-Z_]*' "$wf" | sort -u | tr '\n' ' ')" "secrets.CLAUDE_CODE_OAUTH_TOKEN "
+eq "secrets : jeton Claude et identite de l'executant (T-304) seulement" "$(grep -o 'secrets\.[A-Z_]*' "$wf" | sort -u | tr '\n' ' ')" "secrets.CLAUDE_CODE_OAUTH_TOKEN secrets.FACTORY_GH_TOKEN "
 if grep -qE '^  issues:|label_trigger' "$wf"; then ko "declencheur par label encore present"; else ok "declencheur par label retire"; fi
 # shellcheck disable=SC2016
 if grep -q -- '--model \${{ inputs.model }}' "$wf" && grep -q -- '--effort \${{ inputs.effort }}' "$wf" \
