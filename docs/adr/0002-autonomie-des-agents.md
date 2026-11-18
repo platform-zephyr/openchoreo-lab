@@ -34,6 +34,9 @@ Décisions liées : D-2026-11-15-03 et D-2026-11-16-07 (homelab-infra, autonomie
    externe (Cloudflare, DNS) tant qu'il n'est pas déclaré par Crossplane (ADR-0009).
 4. **Contrôle compensatoire** : une PR qui touche `platform/` doit avoir la CI k3d verte (suites VAP, cellules,
    GitOps). Une régression détectée en runtime déclenche un `git revert` autonome.
+   **Amendement (Paul, 2026-11-18, D-1)** : pendant le développement, ce contrôle compensatoire est suspendu (les suites k3d
+   sont lancées à la main, ne bloquent pas les itérations des agents). Il est rétabli, en forme réduite, à l'étape FINAL0
+   (`docs/research/K3D-REACTIVATION.md`).
 5. **Un agent ne peut jamais élargir ses propres droits** : c'est l'invariant qui rend le reste acceptable.
 
 ## Conséquences

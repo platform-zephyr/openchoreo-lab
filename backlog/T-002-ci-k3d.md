@@ -34,3 +34,5 @@ Revue de la PR #36 faite le 2026-11-18 (4 points).
 Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).
 
 Reste : critère 4 exige un run GitHub réel (NOT_TESTED, aucun run possible depuis cette session). `development` : le bootstrap ne l'invente plus si `platform/` le fournit (STATIC, yq 4.54.3 testé avec un faux manifeste). `docs/research/GITHUB-CONFIG.md` est absent du dépôt : la règle « pas de merge_group » est consignée dans le workflow et `docs/CI-K3D.md`.
+
+Décision de Paul (2026-11-18, D-3) : ce ticket se ferme par un lancement manuel vert de `k3d-integration` sur `main` après les corrections T-456 à T-458, pas par un run sur PR.

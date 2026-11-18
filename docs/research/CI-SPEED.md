@@ -76,6 +76,18 @@ Alerte : un échec post-merge rend le commit rouge sur `main`, et GitHub notifie
 3. File de fusion : `min_entries_to_merge_wait_minutes: 1` avec `min_entries_to_merge: 1`. L'attente ne s'applique que si le minimum n'est pas atteint [V] ; avec un minimum de 1, elle est sans effet. À vérifier sur un run `merge_group` réel (aucun observé le 2026-11-18).
 4. `kubeconform -cache` pour les schémas Kubernetes par défaut, téléchargés à chaque run (part non isolée, NOT_TESTED).
 
+## 5b. Résultat de T-451 (CSafeLoader), mesuré en local le 2026-11-18 [M]
+Même machine que §1 (x86_64, 4 vCPU, PyYAML 6.0.2 avec libyaml). `_SafeLoader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)` dans `appgen.py` (`load_yaml`, `_PlatformLoader`) ; la classe `Loader` d'`argo_guard.py` hérite de la même base. Repli sur `SafeLoader` vérifié en supprimant `yaml.CSafeLoader`.
+
+| Mesure | Avant | Après |
+|---|---|---|
+| `python3 -m unittest discover -s tests/appgen` (139 tests, 8 sautés) | 17,8 s | 3,8 s |
+| `python3 tools/appgen/appgen.py check` | 1,37 s | 0,59 s |
+| `python3 -I tools/oke/argo_guard.py .` | 0,61 s | 0,10 s |
+| `tests/argo-guard/run.sh` (41 cas) | 27,3 s | 6,2 s |
+
+Sorties de `appgen check` et d'`argo_guard.py` identiques à l'octet avant/après ; `tests/backlog` vert. NOT_TESTED : durées des jobs `platform` et `appgen` sur un run GitHub réel, et premier `hit` du cache des charts (aucun push depuis cette session).
+
 ## 6. Risques et NOT_TESTED
 - NOT_TESTED : aucun run GitHub de cette branche (pas de push). Les gains sont des estimations tirées de la durée des étapes [E].
 - NOT_TESTED : chemin du cache `${{ github.workspace }}/../phaseb` hors du workspace. `actions/cache` accepte des chemins absolus ; à confirmer sur le premier run (cache `miss`, puis `hit` après un run de `main`).

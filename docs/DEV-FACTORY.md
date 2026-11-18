@@ -41,6 +41,29 @@ scripts existants (`tests/*`, `tools/appgen`, `tools/oke`). Outil : `tools/dev/d
 Garde-fous de `dev` : refus si le contexte Docker est la VM Colima partagée `openchoreo` (sauf `DEV_ALLOW_SHARED_VM=1`),
 refus si le daemon n'est pas ARM64. Le push et l'ouverture de PR se font depuis l'hôte (aucun token dans le conteneur).
 
+## VM cloud des agents (linux x86_64) : outils de contrôle (SL-2, T-454)
+
+La VM cloud n'a pas `helm`, `kubeconform`, `actionlint` ni `gitleaks` : sans eux, neuf contrôles de `dev test` restent `NOT_TESTED`.
+`tools/dev/cloud-setup.sh` les installe, avec `shellcheck`, `ruff`, `yq` et `pre-commit`, dans `~/.local/bin` (jamais de sudo).
+
+- **Versions et empreintes** : `tools/dev/toolchain.lock`, clés `<OUTIL>_AMD64_SHA256` (linux-amd64), plus `RUFF_*` et `PRECOMMIT_*`.
+  Les empreintes viennent des fichiers de checksums publiés par chaque projet ; shellcheck et le zipapp pre-commit n'en publient pas :
+  empreinte calculée sur l'archive officielle (deux téléchargements identiques). Aucun `curl | sh`.
+- **Installation** : chaque archive est vérifiée par sha256 avant extraction ; empreinte différente = `FAIL` et rien d'installé.
+  Idempotent : un outil déjà à la version épinglée n'est pas retéléchargé. `--only helm,yq` limite aux outils nommés.
+  Mesuré le 2026-11-18 sur la VM cloud : 8 outils en 5 s, réseau ouvert.
+- **Diagnostic** : `tools/dev/doctor` liste outil par outil `présent` / `écart` (autre version) / `absent` et sort non zéro si un outil
+  requis manque (`--strict` : aussi sur un écart). Lecture seule, sans réseau.
+- **Contrôle** : `tests/dev-factory/lock-concordance.sh` couvre les clés amd64 (empreinte valide, version présente, lue par
+  `cloud-setup.sh`, différente de l'arm64, `RUFF_VERSION` = `ci.yaml`).
+- Limite : cible x86_64 seulement (arm64 : `.devcontainer/Dockerfile`) ; la preuve arm64 reste en CI. Le script ne tourne pas à la reprise
+  d'une VM inactive et les processus lancés ne survivent pas à son expiration.
+
+**Geste de Paul (T-334, aucune valeur)** : dans l'interface de l'environnement cloud des agents, renseigner comme script de setup
+`tools/dev/cloud-setup.sh` (exécuté depuis la racine du dépôt cloné), vérifier que `~/.local/bin` est dans le `PATH` des agents,
+puis lancer une session et y exécuter `tools/dev/doctor` (attendu : `RESULT: PASS`). Hôtes à autoriser en sortie pour le script :
+`get.helm.sh`, `github.com` et le CDN de téléchargement des releases GitHub.
+
 ## Limites connues
 
 - Le processus Claude Code tourne sur l'hôte, dans le worktree : l'isolation couvre les **commandes** exécutées (`dev exec`), pas l'agent lui-même.

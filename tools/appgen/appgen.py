@@ -120,7 +120,7 @@ class AppError(Exception):
 
 def load_yaml(path: Path):
     with path.open("r", encoding="utf-8") as fh:
-        return yaml.safe_load(fh)
+        return yaml.load(fh, Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader))  # libyaml si dispo (= safe_load)
 
 
 def _walk_strings(node, path=""):

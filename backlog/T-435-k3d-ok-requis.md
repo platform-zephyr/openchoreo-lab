@@ -8,7 +8,7 @@ depends_on: [T-002, T-430]
 class: REVUE
 velocity: false
 lane: ci
-stage: S1
+stage: FINAL0
 model: claude-sonnet-5-5
 effort: high
 routing: R3-defaut
@@ -31,3 +31,5 @@ Une PR qui touche platform/ doit avoir la CI k3d verte (ADR-0002 §4). Ajouter m
 Proposition GH-6 (backlog/proposals/github.yaml), intégrée (intégration 5, 2026-11-18). Variante : ajouter k3d-ok au needs de ci-ok (docs/CI-K3D.md §4). Choisir une seule voie. Coût : minutes de runner ARM gratuites en dépôt public.
 
 T-400 (FINAL0) requiert `k3d-ok` dans `main-final.json` : T-400 dépend de ce ticket.
+
+Décision de Paul (2026-11-18, D-2) : déplacé de S1 à FINAL0 ; aucun check k3d requis pendant le développement.

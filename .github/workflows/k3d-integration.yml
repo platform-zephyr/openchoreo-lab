@@ -18,6 +18,9 @@ on:
   # DÉSACTIVÉ (décision de Paul, 2026-11-18) : en phase de développement, les suites k3d ne bloquent ni ne ralentissent
   # les itérations des agents. Lancement manuel seulement. Réactivation : étude T-452 (quand et sous quelle forme).
   workflow_dispatch:
+  # D-6 : un label `k3d` posé sur une PR lance les suites à la demande (jamais automatiquement).
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: read
@@ -64,9 +67,6 @@ jobs:
           if [ "$EVENT" != "pull_request" ]; then
             run=true
           elif jq -e 'index("k3d") != null' <<<"$LABELS" >/dev/null; then
-            run=true
-          elif git diff --name-only "$BASE" "$HEAD" \
-              | grep -Eq '^(platform/|tools/(oke|k3d|appgen)/|tests/(k3d|vap|argo-escalation|gitops-k3d)/|\.github/workflows/k3d-integration\.yml$)'; then
             run=true
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"

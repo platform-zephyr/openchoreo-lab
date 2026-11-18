@@ -53,6 +53,42 @@ cp tools/dev/toolchain.lock "$W/lock.bad-pip"
 sed -i 's/^YAMLLINT_VERSION=.*/YAMLLINT_VERSION=0.0.1/' "$W/lock.bad-pip"
 expect "concordance refuse un pip modifié" 1 env LOCK="$W/lock.bad-pip" "$CONC"
 
+# SL-2 (T-454) : empreintes linux-amd64 et outils de la VM cloud.
+cp tools/dev/toolchain.lock "$W/lock.bad-amd64"
+sed -i 's/^HELM_AMD64_SHA256=.*/HELM_AMD64_SHA256=pas-une-empreinte/' "$W/lock.bad-amd64"
+expect "concordance refuse une empreinte amd64 invalide" 1 env LOCK="$W/lock.bad-amd64" "$CONC"
+out_has "  … nomme HELM_AMD64_SHA256" 'HELM_AMD64_SHA256'
+
+cp tools/dev/toolchain.lock "$W/lock.same-arch"
+sed -i 's/^YQ_AMD64_SHA256=.*/YQ_AMD64_SHA256=cf0a663d8e4e00bb61507c5237b95b45a6aaa1fbedac77f4dc8abdadd5e2b745/' "$W/lock.same-arch"
+expect "concordance refuse une empreinte amd64 égale à l'arm64" 1 env LOCK="$W/lock.same-arch" "$CONC"
+
+grep -v '^KUBECONFORM_VERSION=' tools/dev/toolchain.lock >"$W/lock.no-version"
+expect "concordance refuse une empreinte amd64 sans version" 1 env LOCK="$W/lock.no-version" "$CONC"
+
+cp tools/dev/toolchain.lock "$W/lock.bad-ruff"
+sed -i 's/^RUFF_VERSION=.*/RUFF_VERSION=0.0.1/' "$W/lock.bad-ruff"
+expect "concordance refuse un ruff différent de ci.yaml" 1 env LOCK="$W/lock.bad-ruff" "$CONC"
+out_has "  … nomme RUFF_VERSION" 'RUFF_VERSION'
+
+cp tools/dev/toolchain.lock "$W/lock.extra-amd64"
+printf 'NEWTOOL_VERSION=1.0.0\nNEWTOOL_AMD64_SHA256=%064d\n' 1 >>"$W/lock.extra-amd64"
+expect "concordance refuse une clé amd64 non lue par cloud-setup.sh" 1 env LOCK="$W/lock.extra-amd64" "$CONC"
+out_has "  … nomme NEWTOOL_AMD64_SHA256" 'NEWTOOL_AMD64_SHA256'
+
+# doctor : sortie non nulle si un outil requis manque (PATH vide de ces outils, dossier vide), 0 si tout est présent.
+mkdir -p "$W/emptybin" "$W/fakebin"
+expect "doctor : outils requis absents donne rc 1" 1 env PATH="/usr/bin:/bin" CLOUD_BIN_DIR="$W/emptybin" "$PWD/tools/dev/doctor"
+out_has "  … liste outil par outil (absent)" '^helm +absent'
+for t in helm kubeconform actionlint gitleaks shellcheck ruff yq pre-commit; do
+  printf '#!/bin/sh\nexit 0\n' >"$W/fakebin/$t"
+  chmod +x "$W/fakebin/$t"
+done
+expect "doctor : outils présents mais version illisible donne rc 1" 1 env PATH="/usr/bin:/bin" CLOUD_BIN_DIR="$W/fakebin" "$PWD/tools/dev/doctor"
+expect "doctor --tool : outil absent donne rc 1" 1 env PATH="/usr/bin:/bin" CLOUD_BIN_DIR="$W/emptybin" "$PWD/tools/dev/doctor" --tool helm
+expect "doctor : option inconnue donne rc 2" 2 "$PWD/tools/dev/doctor" --bogus
+expect "cloud-setup : option inconnue donne rc 2" 2 "$PWD/tools/dev/cloud-setup.sh" --bogus
+
 # ---- 2. check ----
 expect "check sans argument : usage" 2 "$CHECK"
 expect "check option inconnue" 2 "$CHECK" --bogus
@@ -86,6 +122,56 @@ for pair in leak-guard:tests/leak-guard/run.sh identities:tests/identities/run.s
     out_has "  … ${pair%%:*} NOT_TESTED, pas PASS" "^NOT_TESTED +${pair%%:*} .*absent du dépôt"
   fi
 done
+# ---- 3. contrôles miroirs de la CI (SL-1, T-453) ----
+# 3a. chaque contrôle existe dans check (une étape oubliée ne produirait aucune ligne).
+MIRRORS="quality ruff-bugs shellcheck-all backlog-unittest identities-lint yamllint-platform coverage leak-guard"
+for n in $MIRRORS; do
+  expect "contrôle $n présent dans --static" 0 env PATH="$W/bin" CHECK_ONLY="$n" "$CHECK" --static
+  out_has "  … ligne de résultat pour $n" "^(PASS|NOT_TESTED|FAIL) +$n "
+done
+# 3b. outil absent : NOT_TESTED, jamais PASS ni FAIL (leak-guard sans gitleaks compris).
+for n in quality ruff-bugs shellcheck-all yamllint-platform coverage leak-guard; do
+  expect "$n sans outil : rc 0" 0 env PATH="$W/bin" CHECK_ONLY="$n" "$CHECK" --static
+  out_has "  … $n NOT_TESTED" "^NOT_TESTED +$n .*outil absent"
+  if grep -Eq "^(PASS|FAIL) " "$W/out"; then ko "$n absent ne doit être ni PASS ni FAIL"; else ok "$n absent : ni PASS ni FAIL"; fi
+done
+expect "leak-guard sans gitleaks avec --strict : rc 3, pas 1" 3 env PATH="$W/bin" CHECK_ONLY=leak-guard "$CHECK" --static --strict
+
+# 3c. outils factices (cas négatifs) : un outil qui échoue donne FAIL ; un ruff d'une autre version donne NOT_TESTED.
+PIN="$(grep -o 'ruff==[0-9][0-9.]*' .github/workflows/ci.yaml | head -n 1 | cut -d= -f3)"
+mkdir -p "$W/fake"
+for t in env date mktemp rm tail sed cat grep head cut awk uname dirname basename python3 git bash; do
+  p="$(command -v "$t" || true)"
+  [[ -n "$p" ]] && ln -sf "$p" "$W/fake/$t"
+done
+# shellcheck disable=SC2016  # script factice : $1 doit rester littéral
+printf '#!/bin/sh\n[ "$1" = "--version" ] && { echo "ruff %s"; exit 0; }\necho "E9 factice"; exit 1\n' "$PIN" >"$W/fake/ruff"
+printf '#!/bin/sh\necho "SC9999 factice"; exit 1\n' >"$W/fake/shellcheck"
+printf '#!/bin/sh\necho "yamllint factice"; exit 1\n' >"$W/fake/yamllint"
+chmod +x "$W/fake/ruff" "$W/fake/shellcheck" "$W/fake/yamllint"
+expect "ruff-bugs : ruff qui échoue donne FAIL (rc 1)" 1 env PATH="$W/fake" CHECK_ONLY=ruff-bugs "$CHECK" --static
+out_has "  … ligne FAIL ruff-bugs" '^FAIL +ruff-bugs'
+expect "shellcheck-all : shellcheck qui échoue donne FAIL" 1 env PATH="$W/fake" CHECK_ONLY=shellcheck-all "$CHECK" --static
+out_has "  … ligne FAIL shellcheck-all" '^FAIL +shellcheck-all'
+expect "yamllint-platform : yamllint qui échoue donne FAIL" 1 env PATH="$W/fake" CHECK_ONLY=yamllint-platform "$CHECK" --static
+out_has "  … ligne FAIL yamllint-platform" '^FAIL +yamllint-platform'
+# shellcheck disable=SC2016  # script factice : $1 doit rester littéral
+printf '#!/bin/sh\n[ "$1" = "--version" ] && { echo "ruff 0.0.1"; exit 0; }\nexit 0\n' >"$W/fake/ruff"
+expect "ruff d'une autre version : NOT_TESTED (rc 0), pas PASS" 0 env PATH="$W/fake" CHECK_ONLY=ruff-bugs "$CHECK" --static
+out_has "  … ruff-bugs NOT_TESTED sur version" '^NOT_TESTED +ruff-bugs .*précondition'
+expect "ruff d'une autre version : quality NOT_TESTED aussi" 0 env PATH="$W/fake" CHECK_ONLY=quality "$CHECK" --static
+if grep -Eq '^(PASS|FAIL) ' "$W/out"; then ko "quality avec ruff non épinglé ne doit être ni PASS ni FAIL"; else ok "quality avec ruff non épinglé : ni PASS ni FAIL"; fi
+
+# 3d. avec les vrais outils présents, les contrôles miroirs passent sur le dépôt (sinon NOT_TESTED : outil absent).
+for n in backlog-unittest identities-lint; do
+  expect "$n sur le dépôt" 0 env CHECK_ONLY="$n" "$CHECK" --static
+  out_has "  … $n PASS" "^PASS +$n "
+done
+if command -v ruff >/dev/null 2>&1; then
+  expect "ruff-bugs sur le dépôt (ruff réel)" 0 env CHECK_ONLY=ruff-bugs "$CHECK" --static
+  out_has "  … ruff-bugs PASS ou NOT_TESTED (version)" '^(PASS|NOT_TESTED) +ruff-bugs '
+fi
+
 expect "--k3d sans kubectl : NOT_TESTED" 0 env PATH="$W/bin" "$CHECK" --k3d
 out_has "  … k3d NOT_TESTED (outil absent)" '^NOT_TESTED +k3d .*kubectl'
 
