@@ -53,6 +53,8 @@
 # sortie est validée par les gardes ci-dessous et par la CI k3d.
 /tools/oke/ @SmadjaPaul
 /tools/dev/guard-check.sh @SmadjaPaul
+# Table de parité ci.yaml <-> tools/dev/check (T-460) : un agent ne se dispense pas d'un contrôle en la modifiant seul
+/tools/dev/ci-map.tsv @SmadjaPaul
 /tools/appgen/validate-crd.sh @SmadjaPaul
 /tests/appgen/kubeconform-negative.sh @SmadjaPaul
 /tests/cell-cpt/ @SmadjaPaul
