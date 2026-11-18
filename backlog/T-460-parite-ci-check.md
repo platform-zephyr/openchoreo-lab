@@ -12,7 +12,7 @@ stage: S1
 model: claude-sonnet-5-5
 effort: high
 routing: R3-defaut
-github_issue: null
+github_issue: 66
 ---
 
 # T-460 — Parité ci.yaml ↔ tools/dev/check : ci-map.tsv et test de parité (SL-6)
