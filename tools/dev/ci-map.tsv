@@ -1,0 +1,35 @@
+# Table de parité ci.yaml <-> tools/dev/check (SL-6, T-460, ADR-0022). Lue par tests/dev-factory/ci-parity.sh.
+# Règle : la CI ne découvre rien qu'un contrôle local rapide aurait trouvé. Tout job de ci.yaml (hors ci-ok) a une ligne.
+#
+# Lignes de job : JOB<TAB>ÉTAPES<TAB>NIVEAU<TAB>MODE
+#   ÉTAPES  étapes de `tools/dev/check --list` séparées par des virgules, ou CI-ONLY (aucun équivalent local).
+#   NIVEAU  niveau de l'échelle de docs/research/SHIFT-LEFT-DEV-ENV.md §2 (L2 sans cluster, L3 CI seulement).
+#   MODE    `check`  : le job appelle `tools/dev/check --static --strict` limité à ces étapes (`--only <étapes>` ou
+#                      CHECK_ONLY=<étapes> ; le test exige exactement ces étapes et --strict) ;
+#           `miroir : <raison>` : l'étape existe en local mais le job garde sa propre commande (raison obligatoire) ;
+#           pour CI-ONLY : la raison (obligatoire).
+# Lignes d'étape sans job : LOCAL-ONLY<TAB>ÉTAPE<TAB>-<TAB>RAISON (raison obligatoire). Toute étape de `check --list` absente
+# de cette table (ni dans un job, ni LOCAL-ONLY) est une étape orpheline : le test échoue.
+# Les CI-ONLY et LOCAL-ONLY doivent rester rares. Un test PASS prouve la structure, pas l'exécution : le runtime reste
+# celui des jobs CI et de `tools/dev/check`.
+yamllint	yamllint	L2	check
+appgen	appgen-validate,appgen-unittest,appgen-check,identities-lint	L2	check
+crd-schema	CI-ONLY	L3	clone amont openchoreo-upstream (réseau, commit épinglé) : kubeconform -strict contre les CRD v1.3.3
+secrets	gitleaks	L3	check
+leak-guard	leak-guard	L2	check
+actionlint	actionlint	L2	check
+charts	CI-ONLY	L3	garde de présence de Chart.yaml (find) : aucun chart local, rien à contrôler en local
+platform	yamllint-platform,shellcheck,argo-guard-rules,argo-guard-negative,cell-cpt	L2	check
+platform-render	security-bundle,render-check,uninstall-guards,kubeconform-platform	L3	check
+release-history	release-history	L3	check
+dev-factory	dev-factory-static,devcontainer-json	L2	check
+backlog	backlog-unittest,backlog	L2	check
+lint-code	ruff-bugs,shellcheck-all	L2	check
+quality	quality	L2	check
+quality-coverage	coverage	L2	miroir : artefact quality.v1.json et base de PR (github.base_ref) propres à la CI
+agent-trailers	CI-ONLY	L3	contexte de PR (github.head_ref, origin/main..HEAD) : tools/factory/run-ticket.sh check-trailers
+hooks	settings,hooks	L2	miroir : CHECK_ONLY serait hérité par le check --fast que lance le hook Stop testé (tests/hooks) ; un drapeau --only de check lèverait l'obstacle
+LOCAL-ONLY	guard-check	-	garde-fou du conteneur de dev (DEV_FACTORY=1) : sans objet sur un runner
+LOCAL-ONLY	toolchain-lock	-	pas encore câblée en CI : lock-concordance.sh lit la variable CI, valant true sur GitHub (défaut à corriger hors de T-460)
+LOCAL-ONLY	check-selftest	-	pas encore câblée en CI : check-test.sh non prouvé sur runner (suivi hors de T-460)
+LOCAL-ONLY	identities	-	tests/identities/run.sh absent du dépôt (T-306) : l'étape est NOT_TESTED ; les tests tournent via le job appgen (identities-lint)

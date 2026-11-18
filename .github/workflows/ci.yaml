@@ -47,8 +47,9 @@ jobs:
           python-version: "3.12"
       - name: Installer yamllint (version figee)
         run: python3 -m pip install --disable-pip-version-check "yamllint==1.38.0"
-      - name: yamllint
-        run: yamllint -c tools/appgen/yamllint.yaml apps tools tests .github
+      - name: yamllint (tools/dev/check)
+        # Parite ci.yaml <-> tools/dev/check (T-460) : tools/dev/ci-map.tsv, tests/dev-factory/ci-parity.sh.
+        run: CHECK_ONLY="yamllint" tools/dev/check --static --strict
 
   appgen:
     runs-on: ubuntu-24.04-arm
@@ -61,16 +62,8 @@ jobs:
           python-version: "3.12"
       - name: Dependances appgen (figees)
         run: python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt
-      - name: Validation schema et regles (apps/*, apps/_examples/*)
-        run: python3 tools/appgen/appgen.py validate
-      - name: Tests unitaires et cas negatifs
-        run: python3 -m unittest discover -s tests/appgen -v
-      - name: Pas de derive (render doit ne rien modifier)
-        run: python3 tools/appgen/appgen.py check
-      - name: Registre des identites (schema, aucune valeur) et tests du lint
-        run: |
-          python3 -I tools/backlog/identities_lint.py
-          python3 -m unittest discover -s tests/identities -v
+      - name: Validation, tests, derive et registre des identites (tools/dev/check)
+        run: CHECK_ONLY="appgen-validate,appgen-unittest,appgen-check,identities-lint" tools/dev/check --static --strict
 
   crd-schema:
     runs-on: ubuntu-24.04-arm
@@ -122,12 +115,10 @@ jobs:
           echo "${GITLEAKS_SHA256}  gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" | sha256sum -c -
           tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" gitleaks
           sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
-      - name: Detection de secrets (historique complet, regles par defaut, valeurs masquees)
-        # Config explicite : sans elle gitleaks charge .gitleaks.toml (regles OCID/IPv4/e-mail/chemin de la garde T-303,
-        # appliquees a l'arbre par le job leak-guard) et ferait echouer sur l'historique deja publie.
-        run: |
-          printf '[extend]\nuseDefault = true\n' >"$RUNNER_TEMP/gitleaks-default.toml"
-          gitleaks git --config "$RUNNER_TEMP/gitleaks-default.toml" --redact --no-banner --log-level warn .
+      - name: Detection de secrets (historique complet, regles par defaut, valeurs masquees ; tools/dev/check)
+        # L'etape gitleaks de check utilise une config explicite (regles par defaut seulement) : .gitleaks.toml (garde
+        # T-303, appliquee a l'arbre par le job leak-guard) ferait echouer sur l'historique deja publie.
+        run: CHECK_ONLY="gitleaks" tools/dev/check --static --strict
 
   leak-guard:
     # Garde de donnees sensibles du depot public (T-303) : OCID Oracle, IPv4 non documentaire, e-mail hors noreply,
@@ -147,13 +138,10 @@ jobs:
           echo "${GITLEAKS_SHA256}  gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" | sha256sum -c -
           tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" gitleaks
           sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
-      - name: shellcheck du script et de ses tests
-        run: |
-          command -v shellcheck >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck; }
-          shellcheck -x -P SCRIPTDIR tools/dev/leak-guard.sh tests/leak-guard/run.sh
-      - name: Tests (cas negatifs et positifs, absence de valeur en sortie, motif propre absent)
-        # Sans le secret : les tests fixent eux-memes les motifs dont ils ont besoin.
-        run: env -u LEAK_GUARD_EXTRA_PATTERNS tests/leak-guard/run.sh
+      - name: Tests (cas negatifs et positifs, absence de valeur en sortie, motif propre absent ; tools/dev/check)
+        # Sans le secret : les tests fixent eux-memes les motifs dont ils ont besoin. Le shellcheck de ces scripts est
+        # porte par l'etape shellcheck de check (job platform).
+        run: CHECK_ONLY="leak-guard" tools/dev/check --static --strict
       - name: Garde sur l'arbre (motifs generiques + motifs du proprietaire si le secret existe)
         # Le secret n'est expose qu'a cette etape (jamais aux tests, jamais aux PR de fork).
         env:
@@ -174,8 +162,8 @@ jobs:
           echo "${ACTIONLINT_SHA256}  actionlint_${ACTIONLINT_VERSION}_linux_arm64.tar.gz" | sha256sum -c -
           tar -xzf "actionlint_${ACTIONLINT_VERSION}_linux_arm64.tar.gz" actionlint
           sudo install -m 0755 actionlint /usr/local/bin/actionlint
-      - name: actionlint
-        run: actionlint
+      - name: actionlint (tools/dev/check)
+        run: CHECK_ONLY="actionlint" tools/dev/check --static --strict
 
   charts:
     # Charts Helm locaux : aucun pour l'instant (le parcours helm pointe des charts OCI externes).
@@ -200,6 +188,9 @@ jobs:
     # Les rendus Helm, le security bundle, les gardes uninstall.sh et kubeconform sont dans `platform-render`,
     # en parallele (docs/research/CI-SPEED.md) ; les deux jobs sont dans ci-ok.
     runs-on: ubuntu-24.04-arm
+    env:
+      SHELLCHECK_VERSION: "v0.11.0"
+      SHELLCHECK_SHA256: "12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -211,26 +202,20 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m pip install --disable-pip-version-check "yamllint==1.38.0" "PyYAML==6.0.2"
-          # ShellCheck : image du runner, sinon apt.
-          command -v shellcheck >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck; }
+          # ShellCheck epingle (meme version que dev-factory et tools/dev/toolchain.lock) : l'etape shellcheck de check
+          # couvre une liste plus large qu'avant et la version de l'image du runner (0.9.0) signale des notes (SC2317) absentes en 0.11.0.
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
+          echo "${SHELLCHECK_SHA256}  shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz" | sha256sum -c -
+          tar -xJf "shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
+          sudo install -m 0755 "shellcheck-${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
           shellcheck --version | head -2
-      - name: yamllint (platform hors component-types, tools/oke, tests/argo-guard)
-        run: |
-          yamllint -c tools/appgen/yamllint.yaml platform/install platform/authz platform/policies platform/data \
-            platform/traits platform/project-types platform/resource-types platform/cluster-agent \
-            platform/identity platform/portal tools/oke tests/argo-guard tests/argo-escalation
-      - name: shellcheck et bash -n
-        run: |
-          shellcheck -x -P SCRIPTDIR tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh
-          for f in tools/oke/*.sh tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh; do bash -n "$f"; done
-      - name: Regles Argo (projets, chemins, whitelists nommees)
-        run: python3 -I tools/oke/argo_guard.py .
-      - name: Cas negatifs argo_guard (pieges hors depot, chacun refuse ; A2 lab-apps/lab-authz inclus)
-        run: tests/argo-guard/run.sh
+      # yamllint-platform, shellcheck (liste complete de check, y compris tests/leak-guard et tests/hooks), regles Argo,
+      # cas negatifs argo_guard (A2 lab-apps/lab-authz inclus), cellule restreinte (statique).
       # Les tests sur VRAI Argo (tests/argo-escalation/run.sh) exigent un cluster jetable : hors CI, preuve
       # archivee dans tests/argo-escalation/RESULTS.md (docs/ARGO-ESCALATION.md).
-      - name: Cellule restreinte - RoleBinding borne + label egress-isolated (statique)
-        run: tests/cell-cpt/run.sh
+      - name: Controles plateforme (tools/dev/check)
+        run: CHECK_ONLY="yamllint-platform,shellcheck,argo-guard-rules,argo-guard-negative,cell-cpt" tools/dev/check --static --strict
 
   platform-render:
     # Rendus Helm epingles (PSA, 0 PVC/LB, images par digest), security bundle fail-closed, gardes de uninstall.sh
@@ -274,15 +259,13 @@ jobs:
           sudo install -m 0755 yq_linux_arm64 /usr/local/bin/yq
           # jq : image du runner.
           helm version --short && kubeconform -v && yq --version && jq --version
-      - name: Security bundle - refus fail-closed (sans cluster)
-        # Reutilise les .tgz OpenChoreo du cache (option prevue par le script ; sha256 reverifie par fetch_chart).
-        run: SECURITY_BUNDLE_CHART_CACHE="$OKE_PHASEB_STATE/charts" tests/security-bundle/run.sh
-      - name: Rendus Helm epingles + psa_check + 0 PVC/LB/image sans digest
-        run: tools/oke/render-check.sh
-      - name: Gardes uninstall.sh (kubectl et helm factices, CRD rendues)
-        run: ARGO_GUARD_CHART_CACHE="$OKE_PHASEB_STATE/charts" tests/argo-guard/uninstall-guards.sh
-      - name: kubeconform -strict (platform/install/manifests et argocd)
-        run: tools/oke/kubeconform-platform.sh
+      - name: Rendus et gardes (tools/dev/check)
+        # security-bundle (refus fail-closed), render-check (rendus Helm epingles, psa_check, 0 PVC/LB/image sans digest),
+        # uninstall-guards, kubeconform-platform. Le cache de charts evite de retelecharger les .tgz OpenChoreo
+        # (option prevue par le script ; sha256 reverifie par fetch_chart) ; check fixe ARGO_GUARD_CHART_CACHE lui-meme.
+        env:
+          SECURITY_BUNDLE_CHART_CACHE: ${{ github.workspace }}/../phaseb/charts
+        run: CHECK_ONLY="security-bundle,render-check,uninstall-guards,kubeconform-platform" tools/dev/check --static --strict
 
   release-history:
     # Les releases historiques (generated/**/releases) sont append-only : un revert ne doit pas les supprimer.
@@ -295,7 +278,7 @@ jobs:
       - name: Aucune release historique supprimee
         env:
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
-        run: tests/release-history/check.sh
+        run: CHECK_ONLY="release-history" tools/dev/check --static --strict
 
   dev-factory:
     # Outillage de la Development Factory (tools/dev, .devcontainer, tests/dev-factory) : statique, sans cluster ni secret.
@@ -321,14 +304,14 @@ jobs:
           tar -xJf "shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
           sudo install -m 0755 "shellcheck-${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
           shellcheck --version | head -2
-      - name: shellcheck et yamllint de tools/dev et .devcontainer
-        run: |
-          set -euo pipefail
-          shellcheck -x -P SCRIPTDIR tools/dev/dev tools/dev/guard-check.sh tests/dev-factory/run.sh
-          yamllint -c tools/appgen/yamllint.yaml tools/dev .devcontainer
-          python3 -I -m json.tool .devcontainer/devcontainer.json >/dev/null
-      - name: Tests statiques (garde-fou negatif, pins, montages)
-        run: tests/dev-factory/run.sh
+      - name: yamllint de .devcontainer
+        # tools/dev est couvert par l'etape yamllint de check (job yamllint), ses scripts par l'etape shellcheck (job platform).
+        run: yamllint -c tools/appgen/yamllint.yaml .devcontainer
+      - name: Tests statiques (garde-fou negatif, pins, montages, devcontainer.json ; tools/dev/check)
+        run: CHECK_ONLY="dev-factory-static,devcontainer-json" tools/dev/check --static --strict
+      - name: Parite ci.yaml <-> tools/dev/check (tools/dev/ci-map.tsv)
+        # Etape de check a ajouter (hors perimetre de T-460) : le test est lance ici directement.
+        run: tests/dev-factory/ci-parity.sh
 
   backlog:
     # Tickets backlog/T-*.md : en-tete, graphe, etapes, model/effort (tools/backlog/check.py, ADR-0012, ADR-0023). Stdlib seule.
@@ -340,14 +323,15 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-      - name: Tests de check.py
-        run: python3 -m unittest discover -s tests/backlog -v
-      - name: Controle des tickets
-        run: python3 tools/backlog/check.py
+      - name: Tests et controle des tickets (tools/dev/check)
+        run: CHECK_ONLY="backlog-unittest,backlog" tools/dev/check --static --strict
 
   lint-code:
     # ADR-0024, T-413 : ruff (bogues F,B,E9 bloquants ; jeu complet en avertissement) et shellcheck -S warning sur tous les *.sh versionnes.
     runs-on: ubuntu-24.04-arm
+    env:
+      SHELLCHECK_VERSION: "v0.11.0"
+      SHELLCHECK_SHA256: "12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -357,15 +341,22 @@ jobs:
           python-version: "3.12"
       - name: Installer ruff (version figee)
         run: python3 -m pip install --disable-pip-version-check "ruff==0.16.9"
-      - name: "ruff, classe bogue (F, B, E9), 0 erreur"
-        run: ruff check --select F,B,E9 tools tests
+      - name: Installer shellcheck (version figee, archive verifiee par sha256)
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
+          echo "${SHELLCHECK_SHA256}  shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz" | sha256sum -c -
+          tar -xJf "shellcheck-${SHELLCHECK_VERSION}.linux.aarch64.tar.xz"
+          sudo install -m 0755 "shellcheck-${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
+          shellcheck --version | head -2
+      - name: "ruff, classe bogue (F, B, E9), 0 erreur (tools/dev/check)"
+        run: CHECK_ONLY="ruff-bugs" tools/dev/check --static --strict
       - name: ruff, jeu complet (avertissement, ligne de base QA-4)
         continue-on-error: true
         run: ruff check --statistics tools tests
-      - name: shellcheck -S warning sur tous les scripts versionnes
-        run: |
-          command -v shellcheck >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck; }
-          git ls-files -z '*.sh' | xargs -0 shellcheck -S warning
+      - name: shellcheck -S warning sur tous les scripts versionnes (tools/dev/check)
+        run: CHECK_ONLY="shellcheck-all" tools/dev/check --static --strict
 
   quality:
     # ADR-0024, T-414 : cliquet de maintenabilite (tools/quality/check.py contre baseline.json). Rapide : aucun test.
@@ -379,10 +370,8 @@ jobs:
           python-version: "3.12"
       - name: Installer les outils (versions figees)
         run: python3 -m pip install --disable-pip-version-check "ruff==0.16.9" "radon==6.0.1" "mypy==2.3.1"
-      - name: Tests du cliquet (degradation refusee, refactor accepte)
-        run: python3 -m unittest discover -s tests/quality -v
-      - name: Cliquet (aucune degradation ; seuils durs sur le code neuf)
-        run: python3 tools/quality/check.py
+      - name: Cliquet (tests, aucune degradation, seuils durs sur le code neuf ; tools/dev/check)
+        run: CHECK_ONLY="quality" tools/dev/check --static --strict
 
   quality-coverage:
     # ADR-0024, T-414 : plancher de couverture (appgen.py >= 85 %, diff >= 80 %) et artefact quality.v1.json date.
@@ -460,6 +449,8 @@ jobs:
           set -euo pipefail
           python3 -m pip install --disable-pip-version-check -r tools/appgen/requirements.txt "yamllint==1.38.0"
           command -v jq >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq jq; }
+      # Miroir des etapes settings et hooks de check (tools/dev/ci-map.tsv) : CHECK_ONLY serait herite par le check --fast
+      # que lance le hook Stop teste ici ; un drapeau --only de check (hors perimetre de T-460) leverait l'obstacle.
       - name: Hooks (cas autorises et refuses)
         run: tests/hooks/run.sh
       - name: Hooks vs settings.json
