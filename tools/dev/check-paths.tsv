@@ -41,3 +41,4 @@ identities	docs/state/*,tests/identities/*,tools/backlog/*
 settings	.claude/*,tests/hooks/*
 hooks	.claude/*,tests/hooks/*,tools/dev/leak-guard.sh
 context-check	*.md,tools/context-check/*,tests/context-check/*
+contract-guard	apps/*,generated/*,docs/schema/*,tools/contract-guard/*,tests/contract-guard/*
