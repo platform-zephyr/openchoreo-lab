@@ -20,7 +20,7 @@ github_issue: null
 Fermer le résidu de moindre privilège accepté (STATE.md §1) avant tout credential réel.
 
 ## Périmètre de fichiers
-platform/install/values/, tools/oke/, tests/
+platform/install/values/kgateway.yaml, tools/oke/verify.sh, tools/oke/render-check.sh, tests/k3d/
 
 ## Critères de fin
 - [ ] `verify.sh` : B6-sa-effective PASS daté sur OKE
