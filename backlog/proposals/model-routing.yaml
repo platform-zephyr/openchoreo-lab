@@ -2,7 +2,7 @@
 # Deux listes :
 #   rules   : règles machine-lisibles ; la PREMIÈRE règle dont `match` correspond s'applique (fin de liste = défaut).
 #   tickets : tickets MOD-n au format backlog/proposals/FORMAT.md, avec en plus `stage` et `model` (modèle conseillé pour exécuter le ticket).
-# Marque : status: hypothesis = règle non étalonnée (MOD-7) ; unverified = dépend d'une source non lue (DeepSeek).
+# Marque : status: hypothesis = règle non étalonnée (MOD-7)  ; sourced = fait lu à la source (DeepSeek, agentgateway, Terminal-Bench 4.1), le niveau de performance restant une hypothèse.
 # `match` : lane (liste de couloirs ou motifs *), class (classe recalculée depuis les chemins), paths (globs), keywords (titre/intention),
 #           kind (type de tâche déclaré par le dispatcher : review, adversarial-review, incident, remediation, plan, research, doc, ticket-writing, watch, internal-ai, bench).
 # `escalate` : after = nombre d'échecs (ci_fail | blocking_finding | out_of_scope | unproven_hypothesis) avant de monter d'un cran.

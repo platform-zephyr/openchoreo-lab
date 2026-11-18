@@ -110,7 +110,7 @@ Détail et tickets : `backlog/proposals/model-routing.yaml` (MOD-1 à MOD-13). S
 | Refactor appgen | Sonnet 5.5 (`high`) | Opus `high` après 2 échecs CI ou > 5 modules |
 | CI GitHub Actions | Sonnet 5.5 (`high`) + revue Opus si noyau | Opus après 2 échecs |
 | Manifestes K8s / OpenChoreo | Sonnet 5.5 (`high`) | Opus `high` après 2 échecs k3d |
-| Sécurité, admission, RBAC, secrets | Opus 5.5 (`high`) | Fable `high` après 2 constats bloquants |
+| Sécurité, admission, RBAC, secrets | Opus 5.5 (`high`) | Opus `max` après 2 constats bloquants, puis humain |
 | Revue de code | Sonnet 5.5 (`high`) ; Opus si REVUE ou MANDAT | Opus |
 | Revue adverse | Opus 5.5 (`high`), modèle ≠ auteur | Opus `max` pour ADR et noyau ; Fable sur demande de Paul |
 | Diagnostic d'incident (prod) | Sonnet 5.5 (`high`), Claude seulement | Opus après 2 hypothèses non prouvées |
