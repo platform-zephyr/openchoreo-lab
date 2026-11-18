@@ -2,7 +2,8 @@
 # Tests statiques de la Development Factory, SANS Docker, cluster ni réseau.
 #  1. Garde-fou : le cas propre passe ; chaque injection (variable OKE/Doppler/GitHub, identifiant de l'hôte,
 #     contexte kubectl joignant un cluster) doit échouer (test négatif).
-#  2. Pins et montages : base par digest, sha256 pour chaque téléchargement, concordance avec ci.yaml et
+#  2. Deux architectures (T-470) : Dockerfile piloté par TARGETARCH, empreintes du lock par architecture (cas négatifs).
+#  3. Pins et montages : base par digest, sha256 pour chaque téléchargement, concordance avec ci.yaml et
 #     tools/appgen/requirements.txt, aucun montage d'identifiant dans devcontainer.json.
 # Usage : tests/dev-factory/run.sh
 set -euo pipefail
@@ -50,6 +51,28 @@ check "HOME/.config/gh présent" fail "" HOME="$W/h-gh"
 check "HOME/.cache/oke-access présent" fail "" HOME="$W/h-oke"
 check "HOME/.config/doppler présent" fail "" HOME="$W/h-dop"
 check "kubectl joint un cluster" fail "$W/bin:" 
+
+# Deux architectures (T-470) : lock-concordance.sh (PASS arm64, amd64 PASS ou BLOCKED dit en clair) + cas négatifs.
+CONC="$PWD/tests/dev-factory/lock-concordance.sh"
+if "$CONC" >"$W/conc" 2>&1; then ok "lock-concordance : $(tail -n1 "$W/conc")"; else ko "lock-concordance"; sed 's/^/      | /' "$W/conc"; fi
+if grep -q '^arm64 : PASS$' "$W/conc"; then ok "arm64 : PASS"; else ko "arm64 : pas de verdict PASS"; fi
+if grep -Eq '^amd64 : (PASS|BLOCKED \(empreinte amd64 absente du lock : [A-Z ]+\))' "$W/conc"; then ok "$(grep '^amd64' "$W/conc" | cut -c1-72)"; else ko "amd64 : verdict absent ou invalide"; fi
+neg() { # neg NOM SED_EXPR : copie du Dockerfile modifiée ; la concordance doit échouer
+  sed -E "$2" "$DF" >"$W/Dockerfile.neg"
+  if DF="$W/Dockerfile.neg" "$CONC" >"$W/neg" 2>&1; then ko "concordance accepte : $1"; else ok "concordance refuse : $1"; fi
+}
+neg "ARG TARGETARCH retiré" '/^ARG TARGETARCH$/d'
+neg "URL arm64 écrite en dur" 's#linux-\$\{TARGETARCH\}\.tar\.gz#linux-arm64.tar.gz#'
+neg "empreinte amd64 de helm modifiée" 's/^(ARG HELM_AMD64_SHA256=)./\1f/'
+neg "branche amd64 de yq retirée" '/amd64\) sha="\$\{YQ_AMD64_SHA256\}"/d'
+neg "arrêt BLOCKED de kubectl retiré" '/BLOCKED: KUBECTL_AMD64_SHA256/d'
+neg "empreinte amd64 inventée pour jq" 's/^(ARG JQ_SHA256=.*)$/\1\nARG JQ_AMD64_SHA256=0000000000000000000000000000000000000000000000000000000000000000/'
+neg "ruff du Dockerfile désaligné" 's/"ruff==[0-9.]+"/"ruff==0.0.1"/'
+if grep -q '^amd64 : BLOCKED' "$W/conc"; then
+  if STRICT_AMD64=1 "$CONC" >"$W/strict" 2>&1; then ko "STRICT_AMD64=1 accepte un amd64 BLOCKED"; else ok "STRICT_AMD64=1 refuse un amd64 BLOCKED"; fi
+fi
+if grep -Eq -- '--platform' "$DJ"; then ko "devcontainer.json impose une plateforme (--platform)"; else ok "devcontainer.json : plateforme de l'hôte (aucun --platform)"; fi
+if grep -Eq '"postCreateCommand": "tools/dev/guard-check.sh && tools/dev/setup"' "$DJ"; then ok "postCreateCommand : guard-check puis setup (hooks + doctor)"; else ko "postCreateCommand inattendu"; fi
 
 # Pins : base par digest, un sha256 par téléchargement.
 if grep -Eq '^FROM python:[^@ ]+@sha256:[0-9a-f]{64}$' "$DF"; then ok "image de base épinglée par digest"; else ko "image de base non épinglée par digest"; fi

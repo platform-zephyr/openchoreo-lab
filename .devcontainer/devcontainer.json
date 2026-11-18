@@ -12,7 +12,6 @@
   "containerUser": "dev",
   "workspaceFolder": "/workspaces/openchoreo-lab",
   "runArgs": [
-    "--platform=linux/arm64",
     "--cpus=1",
     "--memory=1g",
     "--memory-swap=1g",
@@ -32,5 +31,5 @@
     "GIT_CONFIG_KEY_0": "safe.directory",
     "GIT_CONFIG_VALUE_0": "*"
   },
-  "postCreateCommand": "tools/dev/guard-check.sh"
+  "postCreateCommand": "tools/dev/guard-check.sh && tools/dev/setup"
 }
