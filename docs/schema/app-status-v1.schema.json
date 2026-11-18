@@ -63,7 +63,8 @@
       "properties": {
         "type": { "enum": ["check_failed", "prerequisite_missing", "cluster_unreachable"], "description": "check_failed : à corriger (source ou plateforme). prerequisite_missing : objet ou CRD absent, à attendre ou à installer. cluster_unreachable : aucun cluster joignable ou mode sans cluster." },
         "retryable": { "type": "boolean", "description": "true : relancer sans changer le code peut réussir. false : corriger d'abord." },
-        "rule": { "type": "string", "description": "Identifiant du check à l'origine (G2, W5…)." }
+        "rule": { "type": "string", "description": "Identifiant du check à l'origine (G2, W5…)." },
+        "nature": { "enum": ["retryable", "a_corriger", "plateforme"], "description": "Facultatif (T-100, ADR-0015) : ce que l'agent de remédiation fait de la cause. retryable : relancer sans rien changer peut réussir. a_corriger : défaut dans la source de l'app (apps/<nom>), correctif par PR. plateforme : défaut hors de l'app (platform/, cluster, site), l'agent n'agit pas, escalade. Absent : producteur antérieur à T-100 ; ne jamais le déduire." }
       }
     }
   },
