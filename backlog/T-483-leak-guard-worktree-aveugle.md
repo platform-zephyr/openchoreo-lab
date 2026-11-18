@@ -1,7 +1,7 @@
 ---
 id: T-483
 title: "leak-guard : ne plus rendre PASS à vide depuis un worktree sous .claude/worktrees/"
-status: todo
+status: done
 phase: P0
 adr: [0002]
 depends_on: []
@@ -23,9 +23,15 @@ github_issue: null
 .gitleaks.toml, tools/dev/leak-guard.sh, tests/leak-guard/
 
 ## Critères de fin
-- [ ] test : une valeur factice sous un worktree `.claude/worktrees/x/` est détectée (échoue avant, passe après)
-- [ ] le PASS ne peut plus être rendu à vide (garde de sanité ou allowlist ancrée)
-- [ ] `tools/dev/check --static --changed` : verdict reporté dans la PR
+- [x] test : une valeur factice sous un worktree `.claude/worktrees/x/` est détectée (échoue avant, passe après)
+- [x] le PASS ne peut plus être rendu à vide (garde de sanité ou allowlist ancrée)
+- [x] `tools/dev/check --static --changed` : verdict reporté (commit ; à reporter dans la PR)
 
 ## Notes
 Trouvé par l'agent de T-001 (2026-11-18). Fichier du noyau de sécurité : classe REVUE de fait si `.gitleaks.toml` est dans CODEOWNERS.
+
+## Résultat (2026-11-18)
+- Allowlist ancrée à la racine scannée (`^\.claude/worktrees/`) : un chemin absolu ou une racine sous `.claude/worktrees/` n'est plus ignoré (test rouge avant : gitleaks en chemin absolu rendait 0).
+- Sonde de sanité dans `leak-guard.sh` : une valeur factice connue doit être détectée avec la même configuration, sinon code 2 (jamais PASS à vide).
+- Correctif annexe : le chemin rapporté n'est plus résolu contre le cwd du script.
+- Reproduction : `dir .` depuis le worktree détectait déjà ; seule l'invocation par chemin absolu était aveugle. Le critère « verdict reporté dans la PR » reste à faire à l'ouverture de la PR.

@@ -69,6 +69,18 @@ else
   echo "INFO $n_extra motif(s) du proprietaire charge(s) depuis l'environnement"
 fi
 
+# Sonde de sanite (T-483) : la meme configuration doit detecter une valeur factice connue, scannee comme la racine
+# (dir ., chemins relatifs). Sinon la garde est aveugle (allowlist trop large) : erreur 2, jamais un PASS a vide.
+mkdir -p "$work/probe"
+printf 'ref %s\n' "ocid1.instance.oc1.""eu-probe-1.""q7w3e9r2t5y8u4i6o1p0a7s3d5f2" >"$work/probe/canary.txt"
+prc0=0
+(cd "$work/probe" && "$bin" dir . --config "$use_cfg" --no-banner --redact=100 --report-format json \
+  --report-path "$work/probe.json" --log-level error) >/dev/null 2>&1 || prc0=$?
+if [[ "$prc0" -ne 1 ]]; then
+  echo "LEAK-GUARD: ERREUR sonde de sanite aveugle (code $prc0) : configuration trop permissive, PASS a vide refuse" >&2
+  exit 2
+fi
+
 report="$work/report.json"
 rc=0
 # Depuis la racine scannee avec "dir ." : les chemins (donc les empreintes de .gitleaksignore) sont relatifs.
@@ -94,10 +106,12 @@ except ValueError:
 seen = set()
 for f in findings:
     file = f.get("File", "?")
-    try:
-        file = os.path.relpath(file, root)
-    except ValueError:
-        pass
+    # gitleaks rapporte un chemin relatif a la racine scannee (dir .) : ne pas le resoudre contre le cwd du script.
+    if os.path.isabs(file):
+        try:
+            file = os.path.relpath(file, root)
+        except ValueError:
+            pass
     key = (f.get("RuleID", "?"), file, f.get("StartLine", 0))
     if key not in seen:
         seen.add(key)
