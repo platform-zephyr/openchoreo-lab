@@ -1,7 +1,7 @@
 ---
 id: T-306
 title: "Registre des identités et secrets `docs/state/identities.yaml` (noms, rôles, dates, jamais de valeur)"
-status: todo
+status: in-progress
 phase: P0
 adr: [0002, 0022]
 depends_on: []
@@ -23,10 +23,13 @@ Tenir dès maintenant l'inventaire de toute identité ou tout secret créé pend
 docs/state/identities.yaml, docs/schema/identities.v1.json, tools/backlog/identities_lint.py, tests/identities/, .github/CODEOWNERS
 
 ## Critères de fin
-- [ ] schéma `identities.v1` : nom, rôle, portée, propriétaire, date de création, date de rotation, `dev: true|false` ; aucun champ de valeur (test de refus)
-- [ ] registre initial : jeton d'abonnement Claude, identité de l'exécutant (permission `workflows`), accès Doppler élargi, jeton ESO et kubeconfig du lab, secrets machine Talos du lab (noms seulement)
+- [x] schéma `identities.v1` : nom, rôle, portée, propriétaire, date de création, date de rotation, `dev: true|false` ; aucun champ de valeur (test de refus)
+- [x] registre initial : jeton d'abonnement Claude, identité de l'exécutant (permission `workflows`), accès Doppler élargi, jeton ESO et kubeconfig du lab, secrets machine Talos du lab (noms seulement)
 - [ ] lint CI : une entrée sans date ou avec un champ ressemblant à une valeur échoue ; garde T-303 verte sur le fichier
-- [ ] `docs/state/identities.yaml` ajouté à CODEOWNERS ; règle écrite : toute création d'identité ou de secret ajoute une entrée dans la même PR
+- [x] `docs/state/identities.yaml` ajouté à CODEOWNERS ; règle écrite : toute création d'identité ou de secret ajoute une entrée dans la même PR
 
 ## Notes
 Constat F3 de la revue Fable, accepté (arbitrage Fable, 2026-11-18). Jamais de valeur, d'IP, d'hôte interne ni d'e-mail dans ce fichier public.
+
+Preuves (2026-11-18, STATIC) : `python3 -I tools/backlog/identities_lint.py` → OK ; `python3 -m unittest discover -s tests/identities` → 15 tests OK (champ de valeur, date absente, jetons factices, entropie, IP, e-mail, hôte, chemin, OCID refusés). Étape CI ajoutée au job `appgen`.
+Reste : la case « lint CI » attend la garde T-303 (`leak-guard`), absente du dépôt ; le job CI n'a pas encore tourné (CI NOT_TESTED). Dates de création = date d'inscription (`created_is_estimate: true`) : Paul confirme les dates réelles.
