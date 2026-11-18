@@ -32,3 +32,19 @@ retrait du contournement admin ; Doppler (export du journal ou plan Team) ; Max 
 ## Incertitudes
 Gratuité des runners arm64 en privé ; image corrigée déjà multi-arch ou non ; durée réelle de la réécriture (PR ouvertes,
 worktrees, kube-ops) ; gain de quota perdu avec un routage simplifié ; usage réellement mono-cluster de Paul.
+
+## Arbitrages de Paul (2026-11-18, après le consensus) — ils priment sur les décisions ci-dessus
+1. **Données sensibles** : pas de fenêtre privée ni de purge du cache GitHub. La garde CI de secrets (T-303) est mise en place
+   tout de suite ; Paul réécrit l'historique lui-même avec un agent Claude local (T-301 lui appartient). Décision 6 annulée.
+2. **D11 tranché : control plane OpenChoreo sur le homelab** (VM lab). La porte reste mono-cluster et le dit. Reste à traiter
+   **l'accès des agents cloud à la plateforme du homelab** (lecture MCP/API, statut des apps) : ticket dédié en S1.
+3. **Contraintes homelab levées** (thermique, NVMe). Des services de kube-ops peuvent être désactivés si besoin de place.
+4. **Sécurité pendant le développement** : un niveau moindre est accepté pendant la phase de dev ; **seule compte la sécurité
+   finale de la plateforme**. Conséquences : le pilote 24 h ne dépend plus de T-215 ni du ruleset ; ces durcissements vont
+   dans une étape **« Durcissement final »** obligatoire avant de déclarer la plateforme finie (identité d'usine, ruleset sans
+   contournement admin, noyau CODEOWNERS testé, revue de sécurité). Décision 1 déplacée dans cette étape.
+5. **DeepSeek hors du chantier** : tous les agents de dev sont Claude ; DeepSeek viendra plus tard (tickets DeepSeek différés
+   après la fin du chantier). Routage optimisé pour Claude seul (décision 8 conservée, décision 9 reportée).
+6. **Runners** : homelab-infra (privé) a déjà des runners ARC sur le cluster local. Pour ce dépôt public, runners GitHub
+   hébergés par défaut ; des runners ARC homelab ne sont admis que pour des workflows déclenchés par push/dispatch de
+   mainteneurs (jamais sur PR de fork), à qualifier dans le ticket runners.
