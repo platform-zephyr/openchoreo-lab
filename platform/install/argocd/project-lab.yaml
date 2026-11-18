@@ -45,6 +45,8 @@ spec:
     # VAP du labo seulement (platform/policies) ; jamais baseline-* (kube-ops).
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cluster-agent-scope}
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cell-pod-hardening}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cell-default-deny}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cell-default-deny}
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cluster-agent-scope}
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cell-pod-hardening}
     # Un seul Namespace : lab-pg (platform/data/lab-pg-namespace.yaml).
