@@ -61,8 +61,8 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-100](T-100-obs-0.md) | 4 | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
 | [T-201](T-201-data-2.md) | 4 | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
 | [T-050](T-050-verdicts-kube-ops.md) | 3 | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
-| [T-479](T-479-statistiques-usine-par-run.md) | 0 | Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et par ticket) | 0/5 | — |
-| [T-480](T-480-garde-taille-tickets.md) | 0 | Garde de taille des tickets : avertissement de check.py au-delà de ce qu'un run absorbe | 0/5 | — |
+| [T-479](T-479-statistiques-usine-par-run.md) | 0 | Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et par ticket) | 0/5 | [#86](https://github.com/platform-zephyr/openchoreo-lab/issues/86) |
+| [T-480](T-480-garde-taille-tickets.md) | 0 | Garde de taille des tickets : avertissement de check.py au-delà de ce qu'un run absorbe | 0/5 | [#87](https://github.com/platform-zephyr/openchoreo-lab/issues/87) |
 | [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | 0 | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
 | [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
