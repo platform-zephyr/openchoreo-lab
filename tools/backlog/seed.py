@@ -952,6 +952,11 @@ def _tokens(scope):
     return [t.strip(" `") for t in _re.split(r"[,;]", s) if t.strip(" `")]
 def _hit(scope, p): return _re.search(r"(^|[\s,(`])" + _re.escape(p), scope) is not None
 def is_noyau(x): return any(_hit(x["scope"], p) for p in NOYAU)
+# Arbitrage de Paul (2026-11-18) : sécurité allégée pendant le dev ; Opus réservé aux sujets réellement sensibles,
+# à l'étape FINAL et à la décision de la porte. Le reste du noyau passe en Sonnet.
+SENSIBLE = ["platform/authz/", "platform/policies/", "platform/cluster-agent/", "platform/install/argocd/", "security/",
+            "platform/secrets/", "platform/identity/", "identities/", "users/", "groups/", "tools/oke/argo_guard.py"]
+def is_sensible(x): return any(_hit(x["scope"], p) for p in SENSIBLE) or x.get("stage") == "FINAL" or x["id"] == "T-211"
 def is_text(x):
     tk = _tokens(x["scope"])
     if not tk: return False
@@ -964,7 +969,7 @@ for x in T:
     if x.get("status", "todo") == "dropped": continue
     if x.get("model") == "human" or x["id"] == "T-301":
         x.update(model="human", effort="none", routing="R0-geste-humain"); continue
-    if is_noyau(x): x.update(model="claude-opus-5-5", effort="high", routing="R1-noyau")
+    if is_sensible(x): x.update(model="claude-opus-5-5", effort="high", routing="R1-sensible")
     elif is_text(x):
         x.update(model="claude-haiku-5-5", effort="medium", routing="R2-texte")
         note(x["id"], "Routage R2 (ADR-0023) : Haiku `medium`, revue Sonnet en check requis (2 refus → Sonnet) ; ne touche ni l'en-tête du ticket ni backlog/proposals/. "

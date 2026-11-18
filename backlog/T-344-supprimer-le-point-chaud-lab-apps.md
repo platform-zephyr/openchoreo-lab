@@ -11,7 +11,7 @@ lane: socle-oke
 stage: S2
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-344 — Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR d'agents

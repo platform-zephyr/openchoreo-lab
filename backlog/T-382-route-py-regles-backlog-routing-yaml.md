@@ -9,9 +9,9 @@ class: REVUE
 velocity: true
 lane: ci
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-382 — route.py : règles backlog/routing.yaml et résolution d'un modèle par ticket

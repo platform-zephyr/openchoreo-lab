@@ -9,9 +9,9 @@ class: REVUE
 velocity: true
 lane: ci
 stage: S0
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-303 — Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes)

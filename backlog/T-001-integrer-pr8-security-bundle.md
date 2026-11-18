@@ -11,7 +11,7 @@ lane: socle-oke
 stage: S1
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-001 — Fusionner la PR #8 (installation fail-closed avec le security bundle)

@@ -66,3 +66,6 @@ Source : `docs/review/CONSENSUS-2.md` (arbitrage 4).
 3. Ce qui reste vrai dès maintenant : aucun secret, jeton ou donnée sensible dans le dépôt public (garde CI T-303 en S0) ;
    le noyau reste soumis à l'approbation de Paul ; un agent n'élargit jamais ses propres droits (§5).
 4. Vérification : T-401 conclut PASS sur chaque point avant que Paul écrive « plateforme finie » dans STATE.md et MISSION.md.
+
+## Amendement (arbitrages de Paul n°2, 2026-11-18)
+Pendant le développement, la revue des code owners est désactivée dans le ruleset et les agents ont des droits étendus ; le noyau reste écrit dans `CODEOWNERS` et testé. La revue est réactivée, et le contournement admin retiré, à l'étape FINAL (T-400), qui conditionne la déclaration « plateforme finie ».

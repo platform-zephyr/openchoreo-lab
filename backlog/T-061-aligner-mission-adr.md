@@ -9,9 +9,9 @@ class: MANDAT
 velocity: false
 lane: gouvernance
 stage: S0
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-061 — Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote)

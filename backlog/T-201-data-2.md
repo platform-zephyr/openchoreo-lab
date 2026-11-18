@@ -9,9 +9,9 @@ class: REVUE
 velocity: true
 lane: données
 stage: I8
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-201 — Ingestion GitHub vers Parquet et métriques DORA par agent

@@ -9,9 +9,9 @@ class: MANDAT
 velocity: false
 lane: gouvernance
 stage: S0
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-061b — Acter les autres ADR (0001, 0003-0006, 0010-0013, 0020, 0022, 0023) et les amendements du consensus n°2 (T-061b)

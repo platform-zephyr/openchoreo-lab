@@ -11,7 +11,7 @@ lane: ci
 stage: FINAL
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-007 — Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002

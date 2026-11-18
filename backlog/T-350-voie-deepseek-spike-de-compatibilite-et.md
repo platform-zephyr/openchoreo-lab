@@ -9,9 +9,9 @@ class: REVUE + MANDAT
 velocity: false
 lane: agents
 stage: après-porte
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-350 — Voie DeepSeek : spike de compatibilité et critère d'admission par le banc

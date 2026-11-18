@@ -11,7 +11,7 @@ lane: gouvernance
 stage: FINAL
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-400 — Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation ponctuelle

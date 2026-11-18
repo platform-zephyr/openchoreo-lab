@@ -33,6 +33,9 @@ Budget : OpenChoreo ≤ 1,5 GiB et ≤ 0,3 vCPU au repos = OBJECTIF d'optimisati
 - Vitesse : Claude doit pouvoir travailler **24 h/24**, avec le minimum d'interventions de Paul et autant d'agents en parallèle que le plan le permet.
 - Accès réseau complet donné aux sessions.
 
+## Mode développement (arbitrage de Paul, 2026-11-18)
+Sécurité allégée acceptée pendant le développement (droits étendus, accès admin, revue des code owners désactivée, Doppler élargi) ; seule compte la sécurité FINALE, vérifiée à l'étape FINAL du backlog. Les interdits ci-dessous qui ne concernent que le processus de revue sont suspendus pendant le dev ; ceux qui protègent les données, les secrets et les coûts restent en vigueur.
+
 ## Toujours INTERDIT (sans nouvelle autorisation écrite de Paul)
 Création du volume PostgreSQL OCI de 50 Go (`--confirm-storage`) ; toute exposition publique (Tunnel, Ingress, LoadBalancer) hors l'exception MCP ci-dessus ; LoadBalancer OCI facturable ; migration Talos ; modification de `kube-system`, de ressources de production ou de politiques cluster-wide non vérifiées ; `tofu apply`, Doppler, Cloudflare ; migration Authentik ; création par un agent d'une identité/clé/token d'accès ; secret affiché ou committé ; TLS désactivé ; contournement d'admission ; suppression de ressources hors du labo ; nouvelle étude comparative.
 Périmètre cluster : écriture dans `openchoreo-*`, `lab-*` (+ les namespaces de prérequis que l'installation crée et marque `part-of=openchoreo-lab`) et `dp-*` ; lecture seule ailleurs. Les noms imposés par OpenChoreo (`dp-*`, label sur `default`) sont des exceptions acquittées ci-dessus.

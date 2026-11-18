@@ -11,7 +11,7 @@ lane: gouvernance
 stage: FINAL
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-215 — Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1

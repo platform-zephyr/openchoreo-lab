@@ -11,7 +11,7 @@ lane: socle-lab
 stage: S1
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-366 — Bundle de sécurité multi-arch et installateur pour le cluster lab

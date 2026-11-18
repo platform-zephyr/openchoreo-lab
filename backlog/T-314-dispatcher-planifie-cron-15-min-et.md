@@ -9,9 +9,9 @@ class: REVUE
 velocity: true
 lane: ci
 stage: S1
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-314 — Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission

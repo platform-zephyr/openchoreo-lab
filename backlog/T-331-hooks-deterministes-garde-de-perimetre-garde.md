@@ -9,9 +9,9 @@ class: REVUE
 velocity: true
 lane: agents-harness
 stage: S1
-model: claude-opus-5-5
+model: claude-sonnet-5-5
 effort: high
-routing: R1-noyau
+routing: R3-defaut
 github_issue: null
 ---
 # T-331 — Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop

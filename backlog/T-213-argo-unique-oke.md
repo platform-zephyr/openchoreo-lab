@@ -11,7 +11,7 @@ lane: socle-oke
 stage: après-porte
 model: claude-opus-5-5
 effort: high
-routing: R1-noyau
+routing: R1-sensible
 github_issue: null
 ---
 # T-213 — Un seul Argo CD sur OKE et nomenclature OKE figée (D4)
