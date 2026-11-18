@@ -7,10 +7,10 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | Statut | Tickets |
 |---|---|
 | `in-progress` | 27 |
-| `todo` | 125 |
+| `todo` | 124 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 31 |
+| `done` | 32 |
 | `dropped` | 27 |
 | **Total** | **258** |
 
@@ -64,7 +64,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 |---|---|---|---|---|
 | [T-060](T-060-residu-kgateway.md) | 14 | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | 0/2 | — |
 | [T-041](T-041-context-engineering.md) | 8 | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
-| [T-483](T-483-leak-guard-worktree-aveugle.md) | 0 | leak-guard : ne plus rendre PASS à vide depuis un worktree sous .claude/worktrees/ | 0/3 | — |
 | [T-423](T-423-reduire-complexite-argo-guard.md) | 0 | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | 0/3 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
 | [T-366](T-366-bundle-multi-arch-installateur-lab.md) | 58 | Bundle de sécurité multi-arch et installateur pour le cluster lab | 0/4 | — |
@@ -228,6 +227,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-477](T-477-etude-art-anterieur-usine.md) | Étude : art antérieur des usines d'agents à réutiliser (FACTORY-PRIOR-ART) | 2026-11-18 | — | — |
 | [T-479](T-479-statistiques-usine-par-run.md) | Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et par ticket) | — | — | [#86](https://github.com/platform-zephyr/openchoreo-lab/issues/86) |
 | [T-480](T-480-garde-taille-tickets.md) | Garde de taille des tickets : avertissement de check.py au-delà de ce qu'un run absorbe | 2026-11-18 | `PR #89` | [#87](https://github.com/platform-zephyr/openchoreo-lab/issues/87) |
+| [T-483](T-483-leak-guard-worktree-aveugle.md) | leak-guard : ne plus rendre PASS à vide depuis un worktree sous .claude/worktrees/ | 2026-11-18 | — | — |
 
 ## Gelés et abandonnés
 
