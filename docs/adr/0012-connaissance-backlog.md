@@ -14,10 +14,12 @@ Décisions liées : ADR-0001 ; décisions de Paul du 2026-11-18 (`missions/MISSI
 2. **Référence OpenChoreo condensée** dans `docs/reference/openchoreo/`, épinglée sur la version installée (1.3.x),
    avec URL source par section ; mise à jour à chaque montée de version.
 3. **État unique** : `STATE.md` (où on en est) et `missions/MISSION.md` (ce qui est autorisé) ; ADR pour le « pourquoi ».
-4. **Atlas est le hub de connaissance et de routage** : il porte la connaissance transversale stable et route une
+4. **Atlas est le point d'arrivée** (décision de Paul) : **le hub de connaissance et de routage** : il porte la connaissance transversale stable et route une
    intention vers le bon dépôt et le bon skill (ADR-0013) ; chaque dépôt garde sa connaissance locale. Le contexte
    est conçu en couches (toujours chargé et court / chargé à la demande / référence), avec des checks de taille, de
    liens et de fraîcheur (travail de context engineering : `docs/research/context-engineering/`).
+
+5. **Les agents cloud ont accès aux dépôts** (Atlas compris) en lecture, et en écriture par PR selon ADR-0002.
 
 ## Conséquences
 - Les issues #49 à #53 sont reprises dans `backlog/` puis fermées avec un lien.

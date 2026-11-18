@@ -10,7 +10,9 @@ Décisions liées : ADR-0009, ADR-0010 ; `docs/IDENTITY.md`, `missions/MISSION.m
   Chaque nouvelle app OIDC est donc un geste humain (KUBE-OPS-REQUIREMENTS §2.3).
 
 ## Décision
-1. **Authentik est le seul IdP** des humains et des agents. `identityProviders: [authentik]` partout ; ThunderID retiré
+1. **Authentik est le seul IdP** des humains et des agents, **configuré en GitOps** (blueprints générés depuis Git),
+   comme dans l'implémentation actuelle qui a déjà donné les primitives voulues. Keycloak reste une alternative
+   acceptable si une primitive manque, pas un objectif. `identityProviders: [authentik]` partout ; ThunderID retiré
    du contrat et désactivé dans le chart.
 2. **L'app déclare son mode d'accès**, la plateforme fait le reste :
    - `identity.mode: oidc` → client OIDC Authentik créé **déclarativement** (provider Crossplane ou blueprint généré,
@@ -20,7 +22,10 @@ Décisions liées : ADR-0009, ADR-0010 ; `docs/IDENTITY.md`, `missions/MISSION.m
 3. **Accès par groupe, jamais par utilisateur** (`identity.groups: [family, admins…]`).
 4. **Agents** : un client par usage (`agent-reader`, `agent-operator`, CI, portail) ; jetons courts ; droits OpenChoreo
    par rôle et condition ABAC par environnement ; le reader n'a aucune action d'écriture.
-5. Une app **publique** (ADR-0010) exige `identity.mode` ≠ `none` ou Cloudflare Access par groupe.
+5. **Cycle de vie des utilisateurs = golden path** : ajouter une personne = PR sur `users/<id>.yaml` (identité, groupes,
+   accès) → blueprint Authentik → groupes → accès aux apps ; la retirer = PR qui désactive le compte, révoque sessions et
+   jetons, retire les groupes et traite ses données personnelles. Aucune action à la main dans la console.
+6. Une app **publique** (ADR-0010) exige `identity.mode` ≠ `none` ou Cloudflare Access par groupe.
 
 ## Conséquences
 - Lever le geste humain par app : c'est la condition de l'autonomie sur les apps familiales.

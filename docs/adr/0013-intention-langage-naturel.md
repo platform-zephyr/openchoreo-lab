@@ -14,7 +14,8 @@ Décisions liées : ADR-0001, ADR-0002, ADR-0011, ADR-0012
    Toutes aboutissent au même flux : intention → routage (Atlas) → skill `add-app`/`fix-app`/`promote-or-rollback`.
 2. **L'agent traduit l'intention en `app.yaml` avec des valeurs par défaut**, et ne pose une question **à l'utilisateur qui fait
    la demande** (pas à Paul) que pour une décision qui n'a pas de défaut sûr : exposition publique, donnée `irreplaceable`, coût, accès d'une personne à un
-   groupe. Tout le reste (archétype, taille, placement, réseau, sauvegarde selon la classe) est déduit.
+   groupe. Tout le reste (archétype, taille, réseau, sauvegarde selon la classe) est déduit ; le placement suit ADR-0003 §4
+   (homelab par défaut, OKE seulement si Paul le demande).
 3. **Recettes vérifiées** : un catalogue `recipes/<app>.yaml` d'applications homelab courantes (image multi-arch par
    digest, port, chemin de santé, variables, besoins OIDC/base/volume, classe de donnée suggérée), produit et
    rafraîchi par un agent, vérifié par la CI (digest existant, arm64). L'agent part d'une recette quand elle existe.

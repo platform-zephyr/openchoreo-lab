@@ -18,10 +18,11 @@ ADR-0004, ADR-0008 ; `docs/architecture/MULTI-DATAPLANE.md`
    joint OKE par un chemin L4 sans terminaison TLS (NetBird recommandé ; Cloudflare Tunnel HTTP exclu).
 3. **Une app choisit sa cible** par `spec.cluster: oke | homelab` ; `appgen` refuse ce que
    `clusters/<cluster>/capabilities.yaml` ne déclare pas (stockage, Kyverno, exposition…).
-4. **Règle de placement par défaut**, que l'agent applique sans demander :
-   - stateless léger, service qui doit survivre au homelab éteint → `oke` ;
-   - données (`useful`/`irreplaceable`), volumes, médias, apps lourdes, accès au LAN → `homelab` ;
-   - la plateforme elle-même (CP, identité) → `oke`.
+4. **Placement (décision de Paul, 2026-11-18)** :
+   - **par défaut, une app va sur `homelab`** (cluster local), sans question ;
+   - **`oke` seulement sur demande explicite de Paul**, pour un service peu gourmand en trafic et en compute qu'il veut
+     plus disponible (ex. stack de streaming média). Un autre demandeur ne peut pas choisir `oke` ;
+   - la plateforme elle-même (control plane, identité, OpenBao) → `oke`.
 5. **Mêmes Environments** (`development`, `production`) sur chaque data plane ; un DeploymentPipeline par chemin.
 6. **GitOps** : Argo CD sur OKE applique les objets OpenChoreo (control plane) ; l'agent OpenChoreo pousse aux data
    planes. L'Argo du homelab reste pour son socle (stockage, Cilium, opérateurs) et, dans un projet borné, pour les CR de
@@ -44,6 +45,7 @@ ADR-0004, ADR-0008 ; `docs/architecture/MULTI-DATAPLANE.md`
   quand le homelab est coupé.
 
 ## Vérification
+- CI : `cluster: oke` refusé si la PR ne porte pas la mention de la demande de Paul (champ `placement.requestedBy`).
 - Preuve datée : la même app (A) déployée sur `oke` puis sur `homelab` par simple changement de `cluster`, mêmes
   NetworkPolicy rendues, même statut `app-status.v1`.
 - Test de coupure : homelab isolé 10 min → apps homelab Ready, CP Ready, reprise sans action.
