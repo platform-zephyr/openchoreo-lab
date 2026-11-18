@@ -1,0 +1,11 @@
+{
+  "name": "une ligne doctor, ne bloque jamais",
+  "hook": "session-start",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "SessionStart",
+    "source": "startup"
+  },
+  "stdout_contains": "doctor :",
+  "budget_seconds": 5
+}

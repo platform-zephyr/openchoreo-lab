@@ -1,0 +1,12 @@
+{
+  "name": "autorisé : git commit -m \"doc: kubectl et helm interdits\"",
+  "hook": "bash-guard",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "git commit -m \"doc: kubectl et helm interdits\""
+    }
+  }
+}

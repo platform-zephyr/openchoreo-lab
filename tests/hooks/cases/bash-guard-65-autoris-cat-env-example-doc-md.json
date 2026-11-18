@@ -1,0 +1,12 @@
+{
+  "name": "autorisé : cat .env.example-doc.md",
+  "hook": "bash-guard",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cat .env.example-doc.md"
+    }
+  }
+}

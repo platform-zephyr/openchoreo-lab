@@ -1,0 +1,16 @@
+{
+  "name": "refus : glob docs/**/*.md ne couvre pas .yaml",
+  "hook": "scope-guard",
+  "expect": 2,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "@ROOT@/docs/a/b.yaml"
+    },
+    "cwd": "@ROOT@"
+  },
+  "env": {
+    "AGENT_TICKET_SCOPE": "docs/**/*.md"
+  }
+}

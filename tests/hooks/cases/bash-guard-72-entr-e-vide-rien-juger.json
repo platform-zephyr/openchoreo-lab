@@ -1,0 +1,10 @@
+{
+  "name": "entrée vide : rien à juger",
+  "hook": "bash-guard",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {}
+  }
+}

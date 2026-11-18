@@ -1,0 +1,16 @@
+{
+  "name": "yaml valide : laisse finir",
+  "hook": "stop",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  "env": {
+    "CHECK_CHANGED_FILES": "apps/_hooktest/notes.yaml"
+  },
+  "fixture": {
+    "path": "apps/_hooktest/notes.yaml",
+    "content": "---\na: 1\n"
+  }
+}

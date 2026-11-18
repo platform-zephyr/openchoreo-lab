@@ -1,0 +1,12 @@
+{
+  "name": "autorisé : grep -n helm README.md",
+  "hook": "bash-guard",
+  "expect": 0,
+  "stdin": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "grep -n helm README.md"
+    }
+  }
+}
