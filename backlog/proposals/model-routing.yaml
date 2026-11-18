@@ -10,7 +10,7 @@
 
 meta:
   date: "2026-11-18"
-  ladder: [haiku-5-5, sonnet-5-5/medium, sonnet-5-5/high, opus-5-5/high, fable-5-2/high, human]
+  ladder: [haiku-5-5, sonnet-5-5/medium, sonnet-5-5/high, opus-5-5/high, opus-5-5/max, human]   # Fable hors échelle (TB 4.1 : 65,8 % comme Opus 5.5 pour 3,5x le coût)
   ids:
     haiku-5-5: claude-haiku-5-5
     sonnet-5-5: claude-sonnet-5-5
@@ -18,11 +18,18 @@ meta:
     fable-5-2: claude-fable-5-2
   caps:
     sonnet_max_effort: xhigh          # Sonnet 5.5 à `max` fait moins bien qu'à `xhigh` (annonce Anthropic, lue le 2026-11-18)
-    fable: "sur demande de Paul ou après 2 échecs d'Opus ; jamais en CI planifiée ; plafond 50 % du quota hebdomadaire"
+    fable: "sur demande de Paul seulement ; jamais en CI planifiée ; plafond 50 % du quota hebdomadaire ; Terminal-Bench 4.1 (2026-11-17) : 65,8 % = Opus 5.5, coût 16,5 k$ contre 4,7 k$"
     quota_fallback: "si quota hebdomadaire Max > 70 % consommé : Opus -> Sonnet high, sauf règles floor: opus du noyau (file d'attente)"
   confidentiality:
     deepseek_allowed_data: [public-repo]
     deepseek_denied_data: [prod-logs, secrets, "data-class != public", user-identifiers]
+    deepseek_basis: "politique de confidentialité DeepSeek (cdn.deepseek.com, lue le 2026-11-18) : entrées utilisables pour entraîner ; conditions API non lues (NOT_PROVEN)"
+  deepseek:
+    source: "api-docs.deepseek.com/quick_start/pricing, lue le 2026-11-18"
+    models: {deepseek-flash: "V4.1-Flash-1017, 0,15/0,60 $/MTok creux (x2 pointe), cache 0,003", deepseek-v4-pro: "V4-Pro-0813, 0,66/1,98 creux, TB 4.1 = 6,7 % : exclu des agents"}
+    peak_utc: "01-04 h et 06-10 h, lundi-vendredi : planifier les lots hors de ces heures"
+    claude_code_env: {ANTHROPIC_BASE_URL: "https://api.deepseek.com/anthropic", alias_opus_sonnet_haiku: deepseek-flash, trap: "un nom claude-opus* est routé vers deepseek-v4-pro (tarif Pro)"}
+  terminal_bench_4_1: {date: "2026-11-17", agent: claude-code, effort: max, opus-5-5: 65.8, fable-5-2: 65.8, sonnet-5-5: 63.9, haiku-5-5: 40.0, deepseek-flash-1017: 38.5, deepseek-v4-pro-0813: 6.7, cost_k_usd: {opus-5-5: 4.7, fable-5-2: 16.5, sonnet-5-5: 7.3, haiku-5-5: 1.0, deepseek-flash-1017: 0.2}}
 
 rules:
   - id: R01-noyau-securite
@@ -33,7 +40,7 @@ rules:
     effort: high
     floor: claude-opus-5-5
     review: {model: claude-opus-5-5, effort: high, note: "revue adverse par une session distincte de l'auteur"}
-    escalate: {after: 2, on: [ci_fail, blocking_finding], to: {model: claude-fable-5-2, effort: high}, then: human}
+    escalate: {after: 2, on: [ci_fail, blocking_finding], to: {model: claude-opus-5-5, effort: max}, then: human}
     rationale: "Erreur coûteuse (admission, RBAC, secrets) et noyau d'ADR-0002 ; aucun benchmark ne couvre ce domaine, donc plancher par coût de l'erreur."
     status: hypothesis
   - id: R02-revue-adverse
@@ -41,8 +48,8 @@ rules:
     model: claude-opus-5-5
     effort: high
     floor: claude-opus-5-5
-    constraint: "modèle différent de celui de l'auteur (erreurs corrélées) ; Fable pour un ADR ou un changement de noyau classé MANDAT"
-    escalate: {after: 1, on: [unproven_hypothesis], to: {model: claude-fable-5-2, effort: high}}
+    constraint: "modèle différent de celui de l'auteur (erreurs corrélées) ; effort max pour un ADR ou un changement de noyau classé MANDAT"
+    escalate: {after: 1, on: [unproven_hypothesis], to: {model: claude-opus-5-5, effort: max}}
     rationale: "Lire un diff coûte peu de sortie ; la qualité du jugement compte plus que le prix."
     status: hypothesis
   - id: R03-incident-prod
@@ -65,7 +72,7 @@ rules:
     match: {kind: [plan], lane: [gouvernance, porte]}
     model: claude-opus-5-5
     effort: high
-    escalate: {after: 2, on: [blocking_finding], to: {model: claude-fable-5-2, effort: high}, note: "arbitrage inter-ADR seulement"}
+    escalate: {after: 2, on: [blocking_finding], to: {model: claude-opus-5-5, effort: max}, then: human, note: "arbitrage inter-ADR : Paul"}
     rationale: "Peu de tokens, décisions lourdes : un plan faux fait perdre plus de quota que son coût."
     status: hypothesis
   - id: R06-refactor-appgen
@@ -98,7 +105,7 @@ rules:
     model: claude-haiku-5-5
     effort: medium
     escalate: {after: 1, on: [ci_fail], to: {model: claude-sonnet-5-5, effort: high}}
-    rationale: "Un app.yaml validé par schéma et appgen : l'échec est détecté par la CI à coût nul ; Haiku coûte ≈ 5 % de Sonnet. Hypothèse à tester en MOD-7 (banc T-044)."
+    rationale: "Un app.yaml validé par schéma et appgen : l'échec est détecté par la CI à coût nul ; Haiku coûte ≈ 5 % de Sonnet. Hypothèse à tester en MOD-7 (banc T-044), avec deepseek-flash (38,5 % à TB 4.1, 5x moins cher) comme candidat MOD-12."
     status: hypothesis
   - id: R10-code-simple
     match: {lane: [preuve, connaissance, données, donnees, cout, coût, alertes, intention], keywords: [script, lint, check, schéma, "test"], kind: [code]}
@@ -142,7 +149,7 @@ rules:
     match: {kind: [watch], lane: [veille, renovate]}
     model: claude-haiku-5-5
     effort: low
-    candidates: [{provider: deepseek, model: deepseek-flash, via: agentgateway, data: public-repo, status: unverified}]
+    candidates: [{provider: deepseek, model: deepseek-flash, via: agentgateway, data: public-repo, schedule: "hors 06-10 h UTC en semaine", status: sourced}]
     escalate: {after: 1, on: [breaking_change_flagged], to: {model: claude-sonnet-5-5, effort: high}}
     rationale: "Résumé de notes de version publiques ; volume élevé, risque faible."
     status: hypothesis
@@ -150,18 +157,19 @@ rules:
     match: {kind: [internal-ai]}
     via: agentgateway          # clé virtuelle + allowedModels + budget bloquant (ADR-0018)
     data_sensitive:  {provider: anthropic, model: claude-haiku-5-5, effort: low}
-    data_public:     {provider: deepseek, model: deepseek-flash, status: unverified}
-    data_public_reasoning: {provider: deepseek, model: deepseek-v4-pro, status: unverified}
+    data_public:     {provider: deepseek, model: deepseek-flash, thinking: high, status: sourced}
+    excluded:        {provider: deepseek, model: deepseek-v4-pro, why: "Terminal-Bench 4.1 : 6,7 % ; concurrence 500 ; sans vision"}
     failover: {anthropic: claude-haiku-5-5, deepseek: deepseek-flash}
     escalate: {after: 1, on: [quality_below_threshold], to: {model: claude-sonnet-5-5, effort: medium}}
-    rationale: "À prix de liste Haiku 5.5 (0,10/0,50) vaut DeepSeek Flash [2nd] (≈0,15/0,60) : DeepSeek sert surtout l'indépendance de quota et la bascule, pas le prix. Tarifs DeepSeek non lus (MOD-9)."
-    status: unverified
+    rationale: "Haiku 5.5 (0,10/0,50) et deepseek-flash (0,15/0,60 creux ; cache 0,003) coûtent autant par session (≈0,11 $) et valent 40,0 / 38,5 % à TB 4.1 : DeepSeek sert l'indépendance de quota et la bascule. Données sensibles : Haiku seulement."
+    status: hypothesis
   - id: R99-defaut
     match: {}
     model: claude-sonnet-5-5
     effort: high
     escalate: {after: 2, on: [ci_fail], to: {model: claude-opus-5-5, effort: high}}
-    rationale: "Défaut : moins cher des modèles agentiques de la famille 5 (Terminal-Bench 4.0 : Sonnet 70,6 % ; Opus 66,4 % ; Haiku 39,2 %)."
+    rationale: "Défaut : moitié du prix de liste d'Opus au token ; mais à effort max Sonnet consomme 2,4x plus de tokens (TB 4.1 : 63,9 % pour 7,3 k$ contre 65,8 % pour 4,7 k$ pour Opus). MOD-7 tranche Sonnet high contre Opus medium sur le quota par ticket fusionné."
+    alt_to_test: {model: claude-opus-5-5, effort: medium}
     status: hypothesis
 
 tickets:
@@ -179,7 +187,7 @@ tickets:
     intent: "Reprendre le texte de docs/research/MODEL-ROUTING.md §7 au gabarit des ADR ; Paul l'acte par la PR (docs/adr/ est dans le noyau)."
     done:
       - "ADR-0021 PROPOSÉ au gabarit, ajouté à la table de docs/adr/README.md"
-      - "Paul a tranché : plancher Opus du noyau, usage de Fable, politique DeepSeek (MANDAT)"
+      - "Paul a tranché : plancher Opus du noyau, Fable sur demande seulement, DeepSeek Flash sur données publiques (MANDAT de dépense)"
     notes: "Sans cet ADR, MOD-2 à MOD-8 restent en proposition."
   - key: MOD-2
     title: "En-tête de ticket : champs `model` et `effort`, validés par check.py"
@@ -273,7 +281,7 @@ tickets:
     scope: "tests/intents/, docs/research/model-calibration.md"
     intent: "Rejouer les 5 intentions A (T-044) × 3 modèles × 5 passes et un échantillon de tickets AUTONOME par type ; trancher R09, R10, R11 et la règle de descente (10 % au cran inférieur)."
     done:
-      - "tableau (type, modèle) : PASS runtime, échecs CI, quota ; chaque règle passe de `hypothesis` à `calibrated` ou est corrigée"
+      - "tableau (type, modèle) : PASS runtime, échecs CI, quota par ticket fusionné (Sonnet high contre Opus medium : lequel consomme le moins) ; chaque règle passe de `hypothesis` à `calibrated` ou est corrigée"
       - "décision datée sur R09 (Haiku pour app.yaml A) : tenue ou relevée à Sonnet"
     notes: "Consomme du quota Max : à exécuter hors fenêtre de pointe, 2 sessions au plus (T-145)."
   - key: MOD-8
@@ -293,7 +301,7 @@ tickets:
       - "recommandation de plan chiffrée ; MANDAT : Paul ajuste le plan, la PR décrit le geste"
     notes: "Aucune API au token sans MANDAT (COST-FREE-TIER §3). Les crédits API mensuels de Max ne servent pas dans Claude Code."
   - key: MOD-9
-    title: "Registre des modèles et tarifs : docs/state/model-prices.yaml avec date de lecture et lint à 90 jours"
+    title: "Registre des modèles et tarifs : docs/state/model-prices.yaml avec date de lecture et lint à 90 jours (sources DeepSeek déjà lues)"
     phase: P1
     stage: S2
     model: claude-haiku-5-5
@@ -303,11 +311,11 @@ tickets:
     velocity: false
     parallel_lane: "veille"
     scope: "docs/state/model-prices.yaml, tools/backlog/lint_prices.py"
-    intent: "Consigner prix, contexte, effort par défaut et date de retrait des modèles Claude 5 et DeepSeek avec source et date ; lire les sources primaires DeepSeek (api-docs.deepseek.com) : tarifs, pointe/creux, appels de fonctions, endpoint compatible Anthropic, rétention et localisation des données."
+    intent: "Consigner prix, contexte, effort par défaut et date de retrait des modèles Claude 5 et DeepSeek avec source et date (lues le 2026-11-18 : voir MODEL-ROUTING.md §3), plus les scores Terminal-Bench 4.1 ; lire les conditions de la plateforme API DeepSeek (illisibles le 2026-11-18) pour trancher la rétention des données API."
     done:
       - "chaque ligne a url, date de lecture, prochaine revue ; une ligne de plus de 90 jours fait échouer le lint"
-      - "verdict DeepSeek PASS/FAIL/NOT_TESTED/BLOCKED par propriété, preuve datée"
-    notes: "MANDAT : Paul autorise les hôtes api-docs.deepseek.com, huggingface.co, agentgateway.dev dans le réseau de la session (BLOCKED à la date de la recherche)."
+      - "verdict DeepSeek par propriété : tarifs PASS, endpoint Anthropic PASS, appels d'outils PASS (docs, 2026-11-18) ; rétention API NOT_PROVEN jusqu'à lecture des conditions ; test runtime NOT_TESTED"
+    notes: "Les hôtes bloqués pour l'outil web restent lisibles par curl depuis le shell. MANDAT seulement si une clé ou une dépense est créée."
   - key: MOD-10
     title: "agentgateway : fournisseur DeepSeek, clés virtuelles par usage, budget bloquant (fournisseur factice d'abord)"
     phase: P4
@@ -319,11 +327,11 @@ tickets:
     velocity: false
     parallel_lane: "ai-gateway"
     scope: "platform/ai-gateway/, tests/k3d/"
-    intent: "Ajouter DeepSeek et Anthropic comme fournisseurs du gateway avec `allowedModels` par clé et bascule Haiku ↔ DeepSeek Flash ; budget en tokens bloquant ; la clé de fournisseur n'existe que dans le namespace du gateway."
+    intent: "Ajouter les fournisseurs `anthropic` et `deepseek` (intégré ; `baseUrl` https://api.deepseek.com/anthropic si Claude Code passe par le gateway, pour éviter la conversion Messages vers Chat Completions) avec clés virtuelles, restriction de modèles (deepseek-flash seulement) et budget bloquant ; bascule Haiku ↔ Flash ; la clé de fournisseur n'existe que dans le namespace du gateway."
     done:
       - "k3d, fournisseur factice : routage par modèle, bascule sur panne, budget dépassé → blocage, clé révoquée → 401"
       - "fournisseur réel seulement après MANDAT (création de la clé DeepSeek, plafond mensuel côté console) ; appel de test journalisé avec agent_id et tokens"
-    notes: "Support natif de l'API Messages d'Anthropic dans agentgateway non confirmé : à prouver ici avant MOD-12."
+    notes: "agentgateway 1.7 (docs lues le 2026-11-18) : route /v1/messages native avec conversion vers Chat Completions, clés virtuelles et budgets documentés ; la bascule entre fournisseurs (Resiliency) reste à prouver en k3d."
   - key: MOD-11
     title: "Garde de confidentialité : aucun log de production ni secret vers un fournisseur autre qu'Anthropic"
     phase: P4
@@ -341,7 +349,7 @@ tickets:
       - "allowlist modifiée sans revue → CI rouge"
     notes: "Noyau : plancher Opus (R01), revue adverse."
   - key: MOD-12
-    title: "Spike : Claude Code vers DeepSeek (ANTHROPIC_BASE_URL) pour des tickets AUTONOME à faible risque"
+    title: "Spike : Claude Code vers deepseek-flash (ANTHROPIC_BASE_URL) pour des tickets AUTONOME à faible risque"
     phase: P4
     stage: I7
     model: claude-sonnet-5-5
@@ -351,11 +359,11 @@ tickets:
     velocity: false
     parallel_lane: "agents"
     scope: "tests/model-routing/, docs/research/model-calibration.md"
-    intent: "Si MOD-9 confirme un endpoint compatible et MOD-10 une route Messages, rejouer 20 tickets de type R09/R10 sur DeepSeek et comparer au cran Haiku/Sonnet (réussite, échecs CI, quota libéré)."
+    intent: "Avec les alias Opus/Sonnet/Haiku épinglés sur deepseek-flash (un nom claude-opus* serait routé vers V4 Pro, 6,7 % à TB 4.1), rejouer 20 tickets de type R09/R10 hors des heures de pointe UTC et comparer au cran Haiku/Sonnet (réussite, échecs CI, quota libéré, $ par ticket). Vérifier si claude-code-action accepte ANTHROPIC_BASE_URL."
     done:
       - "20 tickets rejoués, tableau comparatif daté ; verdict : adopter pour un type de tâche, ou NO-GO motivé"
       - "aucune donnée hors dépôt public envoyée ; MANDAT de dépense obtenu avant l'essai"
-    notes: "Gelé si MOD-9 conclut FAIL ou BLOCKED."
+    notes: "Baseline : deepseek-flash 38,5 % contre Haiku 40,0 % à TB 4.1. Dépense = MANDAT avec plafond mensuel ; données publiques seulement."
   - key: MOD-13
     title: "Revue trimestrielle du routage : retraits de modèles, nouveaux modèles, dérive des tarifs"
     phase: P5
