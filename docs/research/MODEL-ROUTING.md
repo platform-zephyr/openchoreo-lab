@@ -93,7 +93,7 @@ Toute dépense DeepSeek est un MANDAT avec plafond mensuel (COST-FREE-TIER §3).
 `claude-code-action` par `claude_args` (entrée `workflow_dispatch` `model`, `effort`). (d) Sessions locales ou cloud : `claude --model … --effort …`.
 (e) Sous-agents : `model:` et `effort:` dans `.claude/agents/*.md` (ex. exploration en `haiku`, revue en `opus`) ; `CLAUDE_CODE_SUBAGENT_MODEL=haiku` pour le défaut.
 (f) Services IA : le modèle est choisi par la clé virtuelle (`allowedModels`, budget) du gateway (ADR-0018), jamais par l'application.
-**Escalade.** Échelle : Haiku → Sonnet `medium` → Sonnet `high` → Opus `high` → Fable `high` → humain. Déclencheurs : 2 échecs de CI sur la même cause ;
+**Escalade.** Échelle : Haiku → Sonnet `medium` → Sonnet `high` → Opus `high` → Opus `max` → humain (Fable hors échelle). Déclencheurs : 2 échecs de CI sur la même cause ;
 2 constats bloquants de la revue adverse ; ticket sorti de son périmètre de fichiers ; cause non prouvée après 2 hypothèses (diagnostic). Un seul cran à la fois ;
 chaque cran est consigné (`Escalated-from:`). **Descente** : quand 20 tâches consécutives d'un type réussissent du premier coup, rejouer 10 % des suivantes au cran inférieur.
 **Mesure.** Par PR : `Model:`, `Effort:`, `Escalated-from:` (trailers/labels), nombre d'échecs CI, constats de revue, interventions humaines, `usage` de
