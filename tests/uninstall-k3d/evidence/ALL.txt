@@ -1,12 +1,12 @@
 # ALL — uninstall.sh --all --apply --delete-crds
 # date : 2026-11-17T20:32:53Z
-$ /Users/paul/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --all --apply --delete-crds
+$ /Users/example/Developer/Perso/openchoreo-lab/tools/oke/uninstall.sh --all --apply --delete-crds
 20:32:15Z MODE TEST k3d : contexte k3d-lab-sec-vap (https://0.0.0.0:55000), état /private/tmp/claude-501/-Users-paul-Developer-Perso/84e9173c-94d1-4735-aaf7-7b40aa482c5d/scratchpad/phaseb-state
 20:32:15Z === annulation étape 12
 20:32:15Z RBAC réduit absent : rien à annuler
 20:32:15Z === annulation étape 11
 20:32:15Z + kubectl delete --ignore-not-found -n lab-argocd applications.argoproj.io lab-root lab-platform lab-authz
-20:32:15Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/argocd/project-lab.yaml
+20:32:15Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/argocd/project-lab.yaml
 20:32:15Z + helm -n lab-argocd uninstall argocd --wait
 These resources were kept due to the resource policy:
 [CustomResourceDefinition] applications.argoproj.io
@@ -19,29 +19,29 @@ customresourcedefinition.apiextensions.k8s.io "applications.argoproj.io" deleted
 customresourcedefinition.apiextensions.k8s.io "applicationsets.argoproj.io" deleted
 customresourcedefinition.apiextensions.k8s.io "appprojects.argoproj.io" deleted
 20:32:21Z === annulation étape 10
-20:32:21Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/data/lab-pg-cluster.yaml --wait=true
-error: resource mapping not found for name: "lab-pg" namespace: "lab-pg" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/data/lab-pg-cluster.yaml": no matches for kind "Cluster" in version "postgresql.cnpg.io/v1"
+20:32:21Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/data/lab-pg-cluster.yaml --wait=true
+error: resource mapping not found for name: "lab-pg" namespace: "lab-pg" from "/Users/example/Developer/Perso/openchoreo-lab/platform/data/lab-pg-cluster.yaml": no matches for kind "Cluster" in version "postgresql.cnpg.io/v1"
 ensure CRDs are installed first
 20:32:21Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
-20:32:21Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/51-lab-pg-oke-overlay.yaml
+20:32:21Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/51-lab-pg-oke-overlay.yaml
 20:32:22Z release lab-cnpg/cnpg absente
 20:32:22Z === annulation étape 9
-20:32:22Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/resource-types/ -f /Users/paul/Developer/Perso/openchoreo-lab/platform/project-types/ -f /Users/paul/Developer/Perso/openchoreo-lab/platform/traits/ -f /Users/paul/Developer/Perso/openchoreo-lab/platform/component-types/
-resource mapping not found for name: "cnpg-lab-db" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/resource-types/cnpg-lab-db.yaml": no matches for kind "ClusterResourceType" in version "openchoreo.dev/v1alpha1"
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/resource-types/ -f /Users/example/Developer/Perso/openchoreo-lab/platform/project-types/ -f /Users/example/Developer/Perso/openchoreo-lab/platform/traits/ -f /Users/example/Developer/Perso/openchoreo-lab/platform/component-types/
+resource mapping not found for name: "cnpg-lab-db" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/resource-types/cnpg-lab-db.yaml": no matches for kind "ClusterResourceType" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "cell-restricted" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/project-types/cell-restricted.yaml": no matches for kind "ClusterProjectType" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "cell-restricted" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/project-types/cell-restricted.yaml": no matches for kind "ClusterProjectType" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "persistent-volume-claim" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/traits/persistent-volume-claim.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "persistent-volume-claim" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/traits/persistent-volume-claim.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "service-restricted" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/component-types/service-restricted.yaml": no matches for kind "ClusterComponentType" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "service-restricted" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/component-types/service-restricted.yaml": no matches for kind "ClusterComponentType" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
 20:32:22Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
-20:32:22Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml
-resource mapping not found for name: "production" namespace: "default" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "Environment" in version "openchoreo.dev/v1alpha1"
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml
+resource mapping not found for name: "production" namespace: "default" from "/Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "Environment" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "standard" namespace: "default" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "DeploymentPipeline" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "standard" namespace: "default" from "/Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "DeploymentPipeline" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
-resource mapping not found for name: "health-probes" namespace: "" from "/Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
+resource mapping not found for name: "health-probes" namespace: "" from "/Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/40-openchoreo-env.yaml": no matches for kind "ClusterTrait" in version "openchoreo.dev/v1alpha1"
 ensure CRDs are installed first
 20:32:22Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
 20:32:22Z + kubectl label namespace default openchoreo.dev/control-plane-
@@ -53,15 +53,15 @@ error: the server doesn't have a resource type "clusterdataplanes"
 20:32:22Z kind(s) non servi(s) (CRD absente) : rien à supprimer pour ces objets
 20:32:22Z === annulation étape 7
 20:32:22Z release openchoreo-data-plane/openchoreo-data-plane absente
-20:32:22Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/12-gateway-parameters.yaml -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/11-gateway-tls.yaml
-20:32:22Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/cluster-agent/extra-rbac-quota.yaml
-20:32:22Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/policies/
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/12-gateway-parameters.yaml -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/11-gateway-tls.yaml
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/cluster-agent/extra-rbac-quota.yaml
+20:32:22Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/policies/
 20:32:22Z === annulation étape 6b
 20:32:22Z + kubectl delete --ignore-not-found -n openchoreo-control-plane secret backstage-secrets
 20:32:22Z + kubectl delete --ignore-not-found -n openchoreo-control-plane ciliumnetworkpolicies.cilium.io lab-allow-backstage-authentik
 20:32:22Z === annulation étape 6
 20:32:23Z release openchoreo-control-plane/openchoreo-control-plane absente
-20:32:23Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/03-idp-egress.yaml
+20:32:23Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/03-idp-egress.yaml
 20:32:23Z + kubectl delete --ignore-not-found -n openchoreo-control-plane secret backstage-secrets
 20:32:24Z === annulation étape 5
 20:32:24Z + helm -n openchoreo-control-plane uninstall kgateway --wait
@@ -72,7 +72,7 @@ release "kgateway-crds" uninstalled
 customresourcedefinition.apiextensions.k8s.io/backendconfigpolicies.gateway.kgateway.dev condition met
 customresourcedefinition.apiextensions.k8s.io/gatewayparameters.gateway.kgateway.dev condition met
 20:32:29Z === annulation étape 4
-20:32:29Z + kubectl delete --ignore-not-found -f /Users/paul/Developer/Perso/openchoreo-lab/platform/install/manifests/20-eso-lab-store.yaml
+20:32:29Z + kubectl delete --ignore-not-found -f /Users/example/Developer/Perso/openchoreo-lab/platform/install/manifests/20-eso-lab-store.yaml
 serviceaccount "eso-lab-store" deleted from lab-secrets namespace
 role.rbac.authorization.k8s.io "eso-lab-store" deleted from lab-secrets namespace
 rolebinding.rbac.authorization.k8s.io "eso-lab-store" deleted from lab-secrets namespace

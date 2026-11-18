@@ -14,7 +14,7 @@
 |---|---|---|---|---|
 | Argo CD homelab | `issuer: …/application/o/argocd/` [KO:k8s/infrastructure/controllers/argocd/values.yaml:85] | OIDC | nulle si l'issuer et le `kid` sont identiques | vérifier le login ; secours : admin local |
 | Grafana homelab | `auth_url`/`token_url`/`api_url` globaux [KO:k8s/infrastructure/monitoring/prometheus-stack/values.yaml:83-91] | OAuth générique | nulle | vérifier le login |
-| apiserver Talos (kubectl OIDC, cellules blue/green) | blueprints `apps-kubernetes.yaml`, `apps-talos-bluegreen.yaml` (clé partagée) | l'apiserver lit discovery et JWKS **depuis le nœud** (DNS du LAN) | **élevée** si le DNS split renvoie encore `auth` vers `10.0.20.192` | retirer l'entrée split ; secours : kubeconfig Talos hors OIDC |
+| apiserver Talos (kubectl OIDC, cellules blue/green) | blueprints `apps-kubernetes.yaml`, `apps-talos-bluegreen.yaml` (clé partagée) | l'apiserver lit discovery et JWKS **depuis le nœud** (DNS du LAN) | **élevée** si le DNS split renvoie encore `auth` vers `192.0.2.192` | retirer l'entrée split ; secours : kubeconfig Talos hors OIDC |
 | Cloudflare Access (IdP `apps-cloudflare`, `per_provider`) | [KO:…/blueprints/apps-cloudflare.yaml:31] | Cloudflare appelle Authentik depuis Internet | nulle | vérifier une application protégée |
 | OpenChoreo (API, Backstage, agents) sur OKE | [OCL:platform/identity/openchoreo-oidc-values.yaml:16-21] | JWKS et token par FQDN public [OCL:platform/identity/network-policy-api-idp.yaml:26-29] | nulle ; c'est même le gain (identité disponible la nuit) | T-A1…T-N3 de [OCL:docs/IDENTITY.md:115-138] |
 | Apps OIDC homelab (Immich, Mealie, Vikunja, RoMM, Karakeep, Pinepods, Paperless, Invoice Ninja, Matrix MAS, RustiCal, SparkyFitness, BookOrbit, Polyfin, AIOStreams, Home Assistant…) | `git grep auth.smadja.dev` [KO:k8s/applications/**] | OIDC par l'URL publique, **sauf** celles qui ont des `hostAliases` ou un egress limité au LAN | voir §2 | — |
@@ -26,10 +26,10 @@
 
 | Fichier | Nature | Après la bascule |
 |---|---|---|
-| `k8s/applications/media/polyfin/deployment.yaml:26` | `hostAliases` `auth.smadja.dev → 10.0.20.192` | à retirer |
+| `k8s/applications/media/polyfin/deployment.yaml:26` | `hostAliases` `auth.smadja.dev → 192.0.2.192` | à retirer |
 | `k8s/applications/media/bookorbit/app.yaml:44-46` | `hostAliases` | à retirer |
 | `k8s/applications/media/kustomization.yaml:25-36` | patch qui ajoute `auth.smadja.dev` aux `hostAliases` | à retirer |
-| `k8s/applications/media/{aiostreams,polyfin}/networkpolicy.yaml:59`, `bookorbit/networkpolicy.yaml:32` | egress `10.0.20.192/32` | egress FQDN `auth.smadja.dev:443` (ou `world:443`) |
+| `k8s/applications/media/{aiostreams,polyfin}/networkpolicy.yaml:59`, `bookorbit/networkpolicy.yaml:32` | egress `192.0.2.192/32` | egress FQDN `auth.smadja.dev:443` (ou `world:443`) |
 | `k8s/applications/platform/matrix/networkpolicy.yaml:160` | idem | idem (Matrix protégé : analyse avant) |
 | `k8s/infrastructure/monitoring/blackbox/networkpolicy.yaml:35` | idem | idem ; sonde à pointer sur l'URL publique |
 | `k8s/optional/{rustical,personal-ai-2026/librechat}/networkpolicy.yaml` | idem | idem |
@@ -74,7 +74,7 @@ Au redémarrage du nœud, ou si Argo est cassé, les étapes 1 à 7 restent en p
 | Internet (navigateurs, Cloudflare Access) | `https://auth.smadja.dev` | Cloudflare → tunnel `oracle-a1` → Service `authentik-server:80` | CNP `auth` : ingress depuis `cloudflared` seulement |
 | CP OpenChoreo (OKE) | idem | sortie NAT → Cloudflare → tunnel → OKE | `toFQDNs auth.smadja.dev:443` [OCL:platform/identity/network-policy-api-idp.yaml:26] |
 | DP OKE (apps) | idem | idem | egress FQDN (contrat E2 [OCL:docs/IDENTITY.md:112]) |
-| DP Talos / homelab (apps, Argo, Grafana, apiserver) | idem | Internet → Cloudflare → tunnel OKE | egress FQDN ou `world:443` ; **plus de `10.0.20.192`** |
+| DP Talos / homelab (apps, Argo, Grafana, apiserver) | idem | Internet → Cloudflare → tunnel OKE | egress FQDN ou `world:443` ; **plus de `192.0.2.192`** |
 | Outpost manuel homelab | idem (websocket sortant) | idem | egress 443 |
 | Authentik → PostgreSQL | `authentik-db-rw:5432` | intra-namespace | CNP |
 | Authentik → SMTP, R2 (sidecar barman) | sortie | NAT | egress FQDN |

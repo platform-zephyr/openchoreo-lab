@@ -26,7 +26,7 @@ case "$1" in delete|apply|label|annotate|patch|create|replace|scale) printf 'WRI
 case "$a" in
   "config current-context") echo context-oracle-a1-test;;
   "config view --minify -o jsonpath={.clusters[0].cluster.server}") echo https://127.0.0.1:16443;;
-  "config view --minify -o jsonpath={.clusters[0].cluster.tls-server-name}") echo 10.0.2.10;;
+  "config view --minify -o jsonpath={.clusters[0].cluster.tls-server-name}") echo 203.0.113.10;;
   "get nodes -o json") echo '{"items":[{"spec":{"providerID":"ocid1.instance.oc1.test"},"status":{"nodeInfo":{"architecture":"arm64"}}}]}';;
   "get crd -o json") cat "$FIX/crds.json";;
   "get crd -o name") jq -r '.items[] | "customresourcedefinition.apiextensions.k8s.io/" + .metadata.name' "$FIX/crds.json";;
