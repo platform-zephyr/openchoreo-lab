@@ -5,7 +5,6 @@ Aucune dependance hors PyYAML et jsonschema.
 """
 from __future__ import annotations
 
-import copy
 import shutil
 import sys
 import tempfile

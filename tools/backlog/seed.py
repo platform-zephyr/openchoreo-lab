@@ -1,4 +1,4 @@
-import os, textwrap
+import os
 import os as _os
 ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..'))
 B = ROOT+"/backlog"
@@ -304,7 +304,7 @@ for dom, base in BASE.items():
     for j, p in enumerate(yaml.safe_load(open(P+dom+".yaml"))):
         keymap[p["key"]] = f"T-{base+j:03d}"; props.append((dom, p))
 dropped = {}   # ancien id -> nouveau id
-for dom, p in props:
+for _dom, p in props:
     for a in (p.get("absorbs") or []):
         if a in ("T-065","T-074"): continue     # T-065 réduit, T-074 conservé
         dropped.setdefault(a, keymap[p["key"]])
@@ -779,7 +779,7 @@ mk("T-400", "retrait-bypass-admin-ruleset", "Retirer le contournement admin du r
    "Plus aucun compte, même admin, ne contourne `ci-ok` et la revue des code owners. Paul réactive le contournement à la main, ponctuellement, et le retire aussitôt.",
    ["`bypass_actors` vide dans le ruleset appliqué (lecture de l'API datée, sans jeton affiché)", "procédure écrite : réactivation ponctuelle par Paul, motif consigné, retrait immédiat",
     "essai : une PR sans `ci-ok` verte n'est fusionnable par aucun compte (preuve datée)"],
-   f"Décision 1 du consensus n°2, déplacée dans l'étape FINAL par l'arbitrage 4. MANDAT : réglage du ruleset par Paul.", False, "gouvernance")
+   "Décision 1 du consensus n°2, déplacée dans l'étape FINAL par l'arbitrage 4. MANDAT : réglage du ruleset par Paul.", False, "gouvernance")
 mk("T-401", "revue-securite-finale", "Revue de sécurité finale de la plateforme (prérequis de « plateforme finie »)",
    "P4", ["0002", "0006", "0021", "0022"], ["T-007", "T-215", "T-400", "T-402"], "MANDAT",
    "docs/review/SECURITY-FINAL.md, .github/workflows/claude-agent.yml, .claude/",
@@ -917,7 +917,7 @@ for k in ("T-346", "T-386", "T-323", "T-352", "T-342", "T-343", "T-318", "T-320"
 for k in ("T-382", "T-388", "T-392"):
     if st(k) != "deferred": defer2(k, f"Différé {C2} : routage à 3 règles jusqu'aux données du pilote (décision 8).")
 for k in ("T-350", "T-389", "T-390"):
-    defer2(k, f"DeepSeek : après le chantier (arbitrage 5 de Paul, 2026-11-18) ; tous les agents de dev sont Claude.")
+    defer2(k, "DeepSeek : après le chantier (arbitrage 5 de Paul, 2026-11-18) ; tous les agents de dev sont Claude.")
 note("T-388", "DeepSeek : après le chantier (arbitrage 5).")
 # Cascade : un ticket actif qui ne sert qu'un ticket différé est différé ; sinon la dépendance gelée est retirée
 CASCADE = {"T-319": "T-318", "T-347": "T-346", "T-348": "T-342", "T-349": "T-346"}

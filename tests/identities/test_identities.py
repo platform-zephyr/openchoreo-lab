@@ -93,7 +93,7 @@ class Refus(unittest.TestCase):
             "PEM": "-----BEGIN " + "PRIVATE KEY-----",
             "autorisation": "Bearer " + "abcdefghijklmnop1234",
         }
-        for label, v in fakes.items():
+        for _label, v in fakes.items():
             errs = lint_data(mutated(lambda i, v=v: i.__setitem__("note", v)))
             self.assertRefused(errs)
             self.assertFalse(any(v in e for e in errs), "la valeur ne doit jamais être affichée")
