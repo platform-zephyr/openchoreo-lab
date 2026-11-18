@@ -19,7 +19,8 @@ Date : 2026-11-18. Proposition seulement (aucun cluster touché, aucun secret ; 
    surface d'écriture. La doc de l'action déconseille les règles larges [V][S9]. À resserrer (HAR-3).
 5. Sans **banc d'essai** de tâches de développement, on ne sait ni quel modèle confier à quel ticket, ni si un changement du harness améliore ou dégrade
    (Anthropic : 20 à 50 tâches issues d'échecs réels suffisent pour commencer [V][S7]). C'est l'écart n°2 (HAR-16).
-6. DeepSeek : Anthropic **ne supporte pas** le routage de Claude Code vers des modèles non-Claude [V][S10] ; voie à part, admise par le banc, jamais sur le noyau (HAR-20).
+6. DeepSeek : Anthropic **ne supporte pas** le routage de Claude Code vers des modèles non-Claude [V][S10] ; DeepSeek documente un point d'accès compatible (`/anthropic`,
+   `mcp_servers` ignoré, noms `claude-*` remappés vers ses modèles) [V][S21] : voie à part, admise par le banc, jamais sur le noyau (HAR-20).
 7. Piège d'architecture : le homelab est **x86_64**, OKE et les runners GitHub ARM sont **arm64**, la VM cloud Claude Code est **x86_64** [V][S3]. Une preuve
    homelab ne prouve pas l'arm64 : le N1 arm64 reste la preuve de référence des images.
 
@@ -43,12 +44,12 @@ sha) lue par Dockerfile, `ci.yaml` et script du cloud (HAR-2), vérifiée par te
 ### 1.3 Runners GitHub
 | Option | Faits | Usage |
 |---|---|---|
-| Hébergés `ubuntu-24.04-arm` | Déjà utilisés par `ci.yaml`. Gratuits sur dépôt public [NV : page de facturation GitHub bloquée] ; Docker présent donc k3d possible | N1 (k3d, CI) |
-| Auto-hébergés ARC (scale set) | Contrôleur Helm + listener ; pods runner éphémères à jeton JIT ; réduction à zéro pod [V][S11]. Modes `dind`/`kubernetes` : détail non lu [NV] | N2 seulement (jobs sans privilège) |
-| Risque dépôt public | Un runner auto-hébergé exécutant le code d'une PR de fork est une exécution de code distant sur le homelab [NV : doc GitHub de sécurité bloquée ; connu] | Runner réservé à `main`/`workflow_dispatch`, jamais de fork |
-Contrainte : **k3d exige Docker** [V][S12] donc `dind` privilégié, contraire à la PSA restricted du homelab → k3d reste sur runners hébergés ; ARC homelab ne
-sert qu'à piloter le cluster dev (kubectl/Argo en lecture, jobs sans privilège). Coût : minutes hébergées nulles [NV], électricité du homelab, frais de plateforme
-des runners auto-hébergés annoncés par GitHub [NV : à contrôler]. Inspiration : ARC déjà exploité par homelab-infra (un groupe de concurrence par état,
+| Hébergés `ubuntu-24.04-arm` | Déjà utilisés par `ci.yaml`. Dépôt public : 4 vCPU, 16 Go RAM, 14 Go SSD, arm64 [V][S17] (2 vCPU/8 Go en privé) ; tarif arm64 2 cœurs 0,005 USD/min, hors quota public [V][S18] ; Docker présent donc k3d possible. Disque 14 Go : images à compter | N1 (k3d, CI) |
+| Auto-hébergés ARC (scale set) | Contrôleur Helm + listener ; pods runner éphémères à jeton JIT ; réduction à zéro pod [V][S11]. Modes `dind`/`kubernetes` : détail non lu [NV] | **Par défaut : non** (voir ci-dessous) |
+| Risque dépôt public | GitHub : les runners auto-hébergés « ne devraient presque jamais être utilisés pour des dépôts publics » (PR de n'importe qui, compromission persistante possible) ; recommande des runners JIT éphémères [V][S19] | Spike HAR-13 : groupe restreint aux workflows de `main`, JIT, sans secret ; sinon pas de runner homelab |
+Contrainte : **k3d exige Docker** [V][S12] donc `dind` privilégié, contraire à la PSA restricted du homelab → k3d reste sur runners hébergés. Le N2 se pilote sans
+runner : Job PostSync/CronJob dans le cluster qui publie la preuve (T-005). Coût : frais de plateforme auto-hébergés (0,002 USD/min) annoncés puis **reportés** par
+GitHub, gratuits en dépôt public [V][S20] ; électricité du homelab. Inspiration : ARC déjà exploité par homelab-infra (un groupe de concurrence par état,
 workflows de `main`) ; ne pas partager le scale set d'OpenTofu (frontière de dépôt).
 ### 1.4 Cluster jetable
 | Outil | Faits | Rôle ici |
@@ -111,7 +112,7 @@ avec `Bloqué par :` (HAR-10).
 Doppler, OCI. 3. Permissions : `deny` + `dontAsk` + sandbox ; liste d'outils étroite (`Bash(python3 tools/appgen/*)`, pas `python3:*`). 4. Entrées non fiables :
 corps d'issue et PR de tiers = injection (l'action nettoie mal HTML/Unicode caché, « nouveaux contournements possibles ») [V][S9] ; seul Paul pose `agent:dev` (déjà).
 5. Sorties : `show_full_output` désactivé (journaux publics), transcriptions non publiées, garde de fuite gitleaks + motifs internes (HAR-6).
-6. Budget : `--max-turns`, `--max-budget-usd`, plafond 4 sessions (T-145). 7. Runner homelab : éphémère, sans secret, `main` seulement.
+6. Budget : `--max-turns`, `--max-budget-usd`, plafond 4 sessions (T-145). 7. Runner homelab éventuel : JIT, sans secret, `main` seulement.
 
 ## 3. Architecture recommandée (un environnement par niveau)
 | Niveau | Où | Contenu | Qui l'utilise | Preuve | Budget |
@@ -150,8 +151,8 @@ Décisions liées : ADR-0002, ADR-0004, ADR-0011, ADR-0012, ADR-0018 ; consensus
 2. Une commande unique `tools/dev/check` est la definition of done technique : même code dans le hook Stop, la CI, le conteneur et l'environnement cloud.
 3. Trois couches de garde : hooks locaux (retour rapide), CI (preuve), GitHub CODEOWNERS/ruleset (frontière). Une règle sans exception est un hook ou une règle
    `deny`, jamais une phrase d'AGENTS.md. `.claude/` et le workflow d'agent font partie du noyau.
-4. Les agents n'ont aucun accès kubectl, Doppler ou OCI ; le N2 s'atteint par GitOps et se lit par sondes publiées. Les runners auto-hébergés sont éphémères, sans
-   secret, limités à `main` et aux jobs sans privilège ; k3d reste sur runners hébergés.
+4. Les agents n'ont aucun accès kubectl, Doppler ou OCI ; le N2 s'atteint par GitOps et se lit par sondes publiées. Pas de runner auto-hébergé sur ce dépôt public,
+   sauf runners JIT éphémères sans secret, limités aux workflows de `main` (GitHub : « presque jamais » en dépôt public) ; k3d reste sur runners hébergés.
 5. Un ticket est `done` seulement avec une preuve générée par `done.py` (commandes `verify:` des critères).
 6. Un banc de tâches de développement (graders par code, essais en environnement neuf) décide du modèle par type de ticket et garde le harness ; toute montée de
    Claude Code, de l'action ou du harness passe par le banc. Une voie modèle non-Claude (DeepSeek) n'est admise que sur critère du banc, hors noyau.
@@ -187,5 +188,7 @@ Décisions liées : ADR-0002, ADR-0004, ADR-0011, ADR-0012, ADR-0018 ; consensus
 - [S12] https://github.com/k3d-io/k3d ; [S13] https://github.com/loft-sh/vcluster ; [S14] https://code.claude.com/docs/en/sub-agents [V]
 - [S15] https://www.anthropic.com/engineering/building-effective-agents ; [S16] https://www.anthropic.com/engineering/writing-tools-for-agents [V]
 - Repo : `docs/DEV-FACTORY.md`, `docs/AGENT-RUNNERS.md`, `claude-agent.yml`, Atlas `dispatcher/`, homelab-infra `docs/operations/plt-163-arc-apply-promotion.md`.
-- **Non lus (hôte bloqué)** : docs.github.com (facturation, ARC modes, sécurité des runners), api-docs.deepseek.com (point d'accès compatible Anthropic), openai.com
-  (« harness engineering »), github.blog. À autoriser puis relire : prix des runners auto-hébergés, compatibilité DeepSeek (outils, MCP), modes ARC.
+- [S17] https://docs.github.com/en/actions/reference/runners/github-hosted-runners ; [S18] .../billing/reference/actions-runner-pricing ; [S19] .../actions/reference/security/secure-use [V]
+- [S20] https://github.blog/changelog/2025-12-16-coming-soon-simpler-pricing-and-a-better-experience-for-github-actions/ [V]
+- [S21] https://api-docs.deepseek.com/guides/anthropic_api et /quick_start/ (Claude Code) [V, lus par curl]
+- **Non lus** : modes `dind`/`kubernetes` d'ARC, article OpenAI « harness engineering » (WebFetch bloqué ; le shell a un accès réseau : à relire).
