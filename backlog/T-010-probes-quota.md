@@ -4,7 +4,7 @@ title: "Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4)"
 status: todo
 phase: P1
 adr: [0005]
-depends_on: [T-002]
+depends_on: [T-001, T-002]
 class: AUTONOME
 github_issue: null
 ---

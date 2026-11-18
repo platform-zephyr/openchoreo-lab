@@ -2,7 +2,7 @@
 id: T-043
 title: "Gabarits de plan et de compte rendu dans `add-app`"
 status: todo
-phase: P4
+phase: P1
 adr: [0013]
 depends_on: [T-005]
 class: AUTONOME

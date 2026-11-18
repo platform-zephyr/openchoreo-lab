@@ -24,7 +24,8 @@ ADR-0004, ADR-0008 ; `docs/architecture/MULTI-DATAPLANE.md`
    - la plateforme elle-même (CP, identité) → `oke`.
 5. **Mêmes Environments** (`development`, `production`) sur chaque data plane ; un DeploymentPipeline par chemin.
 6. **GitOps** : Argo CD sur OKE applique les objets OpenChoreo (control plane) ; l'agent OpenChoreo pousse aux data
-   planes. L'Argo du homelab reste pour son socle (stockage, Cilium, opérateurs), pas pour les apps du golden path.
+   planes. L'Argo du homelab reste pour son socle (stockage, Cilium, opérateurs) et, dans un projet borné, pour les CR de
+   ressources externes générées par `appgen` (Crossplane, ADR-0009) ; jamais pour les apps du golden path.
 7. **Interface standard** : ce qui diffère entre clusters (stockage, admission, edge) est caché par les capacités et
    les types de la plateforme ; l'app ne connaît que `cluster`.
 
@@ -33,6 +34,8 @@ ADR-0004, ADR-0008 ; `docs/architecture/MULTI-DATAPLANE.md`
   du comportement quand le homelab est coupé (les workloads tournent, les changements attendent).
 - Budget OKE serré (~260m de marge avant 70 %, OpenChoreo non compté) : tout composant lourd (Kyverno, opérateurs de
   sauvegarde, Crossplane, observabilité) va de préférence sur le homelab.
+- Exception assumée : OpenBao tourne sur OKE malgré son poids, car les nouveaux déploiements des deux clusters en
+  dépendent et OKE est toujours allumé (ADR-0014).
 - Une app ne peut pas dépendre d'une app de l'autre cluster par le réseau interne sans route explicite.
 
 ## Alternatives écartées

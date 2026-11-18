@@ -1,0 +1,22 @@
+---
+id: T-063
+title: "Reprise après sinistre de la plateforme : runbook de reconstruction et drill"
+status: todo
+phase: P2
+adr: [0008, 0003]
+depends_on: [T-022, T-062]
+class: AUTONOME + MANDAT
+github_issue: null
+---
+# T-063 — Reprise après sinistre de la plateforme : runbook de reconstruction et drill
+
+## Intention
+Reconstruire OKE de zéro : CA du cluster-gateway et mTLS des data planes, Argo, ESO, OpenBao, objets OpenChoreo, bundle privé ; RTO mesuré.
+
+## Périmètre de fichiers
+docs/runbooks/, tests/
+
+## Critères de fin
+- [ ] runbook ordonné avec RTO
+- [ ] drill complet sur k3d en CI ou manuel daté
+- [ ] liste des secrets racines nécessaires (Doppler) sans valeurs

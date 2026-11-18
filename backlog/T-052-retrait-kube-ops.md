@@ -4,7 +4,7 @@ title: "Retrait progressif des chemins kube-ops, app par app"
 status: todo
 phase: P5
 adr: [0001, 0008]
-depends_on: [T-051]
+depends_on: [T-051, T-050]
 class: MANDAT
 github_issue: null
 ---

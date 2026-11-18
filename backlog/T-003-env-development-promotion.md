@@ -4,7 +4,7 @@ title: "Environment `development`, promotion vers `production`, pins de release 
 status: todo
 phase: P0
 adr: [0004]
-depends_on: []
+depends_on: [T-001, T-002]
 class: AUTONOME
 github_issue: 49
 ---
@@ -20,3 +20,4 @@ platform/install/manifests/40-openchoreo-env.yaml, tools/appgen/, tests/appgen/
 - [ ] tests appgen verts (pins par env, promote, rollback)
 - [ ] CI k3d verte
 - [ ] preuve OKE datée : une app A en development, release prod inchangée
+- [ ] le bootstrap CI k3d n'invente plus `development` (suppression du `yq`)

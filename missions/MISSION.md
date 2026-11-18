@@ -14,7 +14,7 @@ Budget : OpenChoreo ≤ 1,5 GiB et ≤ 0,3 vCPU au repos = OBJECTIF d'optimisati
 - Accès OKE par session bastion (ouverte avec l'accord de Paul) : un seul exécutant, le coordinateur.
 - Namespaces `dp-*` générés par OpenChoreo (avec labels de propriété, quotas, admission, nettoyage) ; label `openchoreo.dev/control-plane=true` sur `default` UNIQUEMENT si OpenChoreo 1.3.3 l'exige, sans élargir les permissions sur les autres ressources de `default`.
 ## Décisions de Paul du 2026-11-18 (agents cloud, `docs/CLOUD-AGENTS.md`)
-- Backlog du labo : issues GitHub de ce dépôt. Pas Linear tant que l'adoption d'OpenChoreo n'est pas tranchée.
+- Backlog du labo : `backlog/` dans ce dépôt (ADR-0012), une issue GitHub seulement pour lancer un agent. Pas Linear tant que l'adoption d'OpenChoreo n'est pas tranchée.
 - Dev et prod sur le **même** OKE (un nœud, pas de HA) : Environments OpenChoreo `development` et `production`. Le dev doit rester frugal (`docs/CLOUD-AGENTS.md` §2).
 - **Exception d'exposition** : le MCP OpenChoreo, et lui seul, peut être publié par Cloudflare Tunnel **derrière Cloudflare Access** (service token dédié, aucun accès anonyme, aucun bypass), en plus de l'authz OpenChoreo. La configuration Cloudflare et Authentik reste un geste de Paul (MANDAT) ; l'agent prépare la PR `platform/` (NetworkPolicy) et la documentation.
 

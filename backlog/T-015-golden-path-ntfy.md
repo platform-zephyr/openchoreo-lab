@@ -4,7 +4,7 @@ title: "Golden path n°2 (ntfy interne) : development puis production"
 status: todo
 phase: P1
 adr: [0004, 0011]
-depends_on: [T-003, T-005, T-006]
+depends_on: [T-003, T-005]
 class: AUTONOME
 github_issue: 53
 ---

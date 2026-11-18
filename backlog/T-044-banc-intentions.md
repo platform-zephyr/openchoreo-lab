@@ -1,14 +1,14 @@
 ---
 id: T-044
-title: "Banc d'essai de 10 intentions en langage naturel"
+title: "Banc d'essai initial de 10 intentions (A, répare, promeut)"
 status: todo
 phase: P4
 adr: [0013]
-depends_on: [T-040, T-043, T-015]
+depends_on: [T-015, T-041, T-043, T-040]
 class: AUTONOME
 github_issue: null
 ---
-# T-044 — Banc d'essai de 10 intentions en langage naturel
+# T-044 — Banc d'essai initial de 10 intentions (A, répare, promeut)
 
 ## Intention
 Mesurer questions posées, PASS runtime et interventions humaines sur 10 intentions types.
@@ -18,5 +18,5 @@ tests/intents/
 
 ## Critères de fin
 - [ ] 10 scénarios écrits
-- [ ] rapport daté
-- [ ] chaque échec → ticket ou garde-fou
+- [ ] ≥ 8/10 PASS runtime sans intervention humaine sur le périmètre disponible
+- [ ] rapport daté ; chaque échec → ticket ou garde-fou

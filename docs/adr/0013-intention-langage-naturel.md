@@ -12,8 +12,8 @@ Décisions liées : ADR-0001, ADR-0002, ADR-0011, ADR-0012
 ## Décision
 1. **Entrées acceptées** : conversation avec Claude (app, session cloud), issue GitHub, ou plus tard un canal de chat.
    Toutes aboutissent au même flux : intention → routage (Atlas) → skill `add-app`/`fix-app`/`promote-or-rollback`.
-2. **L'agent traduit l'intention en `app.yaml` avec des valeurs par défaut**, et ne pose une question que pour une
-   décision qui n'a pas de défaut sûr : exposition publique, donnée `irreplaceable`, coût, accès d'une personne à un
+2. **L'agent traduit l'intention en `app.yaml` avec des valeurs par défaut**, et ne pose une question **à l'utilisateur qui fait
+   la demande** (pas à Paul) que pour une décision qui n'a pas de défaut sûr : exposition publique, donnée `irreplaceable`, coût, accès d'une personne à un
    groupe. Tout le reste (archétype, taille, placement, réseau, sauvegarde selon la classe) est déduit.
 3. **Recettes vérifiées** : un catalogue `recipes/<app>.yaml` d'applications homelab courantes (image multi-arch par
    digest, port, chemin de santé, variables, besoins OIDC/base/volume, classe de donnée suggérée), produit et

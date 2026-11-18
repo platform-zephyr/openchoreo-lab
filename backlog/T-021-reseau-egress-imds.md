@@ -4,8 +4,8 @@ title: "Egress déclaré (FQDN Cilium) et IMDS refusé dans toutes les cellules"
 status: todo
 phase: P2
 adr: [0006, 0003]
-depends_on: [T-002]
-class: AUTONOME
+depends_on: [T-002, T-030]
+class: AUTONOME + MANDAT
 github_issue: null
 ---
 # T-021 — Egress déclaré (FQDN Cilium) et IMDS refusé dans toutes les cellules
@@ -20,3 +20,6 @@ tools/appgen/, platform/project-types/, tests/
 - [ ] CNP rendues pour fqdn/app/idp
 - [ ] preuve OKE : IMDS refusé depuis une cellule `dp-*`
 - [ ] test de non-régression egress
+
+## Notes
+La CCNP `deny-imds` et `allow-egress-unisolated` sont possédées par kube-ops (PR #1629 non fusionnée) : ne pas créer un second propriétaire.

@@ -4,7 +4,7 @@ title: "Spike Crossplane sur le homelab (provider Cloudflare pour Access)"
 status: todo
 phase: P2
 adr: [0009]
-depends_on: [T-030]
+depends_on: [T-030, T-009, T-061]
 class: AUTONOME + MANDAT
 github_issue: null
 ---
@@ -20,3 +20,6 @@ docs/, platform/ (brouillon homelab)
 - [ ] provider choisi ou rejeté avec preuves
 - [ ] app `public` → application Access créée, `git revert` → retirée
 - [ ] MANDAT Paul : jeton Cloudflare limité à Access
+
+## Notes
+Crossplane en `lab-*` sur le homelab. Les CR générées par appgen sont appliquées par l'Argo du homelab dans un projet borné à ces CR (ADR-0003 §6 amendé). Re-mesure CPU/mémoire datée.

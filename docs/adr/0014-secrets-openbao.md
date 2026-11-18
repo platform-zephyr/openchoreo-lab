@@ -38,7 +38,7 @@ ADR-0007, ADR-0008, ADR-0009 ; `docs/architecture/DECISIONS-OPEN.md` D2, `docs/s
    valeur (seulement la présence d'une clé, pour le diagnostic) ; audit OpenBao activé.
 6. **Placement et exploitation, à qualifier par un spike** : OpenBao sur **OKE** (toujours allumé, à côté du control
    plane) avec un stockage qui ne crée pas de nouveau volume OCI si possible (backend PostgreSQL du CNPG plateforme,
-   sinon Raft sur un petit volume), **auto-unseal** par une clé hors cluster (OCI Vault ou transit), sauvegarde
+   sinon Raft sur un petit volume : tout nouveau volume OCI reste un MANDAT de Paul), **auto-unseal** par une clé hors cluster (OCI Vault ou transit), sauvegarde
    chiffrée hors Oracle avec restauration prouvée (ADR-0008, classe `irreplaceable`).
 
 ## Conséquences

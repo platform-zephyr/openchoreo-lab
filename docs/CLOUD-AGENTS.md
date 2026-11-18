@@ -1,7 +1,7 @@
 # Agents Claude Code dans le cloud : dev et prod sur le même OKE
 
 Décisions de Paul du 2026-11-18 (inscrites dans `missions/MISSION.md`) :
-- le backlog de ce labo vit dans les **issues GitHub** de ce dépôt, pas dans Linear (adoption d'OpenChoreo non tranchée) ;
+- le backlog de ce labo vit dans `backlog/` de ce dépôt (ADR-0012), pas dans Linear (adoption d'OpenChoreo non tranchée) ;
 - **un seul cluster** : OKE Always Free, un nœud, pas de HA. « dev » et « prod » sont deux **Environments OpenChoreo**
   sur ce même cluster. La charge du dev doit rester minimale ;
 - le **MCP OpenChoreo** peut être joint depuis le cloud par **Cloudflare Tunnel + Cloudflare Access**. Aucun accès

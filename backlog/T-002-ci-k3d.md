@@ -4,7 +4,7 @@ title: "CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de rev
 status: todo
 phase: P0
 adr: [0002, 0004]
-depends_on: [T-003]
+depends_on: []
 class: REVUE
 github_issue: null
 ---
@@ -17,7 +17,6 @@ Rendre la CI k3d fiable : c'est le contrôle compensatoire de l'autonomie sur `p
 .github/workflows/k3d-integration.yml, tools/k3d/
 
 ## Critères de fin
-- [ ] `development` vient de `platform/` (T-003), plus de `yq` dans le bootstrap
 - [ ] gitops-k3d gardé en échec connu, pas retiré
 - [ ] tests AUD : audit activé ou NOT_TESTED, jamais PASS
 - [ ] limite « chart sans bundle » écrite dans la PR

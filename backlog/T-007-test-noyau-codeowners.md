@@ -19,3 +19,4 @@ tests/, .github/workflows/ci.yaml
 ## Critères de fin
 - [ ] le test échoue si un chemin du noyau ADR-0002 manque dans CODEOWNERS
 - [ ] job requis par `ci-ok`
+- [ ] couvre aussi tools/k3d, tests/k3d, tests/gitops-k3d, tests/argo-escalation, platform-guardrails, platform/identity

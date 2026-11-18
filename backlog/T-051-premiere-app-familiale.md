@@ -4,7 +4,7 @@ title: "Première app familiale complète (OIDC + base + sauvegarde) sur le home
 status: todo
 phase: P5
 adr: [0007, 0008, 0014, 0003]
-depends_on: [T-024, T-027, T-031]
+depends_on: [T-024, T-027, T-031, T-020, T-021, T-040, T-043]
 class: AUTONOME
 github_issue: null
 ---

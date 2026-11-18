@@ -17,7 +17,8 @@ Qualifier OpenBao sur OKE : backend (PostgreSQL plateforme ou Raft), auto-unseal
 docs/storage/, platform/ (brouillon), tests/
 
 ## Critères de fin
-- [ ] mesure CPU/mémoire
+- [ ] installé en `lab-*`, re-mesure CPU/mémoire datée
 - [ ] auto-unseal prouvé sur k3d
 - [ ] drill perte + restauration
-- [ ] MANDAT Paul : clé d'auto-unseal, stockage des clés de récupération
+- [ ] backend sans nouveau volume OCI, sinon MANDAT explicite pour le volume
+- [ ] MANDAT Paul : clé d'auto-unseal, stockage des clés de récupération (Doppler + hors ligne)

@@ -1,6 +1,7 @@
 # AGENTS.md — règles pour les agents (Claude, Codex)
 
 - Lire `STATE.md` puis `missions/MISSION.md` avant d'agir. Mettre `STATE.md` à jour à chaque jalon.
+- Décisions d'architecture : `docs/adr/`. Tâches : `backlog/` (prendre un ticket : `backlog/README.md`). Modèle des agents cloud : `docs/CLOUD-AGENTS.md`.
 - Ajouter ou modifier une application = modifier `apps/<nom>/app.yaml` (+ `values.yaml` si Helm) dans une **PR**. Ne jamais écrire directement dans le cluster pour un changement durable (pas de `kubectl apply`, pas de MCP en écriture). Voir `docs/APP-CONTRACT.md`.
 - Les fichiers sous `generated/` sont produits par `tools/appgen` : ne pas les éditer à la main.
 - Aucun secret, jeton ou credential dans le dépôt, les PR ou les sorties. Valeurs factices ou générées dans le cluster.

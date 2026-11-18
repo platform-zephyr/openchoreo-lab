@@ -5,7 +5,7 @@ status: todo
 phase: P3
 adr: [0003]
 depends_on: [T-030]
-class: AUTONOME
+class: AUTONOME + MANDAT
 github_issue: null
 ---
 # T-031 — Règle de placement et test de coupure du homelab
