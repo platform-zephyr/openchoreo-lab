@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/openchoreo-lab/docs/schema/alert-payload.v1.json",
+  "title": "alert-payload.v1 (openchoreo-lab)",
+  "description": "Charge d'alerte reçue par le job de remédiation (ADR-0015, T-100). Liste fermée de champs : le contact point Grafana la produit par modèle (Custom Payload), le workflow remediate.yml la valide avant de lancer l'agent. Aucun secret, aucun log brut, aucune valeur libre longue. Les champs app, env, cluster, fingerprint et runbook sont les entrées du workflow_dispatch. `class` (app ou platform) sert au routage ; il ne faut pas le confondre avec la classe de garde AUTONOME/REVUE/MANDAT du front matter d'un runbook. Le nom du runbook suit le nom de la règle : JSON Schema ne compare pas deux champs, tools/observe/lint_runbooks.py et les tests le contrôlent.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "alert", "status", "severity", "class", "cluster", "startsAt", "fingerprint", "runbook", "summary"],
+  "properties": {
+    "schemaVersion": { "const": "alert-payload.v1" },
+    "alert": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]{2,63}$", "description": "Nom de la règle ; égal au nom du fichier docs/runbooks/<alert>.md." },
+    "status": { "enum": ["firing", "resolved"] },
+    "severity": { "enum": ["critical", "warning", "info"] },
+    "class": { "enum": ["app", "platform"], "description": "app : une application lab-* est concernée (l'agent fix-app peut agir). platform : plateforme ou site, jamais d'agent de remédiation d'app, escalade." },
+    "app": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,38}[a-z0-9]$", "description": "Label lab_app. Obligatoire si class vaut app." },
+    "env": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,30}$", "description": "Label lab_env. Obligatoire si class vaut app." },
+    "cluster": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,30}$", "description": "Label cluster (k3d, oke, homelab...). Un résultat k3d n'est jamais une preuve OKE." },
+    "startsAt": { "type": "string", "format": "date-time" },
+    "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{8,64}$", "description": "Empreinte Alertmanager : clé de déduplication, une issue d'incident par (app, env)." },
+    "runbook": { "type": "string", "pattern": "^docs/runbooks/[A-Z][A-Za-z0-9]{2,63}\\.md$", "description": "Chemin relatif, jamais une URL." },
+    "summary": { "type": "string", "maxLength": 200, "description": "Une phrase écrite par la règle ; jamais un log brut." }
+  },
+  "if": { "properties": { "class": { "const": "app" } }, "required": ["class"] },
+  "then": { "required": ["app", "env"] }
+}

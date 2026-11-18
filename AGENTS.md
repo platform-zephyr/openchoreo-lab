@@ -20,6 +20,7 @@
 - `diagnose-app`, `promote-or-rollback`, `platform-guardrails` (classes AUTONOME / REVUE / MANDAT / INTERDIT).
 - Adaptés d'OpenChoreo : `openchoreo-platform-engineer-gitops`, `openchoreo-developer-gitops`, `migrate-to-openchoreo`, `openchoreo-setup`.
 - `orchestrate-backlog` : reprise d'un orchestrateur (état, score `tools/backlog/priority.py`, dispatch, fusion REST, suivi des PR).
+- Méthode tierce vendorée (mattpocock/skills, MIT, SHA figé, T-481) : `mattpocock-tdd` et `mattpocock-diagnosing-bugs` (code), `mattpocock-code-review` (revue), `mattpocock-writing-for-agents` (AGENTS.md, skills), `mattpocock-research` (études), `mattpocock-grilling` (arbitrages) ; méthode, jamais permission.
 Golden paths et vérifications runtime en lecture seule : `golden-paths/`.
 
 ## Périmètre de lecture

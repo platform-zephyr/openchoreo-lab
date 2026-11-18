@@ -42,7 +42,15 @@ Un ticket `in-progress` porte une ligne « Reste » : c'est son état réel, pas
 - Abonner la session aux PR ouvertes (`subscribe_pr_activity`) ; se désabonner à la fusion.
 - Après chaque jalon : lignes « Reste » des tickets, `NEXT.md`, `docs/state/HANDOFF-COORDINATEUR.md` si une procédure change.
 
-## 6. Pièges résolus
+## 6. Skills externes utiles (T-481)
+Copies vendorées de `mattpocock/skills` (MIT, SHA figé dans chaque en-tête, garde `tests/factory/external-skills-test.sh`) ; méthode, jamais permission : AGENTS.md et `platform-guardrails` priment.
+- Brief d'un ticket de code : « lis `mattpocock-tdd` ; devant un échec, `mattpocock-diagnosing-bugs` ». L'usine ne lit aucun skill (décision de Paul) : ce brief ne s'applique qu'aux sous-agents locaux ; l'outil Skill n'y est pas autorisé.
+- Revue d'une branche intégrée : `mattpocock-code-review` (axes Standards et Spec ; spec = fichier du ticket).
+- Ticket qui touche `AGENTS.md`, un skill ou un prompt : `mattpocock-writing-for-agents`. Étude ou art antérieur long : `mattpocock-research` (en plus de `prior-art`). Arbitrage à poser à Paul : `mattpocock-grilling` (session interactive seulement).
+- Conflits de fusion : pas de skill (retiré en amont, CHANGELOG 1.3.x) ; garder les règles du §4.
+- Non vendorés : `prototype`, `domain-modeling` (conflit avec `docs/adr/`), `codebase-design`, `wizard` (les gestes de Paul passent par MANDAT), et les skills qui écrivent dans un suivi d'issues (`triage`, `to-tickets`, `setup-matt-pocock-skills`). Mise à jour : une PR qui relit le diff amont et change le SHA.
+
+## 7. Pièges résolus
 - Jeton fin personnel : écriture impossible dans le dépôt d'une organisation ; l'usine utilise une GitHub App.
 - `actions/checkout` : `persist-credentials: false`, sinon le push d'un fichier de workflow est refusé.
 - La sortie `branch_name` de l'action est vide quand l'agent ouvre sa PR : retrouver la branche par la PR qui cite l'issue.
