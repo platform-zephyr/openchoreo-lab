@@ -6,19 +6,22 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 
 | Statut | Tickets |
 |---|---|
-| `in-progress` | 23 |
-| `todo` | 129 |
+| `in-progress` | 28 |
+| `todo` | 125 |
 | `blocked` | 5 |
 | `deferred` | 43 |
 | `done` | 28 |
 | `dropped` | 27 |
-| **Total** | **255** |
+| **Total** | **256** |
 
 ## En cours (`in-progress`)
 
 | Ticket | Titre | Critères | Reste | Issue |
 |---|---|---|---|---|
 | [T-002](T-002-ci-k3d.md) | CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue | 3/4 | Reste : critère 4 exige un run GitHub réel (NOT_TESTED, aucun run possible depuis cette session). `development` : le bootstrap ne l'invente plus si `platform/` le fournit (STATIC, yq 4.54.3 testé avec un faux manifeste). `docs/research/GITHUB-CONFIG.md` est a… | — |
+| [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | 2/2 | Reste : aucun rendu `kustomize build`/`helm template` n'a tourné (inventaire exhaustif du skill NOT_TESTED, verdicts provisoires) ; SQLite de K04/K13/K27, Chrome de K33, chart de K26 non prouvés ; RUNTIME NOT_TESTED partout ; passer `done` après le rendu des… | — |
+| [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 3/9 | Reste : (a) `lint_runbooks.py` et `tests/observe` ne sont pas appelés par `tools/dev/check` ni `ci.yaml` (fichiers chauds, hors périmètre) ; (b) `golden-paths/_checks/status_json.py` n'émet pas encore `cause.nature` ; (c) la planification OpenTofu (homelab-in… | — |
+| [T-201](T-201-data-2.md) | Ingestion GitHub vers Parquet et métriques DORA par agent | 7/7 | (ligne « Reste » absente) | — |
 | [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | 5/7 | Reste à faire : (1) rapport de recoupement (`next.py --overlap-report <ids>`) : sur la liste figée de 20 tickets, 28 paires se recoupent et 21 ne sont pas sérialisées par une dépendance (surtout `tests/` et `docs/` trop larges : T-072, T-050, T-216) ; les sér… | — |
 | [T-214](T-214-appgen-modulaire.md) | Découper appgen en paquet de modules à comportement constant (avant le couloir contrat) | 4/4 | Reste : (1) ouvrir la PR, CI `appgen`, `quality`, `quality-coverage` vertes (NOT_TESTED en CI) ; (2) écart de garde : le plancher de couverture de `tools/quality/check.py` (`APPGEN = tools/appgen/appgen.py`, 85 %) ne mesure plus que la façade (100 %, bloc `__… | — |
 | [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md) | Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes) | 4/5 | Premier critère ouvert : (repris de HAR-6) même script en local, en CI et dans le hook Stop (T-331) ; seuls fichier et ligne sont affichés, jamais la valeur | — |
@@ -28,6 +31,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | 4/4 | (ligne « Reste » absente) | — |
 | [T-332](T-332-commande-unique-tools-dev-check-static.md) | Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée | 1/3 | Reste aussi : empreintes linux-amd64 dans `toolchain.lock` (VM cloud x86_64) ; les contrôles de T-303, T-306, T-330, T-331 s'activent seuls (NOT_TESTED tant que leur script manque). | — |
 | [T-411](T-411-skill-prior-art-gabarit-pr.md) | Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées » | 3/4 | Premier critère ouvert : essai daté : un agent traite un ticket `complet` de test et rend une section valide (preuve STATIC dans la PR) | — |
+| [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 2/3 | Premier critère ouvert : coût en tokens d'une revue consigné (T-326) : plafond écrit, coût réel NOT_TESTED jusqu'au premier run | — |
 | [T-421](T-421-indicateurs-quality-v1.md) | Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine | 0/2 | Premier critère ouvert : schéma JSON versionné, une ligne par merge sur `main`, aucune valeur secrète | — |
 | [T-451](T-451-ci-speed-csafeloader-alerte-post-merge.md) | CI plus rapide : CSafeLoader dans appgen et argo_guard, alerte des échecs k3d post-merge | 3/5 | Premier critère ouvert : un run `ci` réel montre `platform` et `appgen` sous 30 s, et le premier `hit` du cache des charts de `platform-render` (lien du run) | — |
 | [T-452](T-452-reactiver-les-suites-k3d-quand-et-comment.md) | Réactiver les suites k3d : quand et sous quelle forme (étude) | 2/3 | Reste ouvert : critère 3 (le `schedule` nocturne) à la fin de S1. | — |
@@ -41,6 +45,7 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | [T-476](T-476-score-de-priorite-et-skill-orchestrateur.md) | Score de priorité du backlog (priority.py) et skill orchestrate-backlog | 4/6 | Reste : critères 5 et 6 (branchement CI hors périmètre de cette PR, T-475 modifie `ci.yaml` en parallèle ; mesure sur lots réels). | — |
 | [T-478](T-478-plafonds-natifs-executant.md) | Exécutant : plafonds natifs de Claude Code (--max-budget-usd, --permission-prompts none) et corps d… | 4/6 | Premier critère ouvert : run réel daté sur un ticket simple : `total_cost_usd` ≤ plafond, `permission_denials` sans répétition du même outil, tours comparés au run 44313706955 (79 tours) — NOT_TESTED (aucun dispatch après fu… | — |
 | [T-479](T-479-statistiques-usine-par-run.md) | Statistiques de l'usine par run : tools/factory/stats.py (tours, coût, refus, verdict par modèle et… | 3/5 | Reste : aucune sortie sensible (test dédié à relire), rapport daté sur les artefacts réels des runs 44313706955, 44326043746, 44331128791, 44333609180, 44338002716 (comparaison coût/tours avant et après T-466/T-474/T-478). | [#86](https://github.com/platform-zephyr/openchoreo-lab/issues/86) |
+| [T-481](T-481-integrer-skills-mattpocock.md) | Intégrer les skills mattpocock/skills (MIT) pour les sessions, l'usine et l'orchestrateur, à SHA fi… | 4/6 | Premier critère ouvert : run réel de l'usine qui lit `mattpocock-tdd` (trace `Read` dans le fichier d'exécution) — NOT_TESTED (aucun dispatch) | — |
 
 ## Bloqué (`blocked`)
 
@@ -60,10 +65,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 |---|---|---|---|---|
 | [T-001](T-001-integrer-pr8-security-bundle.md) | 86 | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0/3 | — |
 | [T-041](T-041-context-engineering.md) | 8 | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
-| [T-100](T-100-obs-0.md) | 4 | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 0/9 | — |
-| [T-201](T-201-data-2.md) | 4 | Ingestion GitHub vers Parquet et métriques DORA par agent | 0/7 | — |
-| [T-050](T-050-verdicts-kube-ops.md) | 3 | Verdict A-F pour chaque app de kube-ops | 0/2 | — |
-| [T-420](T-420-revue-hebdomadaire-maintenabilite.md) | 0 | Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés) | 0/3 | — |
 | [T-469](T-469-triage-echecs-suite-k3d.md) | 0 | Triage des cas FAIL préexistants de la suite k3d | 0/4 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
 | [T-215](T-215-pack-identite.md) | 55 | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
@@ -144,13 +145,13 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-071](T-071-doc-utilisateur.md) | 0 | Guide utilisateur : demander, suivre, annuler, déposer un secret | T-023 (todo), T-043 (todo) | — |
 | [T-186](T-186-ids-7.md) | 0 | Golden path utilisateur : arrivée et départ (users/<id>.yaml) | T-185 (todo) | — |
 | [T-101](T-101-obs-1.md) | 0 | Collecte : Alloy de kube-ops réutilisé, budget de séries, sondes depuis healthPath | T-140 (todo) | — |
-| [T-111](T-111-obs-11.md) | 0 | Drill de bout en bout : échec d'app -> alerte -> agent -> PR ou ntfy | T-100 (todo), T-106 (todo), T-107 (todo) | — |
+| [T-111](T-111-obs-11.md) | 0 | Drill de bout en bout : échec d'app -> alerte -> agent -> PR ou ntfy | T-100 (in-progress), T-106 (todo), T-107 (todo) | — |
 | [T-125](T-125-upg-6.md) | 0 | File sérialisée des montées en development et garde de budget | T-004 (todo), T-124 (todo), T-140 (todo) | — |
 | [T-131](T-131-upg-12.md) | 0 | Montées stateful : précondition de sauvegarde fraîche et restauration prouvée | T-026 (todo), T-027 (todo), T-122 (todo) | — |
 | [T-168](T-168-ai-9.md) | 0 | Bac d'exécution éphémère (agent-sandbox) pour le code lancé par les agents | T-160 (todo), T-163 (todo) | — |
 | [T-167](T-167-ai-8.md) | 0 | Règles et banc d'injection de prompt : skills et contexte externes | T-044 (todo), T-166 (todo) | — |
-| [T-203](T-203-data-4.md) | 0 | Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets) | T-020 (todo), T-201 (todo) | — |
-| [T-204](T-204-data-5.md) | 0 | Grille de maturité cloud native CNCF automatisée (niveaux 1-5) | T-201 (todo) | — |
+| [T-203](T-203-data-4.md) | 0 | Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets) | T-020 (todo), T-201 (in-progress) | — |
+| [T-204](T-204-data-5.md) | 0 | Grille de maturité cloud native CNCF automatisée (niveaux 1-5) | T-201 (in-progress) | — |
 | [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md) | 69 | VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops) | T-360 (todo) | — |
 | [T-362](T-362-isolation-reseau-de-la-vm-lab.md) | 68 | Isolation réseau de la VM lab (UniFi, pare-feu) | T-361 (todo) | — |
 | [T-363](T-363-socle-de-la-plateforme-sur-la.md) | 67 | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stocka… | T-001 (todo), T-361 (todo), T-362 (todo) | — |
@@ -172,13 +173,13 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-065](T-065-sante-periodique-alertes.md) | 3 | CronJob de statut périodique (réduit : sondes → T-103, revert → T-106, ntfy → T-107) | T-005 (todo), T-015 (todo) | — |
 | [T-181](T-181-ids-2.md) | 3 | Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao | T-022 (todo), T-190 (todo), T-404 (todo) | — |
 | [T-160](T-160-ai-1.md) | 3 | gVisor et vcluster jetables pour les agents sur le cluster lab | T-364 (todo) | — |
-| [T-107](T-107-obs-7.md) | 2 | Escalade ntfy : contact points, script de notification, route différée | T-100 (todo) | — |
+| [T-107](T-107-obs-7.md) | 2 | Escalade ntfy : contact points, script de notification, route différée | T-100 (in-progress) | — |
 | [T-132](T-132-upg-13.md) | 2 | Runbook et preflight de montée Kubernetes OKE (nœud unique) | T-001 (todo), T-140 (todo) | — |
 | [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | 1 | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | T-303 (in-progress), T-305 (in-progress), T-311 (in-progress), T-313 (in-progress), T-411 (in-progress) | — |
 | [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) | 1 | ntfy seulement si nécessaire et résumé quotidien unique | T-314 (todo) | — |
 | [T-437](T-437-durcir-executant-environnement.md) | 1 | Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteu… | T-313 (in-progress), T-431 (todo) | — |
-| [T-211](T-211-porte-openchoreo.md) | 1 | Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04) | T-031 (todo), T-044 (todo), T-050 (todo), T-212 (todo), T-364 (todo) | — |
-| [T-106](T-106-obs-6.md) | 1 | Pont alerte -> agent : workflow remediate, dédoublonnage, budget, disjoncteur | T-005 (todo), T-100 (todo), T-164 (todo) | — |
+| [T-211](T-211-porte-openchoreo.md) | 1 | Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04) | T-031 (todo), T-044 (todo), T-050 (in-progress), T-212 (todo), T-364 (todo) | — |
+| [T-106](T-106-obs-6.md) | 1 | Pont alerte -> agent : workflow remediate, dédoublonnage, budget, disjoncteur | T-005 (todo), T-100 (in-progress), T-164 (todo) | — |
 | [T-405](T-405-rotation-complete-final.md) | 1 | Rotation complète des secrets et identités du registre (FINAL) | T-404 (todo) | — |
 | [T-301](T-301-reecriture-de-l-historique-et-purge.md) | 0 | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | T-303 (in-progress) | — |
 | [T-433](T-433-protection-tags.md) | 0 | Protection des tags : core-baseline et v* (ruleset de type tag) | T-305 (in-progress) | — |
@@ -186,7 +187,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-315](T-315-merge-automatique-sous-conditions-app-de.md) | 0 | Merge automatique sous conditions : auto-merge natif pendant le dev, App de merge en FINAL | T-210 (in-progress), T-321 (todo) | — |
 | [T-218](T-218-acter-adr-0014-0019.md) | 0 | Acter les ADR 0014-0019 après le MVP | T-211 (todo) | — |
 | [T-147](T-147-cost-8.md) | 0 | Alertes de coût : relier billing_cost_eur et cost-evidence à ntfy, règle de fraîcheur | T-026 (todo), T-065 (todo), T-140 (todo) | — |
-| [T-109](T-109-obs-9.md) | 0 | Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane | T-022 (todo), T-100 (todo), T-107 (todo), T-364 (todo) | — |
+| [T-109](T-109-obs-9.md) | 0 | Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane | T-022 (todo), T-100 (in-progress), T-107 (todo), T-364 (todo) | — |
 | [T-193](T-193-ids-14.md) | 0 | Nettoyage Doppler : clés obsolètes, jetons orphelins, projets vides, liste fermée en CI | T-181 (todo), T-192 (todo) | — |
 | [T-194](T-194-ids-15.md) | 0 | Rotation et échéances : jetons Doppler, clés d'agents, secrets OIDC, clé de seal | T-181 (todo), T-184 (todo) | — |
 | [T-195](T-195-ids-16.md) | 0 | Audit : OpenBao, Doppler, Authentik ; rapport « qui a lu quoi » et alertes | T-065 (todo), T-184 (todo) | — |
@@ -233,5 +234,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 
 ## Anomalies de lecture
 
+- T-201 : `in-progress` sans ligne « Reste » dans les notes
 - T-331 : `in-progress` sans ligne « Reste » dans les notes
 - T-466 : `in-progress` sans ligne « Reste » dans les notes
