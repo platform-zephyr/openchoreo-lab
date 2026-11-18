@@ -304,7 +304,7 @@ for dom, base in BASE.items():
     for j, p in enumerate(yaml.safe_load(open(P+dom+".yaml"))):
         keymap[p["key"]] = f"T-{base+j:03d}"; props.append((dom, p))
 dropped = {}   # ancien id -> nouveau id
-for dom, p in props:
+for _dom, p in props:
     for a in (p.get("absorbs") or []):
         if a in ("T-065","T-074"): continue     # T-065 réduit, T-074 conservé
         dropped.setdefault(a, keymap[p["key"]])
