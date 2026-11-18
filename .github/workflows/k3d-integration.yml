@@ -7,8 +7,9 @@
 # (platform/, tools/oke/, tools/k3d/, tools/appgen/, tests/{k3d,vap,argo-escalation,gitops-k3d}/, ce workflow).
 # Après le merge (push sur main, chaque commit, sans annulation) et chaque nuit : toutes les suites, toujours. Un échec
 # post-merge rend le commit rouge sur main (docs/research/CI-SPEED.md §4). Sur PR, un push annule le run obsolète.
-# Pas de déclencheur merge_group : ce workflow n'est pas un check requis, la file de fusion n'a donc pas à l'attendre
-# (seul `ci-ok` de ci.yaml l'est). Ajouter `merge_group` seulement quand `k3d-ok` deviendra requis (docs/CI-K3D.md §6).
+# merge_group (T-435) : sans lui, un `k3d-ok` requis ne serait jamais publié dans la file et la bloquerait. Tant que la
+# variable de dépôt K3D_REQUIRED n'est pas `true` (mode dev, décision de Paul D-2), la porte dit « non lancé » et
+# `k3d-ok` est vert sans suite. À FINAL0, Paul pose K3D_REQUIRED=true avec le ruleset (docs/CI-K3D.md §6).
 # Limite : le chart OpenChoreo est installé SANS security bundle (docs/SECURITY-BUNDLE.md) ; un PASS ne prouve pas
 # l'installation durcie d'OKE.
 # Art antérieur : k3d-io/k3d .github/workflows/test-install-osmatrix.yaml (fb87e3a) ; AbsaOSS/k3d-action ;
@@ -22,6 +23,9 @@ on:
   # D-6 : un label `k3d` posé sur une PR lance les suites à la demande (jamais automatiquement).
   pull_request:
     types: [labeled]
+  # T-435 : publie `k3d-ok` dans la file de fusion. Suite lancée seulement si K3D_REQUIRED=true ET chemins concernés.
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read
@@ -60,12 +64,20 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE: ${{ github.event.merge_group.base_sha }}
+          HEAD: ${{ github.event.merge_group.head_sha }}
+          K3D_REQUIRED: ${{ vars.K3D_REQUIRED }}
         run: |
           set -euo pipefail
           run=false
-          if [ "$EVENT" != "pull_request" ]; then
+          if [ "$EVENT" = "merge_group" ]; then
+            # File de fusion : seulement une fois k3d-ok requis (FINAL0) et si le groupe touche ce que les suites testent.
+            if [ "$K3D_REQUIRED" = "true" ] \
+               && git diff --name-only "$BASE" "$HEAD" \
+                 | grep -Eq '^(platform/|tools/oke/|tools/k3d/|tools/appgen/|tests/(k3d|vap|argo-escalation|gitops-k3d)/|\.github/workflows/k3d-integration\.yml$)'; then
+              run=true
+            fi
+          elif [ "$EVENT" != "pull_request" ]; then
             run=true
           elif jq -e 'index("k3d") != null' <<<"$LABELS" >/dev/null; then
             run=true
@@ -305,7 +317,7 @@ jobs:
         run: k3d cluster delete "${{ matrix.cluster }}" || true
 
   k3d-ok:
-    # Agregat NON requis (ci-ok ne l'inclut pas). Vert si la suite n'a pas tourne (gate=false) ou si toutes ont passe.
+    # Agregat : requis par main-final.json a FINAL0 (T-435), jamais en dev ; ci-ok ne l'inclut pas. Vert si la suite n'a pas tourne (gate=false) ou si toutes ont passe.
     if: always()
     needs: [gate, suite]
     runs-on: ubuntu-24.04-arm

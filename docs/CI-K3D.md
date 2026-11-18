@@ -1,6 +1,6 @@
 # CI k3d : suites d'intégration sur clusters jetables
 
-Workflow : `.github/workflows/k3d-integration.yml`. Non bloquant : l'agrégat `k3d-ok` ne fait pas partie de `ci-ok`.
+Workflow : `.github/workflows/k3d-integration.yml`. Non bloquant en dev : l'agrégat `k3d-ok` ne fait pas partie de `ci-ok`. Voie choisie pour le rendre requis à FINAL0 (T-435) : check séparé `k3d-ok` dans `main-final.json`, `ci-ok` inchangé (variante « needs de ci-ok » écartée).
 
 ## 1. Principe
 
@@ -10,7 +10,7 @@ Workflow : `.github/workflows/k3d-integration.yml`. Non bloquant : l'agrégat `k
 - `tools/k3d/ci-bootstrap.sh` installe OpenChoreo 1.3.3 minimal (étapes 1 à 9 de `tools/oke/install.sh`, mêmes charts, values et sha256 de `platform/install/versions.env`). Sans les gardes OKE, sans Cilium (NetworkPolicy de l'étape 2), sans Argo CD (étape 11), sans Backstage (`--set backstage.enabled=false`, comme l'étape 6).
 - Limite « chart sans security bundle » : la CI installe le chart OpenChoreo standard, SANS le security bundle exigé par `tools/oke/install.sh` (`docs/SECURITY-BUNDLE.md`). Un PASS en CI ne prouve pas l'installation durcie utilisée sur OKE. La limite est rappelée dans le résumé de chaque job `bootstrap=oc`.
 - Déclencheur : **`workflow_dispatch` seulement** (décision de Paul, 2026-11-18). Aucune suite ne tourne sur PR, sur push ni la nuit : elles ne freinent pas les itérations des agents. Quand et comment les réactiver : `docs/research/K3D-REACTIVATION.md` (T-452, à arbitrer par Paul). Le texte de `docs/research/CI-SPEED.md` §4 (PR filtrée, push sur `main`, nuit) décrit l'état antérieur.
-- Pas de déclencheur `merge_group` : `k3d-integration` n'est pas un check requis. À ajouter seulement quand `k3d-ok` le devient (§6).
+- Déclencheur `merge_group` (T-435) : il publie `k3d-ok` dans la file de fusion. La porte lance les suites seulement si la variable de dépôt `K3D_REQUIRED` vaut `true` et si le groupe touche `platform/`, `tools/{oke,k3d,appgen}/`, `tests/{k3d,vap,argo-escalation,gitops-k3d}/` ou ce workflow. Sinon elle dit « non lancé » et `k3d-ok` est vert sans suite (ex. PR `apps/`). Tant que `K3D_REQUIRED` n'est pas posée (dev), aucune suite ne tourne dans la file.
 - Audit API server (suite `vap`) : une sonde vérifie que `/var/log/lab-audit.log` reçoit des événements. Sinon les tests `AUD-*` sont NOT_TESTED (jamais PASS) et le résumé le dit.
 
 ## 2. Contournements temporaires
@@ -57,6 +57,8 @@ Le label `k3d` sur une PR ne lance plus rien tant que le déclencheur `pull_requ
 Les preuves : `gh run download <id> -n k3d-<suite>`.
 
 ## 6. Rendre requis (plan)
+
+FINAL0 (T-435, T-400) : Paul pose la variable de dépôt `K3D_REQUIRED=true`, puis applique `main-final.json` avec `{"context": "k3d-ok"}` ajouté à `required_status_checks` à côté de `ci-ok` (inchangé). `main-final.json` est créé par T-400 ; T-435 ne le crée pas (le test `tests/github-config` exige son absence en dev). Essai daté de la file : NOT_TESTED jusqu'à cette application.
 
 Calendrier et forme proposés (nuit seule avant T-364, suite réduite requise à FINAL0) : `docs/research/K3D-REACTIVATION.md` §3.
 
