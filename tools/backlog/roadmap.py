@@ -1,6 +1,8 @@
 import re,glob,functools,collections
+import os as _os
+ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..'))
 ALL={}
-for f in sorted(glob.glob('/home/user/openchoreo-lab/backlog/T-*.md')):
+for f in sorted(glob.glob(ROOT+'/backlog/T-*.md')):
     s=open(f).read(); g=lambda k: re.search(rf'^{k}: (.*)$',s,re.M).group(1).strip()
     o=lambda k: (re.search(rf'^{k}: (.*)$',s,re.M).group(1).strip() if re.search(rf'^{k}:',s,re.M) else '')
     ALL[g('id')]=dict(f=f.split('/')[-1],st=g('status'),stage=g('stage'),deps=[d.strip() for d in g('depends_on').strip('[]').split(',') if d.strip()],
@@ -63,7 +65,7 @@ if H: md.append("\nGestes purement humains (aucun agent) : "+", ".join(f"{L(n)} 
 # Lancement 24/7 : liste figée du pilote (lue dans T-322) et ses prérequis
 PILOT='T-322'; AFTER=['T-315','T-316','T-006']
 if PILOT in T:
-    src=open('/home/user/openchoreo-lab/backlog/'+ALL[PILOT]['f']).read()
+    src=open(ROOT+'/backlog/'+ALL[PILOT]['f']).read()
     m=re.search(r'Liste figée du pilote \(\d+\) : ([^\n]*)',src)
     LIST=re.findall(r'T-\d+[a-z]?',m.group(1)) if m else []
     PRE=sorted(anc(PILOT),key=lambda n:(T[n]['w'],n))
@@ -111,7 +113,7 @@ md.append(f"\n## Gelés jusqu'à la porte ou bloqués par un déclencheur ({len(
 md.append(", ".join(f"{L(n)} ({ALL[n]['st']})" for n in sorted(G)))
 D=[n for n,x in ALL.items() if x['st']=='dropped']
 md.append(f"\n\n## Absorbés ou supprimés ({len(D)})\n\n"+", ".join(L(n) for n in sorted(D)))
-open('/home/user/openchoreo-lab/backlog/ROADMAP.md','w').write('\n'.join(md)+'\n')
+open(ROOT+'/backlog/ROADMAP.md','w').write('\n'.join(md)+'\n')
 for st in ORDER:
     N=[n for n in T if T[n]['stage']==st]
     if N: print(st,len(N),'humains',sum(('MANDAT' in T[n]['cls'] or 'REVUE' in T[n]['cls']) for n in N),dict(collections.Counter(SHORT.get(T[n]['model'],'?') for n in N)))
