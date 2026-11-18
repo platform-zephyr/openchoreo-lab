@@ -1,6 +1,6 @@
 # Job CI `platform` : vérification de `platform/**` et `tools/oke/**` (revues I10, B2, PR #8 P1)
 
-**Statut : intégré** dans `.github/workflows/ci.yaml` (job `platform`, inclus dans l'agrégat `ci-ok`, seul check requis par `main-protection`). Permissions `contents: read`, aucun secret, aucun cluster. Actions épinglées par SHA ; binaires linux-arm64 vérifiés par sha256.
+**Statut : intégré** dans `.github/workflows/ci.yaml` (jobs `platform` et `platform-render`, tous deux inclus dans l'agrégat `ci-ok`, seul check requis par `main-protection`). Depuis 2026-11-18, les contrôles Helm (security bundle, rendus, gardes de désinstallation, kubeconform) tournent dans `platform-render`, en parallèle, avec un cache des charts dont le sha256 est revérifié à chaque usage (`docs/research/CI-SPEED.md`). Permissions `contents: read`, aucun secret, aucun cluster. Actions épinglées par SHA ; binaires linux-arm64 vérifiés par sha256.
 
 ## Pourquoi
 
