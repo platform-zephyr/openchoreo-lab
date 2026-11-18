@@ -31,3 +31,5 @@ tools/dev/cluster, tests/registry.yaml, .github/workflows/k3d-integration.yml
 La modification de .github/ exige l'approbation de Paul (REVUE). La preuve de référence des images reste le runner arm64.
 
 Proposé par la recherche `harness` (clé HAR-9) ; intégration 2 du 2026-11-18.
+
+Décision de Paul (2026-11-18, D-2) : réduit à la bibliothèque `tools/dev/cluster` ; aucun job k3d sur PR avant FINAL0 (critère 1 reporté à FINAL0).

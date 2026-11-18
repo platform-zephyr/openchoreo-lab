@@ -26,11 +26,11 @@ MANDAT = geste de Paul (accès, identité, dépense, VM) ; REVUE = approbation d
 | Étape | Gestes (MANDAT) | Approbations (REVUE) |
 |---|---|---|
 | S0 | [T-301](T-301-reecriture-de-l-historique-et-purge.md), [T-304](T-304-essai-reel-executant.md), [T-431](T-431-reglages-depot-actions-securite.md), [T-433](T-433-protection-tags.md), [T-434](T-434-gestes-organisation-paul.md) |  |
-| S1 | [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-435](T-435-k3d-ok-requis.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-436](T-436-labels-formulaires-issues.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
+| S1 | [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-437](T-437-durcir-executant-environnement.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-456](T-456-corriger-t12-cle-eso-lab-pg-roles.md), [T-457](T-457-b09-known-fail-au-niveau-du-cas.md), [T-458](T-458-ancre-gitops-k3d-obsolete.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-412](T-412-verificateur-prior-art-ci.md), [T-436](T-436-labels-formulaires-issues.md), [T-415](T-415-sous-agent-prior-art-scout.md) |
 | S2 |  | [T-423](T-423-reduire-complexite-argo-guard.md), [T-062](T-062-lab-platform-auto.md), [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) |
 | S3 | [T-140](T-140-cost-1.md), [T-031](T-031-placement-coupure.md) | [T-070](T-070-garde-contrat.md), [T-439](T-439-essai-dependency-review.md), [T-368](T-368-garde-fous-de-capacite-du-homelab.md) |
 | PORTE | [T-211](T-211-porte-openchoreo.md) |  |
-| FINAL0 | [T-215](T-215-pack-identite.md), [T-403](T-403-rotation-secrets-dev.md), [T-400](T-400-retrait-bypass-admin-ruleset.md), [T-404](T-404-jalon-final0.md) | [T-007](T-007-test-noyau-codeowners.md) |
+| FINAL0 | [T-215](T-215-pack-identite.md), [T-403](T-403-rotation-secrets-dev.md), [T-400](T-400-retrait-bypass-admin-ruleset.md), [T-404](T-404-jalon-final0.md) | [T-435](T-435-k3d-ok-requis.md), [T-007](T-007-test-noyau-codeowners.md) |
 | I1 | [T-026](T-026-sauvegardes.md) | [T-069](T-069-vap-data-class.md) |
 | I2 | [T-022](T-022-spike-openbao.md), [T-164](T-164-ai-5.md), [T-185](T-185-ids-6.md), [T-023](T-023-secrets-generate-provided.md), [T-218](T-218-acter-adr-0014-0019.md) | [T-183](T-183-ids-4.md), [T-060](T-060-residu-kgateway.md), [T-184](T-184-ids-5.md), [T-186](T-186-ids-7.md), [T-189](T-189-ids-10.md) |
 | I3 | [T-021](T-021-reseau-egress-imds.md) |  |
@@ -91,11 +91,11 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | Étape | haiku | sonnet | opus | humain |
 |---|---|---|---|---|
 | S0 | 2 | 3 | 0 | 1 |
-| S1 | 0 | 33 | 3 | 0 |
+| S1 | 0 | 34 | 4 | 0 |
 | S2 | 1 | 4 | 3 | 0 |
 | S3 | 0 | 13 | 0 | 0 |
 | PORTE | 0 | 0 | 1 | 0 |
-| FINAL0 | 0 | 0 | 5 | 0 |
+| FINAL0 | 0 | 1 | 5 | 0 |
 | I1 | 0 | 6 | 1 | 0 |
 | I1bis | 0 | 1 | 0 | 0 |
 | I2 | 1 | 5 | 6 | 0 |
@@ -118,7 +118,7 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | [T-434](T-434-gestes-organisation-paul.md) | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | 0 | gouvernance | MANDAT | haiku/medium |  | 0 |
 | [T-432](T-432-security-md.md) | SECURITY.md et politique de signalement privé | 1 | gouvernance | AUTONOME | haiku/medium |  | 0 |
 
-## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (36 tickets)
+## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (38 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
@@ -135,8 +135,10 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 | [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | 0 | connaissance | AUTONOME | sonnet/high | oui | 0 |
 | [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md) | Environnement Claude Code cloud « openchoreo-lab-agent » : script d'installation, réseau, secrets réseau | 0 | agents-harness | AUTONOME + MANDAT | sonnet/high | oui | 0 |
 | [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenChoreo) | 0 | tests-fixtures | AUTONOME | sonnet/high | oui | 0 |
-| [T-435](T-435-k3d-ok-requis.md) | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | 0 | ci | REVUE | sonnet/high |  | 37 |
 | [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | 0 | securite | REVUE | opus/high |  | 0 |
+| [T-456](T-456-corriger-t12-cle-eso-lab-pg-roles.md) | Corriger T12 : clé ESO lab-pg-roles/<nom> refusée par le provider kubernetes | 0 | agents | REVUE | opus/high |  | 0 |
+| [T-457](T-457-b09-known-fail-au-niveau-du-cas.md) | Classer B-09 KNOWN_FAIL au niveau du cas dans tests/vap/run.sh | 0 | agents | REVUE | sonnet/high |  | 0 |
+| [T-458](T-458-ancre-gitops-k3d-obsolete.md) | Réparer l'ancre obsolète de gitops-k3d (correction G1 déjà dans main) | 0 | agents | REVUE | sonnet/high |  | 0 |
 | [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 46 |
 | [T-366](T-366-bundle-multi-arch-installateur-lab.md) | Bundle de sécurité multi-arch et installateur pour le cluster lab | 1 | socle-lab | REVUE + MANDAT | opus/high | oui | 40 |
 | [T-003](T-003-env-development-promotion.md) | Environment `development`, promotion vers `production`, pins de release par environnement | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 31 |
@@ -196,11 +198,12 @@ Jusqu'à la porte (9 vagues) : [T-360](T-360-mesures-du-homelab-avant-dimensionn
 |---|---|---|---|---|---|---|---|
 | [T-211](T-211-porte-openchoreo.md) | Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04) | 8 | gouvernance | MANDAT | opus/high |  | 1 |
 
-## FINAL0 — Durcissement avant la première donnée réelle ou exposition publique (5 tickets)
+## FINAL0 — Durcissement avant la première donnée réelle ou exposition publique (6 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
 | [T-215](T-215-pack-identite.md) | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0 | gouvernance | REVUE + MANDAT | opus/high | oui | 40 |
+| [T-435](T-435-k3d-ok-requis.md) | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | 0 | ci | REVUE | sonnet/high |  | 37 |
 | [T-007](T-007-test-noyau-codeowners.md) | Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002 | 1 | ci | REVUE | opus/high | oui | 37 |
 | [T-403](T-403-rotation-secrets-dev.md) | Rotation des secrets et identités créés en mode dev (FINAL0) | 1 | gouvernance | MANDAT | opus/high |  | 35 |
 | [T-400](T-400-retrait-bypass-admin-ruleset.md) | Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation ponctuelle | 2 | gouvernance | REVUE + MANDAT | opus/high |  | 36 |

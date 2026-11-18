@@ -32,3 +32,12 @@ docs/research/K3D-REACTIVATION.md, .github/workflows/k3d-integration.yml, docs/C
 Étude confiée à un sous-agent Opus. Rapport à arbitrer par Paul.
 
 Étude livrée le 2026-11-18 (`docs/research/K3D-REACTIVATION.md`) ; `docs/CI-K3D.md` aligné sur le dispatch manuel. Critère 3 ouvert : le workflow n'est pas modifié tant que Paul n'a pas tranché D-1 à D-6 (rapport §7).
+
+Décisions de Paul (2026-11-18, « ok D-1 à D-6 », recommandations du rapport) :
+- D-1 : ADR-0002 §4 amendé (contrôle k3d suspendu en dev, rétabli à FINAL0). Fait.
+- D-2 : T-435 en FINAL0, T-339 réduit à la bibliothèque. Fait.
+- D-3 : réactivation nocturne non bloquante à la fin de S1, avant T-364, après les corrections T-456 à T-458.
+- D-4 : alerte par lecture du dispatcher (T-314) et ticket de backlog `fix-k3d-<suite>` ; aucune issue GitHub automatique.
+- D-5 : B-09 en `KNOWN_FAIL` au niveau du cas (T-457) ; vraie correction dans la baseline de la VM lab (T-363).
+- D-6 : déclencheur par label `k3d` autorisé (`pull_request: types: [labeled]`, label seul). Fait.
+Reste ouvert : critère 3 (le `schedule` nocturne) à la fin de S1.

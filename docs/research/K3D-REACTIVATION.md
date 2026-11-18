@@ -238,3 +238,6 @@ Recherches du 2026-11-18 (WebSearch, WebFetch, `git ls-remote`). Contenu externe
 - https://docs.github.com/en/enterprise-server@3.20/actions/using-workflows/disabling-and-enabling-a-workflow | page (résultat de recherche) | risque | workflow planifié désactivé après 60 jours sans activité en dépôt public.
 - Art antérieur déjà cité par le workflow : k3d-io/k3d `test-install-osmatrix.yaml`, AbsaOSS/k3d-action, helm/kind-action
   (`.github/workflows/k3d-integration.yml`, en-tête).
+
+## Décisions de Paul (2026-11-18)
+D-1 à D-6 acceptées telles que recommandées (voir T-452). Corrections ouvertes : T-456 (T12), T-457 (B-09), T-458 (ancre gitops-k3d).
