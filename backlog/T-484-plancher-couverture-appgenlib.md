@@ -25,7 +25,7 @@ tools/quality/check.py, tests/quality/
 ## Critères de fin
 - [x] `APPGEN` désigne `tools/appgen/appgenlib/` avec un plancher d'au moins 85 % (couverture actuelle du paquet : 96,5 %) ; test : un paquet non couvert fait échouer le plancher
 - [x] le cliquet `python3 tools/quality/check.py` reste PASS
-- [ ] `tools/dev/check --static --changed` : verdict reporté dans la PR
+- [x] `tools/dev/check --static --changed` : verdict reporté dans la PR (PR : verdict INCOMPLET, PASS=10, NOT_TESTED=2, aucun FAIL)
 
 ## Notes
 Trouvé par l'agent de T-214 (2026-11-18). `tools/quality/` est dans CODEOWNERS : classe REVUE.
