@@ -1,7 +1,7 @@
 ---
 id: T-002
 title: "CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue"
-status: in-progress
+status: done
 phase: P0
 adr: [0002, 0004]
 depends_on: []
@@ -26,7 +26,7 @@ Rendre la CI k3d fiable : c'est le contrôle compensatoire de l'autonomie sur `p
 - [x] gitops-k3d gardé en échec connu, pas retiré (matrice `known_fail`, STATIC : actionlint OK ; 2026-11-18)
 - [x] tests AUD : audit activé ou NOT_TESTED, jamais PASS (sonde d'audit + réétiquetage `results.tsv`, STATIC : actionlint OK, awk simulé ; comportement réel NOT_TESTED tant qu'aucun run)
 - [x] limite « chart sans bundle » écrite (workflow, `ci-bootstrap.sh`, `docs/CI-K3D.md`, résumé de job ; à reprendre dans la description de la PR)
-- [ ] suites vap, k3d, argo-escalation vertes
+- [x] suites vap, k3d, argo-escalation vertes — lancement manuel de `k3d-integration` sur `main` (décision D-3 de Paul), run 44358638845, 2026-11-18, tête `main` après #116 : jobs `gate`, `k3d k3d`, `k3d vap`, `k3d gitops-k3d` (échec connu non bloquant), `k3d argo-escalation` et `k3d-ok` en `success` ; RUNTIME k3d, k3d ≠ OKE
 
 ## Notes
 Revue de la PR #36 faite le 2026-11-18 (4 points).
@@ -38,3 +38,5 @@ Reste : critère 4 exige un run GitHub réel (NOT_TESTED, aucun run possible dep
 Décision de Paul (2026-11-18, D-3) : ce ticket se ferme par un lancement manuel vert de `k3d-integration` sur `main` après les corrections T-456 à T-458, pas par un run sur PR.
 
 Décision de Paul (2026-11-18, D-3) déjà notée ci-dessus. Corrections préalables : T-456 (clé ESO, défaut réel de l'archétype B), T-457 (B-09 en KNOWN_FAIL au niveau du cas), T-458 (ancre de gitops-k3d). Fermeture : lancement manuel vert de `k3d-integration` sur `main` (`gh workflow run k3d-integration.yml`). Les suites k3d ne tournent plus automatiquement.
+
+Clôture (2026-11-18) : corrections préalables T-456, T-457, T-458 et T-469 fusionnées ; run vert sur `main` ci-dessus. `gitops-k3d` reste un échec connu non bloquant (T-ANNOT, étapes après T-PIN-STALE), suivi par T-458.
