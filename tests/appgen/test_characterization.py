@@ -199,7 +199,7 @@ class EgressErrors(unittest.TestCase):
         doc["spec"]["network"]["egress"] = [
             {"cidr": "127.0.0.0/8", "ports": [80]},
             {"cidr": "127.0.0.0/8", "ports": [80]},
-            {"fqdn": "10.0.0.1", "ports": [443]},
+            {"fqdn": "198.51.100.7", "ports": [443]},
             {"fqdnPattern": "*.com", "ports": [443]},
             {"app": "whoami"},
             {"app": "ghost"},
@@ -211,8 +211,8 @@ class EgressErrors(unittest.TestCase):
             "egress cidr '127.0.0.0/8' interdit : plage non routable",
             "egress : regle en double {\"cidr\": \"127.0.0.0/8\", \"ports\": [80]}",
             "egress cidr '127.0.0.0/8' interdit : plage non routable",
-            "egress fqdn '10.0.0.1' : adresse IP interdite (utiliser cidr)",
-            "egress FQDN '10.0.0.1' sur le cluster 'k3d' sans Cilium : aucune CiliumNetworkPolicy n'y serait "
+            "egress fqdn '198.51.100.7' : adresse IP interdite (utiliser cidr)",
+            "egress FQDN '198.51.100.7' sur le cluster 'k3d' sans Cilium : aucune CiliumNetworkPolicy n'y serait "
             "appliquee : refus",
             "egress fqdnPattern '*.com' trop large (au moins *.domaine.tld)",
             "egress FQDN '*.com' sur le cluster 'k3d' sans Cilium : aucune CiliumNetworkPolicy n'y serait "
