@@ -88,6 +88,14 @@ else
   ko "runArgs sans limites CPU/RAM ou sans --cap-drop=ALL"
 fi
 
+# Hooks git locaux (SL-4, T-459) : NOT_TESTED (rc 0) si pre-commit ou un outil manque.
+if "$PWD/tests/dev-factory/precommit-test.sh" >"$W/precommit" 2>&1; then
+  ok "hooks git : $(tail -n1 "$W/precommit")"
+else
+  ko "hooks git (tests/dev-factory/precommit-test.sh)"
+  sed 's/^/      | /' "$W/precommit"
+fi
+
 if [[ "$fails" -gt 0 ]]; then
   printf 'DEV-FACTORY-STATIC: FAIL (%s)\n' "$fails"
   exit 1
