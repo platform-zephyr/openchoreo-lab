@@ -5,6 +5,10 @@ kind: ClusterCapabilities
 metadata:
   name: k3d
 spec:
+  arch: [arm64]           # Mac arm64
+  availability: always
+  gvisor: absent          # aucune preuve datee d'un pod sous runsc sur ce cluster
+  admission: [psa, vap]   # pas de Kyverno
   # k3d du labo : flannel + controleur NetworkPolicy de k3s [S, a prouver : tests/k3d]. Pas de Cilium,
   # donc aucune CiliumNetworkPolicy appliquee : egress FQDN refuse (sauf --allow-unenforced-fqdn, rendu marque).
   cilium: false

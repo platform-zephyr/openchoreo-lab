@@ -36,6 +36,9 @@ PVC_TRAIT = "persistent-volume-claim"
 CRT_NAME = "cnpg-lab-db"
 DB_INSTANCE = "lab-pg"
 ALLOWED_ENVIRONMENTS = {"development", "production"}
+# Placement par defaut (ADR-0003 §4, decision de Paul du 2026-11-18) : une app va sur le homelab ; oke seulement
+# sur demande explicite de Paul.
+DEFAULT_CLUSTER = "homelab"
 
 # Type de composant par (kind, endpoint ?). Seul deployment/service-restricted existe dans platform/ aujourd'hui ;
 # les autres sont a livrer par platform/ (APP-CONTRACT section 7.4). Absent => render echoue (jamais de repli).

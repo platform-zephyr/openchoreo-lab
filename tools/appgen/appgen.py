@@ -45,6 +45,7 @@ from appgenlib.model import (
     component_strategy,
     components,
     compute_delivery,
+    default_cluster,
     load_capabilities,
     load_yaml,
     surge_pods,
@@ -62,8 +63,8 @@ from appgenlib.validate import validate_all, validate_all_full
 __all__ = [
     "CCT_NAME", "PINS_PATH", "PROJECT_PINS_PATH", "PVC_TRAIT", "ROOT", "ROOT_EXCEPTION_CCT", "SECRET_LIKE_VALUE",
     "AppError", "Context", "app_dirs", "base_state", "binding_errors", "catalog_entity", "cidr_policy",
-    "component_strategy", "components", "compute_delivery", "diff_trees", "egress_errors", "egress_objects",
-    "egress_project_params", "fqdn_errors", "gateway_errors", "load_capabilities", "load_pins", "load_platform",
+    "component_strategy", "components", "compute_delivery", "default_cluster", "diff_trees", "egress_errors",
+    "egress_objects", "egress_project_params", "fqdn_errors", "gateway_errors", "load_capabilities", "load_pins", "load_platform",
     "load_release_history", "load_yaml", "main", "project_params", "project_pin_warnings", "release_deletions",
     "render_all", "render_component", "render_helm", "render_native", "schema_errors", "semantic_check",
     "semantic_errors", "surge_pods", "validate_all", "validate_all_full", "values_errors", "volumes", "write_tree",

@@ -13,13 +13,31 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["name"],
-      "properties": { "name": { "enum": ["k3d", "oke"] } }
+      "properties": { "name": { "enum": ["k3d", "oke", "homelab"] } }
     },
     "spec": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["cilium", "databaseInstances", "identityProviders", "storageClasses", "backupMechanisms", "secretStore"],
+      "required": ["arch", "availability", "gvisor", "admission", "cilium", "databaseInstances", "identityProviders", "storageClasses", "backupMechanisms", "secretStore"],
       "properties": {
+        "arch": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "enum": ["amd64", "arm64"] },
+          "description": "Architectures des noeuds du cluster. Absente ou vide = politique invalide (refus par defaut)."
+        },
+        "availability": {
+          "enum": ["always"],
+          "description": "Le cluster est allume en permanence (homelab 24 h/24, D-2026-11-16-07). Pas de mode 'scheduled' dans le contrat."
+        },
+        "gvisor": {
+          "enum": ["proven", "absent"],
+          "description": "proven = pod runtimeClassName gvisor execute sous runsc, preuve datee ; sinon absent."
+        },
+        "admission": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "enum": ["psa", "vap", "kyverno"] },
+          "description": "Mecanismes d'admission actifs sur le cluster."
+        },
         "cilium": { "type": "boolean", "description": "true = CRD cilium.io/v2 presente ET CNP appliquees. Sans Cilium : egress FQDN refuse (voir APP-CONTRACT 1.1)." },
         "privateEgressCIDRs": {
           "type": "array", "uniqueItems": true, "maxItems": 16,

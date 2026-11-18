@@ -16,7 +16,7 @@ from typing import Any
 import yaml
 from jsonschema import Draft7Validator
 
-from appgenlib.config import CAPS_SCHEMA_PATH, MAX_SURGE_PERCENT, ROOT, SIZE_REQUESTS
+from appgenlib.config import CAPS_SCHEMA_PATH, DEFAULT_CLUSTER, MAX_SURGE_PERCENT, ROOT, SIZE_REQUESTS
 
 
 class AppError(Exception):
@@ -66,6 +66,12 @@ def load_capabilities(clusters_dir: Path, cluster: str) -> dict:
     if doc["metadata"]["name"] != cluster:
         raise AppError(f"{path} : metadata.name '{doc['metadata']['name']}' differe de '{cluster}'")
     return doc["spec"]
+
+
+def default_cluster(clusters_dir: Path) -> str:
+    """Cluster de placement par defaut (ADR-0003 §4) ; sa politique doit exister et etre valide, sinon refus."""
+    load_capabilities(clusters_dir, DEFAULT_CLUSTER)
+    return DEFAULT_CLUSTER
 
 
 @dataclass
