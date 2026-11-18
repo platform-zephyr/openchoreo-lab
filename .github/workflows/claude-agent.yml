@@ -104,6 +104,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          # Sans cela, git push reutilise le GITHUB_TOKEN du workflow (sans permission workflows) a la place du jeton de l'App.
+          persist-credentials: false
       - name: Kill-switch factory/PAUSE (re-controle sur origin/main)
         id: pause
         env:

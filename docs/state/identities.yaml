@@ -29,6 +29,18 @@ identities:
     vault: github
     consumers: [executant-cloud, workflow-agent-claude]
     note: la permission workflows est retirée à FINAL0 (voir docs/AGENT-IDENTITY.md).
+  - name: executant-app-github
+    kind: identite
+    role: "GitHub App de l'exécutant (jeton d'installation généré à chaque run), ouvre les PR avec la permission workflows"
+    scope: "dépôt openchoreo-lab ; Contents, Pull requests, Issues et Workflows en écriture, Metadata en lecture"
+    owner: paul
+    created: 2026-11-18
+    created_is_estimate: false
+    rotate_by: 2027-02-18
+    dev: true
+    vault: github
+    consumers: [workflow-agent-claude]
+    note: "secrets APP_ID et APP_PRIVATE_KEY ; jamais dans bypass_actors ; remplacée ou réduite à FINAL0 (T-215)."
   - name: doppler-acces-elargi
     kind: acces
     role: accès Doppler élargi de la phase de développement
