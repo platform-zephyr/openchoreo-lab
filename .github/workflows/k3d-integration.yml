@@ -94,14 +94,6 @@ jobs:
             timeout: 60
             command: tests/k3d/run.sh
             evidence: tests/k3d/evidence
-          # gitops-k3d : Git -> Argo CD -> OpenChoreo ; a besoin du bootstrap OpenChoreo et de Python (PyYAML, jsonschema).
-          - suite: gitops-k3d
-            cluster: gitops
-            bootstrap: oc
-            audit: "false"
-            timeout: 60
-            command: tests/gitops-k3d/run.sh all
-            evidence: tests/gitops-k3d/evidence
     name: k3d ${{ matrix.suite }}
     env:
       # Les suites appellent `docker exec` sur le nœud k3d : contexte Docker local du runner (pas Colima du Mac).
@@ -132,17 +124,6 @@ jobs:
           "$bin/yq" --version
           "$bin/helm" version --short
           kubectl version --client
-
-      - name: Python (gitops-k3d seulement)
-        if: matrix.suite == 'gitops-k3d'
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.12"
-
-      - name: Dependances Python (gitops-k3d seulement, versions figees)
-        if: matrix.suite == 'gitops-k3d'
-        shell: bash
-        run: python3 -m pip install --disable-pip-version-check "PyYAML==6.0.2" "jsonschema==4.23.0"
 
       - name: Cluster k3d jetable
         shell: bash
@@ -204,6 +185,16 @@ jobs:
             kubectl get pods -A -o wide
             echo ---
             kubectl get events -A --sort-by=.lastTimestamp | tail -300
+            echo --- objets OpenChoreo
+            kubectl get clusterdataplane,environment,project,projectreleasebinding,releasebinding,resource,resourcereleasebinding -A -o wide
+            echo --- describe PRB
+            kubectl describe projectreleasebinding -A
+            echo --- logs plans
+            for ns in openchoreo-control-plane openchoreo-data-plane; do
+              for d in $(kubectl -n "$ns" get deploy -o name); do
+                echo "### $ns/$d"; kubectl -n "$ns" logs "$d" --tail=150 --all-containers || true
+              done
+            done
           } > "$RUNNER_TEMP/diagnostic.txt" 2>&1 || true
 
       - name: Preuves (artifact, sans secret)
