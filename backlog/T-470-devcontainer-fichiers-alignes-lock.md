@@ -12,7 +12,7 @@ stage: S2
 model: claude-sonnet-5-5
 effort: high
 routing: R3-defaut
-github_issue: null
+github_issue: 74
 ---
 
 # T-470 — Devcontainer : fichiers alignés sur le lock (sans build)
