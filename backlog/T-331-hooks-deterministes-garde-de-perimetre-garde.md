@@ -4,7 +4,7 @@ title: "Hooks déterministes : garde de périmètre, garde Bash, lint après éd
 status: todo
 phase: P0
 adr: [0022]
-depends_on: [T-061, T-303, T-330, T-332]
+depends_on: [T-303, T-330, T-332]
 class: REVUE
 velocity: true
 lane: agents-harness

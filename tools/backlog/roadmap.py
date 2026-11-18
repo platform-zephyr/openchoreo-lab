@@ -25,10 +25,10 @@ def anc(n):
     for d in list(r): r|=anc(d)
     return frozenset(r)
 for n in T: T[n]['w']=W(n); T[n]['u']=len(desc(n))
-ORDER=['S0','S1','S2','S3','PORTE','I1','I1bis','I2','I3','I4','I5','I6','I7','I8','FINAL','I9']
+ORDER=['S0','S1','S2','S3','PORTE','FINAL0','I1','I1bis','I2','I3','I4','I5','I6','I7','I8','FINAL','I9']
 NAMES={'S0':'MVP — S0 minimal du pilote 24 h (garde de fuite, ADR, exécutant, dispatcher, PAUSE, réglages)','S1':'MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud',
  'S2':'MVP — second moteur (plain), travailleur homelab, mesures','S3':'MVP — golden path, intentions, banc et étalonnage',
- 'PORTE':"Porte d'adoption OpenChoreo (2026-12-04)",'I1':'Données','I1bis':'Archétypes D et E','I2':'Secrets et identité','I3':'Exposition, admission, première app familiale',
+ 'PORTE':"Porte d'adoption OpenChoreo (2026-12-04)",'FINAL0':'Durcissement avant la première donnée réelle ou exposition publique','I1':'Données','I1bis':'Archétypes D et E','I2':'Secrets et identité','I3':'Exposition, admission, première app familiale',
  'I4':'Exploitation : observabilité, remédiation, ntfy','I5':'Montées de version','I6':'Migration Doppler, rotation, audit','I7':'Services IA (homelab)','I8':'Mesure (DORA, maturité)','FINAL':'Durcissement final (obligatoire avant « plateforme finie »)','I9':'Divers'}
 SHORT={'claude-haiku-5-5':'haiku','claude-sonnet-5-5':'sonnet','claude-opus-5-5':'opus','human':'humain'}
 def L(n): return f"[{n}]({ALL[n]['f']})"
@@ -36,17 +36,18 @@ def M(x): return f"{SHORT.get(x['model'],x['model'])}/{x['effort']}"
 md=["""# Feuille de route (générée depuis `backlog/`)
 
 Ordonnancement issu du **consensus n°2 et des arbitrages de Paul** (`docs/review/CONSENSUS-2.md`, 2026-11-18 ; résumé :
-`backlog/INTEGRATION-3.md`), après le consensus n°1 (`docs/review/CONSENSUS.md`) et l'intégration 2. Objectif de Paul : finir
+`backlog/INTEGRATION-3.md`), puis de l'**arbitrage Fable** (`docs/review/FABLE-ARBITRAGE.md` ; résumé : `backlog/INTEGRATION-4.md`),
+après le consensus n°1 (`docs/review/CONSENSUS.md`) et l'intégration 2. Objectif de Paul : finir
 vite avec un maximum d'agents en parallèle ; la sécurité de développement est réduite, **seule la sécurité finale compte**
-(étape FINAL).
+(étape FINAL0 avant la première donnée réelle, étape FINAL avant « plateforme finie »).
 
 ## Règles
-1. **Étapes dans l'ordre** : MVP (S0 → S3), puis la **porte OpenChoreo** en mono-cluster (ADR-0020 amendé), puis des
-   **incréments** (I1 → I8), puis le **durcissement final** (FINAL) avant de déclarer la plateforme finie. Une étape peut
+1. **Étapes dans l'ordre** : MVP (S0 → S3), puis la **porte OpenChoreo** en mono-cluster (ADR-0020 amendé), puis **FINAL0**
+   (identité d'usine, contournement retiré, secrets de dev tournés), puis des **incréments** (I1 → I8), puis le **durcissement final** (FINAL) avant de déclarer la plateforme finie. Une étape peut
    démarrer dès que les dépendances de ses tickets sont `done`.
 2. **Dans une étape** : par vague de dépendances, d'abord les tickets `velocity`, puis ceux qui débloquent le plus.
-3. **Parallélisme** : pilote à N=3 sur une liste figée de 20 tickets ; paliers 3 → 6 → 10 décidés par Paul (ADR-0021) ; au plus
-   2 agents par couloir, 1 sur `contrat-appgen` avant T-214 ; aucun chevauchement de périmètre (T-314).
+3. **Parallélisme** : pilote à N=3 (`max-parallel` ou groupes par couloir) sur une liste figée de 20 tickets ; paliers 3 → 6 → 10 décidés par Paul (ADR-0021) ; au plus
+   2 agents par couloir, 1 sur `contrat-appgen` avant T-214 ; aucun chevauchement de périmètre (T-210 minimal, T-314). En mode dev, REVUE = merge après `ci-ok`.
 4. **Modèle** (ADR-0023, 3 règles) : noyau (chemins CODEOWNERS, `docs/adr/`, `docs/review/`) → opus/high ; texte hors noyau →
    haiku/medium + revue Sonnet ; reste → sonnet/high. Le dispatcher recalcule depuis les chemins et ignore un `model:` sous le plancher.
 5. **Règle d'usine** (ADR-0021) : avant la porte, un ticket d'usine n'entre que s'il supprime un geste de Paul mesuré au pilote.
@@ -70,8 +71,8 @@ if PILOT in T:
     LIST=re.findall(r'T-\d+[a-z]?',m.group(1)) if m else []
     PRE=sorted(anc(PILOT),key=lambda n:(T[n]['w'],n))
     md.append(f"\n## Lancement 24/7\n\nPilote de **24 h à N=3** en dispatch manuel ({L(PILOT)}) : coût par ticket, % de quota 5 h et hebdomadaire,"
-              " concurrence cloud ; puis paliers 6 et 10 décidés par Paul. Il ne dépend ni de T-215 ni du ruleset (FINAL), ni de la"
-              " réécriture de l'historique (T-301, geste de Paul hors chemin critique).\n")
+              " concurrence cloud ; puis paliers 6 et 10 décidés par Paul. Il ne dépend ni de T-215 ni du ruleset (FINAL0), ni de T-061/T-061b"
+              " (actés par la fusion de la PR #48). Moteur horaire d'Atlas/homelab-infra en pause pendant les 24 h.\n")
     md.append(f"### Prérequis : S0 minimal ({len(PRE)} tickets)\n\n| Ticket | Titre | Vague | Classe | Modèle |\n|---|---|---|---|---|")
     for n in PRE: md.append(f"| {L(n)} | {T[n]['title']} | {T[n]['w']} | {T[n]['cls']} | {M(T[n])} |")
     md.append(f"\n### Liste figée du pilote ({len(LIST)} tickets, aucun autre lancement pendant le pilote)\n\n| Ticket | Titre | Étape | Classe | Modèle | Dépend de (hors S0) |\n|---|---|---|---|---|---|")

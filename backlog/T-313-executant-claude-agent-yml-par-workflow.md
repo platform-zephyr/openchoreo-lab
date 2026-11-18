@@ -4,7 +4,7 @@ title: "Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle,
 status: todo
 phase: P0
 adr: [0002, 0013, 0021]
-depends_on: [T-061, T-210, T-311]
+depends_on: [T-210, T-311]
 class: REVUE
 velocity: true
 lane: ci
@@ -30,6 +30,8 @@ Remplacer le déclencheur par label (acteur SmadjaPaul) par workflow_dispatch(ti
 - [ ] (repris de MOD-5) trailers Model, Effort, Escalated-from sur chaque PR d'agent ; mission-result.v1 contient modèle, effort, escalade, tokens, tours, durée, échecs CI, sans aucun prompt
 - [ ] (repris de HAR-3) le résumé du job affiche total_cost_usd et num_turns, aucune sortie d'outil
 - [ ] `show_full_output` absent ; aucun secret hors jeton Claude
+- [ ] config git `noreply` et trailers (Ticket, Model, Effort, Claude-Session) imposés par l'exécutant dès S0 ; un commit d'agent sans trailer ou avec un e-mail personnel est refusé par la CI (test)
+- [ ] plafonds par modèle : Opus 90 min et 150 tours ; Sonnet et Haiku 45 min et 60 tours (`timeout-minutes`, `--max-turns`)
 
 ## Notes
 Un label posé par GITHUB_TOKEN ne déclenche pas de workflow : utiliser dispatch avec le jeton de l'App. Plafond de départ 4, relevé par T-322.
@@ -43,3 +45,5 @@ Fusion de HAR-3 (même fichier), de la partie « passage du modèle » de MOD-4 
 Dépendance retirée (consensus n°2 et arbitrages de Paul, 2026-11-18) : T-215 (étape FINAL). Pendant le développement, identité de session de Paul ; bascule vers l'App de T-215 en FINAL.
 
 Version minimale (consensus n°2 et arbitrages de Paul, 2026-11-18) : lancé par Paul (workflow_dispatch) avec l'identité de dev ; les outils étroits, le mode de permission et l'essai du noyau passent à la revue finale T-401.
+
+Arbitrage Fable (arbitrage Fable, 2026-11-18) : `noreply` et trailers imposés dès S0 (F2) ; plafonds Opus portés à 90 min / 150 tours (P6).

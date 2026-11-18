@@ -4,7 +4,7 @@ title: "Definition of done exécutable : `verify:` par critère et `done.py` ave
 status: todo
 phase: P0
 adr: [0012, 0022]
-depends_on: [T-008, T-061, T-332]
+depends_on: [T-008, T-332]
 class: REVUE
 velocity: true
 lane: backlog-outils

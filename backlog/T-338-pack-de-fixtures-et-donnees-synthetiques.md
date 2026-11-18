@@ -4,7 +4,7 @@ title: "Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Gr
 status: todo
 phase: P0
 adr: [0022]
-depends_on: [T-002, T-061, T-332]
+depends_on: [T-002, T-332]
 class: AUTONOME
 velocity: true
 lane: tests-fixtures

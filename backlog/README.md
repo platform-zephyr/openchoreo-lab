@@ -1,7 +1,7 @@
 # Backlog de la plateforme
 
 Source des tâches du labo (ADR-0012). Un fichier par ticket : `T-NNN-<slug>.md`. Vue d'ensemble : [INDEX.md](INDEX.md).
-Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md` ; intégration 2 : [INTEGRATION-2.md](INTEGRATION-2.md) ; consensus n°2 et arbitrages de Paul : [INTEGRATION-3.md](INTEGRATION-3.md)). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
+Ordre de travail : [ROADMAP.md](ROADMAP.md) (consensus du 2026-11-18, `docs/review/CONSENSUS.md` ; intégration 2 : [INTEGRATION-2.md](INTEGRATION-2.md) ; consensus n°2 et arbitrages de Paul : [INTEGRATION-3.md](INTEGRATION-3.md) ; arbitrage Fable : [INTEGRATION-4.md](INTEGRATION-4.md)). Linear n'est pas utilisé pour ce labo. Une issue GitHub n'est créée que pour lancer un agent (label `agent:dev`) et
 renvoie au fichier du ticket.
 
 ## En-tête d'un ticket
@@ -17,7 +17,7 @@ depends_on: [T-003]       # tickets qui doivent être `done` avant
 class: AUTONOME           # AUTONOME | REVUE | MANDAT (platform-guardrails), combinables : "AUTONOME + MANDAT"
 velocity: false           # true : accélère nettement les suivants
 lane: ci                  # couloir de fichiers (parallélisme sans conflit)
-stage: S0                 # S0-S3 (MVP), PORTE, I1-I8 (incréments), FINAL (durcissement final), I9, après-porte
+stage: S0                 # S0-S3 (MVP), PORTE, FINAL0 (avant la 1re donnée réelle), I1-I8, FINAL (durcissement final), I9, après-porte
 model: claude-sonnet-5-5  # claude-haiku-5-5 | claude-sonnet-5-5 | claude-opus-5-5 | human (geste de Paul seul)
 effort: high              # low | medium | high | xhigh | max (Sonnet ≤ xhigh) ; `none` avec `human`
 routing: R3-defaut        # règle d'ADR-0023 qui a fixé le modèle : R0-geste-humain | R1-noyau | R2-texte | R3-defaut
@@ -39,6 +39,9 @@ commande, test ou preuve runtime datée), `## Notes` (facultatif).
 2. Passer `status: in-progress` dans la même PR que le travail (pas de PR de statut seule).
 3. Livrer selon la classe : AUTONOME = merge après `ci-ok` ; REVUE = PR prête, Paul approuve ; MANDAT = la PR décrit
    le geste exact attendu de Paul (noms, jamais de valeurs).
+   **Mode dev** (arbitrage 7, arbitrage Fable) : la revue des code owners est désactivée ; REVUE = merge après `ci-ok`
+   (auto-merge armé par l'exécutant), comme AUTONOME. La revue revient à l'étape FINAL0 (T-400) sur `platform/authz/`,
+   `platform/policies/` et `security/`, puis à FINAL.
 4. `status: done` seulement quand **tous** les critères de fin sont cochés avec leur preuve (lien ou fichier daté).
 5. Un ticket bloqué passe `blocked` avec une ligne `Bloqué par :` dans `## Notes`.
 

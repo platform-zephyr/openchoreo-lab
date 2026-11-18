@@ -4,7 +4,7 @@ title: "OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors si
 status: todo
 phase: P2
 adr: [0014]
-depends_on: [T-061, T-061b]
+depends_on: [T-061, T-061b, T-404]
 class: AUTONOME + MANDAT
 velocity: false
 lane: secrets
@@ -35,3 +35,5 @@ docs/storage/, platform/ (brouillon), tests/
 
 ## Notes
 Intégration 2 : absorbe HOME-10 (variante lab prioritaire). Seal statique : décision de Paul (CONSENSUS).
+
+Dépend du jalon FINAL0 (T-404) (arbitrage Fable, 2026-11-18) : crée une donnée réelle, une identité réelle ou une exposition publique.

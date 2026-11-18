@@ -4,7 +4,7 @@ title: "Schéma `app-status.v1` et `_checks` en sortie JSON stable"
 status: todo
 phase: P0
 adr: [0011]
-depends_on: [T-001, T-061, T-061b]
+depends_on: []
 class: AUTONOME
 velocity: true
 lane: preuve
@@ -25,3 +25,6 @@ docs/schema/, golden-paths/_checks/, tests/
 ## Critères de fin
 - [ ] schéma JSON versionné + exemples
 - [ ] `_checks` émet ce format, tests
+
+## Notes
+Dépendance T-001 retirée (arbitrage Fable, 2026-11-18) : aucun fichier commun avec la PR #8 (tools/oke/, security/), aucun cluster ; entre dans la liste figée du pilote.

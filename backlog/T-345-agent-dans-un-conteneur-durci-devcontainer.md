@@ -4,7 +4,7 @@ title: "Agent dans un conteneur durci (devcontainer) : claude, sandbox et résea
 status: todo
 phase: P1
 adr: [0018, 0022]
-depends_on: [T-061, T-330, T-332]
+depends_on: [T-330, T-332]
 class: AUTONOME
 velocity: false
 lane: dev-factory

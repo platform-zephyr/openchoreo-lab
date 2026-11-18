@@ -4,7 +4,7 @@ title: "Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d
 status: todo
 phase: P0
 adr: [0022]
-depends_on: [T-061, T-210, T-337]
+depends_on: [T-210, T-337]
 class: AUTONOME
 velocity: true
 lane: agents-harness

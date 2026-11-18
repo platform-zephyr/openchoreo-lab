@@ -30,3 +30,5 @@ missions/MISSION.md, AGENTS.md, STATE.md, docs/adr/0002-autonomie-des-agents.md,
 
 ## Notes
 T-061a de la décision 3 (consensus n°2 et arbitrages de Paul, 2026-11-18). Le reste de l'ancien T-061 est dans T-061b, en parallèle du pilote.
+
+Done à la fusion de la PR #54 (acte les ADR 0001-0023 et amendements) (arbitrage Fable, 2026-11-18). Ne bloque plus le pilote : retiré des dépendances du pilote et de ses prérequis.

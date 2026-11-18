@@ -26,3 +26,6 @@ tools/, tests/, .github/workflows/
 - [ ] CI : rupture de schéma sans changement de version → refus
 - [ ] CI : manifeste applicatif hors apps/generated → refus
 - [ ] indicateur : part des apps déclarées par app.yaml seul
+
+## Notes
+Sorti de la liste figée du pilote (arbitrage Fable, 2026-11-18) : périmètre trop large (chevauchement, constat P7).

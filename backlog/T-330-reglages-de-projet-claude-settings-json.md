@@ -4,7 +4,7 @@ title: "Réglages de projet `.claude/settings.json` : permissions deny, mode don
 status: todo
 phase: P0
 adr: [0022]
-depends_on: [T-061]
+depends_on: []
 class: REVUE
 velocity: true
 lane: agents-harness

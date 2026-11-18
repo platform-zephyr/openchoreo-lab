@@ -8,7 +8,7 @@ depends_on: [T-007, T-215]
 class: REVUE + MANDAT
 velocity: false
 lane: gouvernance
-stage: FINAL
+stage: FINAL0
 model: claude-opus-5-5
 effort: high
 routing: R1-sensible
@@ -26,6 +26,7 @@ tools/apply-branch-protection.sh, docs/AGENT-PR-MODEL.md
 - [ ] `bypass_actors` vide dans le ruleset appliqué (lecture de l'API datée, sans jeton affiché)
 - [ ] procédure écrite : réactivation ponctuelle par Paul, motif consigné, retrait immédiat
 - [ ] essai : une PR sans `ci-ok` verte n'est fusionnable par aucun compte (preuve datée)
+- [ ] revue des code owners réactivée sur `platform/authz/`, `platform/policies/` et `security/` (lecture datée du ruleset, sans jeton affiché)
 
 ## Notes
 Décision 1 du consensus n°2, déplacée dans l'étape FINAL par l'arbitrage 4. MANDAT : réglage du ruleset par Paul.

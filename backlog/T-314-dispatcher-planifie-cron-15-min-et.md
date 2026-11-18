@@ -4,7 +4,7 @@ title: "Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucl
 status: todo
 phase: P0
 adr: [0021]
-depends_on: [T-061, T-210, T-311, T-313]
+depends_on: [T-210, T-311, T-313]
 class: REVUE
 velocity: true
 lane: ci
@@ -32,6 +32,8 @@ github_issue: null
 - [ ] (repris de T-210) plafond global 4 au départ (relevé par T-322), 2 par couloir, 1 sur contrat-appgen avant T-214 ; contrat de mission d'Atlas (max_attempts 2)
 - [ ] (repris de T-210) l'admission lit le gouverneur de quota (T-311) quand il existe : refus au-delà du seuil (test hors ligne)
 - [ ] (repris de T-210) le modèle et l'effort de chaque ticket admis viennent de des 3 règles d'ADR-0023 ou, à défaut, de l'en-tête
+- [ ] (repris de T-326) test hors ligne : un ledger simulé à 70/85/100 % change l'admission comme prévu
+- [ ] (repris de T-326) (repris de T-145) concurrence maximale documentée et testée (workflow lint)
 
 ## Notes
 S0 et le pilote restent manuels (CONSENSUS #11) ; le cron s'active après la preuve de T-313.

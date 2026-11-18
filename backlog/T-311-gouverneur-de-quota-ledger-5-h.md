@@ -1,10 +1,10 @@
 ---
 id: T-311
-title: "Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3"
+title: "Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 réelle (max-parallel ou groupes par couloir)"
 status: todo
 phase: P0
 adr: [0017, 0021]
-depends_on: [T-061]
+depends_on: []
 class: REVUE
 velocity: true
 lane: agents
@@ -14,17 +14,17 @@ effort: high
 routing: R3-defaut
 github_issue: null
 ---
-# T-311 — Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3
+# T-311 — Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 réelle (max-parallel ou groupes par couloir)
 
 ## Intention
-Le minimum pour lancer le pilote sans risque de dérive : un interrupteur `factory/PAUSE` qui arrête tout lancement et tout merge automatique, et une concurrence plafonnée à 3. Le ledger de quota se construit pendant le pilote (T-326).
+Le minimum pour lancer le pilote sans dérive : `factory/PAUSE` arrête tout lancement et tout merge automatique ; la concurrence est plafonnée à 3 par une matrice `max-parallel: 3` ou par des groupes de concurrence par couloir, jamais par un groupe unique (un groupe GitHub n'admet qu'un run actif et un en attente, et annule le suivant).
 
 ## Périmètre de fichiers
-factory/config.yaml, factory/PAUSE, .github/workflows/claude-agent.yml (groupe de concurrence), docs/AGENT-PR-MODEL.md
+factory/config.yaml, factory/PAUSE, .github/workflows/claude-agent.yml (matrice `max-parallel` ou groupes par couloir), docs/AGENT-PR-MODEL.md
 
 ## Critères de fin
 - [ ] factory/PAUSE présent = aucun lancement, aucun merge automatique (test)
-- [ ] concurrence 3 fixée dans factory/config.yaml et appliquée par le groupe de concurrence du workflow (test)
+- [ ] concurrence 3 par matrice `max-parallel: 3` ou par groupes de concurrence par couloir ; test : 5 dispatchs → 5 runs terminés, aucun annulé
 - [ ] règle écrite : une clé API facturée au token exige un plafond mensuel Console (MANDAT) ; aucun euro par agent promis
 
 ## Notes
@@ -35,3 +35,5 @@ La proposition visait : T-145 (décision d'intégration : INTEGRATION-2.md).
 Proposé par la recherche `factory` (clé FAC-2) ; intégration 2 du 2026-11-18.
 
 Dépendance retirée (consensus n°2 et arbitrages de Paul, 2026-11-18) : T-215 (étape FINAL). Pendant le développement, identité de session de Paul ; bascule vers l'App de T-215 en FINAL.
+
+Constat P5 de la revue Fable, accepté (arbitrage Fable, 2026-11-18).

@@ -4,7 +4,7 @@ title: "Classe de donnée dans le contrat et labels `data-class` (G8)"
 status: todo
 phase: P2
 adr: [0008]
-depends_on: [T-002, T-061, T-061b]
+depends_on: [T-002, T-072, T-214]
 class: AUTONOME
 velocity: false
 lane: contrat-appgen
@@ -26,3 +26,6 @@ docs/schema/, tools/appgen/, platform/
 - [ ] schéma + migration des apps existantes
 - [ ] CI : base/volume sans classe → refus
 - [ ] labels présents sur namespace, PVC, base
+
+## Notes
+Dans la liste figée du pilote (arbitrage Fable, 2026-11-18) : contrat seulement, aucune donnée réelle ; sérialisé après T-214 (couloir contrat-appgen) et T-072 (docs/schema/).

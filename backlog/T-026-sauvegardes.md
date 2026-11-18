@@ -4,7 +4,7 @@ title: "Sauvegarde des bases : CNPG → R2 par préfixe"
 status: todo
 phase: P2
 adr: [0008, 0009]
-depends_on: [T-025, T-061, T-061b, T-364]
+depends_on: [T-025, T-061, T-061b, T-364, T-404]
 class: AUTONOME + MANDAT
 velocity: false
 lane: donnees
@@ -32,3 +32,6 @@ platform/resource-types/, tools/appgen/, docs/storage/
 - [ ] (repris de T-143) règle de lifecycle (WAL, versions non courantes) proposée par PR, sans supprimer de donnée sans restauration prouvée
 - [ ] mots de passe de bases par rôles gérés CNPG (sans Doppler ni OpenBao)
 - [ ] test de restauration : les mots de passe des rôles gérés CNPG sont réalignés après restauration (non documenté en amont, à prouver avant de s'y fier)
+
+## Notes
+Dépend du jalon FINAL0 (T-404) (arbitrage Fable, 2026-11-18) : crée une donnée réelle, une identité réelle ou une exposition publique.

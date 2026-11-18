@@ -30,3 +30,5 @@ dépôt homelab-infra terraform/unifi (hors de ce dépôt)
 Proposé par la recherche `homelab` (clé HOME-2) ; intégration 2 du 2026-11-18.
 
 Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).
+
+Isolation réseau du lab jamais allégée, même en mode dev (arbitrage Fable, 2026-11-18).

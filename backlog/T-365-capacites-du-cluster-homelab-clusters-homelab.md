@@ -4,7 +4,7 @@ title: "Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arc
 status: todo
 phase: P0
 adr: [0003]
-depends_on: [T-061, T-214]
+depends_on: [T-214]
 class: AUTONOME
 velocity: true
 lane: contrat-appgen

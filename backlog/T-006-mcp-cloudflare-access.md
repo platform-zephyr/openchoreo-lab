@@ -1,11 +1,11 @@
 ---
 id: T-006
-title: "Accès des agents cloud à la plateforme du homelab : lecture MCP/API OpenChoreo et statut des apps (lecture seule)"
+title: "Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitHub (lecture seule)"
 status: todo
 phase: P0
 adr: [0010, 0007]
-depends_on: [T-061, T-061b, T-364]
-class: REVUE + MANDAT
+depends_on: [T-005]
+class: AUTONOME
 velocity: false
 lane: acces-mcp
 stage: S1
@@ -14,20 +14,18 @@ effort: high
 routing: R3-defaut
 github_issue: 52
 ---
-# T-006 — Accès des agents cloud à la plateforme du homelab : lecture MCP/API OpenChoreo et statut des apps (lecture seule)
+# T-006 — Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitHub (lecture seule)
 
 ## Intention
-Les sessions cloud et les runners lisent l'état de la plateforme du homelab sans kubeconfig : (a) MCP/API OpenChoreo derrière le Cloudflare Tunnel + Access déjà présents côté homelab (kube-ops), service token Access et client `openchoreo-agent-reader` ; ou (b) statut des apps publié dans GitHub par la preuve automatique (T-005). Lecture seule dans les deux cas.
+Les sessions cloud et les runners lisent l'état des apps du homelab sans kubeconfig ni accès réseau au homelab : la preuve automatique (T-005) publie le statut dans GitHub (statut de commit ou check), lu par l'API GitHub. Pas de Tunnel, d'Access ni de MCP exposé avant la porte.
 
 ## Périmètre de fichiers
-docs/CLOUD-AGENTS.md, docs/AGENT-RUNNERS.md, platform/ (NetworkPolicy tunnel → MCP), tests/mcp/, PR cross-dépôt kube-ops (route du tunnel, application Access)
+docs/CLOUD-AGENTS.md, tools/status/, tests/status/
 
 ## Critères de fin
-- [ ] décision (a), (b) ou les deux, écrite dans docs/CLOUD-AGENTS.md avec le risque de chaque voie
-- [ ] NetworkPolicy : seul le namespace du tunnel atteint le port MCP (si (a))
-- [ ] depuis une session cloud et un runner : lecture OK, sans service token → refus, écriture → refus (preuve datée)
-- [ ] aucune écriture cluster possible par ce chemin (test négatif)
-- [ ] MANDAT Paul : application Access et service token (côté kube-ops), client Authentik, secret réseau de l'environnement cloud (formulaire, jamais dans le chat)
+- [ ] statut `app-status.v1` publié dans GitHub par la preuve automatique, lisible depuis une session cloud par l'API GitHub (preuve datée)
+- [ ] aucune écriture cluster ni accès réseau au homelab par ce chemin (test négatif)
+- [ ] docs/CLOUD-AGENTS.md : voie retenue ; MCP derrière Tunnel + Access différé après la porte
 
 ## Notes
 Inclure le déploiement/réglage de cloudflared et sa NetworkPolicy. Access exige normalement deux en-têtes de service token : l'injection en un seul en-tête est une hypothèse à prouver, sinon prévoir un relais.
@@ -35,3 +33,5 @@ Inclure le déploiement/réglage de cloudflared et sa NetworkPolicy. Access exig
 Différé après la porte OpenChoreo (ADR-0020, consensus du 2026-11-18).
 
 Dégelé et élargi (consensus n°2 et arbitrages de Paul, 2026-11-18) (arbitrage 2) : même sujet que le nouveau ticket « accès des agents cloud ». Access exige normalement deux en-têtes de service token : l'injection en un seul en-tête reste à prouver, sinon prévoir un relais.
+
+Limité à l'option (b) (arbitrage Fable, 2026-11-18) (constat G2) : plus de MANDAT ; la voie MCP/Access reviendra après la porte, avec FINAL0.

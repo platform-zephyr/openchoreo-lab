@@ -8,7 +8,7 @@ depends_on: [T-215]
 class: REVUE
 velocity: true
 lane: ci
-stage: FINAL
+stage: FINAL0
 model: claude-opus-5-5
 effort: high
 routing: R1-sensible
@@ -33,3 +33,5 @@ tests/, .github/workflows/ci.yaml
 
 ## Notes
 Étape FINAL (consensus n°2 et arbitrages de Paul, 2026-11-18) : le noyau CODEOWNERS testé et l'essai réel avec l'identité agent font partie du durcissement final.
+
+Passé en FINAL0 (arbitrage Fable, 2026-11-18) : T-400 en dépend (le noyau CODEOWNERS testé précède la réactivation de la revue).

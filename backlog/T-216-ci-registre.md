@@ -4,7 +4,7 @@ title: "CI extensible par registre de suites"
 status: todo
 phase: P0
 adr: [0002]
-depends_on: [T-002, T-061]
+depends_on: [T-002]
 class: REVUE
 velocity: true
 lane: ci

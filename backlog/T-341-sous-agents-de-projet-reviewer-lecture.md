@@ -4,7 +4,7 @@ title: "Sous-agents de projet : `reviewer` (lecture seule) et `ci-triager`"
 status: todo
 phase: P0
 adr: [0022]
-depends_on: [T-061, T-330, T-337]
+depends_on: [T-330, T-337]
 class: REVUE
 velocity: true
 lane: agents-harness

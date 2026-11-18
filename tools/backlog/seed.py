@@ -978,7 +978,185 @@ for x in T:
              "Le dispatcher relance en Sonnet si le diff réel sort du périmètre texte.")
     else: x.update(model="claude-sonnet-5-5", effort="high", routing="R3-defaut")
 
-SP={"S0":"P0","S1":"P0","S2":"P1","S3":"P1","PORTE":"P1","I1":"P2","I1bis":"P2","I2":"P2","I3":"P2","I4":"P3","I5":"P3","I6":"P3","I7":"P4","I8":"P4","FINAL":"P4","I9":"P4","après-porte":"P5"}
+# ===== Arbitrage Fable (2026-11-18, nuit ; docs/review/FABLE-REVIEW.md, docs/review/FABLE-ARBITRAGE.md) =====
+# Patch final : applique chaque ligne de FABLE-ARBITRAGE.md. Résumé : backlog/INTEGRATION-4.md.
+FA = "(arbitrage Fable, 2026-11-18)"
+def route(x):
+    if x.get("model") == "human": x.update(effort="none", routing="R0-geste-humain"); return
+    if is_sensible(x) or x.get("stage") in ("FINAL", "FINAL0"): x.update(model="claude-opus-5-5", effort="high", routing="R1-sensible")
+    elif is_text(x): x.update(model="claude-haiku-5-5", effort="medium", routing="R2-texte")
+    else: x.update(model="claude-sonnet-5-5", effort="high", routing="R3-defaut")
+def fmk(id, slug, title, stage, adr, deps, cls, scope, intent, done, notes, lane, phase="P0", velocity=False):
+    mk(id, slug, title, phase, adr, deps, cls, scope, intent, done, notes, velocity, lane); X[id]["stage"] = stage; route(X[id])
+
+# --- P3 : la fusion de la PR #54 acte les ADR 0001-0023 et leurs amendements ; T-061 et T-061b restent `todo` jusqu'à cette fusion
+for k in ("T-061", "T-061b"):
+    note(k, f"Done à la fusion de la PR #54 (acte les ADR 0001-0023 et amendements) {FA}. Ne bloque plus le pilote : retiré des dépendances du pilote et de ses prérequis.")
+X["T-061b"]["done"] = [("amendements actés : ADR-0003 (CP sur le homelab, OKE optionnel), ADR-0020 (porte mono-cluster, C1-C7, horloge par voie, repli = report), "
+                        "ADR-0021 (prérequis du pilote, concurrence, pause d'Atlas, FINAL0) ; texte d'ADR-0017 amendé (acté avec T-218)")
+                       if d.startswith("amendements actés") else d for d in X["T-061b"]["done"]]
+
+# --- P1 : essai réel de l'exécutant avant l'heure 0 (nouveau, S0)
+fmk("T-306", "registre-identites", "Registre des identités et secrets `docs/state/identities.yaml` (noms, rôles, dates, jamais de valeur)", "S0",
+    ["0002", "0022"], [], "REVUE",
+    "docs/state/identities.yaml, docs/schema/identities.v1.json, tools/backlog/identities_lint.py, tests/identities/, .github/CODEOWNERS",
+    "Tenir dès maintenant l'inventaire de toute identité ou tout secret créé pendant le développement (mode à sécurité allégée), pour pouvoir tout tourner à FINAL0 et à FINAL.",
+    ["schéma `identities.v1` : nom, rôle, portée, propriétaire, date de création, date de rotation, `dev: true|false` ; aucun champ de valeur (test de refus)",
+     "registre initial : jeton d'abonnement Claude, identité de l'exécutant (permission `workflows`), accès Doppler élargi, jeton ESO et kubeconfig du lab, secrets machine Talos du lab (noms seulement)",
+     "lint CI : une entrée sans date ou avec un champ ressemblant à une valeur échoue ; garde T-303 verte sur le fichier",
+     "`docs/state/identities.yaml` ajouté à CODEOWNERS ; règle écrite : toute création d'identité ou de secret ajoute une entrée dans la même PR"],
+    f"Constat F3 de la revue Fable, accepté {FA}. Jamais de valeur, d'IP, d'hôte interne ni d'e-mail dans ce fichier public.", "gouvernance")
+fmk("T-304", "essai-reel-executant", "Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows`", "S0",
+    ["0002", "0021"], ["T-008", "T-210", "T-306", "T-311", "T-313"], "REVUE + MANDAT",
+    ".github/workflows/claude-agent.yml, docs/AGENT-RUNNERS.md, backlog/evidence/",
+    "Prouver, avant le pilote, que l'exécutant peut faire ce que la liste figée exige : pousser un fichier sous `.github/workflows/`, lancer `check.py` sur un runner hébergé, armer l'auto-merge GitHub. "
+    "En mode dev, l'exécutant utilise une identité qui a la permission `workflows` (App ou jeton fin de Paul, arbitrage 7) ; elle est remplacée à FINAL0 (T-215).",
+    ["MANDAT Paul : identité de l'exécutant avec la permission `workflows` fournie (secret d'environnement, jamais dans le chat), inscrite par son nom dans `docs/state/identities.yaml` (T-306)",
+     "essai daté : une PR de l'exécutant qui modifie un fichier sous `.github/workflows/` est poussée sans refus",
+     "essai daté : `python3 tools/backlog/check.py` sur un runner hébergé lit tous les tickets (> 0) et sort 0 erreur",
+     "essai daté : l'exécutant arme l'auto-merge GitHub ; la PR fusionne seule après `ci-ok` (mode dev, arbitrage 7)",
+     "si le push d'un workflow échoue : T-002, T-216, T-321 et T-314 sortent de la liste figée (sessions de Paul) et sont remplacés avant l'heure 0"],
+    f"Constat P1 de la revue Fable, accepté {FA}. Preuves dans `backlog/evidence/`, sans jeton ni sortie d'outil.", "ci")
+X["T-304"]["velocity"] = True
+
+# --- F5 : tag core-baseline avant le pilote (nouveau, S0)
+fmk("T-305", "tag-core-baseline", "Tag `core-baseline` du noyau avant le pilote", "S0",
+    ["0002"], ["T-302", "T-303", "T-304", "T-326", "T-330"], "MANDAT",
+    "tag git `core-baseline`, docs/state/core-baseline.md",
+    "Fixer une référence de confiance du noyau (chemins CODEOWNERS) avant que les agents fusionnent eux-mêmes leurs PR du noyau ; le diff depuis ce tag est relu à FINAL (T-401).",
+    ["tag annoté (signé si possible) `core-baseline` posé par Paul sur `main` après le S0, avant l'heure 0 du pilote",
+     "`docs/state/core-baseline.md` : SHA du tag, date, liste des chemins du noyau couverts",
+     "règle écrite : pendant le dev, les PR du noyau sont ouvertes par l'exécutant (auteur bot), jamais sous l'identité de Paul ; liste des merges par contournement tenue pour T-401"],
+    f"Constat F5 de la revue Fable, accepté {FA}.", "gouvernance")
+
+# --- P6 : ledger minimal dans les prérequis du pilote ; plafonds Opus ; pause d'Atlas
+X["T-326"].update(stage="S0", title="Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote)",
+    scope="tools/factory/ledger.py, tools/cost/agent_usage.py, tests/factory/, factory/config.yaml",
+    intent="Le minimum qui rend la mesure du pilote exploitable : sommes par fenêtre de 5 h et par semaine à partir des `mission-result.v1`, et un disjoncteur qui arrête le lot sur un résultat « limit ».")
+move_done("T-326", "T-314", lambda d: d.startswith("test hors ligne") or d.startswith("(repris de T-145) concurrence"), "(repris de T-326) ")
+X["T-326"]["done"] = ["ledger.py additionne tokens, tours, durée et coût estimé par fenêtre de 5 h et par semaine, à partir des `mission-result.v1` (test hors ligne)"] + X["T-326"]["done"] + [
+    "un résultat « limit » arrête le lot sans relance ; reprise manuelle par Paul au reset (test)"]
+note("T-326", f"Prérequis du pilote {FA} (constat P6) ; seuils 70/85/100 % et admission par quota passés à T-314.")
+X["T-313"]["done"] += [
+    "config git `noreply` et trailers (Ticket, Model, Effort, Claude-Session) imposés par l'exécutant dès S0 ; un commit d'agent sans trailer ou avec un e-mail personnel est refusé par la CI (test)",
+    "plafonds par modèle : Opus 90 min et 150 tours ; Sonnet et Haiku 45 min et 60 tours (`timeout-minutes`, `--max-turns`)"]
+note("T-313", f"Arbitrage Fable {FA} : `noreply` et trailers imposés dès S0 (F2) ; plafonds Opus portés à 90 min / 150 tours (P6).")
+
+# --- P5 : concurrence 3 réelle (matrice max-parallel ou groupes par couloir)
+X["T-311"].update(title="Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 réelle (max-parallel ou groupes par couloir)",
+    scope="factory/config.yaml, factory/PAUSE, .github/workflows/claude-agent.yml (matrice `max-parallel` ou groupes par couloir), docs/AGENT-PR-MODEL.md",
+    intent="Le minimum pour lancer le pilote sans dérive : `factory/PAUSE` arrête tout lancement et tout merge automatique ; la concurrence est plafonnée à 3 par une matrice `max-parallel: 3` "
+           "ou par des groupes de concurrence par couloir, jamais par un groupe unique (un groupe GitHub n'admet qu'un run actif et un en attente, et annule le suivant).")
+X["T-311"]["done"] = [("concurrence 3 par matrice `max-parallel: 3` ou par groupes de concurrence par couloir ; test : 5 dispatchs → 5 runs terminés, aucun annulé"
+                       if d.startswith("concurrence 3") else d) for d in X["T-311"]["done"]]
+note("T-311", f"Constat P5 de la revue Fable, accepté {FA}.")
+
+# --- P7 : contrôle de chevauchement minimal dans T-210 ; STATE.md et ROADMAP.md écrits par le coordinateur seul
+X["T-210"]["done"] += [
+    "contrôle de chevauchement minimal : next.py ne propose jamais deux tickets dont les globs de périmètre se recoupent, ni un ticket qui recoupe un `in-progress` (test)",
+    "avant l'heure 0 : rapport de recoupement des globs des 20 tickets de la liste figée ; tout recoupement est sérialisé par une dépendance",
+    "`STATE.md` et `backlog/ROADMAP.md` refusés dans le périmètre d'un exécutant ; écrits par le coordinateur seul (ROADMAP régénéré sur `main`)"]
+note("T-210", f"Constat P7 de la revue Fable, accepté {FA}.")
+
+# --- P4 : en mode dev, REVUE = merge après ci-ok ; plus de test à 6/10/15 sessions dans T-322
+X["T-322"]["done"] = [d for d in X["T-322"]["done"] if not d.startswith("test de concurrence cloud")] + [
+    "MANDAT Paul : moteur horaire d'Atlas/homelab-infra en pause pendant les 24 h (début et fin datés) ; usage de Paul hors pilote noté",
+    "quota relevé toutes les 5 h ; un résultat « limit » arrête le lot sans relance (T-326)",
+    "en mode dev, les tickets REVUE fusionnent après `ci-ok` par l'auto-merge de l'exécutant (arbitrage 7) ; aucun lot d'approbations de Paul"]
+X["T-322"]["title"] = "Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra"
+
+# --- Liste figée du pilote : T-041, T-070 et T-326 sortent ; trois AUTONOME sans cluster entrent (T-072, T-025, T-074)
+PILOT_F = [k for k in PILOT if k not in ("T-041", "T-070", "T-326")] + ["T-072", "T-025", "T-074"]
+for k in ("T-072", "T-074"):
+    deps_minus(k, "T-001")
+    note(k, f"Dépendance T-001 retirée {FA} : aucun fichier commun avec la PR #8 (tools/oke/, security/), aucun cluster ; entre dans la liste figée du pilote.")
+deps_plus("T-025", "T-214", "T-072"); deps_plus("T-074", "T-072", "T-025", "T-365")
+note("T-025", f"Dans la liste figée du pilote {FA} : contrat seulement, aucune donnée réelle ; sérialisé après T-214 (couloir contrat-appgen) et T-072 (docs/schema/).")
+note("T-074", f"Dans la liste figée du pilote {FA} : sérialisé après T-072 et T-025 (docs/schema/) et T-365 (capabilities.yaml).")
+X["T-322"]["notes"] = _re.sub(r"Liste figée du pilote \(\d+\) : [^\n]*", "Liste figée du pilote (" + str(len(PILOT_F)) + ") : " + ", ".join(PILOT_F) + ".", X["T-322"]["notes"])
+note("T-322", f"Liste refaite {FA} : T-041 et T-070 sortent (chevauchement, P7) ; T-326 devient prérequis (P6) ; T-072, T-025 et T-074 (AUTONOME, sans cluster) entrent.")
+for k in ("T-041", "T-070"): note(k, f"Sorti de la liste figée du pilote {FA} : périmètre trop large (chevauchement, constat P7).")
+PRE_F = ["T-008", "T-302", "T-303", "T-304", "T-305", "T-306", "T-311", "T-313", "T-326", "T-330"]
+X["T-322"]["deps"] = sorted(PRE_F)
+for k in PRE_F + ["T-210", "T-322"] + PILOT_F: deps_minus(k, "T-061", "T-061b")
+
+# --- F1 : étape FINAL0 avant la première donnée réelle ou exposition publique
+for k in ("T-215", "T-007", "T-400"): X[k]["stage"] = "FINAL0"
+X["T-400"]["done"] += ["revue des code owners réactivée sur `platform/authz/`, `platform/policies/` et `security/` (lecture datée du ruleset, sans jeton affiché)"]
+note("T-007", f"Passé en FINAL0 {FA} : T-400 en dépend (le noyau CODEOWNERS testé précède la réactivation de la revue).")
+fmk("T-403", "rotation-secrets-dev", "Rotation des secrets et identités créés en mode dev (FINAL0)", "FINAL0",
+    ["0002", "0022"], ["T-215", "T-306"], "MANDAT", "docs/state/identities.yaml",
+    "Tout credential lisible par un agent aux droits étendus pendant le dev est tenu pour compromis : il est tourné ou révoqué avant la première donnée réelle.",
+    ["chaque entrée `dev: true` du registre est tournée ou révoquée ; date de rotation consignée, aucune valeur affichée",
+     "l'identité de l'exécutant avec permission `workflows` (T-304) est remplacée par l'App de T-215",
+     "garde T-303 verte ; aucune valeur dans la PR"],
+    f"Constat F1/F3 de la revue Fable, accepté {FA}.", "gouvernance", "P4")
+fmk("T-404", "jalon-final0", "Jalon FINAL0 : identité d'usine, contournement retiré, secrets de dev tournés, revue des code owners réactivée", "FINAL0",
+    ["0002"], ["T-007", "T-215", "T-400", "T-403"], "MANDAT", "STATE.md (coordinateur), docs/review/",
+    "Barrière avant la première donnée réelle, identité réelle ou exposition publique : tout ticket qui en crée dépend de ce jalon.",
+    ["T-215, T-400, T-403 et T-007 `done` avec preuves datées",
+     "revue des code owners active sur `platform/authz/`, `platform/policies/`, `security/` ; `bypass_actors` vide",
+     "Paul consigne FINAL0 atteint (date) dans STATE.md"],
+    f"Étape FINAL-0 du constat F1, acceptée {FA}.", "gouvernance", "P4")
+REAL = ["T-022", "T-026", "T-028", "T-051", "T-164", "T-171", "T-181", "T-185"]
+for k in REAL:
+    deps_plus(k, "T-404"); note(k, f"Dépend du jalon FINAL0 (T-404) {FA} : crée une donnée réelle, une identité réelle ou une exposition publique.")
+
+# --- F3 / F4 / F2 / F5 : FINAL
+fmk("T-405", "rotation-complete-final", "Rotation complète des secrets et identités du registre (FINAL)", "FINAL",
+    ["0002", "0022"], ["T-306", "T-404"], "MANDAT", "docs/state/identities.yaml",
+    "Avant « plateforme finie », tourner tout le registre, pas seulement les entrées de dev : jetons, clés, secrets OIDC, secrets machine et CA du lab.",
+    ["chaque entrée du registre a une date de rotation postérieure à FINAL0", "aucune entrée sans propriétaire ni date", "garde T-303 verte"],
+    f"Constat F3 de la revue Fable, accepté {FA}.", "gouvernance", "P4")
+deps_plus("T-401", "T-405")
+X["T-401"]["done"] = [d.replace("(après T-301 si Paul l'a fait)", "(historique réécrit par Paul le 2026-11-18)") for d in X["T-401"]["done"]] + [
+    "VM lab recréée depuis Git : secrets machine et CA neufs, données restaurées (T-026), `_checks` PASS, diff RBAC/CRD/webhooks vide contre le rendu Git (preuve datée)",
+    "diff depuis le tag `core-baseline` relu sur les chemins CODEOWNERS, avec la liste des merges par contournement"]
+note("T-401", f"Critères F2, F4 et F5 ajoutés {FA}.")
+X["T-363"]["intent"] = X["T-363"]["intent"].replace("Kyverno en audit puis enforce (T-020)", "Kyverno et VAP en `enforce` avant la première app")
+X["T-363"]["done"] += ["VAP et Kyverno (règles de base) en `enforce` sur le lab avant le déploiement de la première app ; jamais en audit seul (preuve datée)"]
+note("T-363", f"Constat F4 de la revue Fable, accepté {FA}.")
+note("T-362", f"Isolation réseau du lab jamais allégée, même en mode dev {FA}.")
+
+# --- G2 : T-006 limité au statut publié dans GitHub et à la lecture API
+X["T-006"].update(cls="AUTONOME", deps=["T-005"],
+    title="Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitHub (lecture seule)",
+    scope="docs/CLOUD-AGENTS.md, tools/status/, tests/status/",
+    intent="Les sessions cloud et les runners lisent l'état des apps du homelab sans kubeconfig ni accès réseau au homelab : la preuve automatique (T-005) publie le statut dans GitHub "
+           "(statut de commit ou check), lu par l'API GitHub. Pas de Tunnel, d'Access ni de MCP exposé avant la porte.",
+    done=["statut `app-status.v1` publié dans GitHub par la preuve automatique, lisible depuis une session cloud par l'API GitHub (preuve datée)",
+          "aucune écriture cluster ni accès réseau au homelab par ce chemin (test négatif)",
+          "docs/CLOUD-AGENTS.md : voie retenue ; MCP derrière Tunnel + Access différé après la porte"])
+route(X["T-006"])
+note("T-006", f"Limité à l'option (b) {FA} (constat G2) : plus de MANDAT ; la voie MCP/Access reviendra après la porte, avec FINAL0.")
+
+# --- G1-G4 : porte (T-211), banc pour les deux moteurs (T-044), C4 jour 2 (T-031)
+deps_minus("T-211", "T-140"); deps_plus("T-211", "T-050")
+X["T-211"]["title"] = "Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04)"
+X["T-211"]["intent"] = "Rapport daté des critères C1-C7 (ADR-0020 amendé par l'arbitrage Fable) et décision adopter/abandonner, avec les règles en cas d'échec d'une voie. Seuils proposés par défaut, ajustables par Paul avant la mesure."
+X["T-211"]["done"] = [d for d in X["T-211"]["done"] if not (d.startswith("C1 à C5") or d.startswith("C1, C2 et C4") or d.startswith("horloge de 3 jours") or d.startswith("repli :"))] + [
+    "C1 à C7 mesurés avec preuves",
+    "C2 différentiel : surcoût d'OpenChoreo par rapport au plain sur la même VM ≤ 4 Gio de requests et ≤ 25 pods",
+    "C4 « jour 2 » : montée d'un patch avec reconstruction du bundle amd64, et CP reconstruit depuis Git sur VM vide, apps Ready (T-031)",
+    "C5 chiffré : « abandonner » si le plain passe la même suite `_checks` avec ≥ 30 % de lignes et de tickets propres au moteur en moins",
+    "C6 : au moins 2 capacités d'OpenChoreo utilisées par les 5 intentions et absentes du plain (ex. release épinglée par environnement, cellule isolée par défaut, statut lu par API)",
+    "C7 : part du catalogue kube-ops couverte (T-050), mesurée pour les deux moteurs ; défaut : OpenChoreo couvre au moins autant d'apps que le plain",
+    "horloge par voie, en heures d'agent, depuis ses propres prérequis (OpenChoreo : T-364 `done` ; plain : T-363 `done`) ; l'attente d'un MANDAT n'est pas comptée",
+    "ordre de mesure croisé : 3 intentions OpenChoreo d'abord, 2 plain d'abord ; banc T-044 exécuté pour les deux moteurs",
+    "repli : si la VM lab n'est pas Ready le 2026-11-25, la porte est reportée (2026-12-11) ; jamais de mesure sur OKE"]
+note("T-211", f"Constats G1-G4 de la revue Fable, acceptés {FA} ; T-140 retiré des dépendances.")
+deps_plus("T-044", "T-212")
+X["T-044"]["done"] += ["banc exécuté pour les deux moteurs (OpenChoreo et plain), mêmes intentions, ordre croisé (G3)"]
+X["T-031"]["title"] = "Test de reprise et « jour 2 » du cluster lab (critère C4 révisé)"
+X["T-031"]["done"] += ["jour 2 : montée d'un patch OpenChoreo avec reconstruction du bundle amd64, durée mesurée",
+    "CP reconstruit depuis Git sur une VM vide, apps Ready, durée mesurée"]
+note("T-031", f"C4 « jour 2 » {FA} (constat G1).")
+
+for k in ("T-326", "T-311", "T-322"): route(X[k])
+for x in T:
+    if x.get("stage") in ("FINAL0",): x["phase"] = "P4"
+
+SP={"S0":"P0","S1":"P0","S2":"P1","S3":"P1","PORTE":"P1","I1":"P2","I1bis":"P2","I2":"P2","I3":"P2","I4":"P3","I5":"P3","I6":"P3","I7":"P4","I8":"P4","FINAL0":"P4","FINAL":"P4","I9":"P4","après-porte":"P5"}
 for x in T:
     if x.get("stage") in SP: x["phase"]=SP[x["stage"]]
 PH = {"P0":"Fondations : débloquer l'autonomie","P1":"Golden path complet","P2":"Primitives (sécurité, secrets, identité, données, exposition)","P3":"Hybride OKE + homelab","P4":"Intention en langage naturel et connaissance","P5":"Migration depuis kube-ops"}

@@ -4,7 +4,7 @@ title: "Reprise automatique et escalade de modèle : max_attempts, tickets bloqu
 status: todo
 phase: P0
 adr: [0021]
-depends_on: [T-061, T-314]
+depends_on: [T-314]
 class: AUTONOME
 velocity: true
 lane: agents

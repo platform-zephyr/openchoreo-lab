@@ -1,17 +1,18 @@
 # Feuille de route (générée depuis `backlog/`)
 
 Ordonnancement issu du **consensus n°2 et des arbitrages de Paul** (`docs/review/CONSENSUS-2.md`, 2026-11-18 ; résumé :
-`backlog/INTEGRATION-3.md`), après le consensus n°1 (`docs/review/CONSENSUS.md`) et l'intégration 2. Objectif de Paul : finir
+`backlog/INTEGRATION-3.md`), puis de l'**arbitrage Fable** (`docs/review/FABLE-ARBITRAGE.md` ; résumé : `backlog/INTEGRATION-4.md`),
+après le consensus n°1 (`docs/review/CONSENSUS.md`) et l'intégration 2. Objectif de Paul : finir
 vite avec un maximum d'agents en parallèle ; la sécurité de développement est réduite, **seule la sécurité finale compte**
-(étape FINAL).
+(étape FINAL0 avant la première donnée réelle, étape FINAL avant « plateforme finie »).
 
 ## Règles
-1. **Étapes dans l'ordre** : MVP (S0 → S3), puis la **porte OpenChoreo** en mono-cluster (ADR-0020 amendé), puis des
-   **incréments** (I1 → I8), puis le **durcissement final** (FINAL) avant de déclarer la plateforme finie. Une étape peut
+1. **Étapes dans l'ordre** : MVP (S0 → S3), puis la **porte OpenChoreo** en mono-cluster (ADR-0020 amendé), puis **FINAL0**
+   (identité d'usine, contournement retiré, secrets de dev tournés), puis des **incréments** (I1 → I8), puis le **durcissement final** (FINAL) avant de déclarer la plateforme finie. Une étape peut
    démarrer dès que les dépendances de ses tickets sont `done`.
 2. **Dans une étape** : par vague de dépendances, d'abord les tickets `velocity`, puis ceux qui débloquent le plus.
-3. **Parallélisme** : pilote à N=3 sur une liste figée de 20 tickets ; paliers 3 → 6 → 10 décidés par Paul (ADR-0021) ; au plus
-   2 agents par couloir, 1 sur `contrat-appgen` avant T-214 ; aucun chevauchement de périmètre (T-314).
+3. **Parallélisme** : pilote à N=3 (`max-parallel` ou groupes par couloir) sur une liste figée de 20 tickets ; paliers 3 → 6 → 10 décidés par Paul (ADR-0021) ; au plus
+   2 agents par couloir, 1 sur `contrat-appgen` avant T-214 ; aucun chevauchement de périmètre (T-210 minimal, T-314). En mode dev, REVUE = merge après `ci-ok`.
 4. **Modèle** (ADR-0023, 3 règles) : noyau (chemins CODEOWNERS, `docs/adr/`, `docs/review/`) → opus/high ; texte hors noyau →
    haiku/medium + revue Sonnet ; reste → sonnet/high. Le dispatcher recalcule depuis les chemins et ignore un `model:` sous le plancher.
 5. **Règle d'usine** (ADR-0021) : avant la porte, un ticket d'usine n'entre que s'il supprime un geste de Paul mesuré au pilote.
@@ -24,39 +25,43 @@ MANDAT = geste de Paul (accès, identité, dépense, VM) ; REVUE = approbation d
 
 | Étape | Gestes (MANDAT) | Approbations (REVUE) |
 |---|---|---|
-| S0 | [T-061](T-061-aligner-mission-adr.md), [T-061b](T-061b-acter-autres-adr.md), [T-301](T-301-reecriture-de-l-historique-et-purge.md) | [T-008](T-008-lint-backlog.md), [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md), [T-210](T-210-dispatcher-agents.md), [T-302](T-302-corrections-de-l-arbre-detail-residuel.md), [T-311](T-311-gouverneur-de-quota-ledger-5-h.md), [T-330](T-330-reglages-de-projet-claude-settings-json.md), [T-313](T-313-executant-claude-agent-yml-par-workflow.md) |
-| S1 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-322](T-322-calibrage-du-quota-pilote-24-h.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md), [T-006](T-006-mcp-cloudflare-access.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-002](T-002-ci-k3d.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md), [T-326](T-326-ledger-quota-disjoncteur.md) |
+| S0 | [T-061](T-061-aligner-mission-adr.md), [T-061b](T-061b-acter-autres-adr.md), [T-301](T-301-reecriture-de-l-historique-et-purge.md), [T-304](T-304-essai-reel-executant.md), [T-305](T-305-tag-core-baseline.md) | [T-008](T-008-lint-backlog.md), [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md), [T-306](T-306-registre-identites.md), [T-311](T-311-gouverneur-de-quota-ledger-5-h.md), [T-330](T-330-reglages-de-projet-claude-settings-json.md), [T-210](T-210-dispatcher-agents.md), [T-302](T-302-corrections-de-l-arbre-detail-residuel.md), [T-313](T-313-executant-claude-agent-yml-par-workflow.md), [T-326](T-326-ledger-quota-disjoncteur.md) |
+| S1 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md), [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md), [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md), [T-366](T-366-bundle-multi-arch-installateur-lab.md), [T-362](T-362-isolation-reseau-de-la-vm-lab.md), [T-363](T-363-socle-de-la-plateforme-sur-la.md), [T-315](T-315-merge-automatique-sous-conditions-app-de.md), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md), [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md), [T-005](T-005-preuve-runtime-auto.md), [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | [T-001](T-001-integrer-pr8-security-bundle.md), [T-002](T-002-ci-k3d.md), [T-041](T-041-context-engineering.md), [T-216](T-216-ci-registre.md), [T-217](T-217-vap-default-deny.md), [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md), [T-337](T-337-definition-of-done-executable-verify-par.md), [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md), [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md), [T-314](T-314-dispatcher-planifie-cron-15-min-et.md), [T-321](T-321-revue-independante-automatique-avant-merge-model.md) |
 | S2 |  | [T-062](T-062-lab-platform-auto.md), [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) |
 | S3 | [T-140](T-140-cost-1.md), [T-031](T-031-placement-coupure.md) | [T-070](T-070-garde-contrat.md), [T-368](T-368-garde-fous-de-capacite-du-homelab.md) |
 | PORTE | [T-211](T-211-porte-openchoreo.md) |  |
+| FINAL0 | [T-215](T-215-pack-identite.md), [T-403](T-403-rotation-secrets-dev.md), [T-400](T-400-retrait-bypass-admin-ruleset.md), [T-404](T-404-jalon-final0.md) | [T-007](T-007-test-noyau-codeowners.md) |
 | I1 | [T-026](T-026-sauvegardes.md) | [T-069](T-069-vap-data-class.md) |
 | I2 | [T-022](T-022-spike-openbao.md), [T-164](T-164-ai-5.md), [T-185](T-185-ids-6.md), [T-023](T-023-secrets-generate-provided.md), [T-218](T-218-acter-adr-0014-0019.md) | [T-060](T-060-residu-kgateway.md), [T-183](T-183-ids-4.md), [T-184](T-184-ids-5.md), [T-186](T-186-ids-7.md), [T-189](T-189-ids-10.md) |
 | I3 | [T-021](T-021-reseau-egress-imds.md) |  |
-| I4 | [T-107](T-107-obs-7.md), [T-109](T-109-obs-9.md), [T-106](T-106-obs-6.md), [T-065](T-065-sante-periodique-alertes.md), [T-147](T-147-cost-8.md) |  |
+| I4 | [T-107](T-107-obs-7.md), [T-106](T-106-obs-6.md), [T-109](T-109-obs-9.md), [T-065](T-065-sante-periodique-alertes.md), [T-147](T-147-cost-8.md) |  |
 | I5 | [T-132](T-132-upg-13.md) | [T-120](T-120-upg-1.md), [T-122](T-122-upg-3.md), [T-124](T-124-upg-5.md) |
-| I6 | [T-181](T-181-ids-2.md), [T-194](T-194-ids-15.md), [T-195](T-195-ids-16.md), [T-193](T-193-ids-14.md) |  |
+| I6 | [T-181](T-181-ids-2.md), [T-195](T-195-ids-16.md), [T-194](T-194-ids-15.md), [T-193](T-193-ids-14.md) |  |
 | I7 | [T-160](T-160-ai-1.md), [T-171](T-171-ai-12.md) | [T-161](T-161-ai-2.md), [T-166](T-166-ai-7.md), [T-163](T-163-ai-4.md) |
 | I8 |  | [T-201](T-201-data-2.md) |
-| FINAL | [T-215](T-215-pack-identite.md), [T-121](T-121-upg-2.md), [T-400](T-400-retrait-bypass-admin-ruleset.md), [T-401](T-401-revue-securite-finale.md) | [T-007](T-007-test-noyau-codeowners.md) |
+| FINAL | [T-121](T-121-upg-2.md), [T-405](T-405-rotation-complete-final.md), [T-401](T-401-revue-securite-finale.md) |  |
 
 Gestes purement humains (aucun agent) : [T-301](T-301-reecriture-de-l-historique-et-purge.md) Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique)
 
 ## Lancement 24/7
 
-Pilote de **24 h à N=3** en dispatch manuel ([T-322](T-322-calibrage-du-quota-pilote-24-h.md)) : coût par ticket, % de quota 5 h et hebdomadaire, concurrence cloud ; puis paliers 6 et 10 décidés par Paul. Il ne dépend ni de T-215 ni du ruleset (FINAL), ni de la réécriture de l'historique (T-301, geste de Paul hors chemin critique).
+Pilote de **24 h à N=3** en dispatch manuel ([T-322](T-322-calibrage-du-quota-pilote-24-h.md)) : coût par ticket, % de quota 5 h et hebdomadaire, concurrence cloud ; puis paliers 6 et 10 décidés par Paul. Il ne dépend ni de T-215 ni du ruleset (FINAL0), ni de T-061/T-061b (actés par la fusion de la PR #48). Moteur horaire d'Atlas/homelab-infra en pause pendant les 24 h.
 
-### Prérequis : S0 minimal (8 tickets)
+### Prérequis : S0 minimal (11 tickets)
 
 | Ticket | Titre | Vague | Classe | Modèle |
 |---|---|---|---|---|
 | [T-008](T-008-lint-backlog.md) | Check CI des tickets `backlog/` : en-tête, graphe, étapes, champs `model` et `effort` | 0 | REVUE | sonnet/high |
-| [T-061](T-061-aligner-mission-adr.md) | Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote) | 0 | MANDAT | sonnet/high |
 | [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md) | Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes) | 0 | REVUE | sonnet/high |
+| [T-306](T-306-registre-identites.md) | Registre des identités et secrets `docs/state/identities.yaml` (noms, rôles, dates, jamais de valeur) | 0 | REVUE | sonnet/high |
+| [T-311](T-311-gouverneur-de-quota-ledger-5-h.md) | Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 réelle (max-parallel ou groupes par couloir) | 0 | REVUE | sonnet/high |
+| [T-330](T-330-reglages-de-projet-claude-settings-json.md) | Réglages de projet `.claude/settings.json` : permissions deny, mode dontAsk, sandbox, plafonds de sortie | 0 | REVUE | sonnet/high |
 | [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | 1 | REVUE | sonnet/high |
 | [T-302](T-302-corrections-de-l-arbre-detail-residuel.md) | Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets | 1 | REVUE | opus/high |
-| [T-311](T-311-gouverneur-de-quota-ledger-5-h.md) | Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 | 1 | REVUE | sonnet/high |
-| [T-330](T-330-reglages-de-projet-claude-settings-json.md) | Réglages de projet `.claude/settings.json` : permissions deny, mode dontAsk, sandbox, plafonds de sortie | 1 | REVUE | sonnet/high |
 | [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 2 | REVUE | sonnet/high |
+| [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 3 | REVUE + MANDAT | sonnet/high |
+| [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 3 | REVUE | sonnet/high |
+| [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 4 | MANDAT | sonnet/high |
 
 ### Liste figée du pilote (20 tickets, aucun autre lancement pendant le pilote)
 
@@ -65,14 +70,11 @@ Pilote de **24 h à N=3** en dispatch manuel ([T-322](T-322-calibrage-du-quota-p
 | [T-002](T-002-ci-k3d.md) | CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue | S1 | REVUE | sonnet/high | — |
 | [T-214](T-214-appgen-modulaire.md) | Découper appgen en modules (avant le couloir contrat) | S1 | AUTONOME | sonnet/high | — |
 | [T-332](T-332-commande-unique-tools-dev-check-static.md) | Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée | S1 | AUTONOME | sonnet/high | — |
-| [T-041](T-041-context-engineering.md) | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | S1 | REVUE | sonnet/high | — |
 | [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | S3 | AUTONOME | sonnet/high | — |
 | [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | S1 | AUTONOME | sonnet/high | — |
-| [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger de quota 5 h et hebdomadaire, seuils 70/85/100 % et disjoncteur (construit pendant le pilote) | S1 | REVUE | sonnet/high | — |
 | [T-337](T-337-definition-of-done-executable-verify-par.md) | Definition of done exécutable : `verify:` par critère et `done.py` avec preuve datée | S1 | REVUE | sonnet/high | T-332 |
 | [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | S1 | AUTONOME | sonnet/high | T-214 |
 | [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenChoreo) | S1 | AUTONOME | sonnet/high | T-002, T-332 |
-| [T-070](T-070-garde-contrat.md) | Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/` | S3 | REVUE | sonnet/high | T-002 |
 | [T-216](T-216-ci-registre.md) | CI extensible par registre de suites | S1 | REVUE | sonnet/high | T-002 |
 | [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | S2 | AUTONOME | sonnet/high | T-332 |
 | [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | S1 | REVUE | sonnet/high | T-332 |
@@ -82,6 +84,9 @@ Pilote de **24 h à N=3** en dispatch manuel ([T-322](T-322-calibrage-du-quota-p
 | [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | Revue indépendante automatique avant merge (modèle différent, lecture seule) | S1 | REVUE | sonnet/high | T-002 |
 | [T-314](T-314-dispatcher-planifie-cron-15-min-et.md) | Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission | S1 | REVUE | sonnet/high | — |
 | [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle | S1 | AUTONOME | sonnet/high | T-314 |
+| [T-072](T-072-app-status-schema.md) | Schéma `app-status.v1` et `_checks` en sortie JSON stable | S1 | AUTONOME | sonnet/high | — |
+| [T-025](T-025-classe-donnees.md) | Classe de donnée dans le contrat et labels `data-class` (G8) | I1 | AUTONOME | sonnet/high | T-002, T-072, T-214 |
+| [T-074](T-074-retrait-thunderid.md) | Retirer ThunderID du contrat et des capacités ; Authentik seul | I2 | AUTONOME | sonnet/high | T-025, T-072, T-365 |
 
 Après le pilote : activation du cron T-314, puis [T-315](T-315-merge-automatique-sous-conditions-app-de.md) (S1), [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) (S1), [T-006](T-006-mcp-cloudflare-access.md) (S1).
 
@@ -95,11 +100,12 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 
 | Étape | haiku | sonnet | opus | humain |
 |---|---|---|---|---|
-| S0 | 0 | 8 | 1 | 1 |
-| S1 | 0 | 30 | 3 | 0 |
+| S0 | 0 | 12 | 1 | 1 |
+| S1 | 0 | 29 | 3 | 0 |
 | S2 | 0 | 2 | 2 | 0 |
 | S3 | 0 | 11 | 0 | 0 |
 | PORTE | 0 | 0 | 1 | 0 |
+| FINAL0 | 0 | 0 | 5 | 0 |
 | I1 | 0 | 6 | 1 | 0 |
 | I1bis | 0 | 1 | 0 | 0 |
 | I2 | 1 | 5 | 6 | 0 |
@@ -109,45 +115,49 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 | I6 | 0 | 4 | 2 | 0 |
 | I7 | 0 | 8 | 1 | 0 |
 | I8 | 0 | 3 | 0 | 0 |
-| FINAL | 0 | 0 | 6 | 0 |
+| FINAL | 0 | 0 | 4 | 0 |
 
-## S0 — MVP — S0 minimal du pilote 24 h (garde de fuite, ADR, exécutant, dispatcher, PAUSE, réglages) (10 tickets)
+## S0 — MVP — S0 minimal du pilote 24 h (garde de fuite, ADR, exécutant, dispatcher, PAUSE, réglages) (14 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-008](T-008-lint-backlog.md) | Check CI des tickets `backlog/` : en-tête, graphe, étapes, champs `model` et `effort` | 0 | ci | REVUE | sonnet/high | oui | 14 |
-| [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md) | Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes) | 0 | ci | REVUE | sonnet/high | oui | 4 |
-| [T-061](T-061-aligner-mission-adr.md) | Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote) | 0 | gouvernance | MANDAT | sonnet/high |  | 109 |
+| [T-008](T-008-lint-backlog.md) | Check CI des tickets `backlog/` : en-tête, graphe, étapes, champs `model` et `effort` | 0 | ci | REVUE | sonnet/high | oui | 18 |
+| [T-311](T-311-gouverneur-de-quota-ledger-5-h.md) | Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 réelle (max-parallel ou groupes par couloir) | 0 | agents | REVUE | sonnet/high | oui | 10 |
+| [T-303](T-303-garde-ci-de-donnees-sensibles-gitleaks.md) | Garde CI de données sensibles (gitleaks + règles OCID, IP, e-mail, chemins, hôtes internes) | 0 | ci | REVUE | sonnet/high | oui | 5 |
+| [T-330](T-330-reglages-de-projet-claude-settings-json.md) | Réglages de projet `.claude/settings.json` : permissions deny, mode dontAsk, sandbox, plafonds de sortie | 0 | agents-harness | REVUE | sonnet/high | oui | 5 |
+| [T-061](T-061-aligner-mission-adr.md) | Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote) | 0 | gouvernance | MANDAT | sonnet/high |  | 90 |
 | [T-061b](T-061b-acter-autres-adr.md) | Acter les autres ADR (0001, 0003-0006, 0010-0013, 0020, 0022, 0023) et les amendements du consensus n°2 (T-061b) | 0 | gouvernance | MANDAT | sonnet/high |  | 89 |
-| [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | 1 | ci | REVUE | sonnet/high | oui | 9 |
-| [T-311](T-311-gouverneur-de-quota-ledger-5-h.md) | Gouverneur minimal : kill-switch factory/PAUSE et concurrence 3 | 1 | agents | REVUE | sonnet/high | oui | 8 |
-| [T-330](T-330-reglages-de-projet-claude-settings-json.md) | Réglages de projet `.claude/settings.json` : permissions deny, mode dontAsk, sandbox, plafonds de sortie | 1 | agents-harness | REVUE | sonnet/high | oui | 4 |
-| [T-302](T-302-corrections-de-l-arbre-detail-residuel.md) | Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets | 1 | gouvernance | REVUE | opus/high |  | 2 |
-| [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 2 | ci | REVUE | sonnet/high | oui | 7 |
+| [T-306](T-306-registre-identites.md) | Registre des identités et secrets `docs/state/identities.yaml` (noms, rôles, dates, jamais de valeur) | 0 | gouvernance | REVUE | sonnet/high |  | 39 |
+| [T-210](T-210-dispatcher-agents.md) | Dispatcher minimal : next.py (prêts, classe et modèle recalculés depuis les chemins) | 1 | ci | REVUE | sonnet/high | oui | 11 |
+| [T-302](T-302-corrections-de-l-arbre-detail-residuel.md) | Corrections de l'arbre : détail résiduel, chemins locaux, structure de secrets | 1 | gouvernance | REVUE | opus/high |  | 3 |
+| [T-313](T-313-executant-claude-agent-yml-par-workflow.md) | Exécutant claude-agent.yml minimal : workflow_dispatch(ticket, modèle, effort), mission-result.v1 | 2 | ci | REVUE | sonnet/high | oui | 9 |
 | [T-301](T-301-reecriture-de-l-historique-et-purge.md) | Réécriture de l'historique par Paul avec un agent Claude local (hors chemin critique) | 2 | gouvernance | MANDAT | humain/none |  | 0 |
+| [T-304](T-304-essai-reel-executant.md) | Essai réel de l'exécutant avant l'heure 0 : push d'un workflow, check.py sur runner, auto-merge, identité `workflows` | 3 | ci | REVUE + MANDAT | sonnet/high | oui | 2 |
+| [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger minimal de quota et disjoncteur « limit » (prérequis du pilote) | 3 | agents | REVUE | sonnet/high |  | 2 |
+| [T-305](T-305-tag-core-baseline.md) | Tag `core-baseline` du noyau avant le pilote | 4 | gouvernance | MANDAT | sonnet/high |  | 1 |
 
-## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (33 tickets)
+## S1 — MVP — pilote 24 h, VM lab, moteur OpenChoreo (CP sur le homelab), accès des agents cloud (32 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-001](T-001-integrer-pr8-security-bundle.md) | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0 | socle-oke | REVUE | opus/high | oui | 66 |
-| [T-002](T-002-ci-k3d.md) | CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue | 0 | ci | REVUE | sonnet/high | oui | 57 |
+| [T-002](T-002-ci-k3d.md) | CI k3d jetable sur runners GitHub (PR #36) avec les 4 corrections de revue | 0 | ci | REVUE | sonnet/high | oui | 61 |
+| [T-001](T-001-integrer-pr8-security-bundle.md) | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0 | socle-oke | REVUE | opus/high | oui | 55 |
+| [T-214](T-214-appgen-modulaire.md) | Découper appgen en modules (avant le couloir contrat) | 0 | contrat-appgen | AUTONOME | sonnet/high | oui | 50 |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | Mesures du homelab avant dimensionnement (lecture seule) | 0 | hybride | AUTONOME + MANDAT | sonnet/high | oui | 47 |
+| [T-072](T-072-app-status-schema.md) | Schéma `app-status.v1` et `_checks` en sortie JSON stable | 0 | preuve | AUTONOME | sonnet/high | oui | 46 |
 | [T-332](T-332-commande-unique-tools-dev-check-static.md) | Commande unique `tools/dev/check` (--static, --k3d) et liste d'outils partagée | 0 | dev-factory | AUTONOME | sonnet/high | oui | 8 |
 | [T-041](T-041-context-engineering.md) | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0 | connaissance | REVUE | sonnet/high | oui | 4 |
-| [T-214](T-214-appgen-modulaire.md) | Découper appgen en modules (avant le couloir contrat) | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 45 |
+| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 45 |
 | [T-366](T-366-bundle-multi-arch-installateur-lab.md) | Bundle de sécurité multi-arch et installateur pour le cluster lab | 1 | socle-lab | REVUE + MANDAT | opus/high | oui | 40 |
-| [T-072](T-072-app-status-schema.md) | Schéma `app-status.v1` et `_checks` en sortie JSON stable | 1 | preuve | AUTONOME | sonnet/high | oui | 37 |
-| [T-003](T-003-env-development-promotion.md) | Environment `development`, promotion vers `production`, pins de release par environnement | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 30 |
+| [T-003](T-003-env-development-promotion.md) | Environment `development`, promotion vers `production`, pins de release par environnement | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 31 |
 | [T-337](T-337-definition-of-done-executable-verify-par.md) | Definition of done exécutable : `verify:` par critère et `done.py` avec preuve datée | 1 | backlog-outils | REVUE | sonnet/high | oui | 2 |
 | [T-216](T-216-ci-registre.md) | CI extensible par registre de suites | 1 | ci | REVUE | sonnet/high | oui | 1 |
 | [T-325](T-325-assistant-des-gestes-humains-une-seance.md) | Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT | 1 | connaissance | AUTONOME | sonnet/high | oui | 0 |
+| [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | 1 | agents-harness | REVUE | sonnet/high | oui | 0 |
 | [T-334](T-334-environnement-claude-code-cloud-openchoreo-lab.md) | Environnement Claude Code cloud « openchoreo-lab-agent » : script d'installation, réseau, secrets réseau | 1 | agents-harness | AUTONOME + MANDAT | sonnet/high | oui | 0 |
 | [T-338](T-338-pack-de-fixtures-et-donnees-synthetiques.md) | Pack de fixtures et données synthétiques (OIDC factice, ntfy réel, Grafana/Loki rejoués, CRD OpenChoreo) | 1 | tests-fixtures | AUTONOME | sonnet/high | oui | 0 |
 | [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md) | VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops) | 1 | hybride | MANDAT | sonnet/high |  | 46 |
 | [T-217](T-217-vap-default-deny.md) | VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny | 1 | securite | REVUE | opus/high |  | 0 |
-| [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, stockage, Kyverno | 2 | contrat-appgen | AUTONOME | sonnet/high | oui | 42 |
-| [T-331](T-331-hooks-deterministes-garde-de-perimetre-garde.md) | Hooks déterministes : garde de périmètre, garde Bash, lint après édition, hook Stop | 2 | agents-harness | REVUE | sonnet/high | oui | 0 |
 | [T-339](T-339-bibliotheque-tools-dev-cluster-k3d-ephemere.md) | Bibliothèque `tools/dev/cluster` (k3d éphémère) et job PR k3d choisi par chemins | 2 | ci | AUTONOME + REVUE | sonnet/high | oui | 0 |
 | [T-340](T-340-protocole-d-echec-et-de-reprise.md) | Protocole d'échec et de reprise : journal de PR, WIP poussé, classes d'échec, skill `resume-ticket` | 2 | agents-harness | AUTONOME | sonnet/high | oui | 0 |
 | [T-341](T-341-sous-agents-de-projet-reviewer-lecture.md) | Sous-agents de projet : `reviewer` (lecture seule) et `ci-triager` | 2 | agents-harness | REVUE | sonnet/high | oui | 0 |
@@ -155,22 +165,21 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 | [T-363](T-363-socle-de-la-plateforme-sur-la.md) | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stockage) | 3 | socle-lab | REVUE + MANDAT | sonnet/high | oui | 44 |
 | [T-314](T-314-dispatcher-planifie-cron-15-min-et.md) | Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission | 3 | ci | REVUE | sonnet/high | oui | 2 |
 | [T-321](T-321-revue-independante-automatique-avant-merge-model.md) | Revue indépendante automatique avant merge (modèle différent, lecture seule) | 3 | ci | REVUE | sonnet/high | oui | 1 |
-| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | Calibrage du quota : pilote 24 h à N=3, puis 6, puis 8-10, et décision Max/Ultra | 3 | agents | AUTONOME + MANDAT | sonnet/high | oui | 0 |
-| [T-326](T-326-ledger-quota-disjoncteur.md) | Ledger de quota 5 h et hebdomadaire, seuils 70/85/100 % et disjoncteur (construit pendant le pilote) | 3 | agents | REVUE | sonnet/high |  | 0 |
 | [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md) | OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab | 4 | hybride | REVUE + MANDAT | sonnet/high | oui | 39 |
 | [T-315](T-315-merge-automatique-sous-conditions-app-de.md) | Merge automatique sous conditions : auto-merge natif pendant le dev, App de merge en FINAL | 4 | gouvernance | REVUE + MANDAT | sonnet/high | oui | 0 |
 | [T-317](T-317-reprise-automatique-max-attempts-tickets-bloques.md) | Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle | 4 | agents | AUTONOME | sonnet/high | oui | 0 |
 | [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) | ntfy seulement si nécessaire et résumé quotidien unique | 4 | observabilité | AUTONOME + MANDAT | sonnet/high |  | 0 |
-| [T-005](T-005-preuve-runtime-auto.md) | Preuve runtime automatique après sync (Job PostSync + publication) | 5 | preuve | AUTONOME + REVUE + MANDAT | sonnet/high | oui | 28 |
-| [T-006](T-006-mcp-cloudflare-access.md) | Accès des agents cloud à la plateforme du homelab : lecture MCP/API OpenChoreo et statut des apps (lecture seule) | 5 | acces-mcp | REVUE + MANDAT | sonnet/high |  | 0 |
+| [T-005](T-005-preuve-runtime-auto.md) | Preuve runtime automatique après sync (Job PostSync + publication) | 5 | preuve | AUTONOME + REVUE + MANDAT | sonnet/high | oui | 29 |
+| [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | 5 | agents | AUTONOME + MANDAT | sonnet/high | oui | 0 |
+| [T-006](T-006-mcp-cloudflare-access.md) | Accès des agents cloud au statut des apps du homelab : statut publié dans GitHub, lu par l'API GitHub (lecture seule) | 6 | acces-mcp | AUTONOME | sonnet/high |  | 0 |
 
 ## S2 — MVP — second moteur (plain), travailleur homelab, mesures (4 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | 2 | dev-factory | AUTONOME | sonnet/high |  | 0 |
+| [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | 1 | dev-factory | AUTONOME | sonnet/high |  | 0 |
 | [T-062](T-062-lab-platform-auto.md) | `lab-platform` en synchronisation automatique (hors lab-pg) | 4 | socle-oke | REVUE | opus/high | oui | 1 |
-| [T-212](T-212-backend-plain.md) | Backend « plain » d'appgen (spike 3 jours) : chart commun + Argo par cluster | 4 | moteur-plain | AUTONOME | sonnet/high |  | 2 |
+| [T-212](T-212-backend-plain.md) | Backend « plain » d'appgen (spike 3 jours) : chart commun + Argo par cluster | 4 | moteur-plain | AUTONOME | sonnet/high |  | 4 |
 | [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR d'agents | 5 | socle-oke | REVUE | opus/high | oui | 0 |
 
 ## S3 — MVP — golden path, intentions, banc et étalonnage (11 tickets)
@@ -179,12 +188,12 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 |---|---|---|---|---|---|---|---|
 | [T-010](T-010-probes-quota.md) | Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4) | 1 | contrat-appgen | AUTONOME | sonnet/high | oui | 13 |
 | [T-070](T-070-garde-contrat.md) | Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/` | 1 | ci | REVUE | sonnet/high | oui | 0 |
-| [T-140](T-140-cost-1.md) | Registre des limites free tier (valeur, date, source) et lint de péremption | 1 | coût | AUTONOME + MANDAT | sonnet/high |  | 6 |
-| [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | 1 | migration | AUTONOME | sonnet/high |  | 0 |
+| [T-140](T-140-cost-1.md) | Registre des limites free tier (valeur, date, source) et lint de péremption | 1 | coût | AUTONOME + MANDAT | sonnet/high |  | 4 |
+| [T-050](T-050-verdicts-kube-ops.md) | Verdict A-F pour chaque app de kube-ops | 1 | migration | AUTONOME | sonnet/high |  | 2 |
 | [T-040](T-040-recettes-apps.md) | Catalogue de recettes d'apps homelab vérifiées | 2 | intention | AUTONOME | sonnet/high |  | 7 |
 | [T-004](T-004-garde-frugalite-dev.md) | Check CI de frugalité du dev | 2 | contrat-appgen | AUTONOME | sonnet/high |  | 1 |
 | [T-368](T-368-garde-fous-de-capacite-du-homelab.md) | Garde-fous de capacité du homelab : quotas lab-*, alertes RAM/NVMe/Tctl, budget versionné | 4 | coût | AUTONOME + REVUE | sonnet/high |  | 0 |
-| [T-031](T-031-placement-coupure.md) | Test de reprise du cluster lab (critère C4 révisé) | 5 | hybride | AUTONOME + MANDAT | sonnet/high |  | 5 |
+| [T-031](T-031-placement-coupure.md) | Test de reprise et « jour 2 » du cluster lab (critère C4 révisé) | 5 | hybride | AUTONOME + MANDAT | sonnet/high |  | 5 |
 | [T-043](T-043-plan-compte-rendu.md) | Gabarits de plan et de compte rendu dans `add-app` | 6 | intention | AUTONOME | sonnet/high | oui | 8 |
 | [T-015](T-015-golden-path-ntfy.md) | Golden path n°2 (ntfy interne) : development puis production | 6 | apps | AUTONOME | sonnet/high |  | 7 |
 | [T-044](T-044-banc-intentions.md) | Banc d'essai de 5 intentions A (MVP) | 7 | intention | AUTONOME | sonnet/high |  | 3 |
@@ -193,13 +202,23 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-211](T-211-porte-openchoreo.md) | Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C5 et décision de Paul (2026-12-04) | 8 | gouvernance | MANDAT | opus/high |  | 1 |
+| [T-211](T-211-porte-openchoreo.md) | Porte d'adoption OpenChoreo en mono-cluster : mesurer C1-C7 et décision de Paul (2026-12-04) | 8 | gouvernance | MANDAT | opus/high |  | 1 |
+
+## FINAL0 — Durcissement avant la première donnée réelle ou exposition publique (5 tickets)
+
+| Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
+|---|---|---|---|---|---|---|---|
+| [T-215](T-215-pack-identite.md) | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 1 | gouvernance | REVUE + MANDAT | opus/high | oui | 39 |
+| [T-007](T-007-test-noyau-codeowners.md) | Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002 | 2 | ci | REVUE | opus/high | oui | 36 |
+| [T-403](T-403-rotation-secrets-dev.md) | Rotation des secrets et identités créés en mode dev (FINAL0) | 2 | gouvernance | MANDAT | opus/high |  | 35 |
+| [T-400](T-400-retrait-bypass-admin-ruleset.md) | Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation ponctuelle | 3 | gouvernance | REVUE + MANDAT | opus/high |  | 35 |
+| [T-404](T-404-jalon-final0.md) | Jalon FINAL0 : identité d'usine, contournement retiré, secrets de dev tournés, revue des code owners réactivée | 4 | gouvernance | MANDAT | opus/high |  | 34 |
 
 ## I1 — Données (7 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-025](T-025-classe-donnees.md) | Classe de donnée dans le contrat et labels `data-class` (G8) | 1 | contrat-appgen | AUTONOME | sonnet/high |  | 10 |
+| [T-025](T-025-classe-donnees.md) | Classe de donnée dans le contrat et labels `data-class` (G8) | 1 | contrat-appgen | AUTONOME | sonnet/high |  | 13 |
 | [T-069](T-069-vap-data-class.md) | VAP : refus de DELETE des données `irreplaceable` (G8) | 2 | securite | REVUE | opus/high |  | 0 |
 | [T-026](T-026-sauvegardes.md) | Sauvegarde des bases : CNPG → R2 par préfixe | 5 | donnees | AUTONOME + MANDAT | sonnet/high |  | 7 |
 | [T-075](T-075-sauvegarde-volumes.md) | Sauvegarde des volumes : spike VolSync/restic vs Velero/Kopia | 5 | donnees | AUTONOME | sonnet/high |  | 5 |
@@ -217,16 +236,16 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-185](T-185-ids-6.md) | Transport des blueprints vers l'Authentik de production (ConfigMap dédié) | 1 | identité-secrets/authentik | MANDAT | opus/high | oui | 6 |
-| [T-022](T-022-spike-openbao.md) | OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill | 1 | secrets | AUTONOME + MANDAT | sonnet/high |  | 21 |
 | [T-060](T-060-residu-kgateway.md) | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | 1 | socle-oke | REVUE | sonnet/high |  | 10 |
 | [T-183](T-183-ids-4.md) | Matrice identité × secrets exécutable et inventaire des identités | 1 | identité-secrets/inventaire | AUTONOME + REVUE | opus/high |  | 10 |
-| [T-164](T-164-ai-5.md) | Identité des agents : client Authentik par agent, inventaire et coupe-circuit | 1 | identité-agents | REVUE + MANDAT | opus/high |  | 6 |
-| [T-074](T-074-retrait-thunderid.md) | Retirer ThunderID du contrat et des capacités ; Authentik seul | 1 | contrat-appgen | AUTONOME | sonnet/high |  | 5 |
-| [T-184](T-184-ids-5.md) | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | 2 | identité-secrets/openbao | AUTONOME + REVUE | opus/high | oui | 9 |
-| [T-186](T-186-ids-7.md) | Golden path utilisateur : arrivée et départ (users/<id>.yaml) | 2 | identité-secrets/utilisateurs | REVUE | opus/high |  | 0 |
-| [T-189](T-189-ids-10.md) | `identity.mode: oidc | proxy | none` avec client OIDC généré et secret dans OpenBao | 3 | identité-secrets/apps | REVUE | opus/high | oui | 4 |
+| [T-074](T-074-retrait-thunderid.md) | Retirer ThunderID du contrat et des capacités ; Authentik seul | 2 | contrat-appgen | AUTONOME | sonnet/high |  | 5 |
+| [T-185](T-185-ids-6.md) | Transport des blueprints vers l'Authentik de production (ConfigMap dédié) | 5 | identité-secrets/authentik | MANDAT | opus/high | oui | 6 |
+| [T-022](T-022-spike-openbao.md) | OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill | 5 | secrets | AUTONOME + MANDAT | sonnet/high |  | 21 |
+| [T-164](T-164-ai-5.md) | Identité des agents : client Authentik par agent, inventaire et coupe-circuit | 5 | identité-agents | REVUE + MANDAT | opus/high |  | 6 |
+| [T-184](T-184-ids-5.md) | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | 6 | identité-secrets/openbao | AUTONOME + REVUE | opus/high | oui | 9 |
 | [T-023](T-023-secrets-generate-provided.md) | Secrets `generate` et `provided` via OpenBao + ESO, statut `secret-missing` | 6 | secrets | AUTONOME + REVUE + MANDAT | sonnet/high |  | 9 |
+| [T-186](T-186-ids-7.md) | Golden path utilisateur : arrivée et départ (users/<id>.yaml) | 6 | identité-secrets/utilisateurs | REVUE | opus/high |  | 0 |
+| [T-189](T-189-ids-10.md) | `identity.mode: oidc | proxy | none` avec client OIDC généré et secret dans OpenBao | 7 | identité-secrets/apps | REVUE | opus/high | oui | 4 |
 | [T-071](T-071-doc-utilisateur.md) | Guide utilisateur : demander, suivre, annuler, déposer un secret | 7 | intention | AUTONOME | haiku/medium |  | 0 |
 | [T-218](T-218-acter-adr-0014-0019.md) | Acter les ADR 0014-0019 après le MVP | 9 | gouvernance | MANDAT | sonnet/high |  | 0 |
 
@@ -234,20 +253,20 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-028](T-028-exposition-publique.md) | Exposition `private | internal | public` : route par hôte (G6) et refus « public sans auth » | 4 | exposition | AUTONOME | sonnet/high |  | 0 |
 | [T-020](T-020-kyverno-enforce.md) | Kyverno en Enforce sur le golden path, exceptions générées | 5 | securite | AUTONOME | sonnet/high |  | 7 |
 | [T-021](T-021-reseau-egress-imds.md) | Egress déclaré (FQDN Cilium) et IMDS refusé dans toutes les cellules | 5 | securite | AUTONOME + MANDAT | sonnet/high |  | 3 |
 | [T-051](T-051-premiere-app-familiale.md) | Première app familiale complète (OIDC + base + sauvegarde) sur le homelab | 8 | apps | AUTONOME | sonnet/high |  | 2 |
+| [T-028](T-028-exposition-publique.md) | Exposition `private | internal | public` : route par hôte (G6) et refus « public sans auth » | 8 | exposition | AUTONOME | sonnet/high |  | 0 |
 
 ## I4 — Exploitation : observabilité, remédiation, ntfy (8 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 2 | observabilité | AUTONOME | sonnet/high | oui | 4 |
+| [T-100](T-100-obs-0.md) | Contrat d'alerte, règles génériques et runbooks lisibles par agent | 1 | observabilité | AUTONOME | sonnet/high | oui | 4 |
+| [T-107](T-107-obs-7.md) | Escalade ntfy : contact points, script de notification, route différée | 2 | remédiation | AUTONOME + MANDAT | sonnet/high |  | 2 |
 | [T-101](T-101-obs-1.md) | Collecte : Alloy de kube-ops réutilisé, budget de séries, sondes depuis healthPath | 2 | observabilité | AUTONOME | sonnet/high |  | 0 |
-| [T-107](T-107-obs-7.md) | Escalade ntfy : contact points, script de notification, route différée | 3 | remédiation | AUTONOME + MANDAT | sonnet/high |  | 2 |
-| [T-109](T-109-obs-9.md) | Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane | 5 | plateforme-santé | AUTONOME + MANDAT | sonnet/high |  | 0 |
 | [T-106](T-106-obs-6.md) | Pont alerte -> agent : workflow remediate, dédoublonnage, budget, disjoncteur | 6 | remédiation | REVUE + MANDAT | sonnet/high | oui | 1 |
+| [T-109](T-109-obs-9.md) | Santé de la plateforme : control plane, Argo, OpenBao, ESO, CNPG, agents de data plane | 6 | plateforme-santé | AUTONOME + MANDAT | sonnet/high |  | 0 |
 | [T-065](T-065-sante-periodique-alertes.md) | CronJob de statut périodique (réduit : sondes → T-103, revert → T-106, ntfy → T-107) | 7 | preuve | AUTONOME + MANDAT | sonnet/high |  | 2 |
 | [T-111](T-111-obs-11.md) | Drill de bout en bout : échec d'app -> alerte -> agent -> PR ou ntfy | 7 | remédiation | AUTONOME | sonnet/high |  | 0 |
 | [T-147](T-147-cost-8.md) | Alertes de coût : relier billing_cost_eur et cost-evidence à ntfy, règle de fraîcheur | 8 | alertes | AUTONOME + MANDAT | sonnet/high |  | 0 |
@@ -268,11 +287,11 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-190](T-190-ids-11.md) | `tools/secrets-migrate` : script idempotent Doppler → OpenBao sans affichage de valeur | 3 | identité-secrets/migration | AUTONOME | sonnet/high |  | 4 |
-| [T-181](T-181-ids-2.md) | Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao | 4 | identité-secrets/migration | MANDAT | sonnet/high |  | 3 |
-| [T-194](T-194-ids-15.md) | Rotation et échéances : jetons Doppler, clés d'agents, secrets OIDC, clé de seal | 5 | identité-secrets/rotation | MANDAT | opus/high |  | 0 |
+| [T-190](T-190-ids-11.md) | `tools/secrets-migrate` : script idempotent Doppler → OpenBao sans affichage de valeur | 7 | identité-secrets/migration | AUTONOME | sonnet/high |  | 4 |
+| [T-181](T-181-ids-2.md) | Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao | 8 | identité-secrets/migration | MANDAT | sonnet/high |  | 3 |
 | [T-195](T-195-ids-16.md) | Audit : OpenBao, Doppler, Authentik ; rapport « qui a lu quoi » et alertes | 8 | identité-secrets/audit | AUTONOME + MANDAT | opus/high |  | 0 |
 | [T-192](T-192-ids-13.md) | Bascule ESO vers OpenBao app par app (ombre, puis PR par app) | 9 | identité-secrets/migration | AUTONOME | sonnet/high |  | 1 |
+| [T-194](T-194-ids-15.md) | Rotation et échéances : jetons Doppler, clés d'agents, secrets OIDC, clé de seal | 9 | identité-secrets/rotation | MANDAT | opus/high |  | 0 |
 | [T-193](T-193-ids-14.md) | Nettoyage Doppler : clés obsolètes, jetons orphelins, projets vides, liste fermée en CI | 10 | identité-secrets/doppler | MANDAT | sonnet/high |  | 0 |
 
 ## I7 — Services IA (homelab) (9 tickets)
@@ -297,16 +316,14 @@ Jusqu'à la porte (9 vagues) : [T-061](T-061-aligner-mission-adr.md) → [T-361]
 | [T-204](T-204-data-5.md) | Grille de maturité cloud native CNCF automatisée (niveaux 1-5) | 2 | données | AUTONOME | sonnet/high |  | 0 |
 | [T-203](T-203-data-4.md) | Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets) | 6 | données | AUTONOME | sonnet/high |  | 0 |
 
-## FINAL — Durcissement final (obligatoire avant « plateforme finie ») (6 tickets)
+## FINAL — Durcissement final (obligatoire avant « plateforme finie ») (4 tickets)
 
 | Ticket | Titre | Vague | Couloir | Classe | Modèle | Vélocité | Débloque |
 |---|---|---|---|---|---|---|---|
-| [T-215](T-215-pack-identite.md) | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 1 | gouvernance | REVUE + MANDAT | opus/high | oui | 4 |
-| [T-007](T-007-test-noyau-codeowners.md) | Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002 | 2 | ci | REVUE | opus/high | oui | 2 |
 | [T-121](T-121-upg-2.md) | Renovate auto-hébergé avec GitHub App (CI déclenchée, postUpgradeTasks) | 2 | renovate | REVUE + MANDAT | opus/high | oui | 0 |
-| [T-400](T-400-retrait-bypass-admin-ruleset.md) | Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation ponctuelle | 3 | gouvernance | REVUE + MANDAT | opus/high |  | 1 |
 | [T-402](T-402-garde-image-multi-arch.md) | Garde d'image multi-arch pour les apps éligibles aux deux clusters (homelab x86_64, OKE arm64) | 4 | contrat-appgen | AUTONOME | opus/high |  | 1 |
-| [T-401](T-401-revue-securite-finale.md) | Revue de sécurité finale de la plateforme (prérequis de « plateforme finie ») | 5 | gouvernance | MANDAT | opus/high |  | 0 |
+| [T-405](T-405-rotation-complete-final.md) | Rotation complète des secrets et identités du registre (FINAL) | 5 | gouvernance | MANDAT | opus/high |  | 1 |
+| [T-401](T-401-revue-securite-finale.md) | Revue de sécurité finale de la plateforme (prérequis de « plateforme finie ») | 6 | gouvernance | MANDAT | opus/high |  | 0 |
 
 ## Gelés jusqu'à la porte ou bloqués par un déclencheur (46)
 

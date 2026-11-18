@@ -4,7 +4,7 @@ title: "Dispatcher minimal : next.py (prêts, classe et modèle recalculés depu
 status: todo
 phase: P0
 adr: [0002, 0012, 0013]
-depends_on: [T-008, T-061]
+depends_on: [T-008]
 class: REVUE
 velocity: true
 lane: ci
@@ -27,6 +27,9 @@ tools/backlog/next.py, tools/backlog/admission.py, tests/backlog/
 - [ ] classe recalculée depuis les chemins touchés, jamais lue de l'en-tête ; un chemin du noyau force REVUE (test)
 - [ ] la liste à lancer reste fournie par Paul (workflow_dispatch) ; next.py ne lance rien
 - [ ] modèle et effort recalculés depuis les chemins du périmètre (3 règles d'ADR-0023) ; un `model:` d'en-tête sous le plancher est ignoré (test)
+- [ ] contrôle de chevauchement minimal : next.py ne propose jamais deux tickets dont les globs de périmètre se recoupent, ni un ticket qui recoupe un `in-progress` (test)
+- [ ] avant l'heure 0 : rapport de recoupement des globs des 20 tickets de la liste figée ; tout recoupement est sérialisé par une dépendance
+- [ ] `STATE.md` et `backlog/ROADMAP.md` refusés dans le périmètre d'un exécutant ; écrits par le coordinateur seul (ROADMAP régénéré sur `main`)
 
 ## Notes
 Plus gros accélérateur : sans lui, chaque lancement d'agent attend un humain.
@@ -36,3 +39,5 @@ Intégration 2 : absorbe FAC-3 et HAR-5. Le lancement (workflow_dispatch, preuve
 Dépendance retirée (consensus n°2 et arbitrages de Paul, 2026-11-18) : T-007, T-215 (étape FINAL). Pendant le développement, identité de session de Paul ; bascule vers l'App de T-215 en FINAL.
 
 Version minimale (consensus n°2 et arbitrages de Paul, 2026-11-18) : l'admission (couloirs, chevauchement, ressources exclusives, gouverneur, plafond) passe au dispatcher planifié T-314.
+
+Constat P7 de la revue Fable, accepté (arbitrage Fable, 2026-11-18).

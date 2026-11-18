@@ -29,3 +29,5 @@ AGENTS.md, STATE.md, docs/, tools/, tests/
 
 ## Notes
 Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas nécessaire au pilote 24 h (voie parallèle).
+
+Sorti de la liste figée du pilote (arbitrage Fable, 2026-11-18) : périmètre trop large (chevauchement, constat P7).

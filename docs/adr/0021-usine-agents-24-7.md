@@ -47,3 +47,26 @@ Décisions liées : ADR-0002, ADR-0012, ADR-0017, ADR-0020, ADR-0022, ADR-0023 ;
 ## Références
 `docs/research/AGENT-FACTORY-24-7.md` §5-§9, `docs/review/ADVERSARIAL-REVIEW-2.md` §1, `docs/review/CONSENSUS-2.md`,
 `backlog/INTEGRATION-3.md`.
+
+## Amendement (arbitrage Fable, 2026-11-18)
+Source : `docs/review/FABLE-REVIEW.md` (P1-P7, F1-F5), `docs/review/FABLE-ARBITRAGE.md`. Il remplace la liste des
+prérequis du §2 et la conséquence « Paul approuve par lot ».
+1. **Prérequis du pilote** (T-322) : T-008, T-302, T-303, T-306 (registre `docs/state/identities.yaml`), T-311, T-210,
+   T-313, T-330, T-326 (ledger minimal et disjoncteur « limit »), T-304 (essai réel de l'exécutant : push d'un
+   workflow, `check.py` sur runner, auto-merge, identité avec permission `workflows` en mode dev), T-305 (tag
+   `core-baseline`). T-061 et T-061b sont `done` à la fusion de la PR #54, qui acte les ADR 0001-0023 et leurs amendements.
+2. **Liste figée** : T-041 et T-070 en sortent (chevauchement) ; T-326 devient prérequis ; T-072, T-025 et T-074
+   (AUTONOME, sans cluster) entrent. Si l'essai T-304 échoue sur les workflows, les tickets qui écrivent sous
+   `.github/workflows/` sortent et sont remplacés avant l'heure 0.
+3. **Mode dev** : REVUE = merge après `ci-ok` par l'auto-merge de l'exécutant (arbitrage 7). Le test à 6, 10, 15 sessions
+   est retiré : les paliers restent décidés par Paul (§3).
+4. **Concurrence** : matrice `max-parallel: 3` ou groupes de concurrence par couloir, jamais un groupe unique (T-311).
+   Contrôle de chevauchement minimal dans T-210 ; `STATE.md` et `backlog/ROADMAP.md` ne sont écrits que par le coordinateur.
+5. **Quota** : pendant les 24 h, le moteur horaire d'Atlas/homelab-infra est en **pause** et l'usage de Paul est noté ;
+   plafonds Opus portés à 90 min et 150 tours (T-313) ; `noreply` et trailers imposés dès S0.
+6. **FINAL0** : étape placée avant la première donnée réelle, identité réelle ou exposition publique (avant I1) :
+   identité d'usine (T-215), noyau testé (T-007), retrait du contournement admin (T-400), rotation des secrets créés en dev
+   (T-403), revue des code owners réactivée sur `platform/authz/`, `platform/policies/`, `security/` ; jalon T-404, dont
+   dépendent T-022, T-026, T-028, T-051, T-164, T-171, T-181, T-185. FINAL garde T-121, T-401, T-402 et la rotation complète
+   (T-405) ; T-401 exige la VM lab recréée depuis Git (secrets neufs, diff RBAC/CRD/webhooks vide) et relit le diff depuis
+   `core-baseline`.

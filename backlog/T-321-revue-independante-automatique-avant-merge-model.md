@@ -4,7 +4,7 @@ title: "Revue indépendante automatique avant merge (modèle différent, lecture
 status: todo
 phase: P0
 adr: [0002, 0021]
-depends_on: [T-002, T-061, T-313]
+depends_on: [T-002, T-313]
 class: REVUE
 velocity: true
 lane: ci

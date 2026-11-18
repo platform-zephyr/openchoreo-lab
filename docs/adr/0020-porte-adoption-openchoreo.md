@@ -54,3 +54,23 @@ Source : `docs/review/CONSENSUS-2.md` (décision 5, arbitrage 2).
    Les deux moteurs sont mesurés sur la même VM, avec les mêmes apps, l'un après l'autre.
 5. **Repli** : si la VM lab n'est pas Ready le **2026-11-25**, C1 et C5 sont mesurés sur OKE pour les deux moteurs (CP déjà
    installé). La date de décision reste le 2026-12-04, avec un seul report possible au 2026-12-11.
+
+## Amendement (arbitrage Fable, 2026-11-18)
+Source : `docs/review/FABLE-REVIEW.md` (G1-G4), `docs/review/FABLE-ARBITRAGE.md`. Il remplace les points 2, 4 et 5 de
+l'amendement précédent. Les seuils sont proposés par défaut ; Paul peut les ajuster **avant** toute mesure (T-211).
+1. **C2 différentiel** : surcoût d'OpenChoreo par rapport au backend plain sur la même VM lab, ≤ 4 Gio de requests et
+   ≤ 25 pods.
+2. **C4 « jour 2 »** : montée d'un patch OpenChoreo avec reconstruction du bundle amd64, et control plane reconstruit
+   depuis Git sur une VM vide, apps Ready, durées mesurées (T-031).
+3. **C5 chiffré** : « abandonner » si le plain passe la même suite `_checks` avec au moins 30 % de lignes et de tickets
+   propres au moteur en moins.
+4. **C6** (nouveau) : au moins 2 capacités d'OpenChoreo réellement utilisées par les 5 intentions et absentes du plain
+   (par exemple release épinglée par environnement, cellule isolée par défaut, statut lu par API).
+5. **C7** (nouveau) : part du catalogue kube-ops couverte (T-050), mesurée pour les deux moteurs ; défaut : OpenChoreo
+   couvre au moins autant d'apps que le plain.
+6. **Horloge par voie** : les 3 jours d'agent du §3 se comptent en heures d'agent, pour chaque voie depuis ses propres
+   prérequis (OpenChoreo : T-364 `done` ; plain : T-363 `done`) ; l'attente d'un MANDAT n'est pas comptée. **Ordre
+   croisé** : 3 intentions OpenChoreo d'abord, 2 plain d'abord ; le banc T-044 est exécuté pour les deux moteurs.
+7. **Repli = report** : si la VM lab n'est pas Ready le 2026-11-25, la porte est reportée au 2026-12-11. Aucune mesure
+   sur OKE (k3d ≠ OKE, D11). T-140 ne conditionne plus T-211.
+8. §2 devient : adopter seulement si C1 à C7 sont réunis.

@@ -8,7 +8,7 @@ depends_on: [T-061, T-061b]
 class: REVUE + MANDAT
 velocity: true
 lane: gouvernance
-stage: FINAL
+stage: FINAL0
 model: claude-opus-5-5
 effort: high
 routing: R1-sensible

@@ -4,7 +4,7 @@ title: "Découper appgen en modules (avant le couloir contrat)"
 status: todo
 phase: P0
 adr: [0001, 0005]
-depends_on: [T-061]
+depends_on: []
 class: AUTONOME
 velocity: true
 lane: contrat-appgen
