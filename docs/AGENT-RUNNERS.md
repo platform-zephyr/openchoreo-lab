@@ -30,7 +30,7 @@ Principe (T-313) : `workflow_dispatch` lancé par Paul (issues, modèle, effort 
 - Concurrence : `max-parallel: 3` (matrice) et un groupe par issue ; kill-switch `factory/PAUSE` (T-311).
 - Identité : `noreply@anthropic.com` ; trailers `Ticket`, `Model`, `Effort`, `Claude-Session` (+ `Escalated-from`) ; l'étape `check-trailers` fait échouer le job sinon.
 - Sortie : `mission-result.v1` (`docs/schema/mission-result.v1.json`), archivé en artefact ; le résumé du job affiche `total_cost_usd` et `num_turns`. Ni prompt ni sortie d'outil.
-- Tests : `tests/factory/run-ticket-test.sh`. Le contrôle des trailers sur toute PR d'agent dans `ci.yaml` reste à brancher (hors périmètre de T-313).
+- Tests : `tests/factory/run-ticket-test.sh`. Le job `agent-trailers` de `ci.yaml` (dans `needs` de `ci-ok`) exécute `check-trailers origin/main..HEAD` sur les PR de branche `claude/*` ou `agent/*` ou du bot de l'exécutant. Après chaque run, le workflow poste en commentaire de la PR une ligne (modèle observé, tours, coût, durée, refus de permission) avec le jeton de l'App ; si la sortie `branch_name` est vide, il retrouve la PR `claude/*` ou `agent/*` qui cite l'issue.
 
 ## Garde-fous
 - Déclencheur limité à l'acteur `SmadjaPaul` ; les bots et utilisateurs sans écriture sont refusés par l'action.
