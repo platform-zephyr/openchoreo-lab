@@ -18,7 +18,7 @@ Décisions liées : D-2026-11-14-04 (OpenTofu via ARC), D-2026-11-14-05 (secrets
    `app.yaml` et réconciliée dans le cluster. Cible : **Crossplane**, installé **sur le homelab** (pas sur OKE), avec
    le minimum de providers.
 3. **Choisir le mécanisme le plus simple par type**, Crossplane seulement s'il apporte quelque chose :
-   - secrets applicatifs → **générés dans le cluster** (ESO generator), sans Doppler ni Crossplane ;
+   - secrets applicatifs → **générés dans OpenBao** et livrés par ESO (ADR-0014), sans Doppler ni Crossplane ;
    - client OIDC → **blueprint Authentik généré** par `appgen` (Authentik lit ses blueprints), ou provider
      Crossplane Authentik si le spike le qualifie ;
    - application + politique Cloudflare Access → **provider Crossplane Cloudflare** (candidat n°1) ;
