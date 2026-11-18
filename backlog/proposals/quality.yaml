@@ -1,0 +1,255 @@
+# Propositions de tickets — domaine QUALITÉ (art antérieur, maintenabilité). Rapport : docs/research/PRIOR-ART-MAINTAINABILITY.md.
+# ADR proposé : ADR-0024 « Art antérieur et maintenabilité » (texte au §C du rapport), clé QA-0.
+# Format : backlog/proposals/FORMAT.md + `stage` et `model` (alias ADR-0023 : haiku | sonnet | opus). Mesures [M] du 2026-11-18.
+# S0/S1 = ce qui s'applique à tous les tickets suivants. CI, .claude/ et tools/quality/ sont du noyau : classe REVUE.
+
+- key: QA-0
+  title: "ADR-0024 « Art antérieur et maintenabilité » (PROPOSÉ) et ligne dans docs/adr/README.md"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["T-061"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "adr"
+  scope: "docs/adr/0024-art-anterieur-et-maintenabilite.md, docs/adr/README.md"
+  intent: "Versionner le texte d'ADR du rapport (gabarit docs/adr/README.md), statut PROPOSÉ ; il sera acté avec les autres par T-061b."
+  done:
+    - "fichier au gabarit (Contexte, Décision, Conséquences, Alternatives, Vérification, Références) et ligne ajoutée au tableau"
+    - "les mesures citées du Contexte sont reproductibles (commandes dans la PR)"
+  notes: "Le noyau docs/adr/ est protégé : la PR attend l'approbation de Paul pour passer ACTÉ, pas pour exister."
+
+- key: QA-1
+  title: "Skill `prior-art`, 3 lignes dans AGENTS.md et gabarit de PR « Implémentations publiques consultées »"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-0", "T-061"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "agents-harness"
+  scope: ".agents/skills/prior-art/SKILL.md, .github/pull_request_template.md, AGENTS.md, .agents/skills/add-app/SKILL.md, .agents/skills/fix-app/SKILL.md"
+  intent: "Imposer la recherche d'art antérieur à tout ticket de code dès le pilote : procédure (sources A4, règles A5, niveaux léger/complet/aucun, budget), format de la section de PR (A3), appel du skill en étape 0 de add-app et fix-app. Texte seul : la CI suit (QA-2)."
+  done:
+    - "SKILL.md ≤ 60 lignes, description ≤ 450 caractères, sources ordonnées, budget par niveau, règles de licence, contenu externe = donnée"
+    - "AGENTS.md reste ≤ 25 lignes (3 lignes ajoutées, aucune règle recopiée)"
+    - "le gabarit de PR contient la section et le format `URL permalien | licence | adopté/adapté/écarté | pourquoi`"
+    - "essai daté : un agent traite un ticket `complet` de test et rend une section valide (preuve STATIC dans la PR)"
+  notes: "Le niveau est déduit des chemins (tools/, platform/, .github/, golden-paths/, nouveau apps/<nom> = complet). AGENTS.md est du noyau CODEOWNERS."
+
+- key: QA-2
+  title: "Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop"
+  phase: P1
+  stage: S1
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-1", "T-332", "T-331"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  scope: "tools/dev/prior_art.py, tests/prior-art/, .github/workflows/ci.yaml, .claude/hooks/"
+  intent: "Vérifier la section de PR sans jugement : permaliens à SHA complet, `gh api repos/<o>/<r>/commits/<sha>` et existence du chemin, licence égale à l'API et dans la liste admise, ≥ 2 requêtes si « Aucune trouvée », exemptions calculées par chemin. Même script dans le hook Stop (exit 2) et dans la CI."
+  done:
+    - "tests : section absente, URL sur branche mobile, SHA inconnu, licence interdite ou inconnue, licence déclarée ≠ API, exemption par chemin, une seule requête"
+    - "le corps de PR est lu par variable d'environnement, jamais interpolé dans un `run:` (test actionlint)"
+    - "job `prior-art` dans `needs` de `ci-ok` ; essai daté sur 3 PR réelles du pilote"
+    - "appels `gh api` espacés (10 requêtes/min pour la recherche de code, 30 pour la générale) ; échec réseau = NOT_TESTED, pas PASS"
+  notes: "Le hook ne remplace pas la CI (ADR-0022 §3). Lit `pr-body.md` du worktree, ignoré par git."
+
+- key: QA-3
+  title: "`pyproject.toml` (ruff, mypy, pytest, coverage), 13 bogues ruff à 0 et shellcheck sur les 59 scripts"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["T-008"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  scope: "pyproject.toml, tools/, tests/, .github/workflows/ci.yaml"
+  intent: "Une seule configuration. Jeu ruff E,F,W,I,B,UP,SIM,C90,RUF (hors E501, complexité max 15) ; ruff `--select F,B,E9` à 0 erreur (13 aujourd'hui, 6 corrigibles par --fix) ; `shellcheck -S warning` sur tous les `*.sh` listés par `git ls-files` (0 trouvaille aujourd'hui, la CI n'en couvre qu'au moins 14 sur 59). Versions épinglées par `==`."
+  done:
+    - "`ruff check --select F,B,E9 tools tests` : 0 erreur ; le reste du jeu en avertissement, compté dans la ligne de base de QA-4"
+    - "job CI shellcheck sur tous les scripts versionnés, `-S warning` : 0"
+    - "aucune modification de comportement : `appgen render` ne change pas `generated/` et pytest reste vert (131 passés)"
+    - "les corrections automatiques sont dans un commit séparé des corrections manuelles"
+  notes: "Mesures du rapport §B1. E501 ignoré : 1 332 lignes trop longues, sans valeur."
+
+- key: QA-4
+  title: "Cliquet de maintenabilité `tools/quality/check.py` + `baseline.json` (seuils durs sur le code neuf)"
+  phase: P0
+  stage: S0
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-3"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  scope: "tools/quality/, tests/quality/, .github/workflows/ci.yaml, .github/CODEOWNERS"
+  intent: "Interdire toute dégradation : par fichier et par fonction, complexité, longueur, erreurs ruff et mypy ne montent pas ; code neuf : complexité > 15, fonction > 80 lignes, fichier > 600 échouent ; plancher de couverture 85 % sur appgen.py et diff-cover 80 % ; publier `quality.v1.json` en artefact. Les 9 fonctions de complexité > 20 sont gelées à leur niveau."
+  done:
+    - "test de dégradation : rendre une fonction plus complexe fait échouer le job (preuve datée)"
+    - "test de non-régression : un refactor qui baisse une valeur passe sans toucher la ligne de base"
+    - "`baseline.json` et `tools/quality/` ajoutés à CODEOWNERS (un agent ne relâche pas un seuil seul)"
+    - "temps du job < 3 min ; sortie `quality.v1.json` datée (cc_max, cc_p95, fichiers > 400 l, erreurs ruff et mypy, couverture)"
+  notes: "Dépendances : ruff, radon, coverage épinglés. Pas de seuil absolu immédiat : 9 fonctions et 3 fichiers le violeraient (rapport §B3)."
+
+- key: QA-5
+  title: "Sous-agent `prior-art-scout` (lecture seule, budget borné)"
+  phase: P1
+  stage: S1
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-1", "T-330", "T-341"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "agents-harness"
+  scope: ".claude/agents/prior-art-scout.md, tests/hooks/"
+  intent: "Isoler la recherche hors du contexte principal : outils `Read, Grep, Glob, WebFetch, Bash(gh api search/*), Bash(gh api repos/*)` seulement, `maxTurns` 12, retour ≤ 30 lignes au format de la section de PR, plafond de 8 requêtes."
+  done:
+    - "aucune permission d'écriture ni de `kubectl`/`curl` libre dans le fichier (test statique)"
+    - "essai daté : retour ≤ 30 lignes et ≤ 2 k tokens sur 3 tickets `complet` ; tokens du sous-agent consignés"
+  notes: "Un sous-agent de plugin ignore hooks et permissionMode : le définir au niveau du projet (AGENT-HARNESS §2.4)."
+
+- key: QA-6
+  title: "Découper `tools/appgen/appgen.py` (1 481 lignes) en paquet à comportement constant"
+  phase: P1
+  stage: S1
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-3", "QA-4"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "contrat-appgen"
+  scope: "tools/appgen/, tests/appgen/, .github/workflows/ci.yaml (chemin du script seulement)"
+  intent: "Avant que les agents n'y ajoutent des branches : paquet `schema`, `semantic`, `egress`, `gateway`, `render_component`, `render_helm`, `cli`, modules ≤ 400 lignes ; casser `render_component` (137 l, CC 46), `semantic_check` (102 l, CC 45), `_native_errors` (CC 41), `render_native` (106 l). Commande `python3 tools/appgen/appgen.py` conservée."
+  done:
+    - "`appgen render` ne change aucun octet de `generated/` (CI `appgen`) ; 131 tests passés ; couverture ≥ 88 %"
+    - "plus aucune fonction > 80 lignes ni complexité > 20 dans `tools/appgen/` ; la ligne de base de QA-4 est abaissée dans la même PR"
+    - "chaque module a une docstring (rôle, entrées, sorties)"
+    - "avant le refactor : un test de caractérisation par fonction gelée si l'oracle `generated/` ne la couvre pas (liste dans la PR)"
+  notes: "Un seul agent sur ce couloir (ROADMAP règle 3) ; aucune fonctionnalité dans la même PR. Doit passer avant T-214 ou en coordination avec lui."
+
+- key: QA-7
+  title: "Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module"
+  phase: P2
+  stage: S2
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-6"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "contrat-appgen"
+  scope: "tools/appgen/, tools/backlog/, pyproject.toml"
+  intent: "37 erreurs mypy aujourd'hui (4 fichiers), 562 en `--strict` ; fonctions publiques annotées (26 % aujourd'hui). `mypy` en CI sur appgen, puis un module strict à la fois."
+  done:
+    - "`mypy tools/appgen` : 0 erreur, job CI requis ; modules déjà stricts listés dans `pyproject.toml`"
+    - "100 % des fonctions publiques de `tools/appgen` annotées"
+  notes: "Pas de `# type: ignore` sans motif ; chaque ignore compté par QA-4."
+
+- key: QA-8
+  title: "Tests des outils `tools/backlog/` (check.py, roadmap.py) et `crd2schema.py` (couverture 0 % aujourd'hui)"
+  phase: P1
+  stage: S1
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-3", "T-008"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "backlog"
+  scope: "tests/backlog/, tests/appgen/ (crd2schema), tools/backlog/"
+  intent: "Ces outils décident de l'ordre de travail des agents (graphe, étapes, modèle) et n'ont aucun test. Jeux d'entrée minimaux : cycle de dépendances, étape inconnue, modèle manquant, ticket `done` sans preuve."
+  done:
+    - "couverture ≥ 80 % de `check.py` et `roadmap.py` (mesure `coverage`, datée)"
+    - "un test par règle d'erreur de `check.py`"
+  notes: "seed.py est exclu : retiré par QA-9."
+
+- key: QA-9
+  title: "Retirer `tools/backlog/seed.py` (1 201 lignes de données, vestige) et le code mort ≥ 80 %"
+  phase: P1
+  stage: S1
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-8"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "backlog"
+  scope: "tools/backlog/seed.py, backlog/README.md, tools/README.md, .github/workflows/ci.yaml (vulture)"
+  intent: "Le README du backlog le dit « à remplacer par l'édition directe » ; il pèse 1 201 lignes à indice de maintenabilité 0. Vérifier qu'aucun outil ni document ne le référence, le supprimer, ajouter `vulture --min-confidence 80` en CI (1 trouvaille aujourd'hui : import inutile)."
+  done:
+    - "`grep -r seed.py` ne trouve plus de référence ; `check.py` et `roadmap.py` passent sur le backlog réel"
+    - "`vulture tools tests --min-confidence 80` : 0 trouvaille, job CI"
+    - "les 7 candidats à 60 % examinés, supprimés ou listés dans une liste blanche motivée"
+  notes: "Vérifier avant suppression que seed.py ne génère plus aucun fichier encore utile (diff du backlog)."
+
+- key: QA-10
+  title: "Revue hebdomadaire de maintenabilité par un agent (dette, au plus 3 refactors proposés)"
+  phase: P2
+  stage: S2
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-4", "T-320"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "usine"
+  scope: "factory/quality-review.md, .agents/skills/quality-review/SKILL.md"
+  intent: "Tâche planifiée cloud en lecture seule, à côté du trieur T-320 : lit `quality.v1` des 4 dernières semaines, les 5 fichiers les plus modifiés, les fonctions gelées touchées ; écrit une issue de synthèse et au plus 3 propositions dans `backlog/proposals/` (cible, mesure avant, mesure attendue, test oracle)."
+  done:
+    - "essai daté : une revue sur l'historique réel rend ≤ 3 propositions au format FORMAT.md, chacune avec une mesure avant"
+    - "règle écrite : budget de 1 ticket de dette pour 10 tickets de fonctionnalité, immédiat si le cliquet s'est tendu ; un refactor n'est jamais mêlé à une fonctionnalité"
+    - "coût en tokens d'une revue consigné (T-326)"
+  notes: "Aucun accès cluster, aucun secret ; propose, ne refactore pas."
+
+- key: QA-11
+  title: "Indicateurs de maintenabilité `quality.v1` dans la data platform et le rapport de l'usine"
+  phase: P3
+  stage: S3
+  model: sonnet
+  adr: ["0019"]
+  depends_on: ["QA-4", "T-323"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "observabilité"
+  scope: "docs/schema/quality.v1.json, tools/quality/, docs/state/"
+  intent: "Historiser par merge : cc_max, cc_p95, fonctions > 15, fichiers > 400 l, erreurs ruff et mypy, couverture, shellcheck, % docstrings. Relier aux indicateurs de livraison (taux de revert, itérations CI par PR, délai) par fichier touché."
+  done:
+    - "schéma JSON versionné, une ligne par merge sur `main`, aucune valeur secrète"
+    - "le rapport hebdomadaire T-323 contient une section qualité (tendance 4 semaines)"
+  notes: "Hypothèse [H] à tester : plus de complexité = plus d'itérations CI. Un indicateur informe, il ne bloque pas (seuls cliquet et seuils durs bloquent)."
+
+- key: QA-12
+  title: "Mesurer l'effet de l'art antérieur sur le pilote 24 h (avec/sans, banc T-346 ensuite)"
+  phase: P2
+  stage: S2
+  model: sonnet
+  adr: ["NEW-QA"]
+  depends_on: ["QA-2", "T-322"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "usine"
+  scope: "docs/research/, tools/quality/"
+  intent: "Relever sur les tickets du pilote : section valide, CI verte au 1er push, itérations CI, échecs `appgen validate`/`kubeconform` dus à un champ, une CRD, une image ou un chart inexistants, citations invalides, tokens par ticket. Comparaison appariée par type de ticket dès que le banc existe."
+  done:
+    - "tableau daté des 7 mesures du §A6 du rapport, avec le nombre de tickets (indicatif, pas statistique)"
+    - "décision recommandée : garder, alléger (niveau `léger` partout) ou retirer, avec la mesure qui la fonde"
+  notes: "Dire NOT_PROVEN si l'échantillon est trop petit. Le banc T-346 est différé après la porte."
+
+- key: QA-13
+  title: "Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps)"
+  phase: P2
+  stage: S2
+  model: opus
+  adr: ["NEW-QA"]
+  depends_on: ["QA-4"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "frontière-argo"
+  scope: "tools/oke/argo_guard.py, tools/oke/psa_check.py, tests/argo-guard/"
+  intent: "`Guard.check_projects` (65), `psa_check.check` (48), `check_apps` (37), `check_synced` (23) portent la frontière de confiance Argo : une règle mal lue ici est une faille. Découper en règles nommées une à une, à comportement constant, chaque cas négatif existant conservé."
+  done:
+    - "tous les cas négatifs de `tests/argo-guard/` et de la CI `platform` passent inchangés"
+    - "plus aucune fonction de complexité > 15 dans ces deux fichiers ; ligne de base abaissée"
+    - "un test unitaire Python par règle nommée"
+  notes: "Fichier du noyau CODEOWNERS (R1-sensible, ADR-0023 amendé) : Opus. Pas avant FINAL0 si le noyau est gelé par T-305."
