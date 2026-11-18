@@ -1,0 +1,18 @@
+# Configuration du gouverneur de l'usine d'agents (ADR-0021, T-311). Fichier du noyau (CODEOWNERS /factory/).
+# Les paliers N = 3 -> 6 -> 10 sont decides par Paul sur les mesures du pilote (ADR-0021 §3) : aucun passage automatique.
+# Les valeurs de quota sont des estimations cote client, pas la facture ; aucun solde d'abonnement n'est lu (NOT_PROVEN).
+---
+schema: factory-config.v1
+kill_switch:
+  # Present sur main = aucun lancement d'agent et aucun merge automatique. Creer le fichier (vide) pour arreter l'usine,
+  # le supprimer pour reprendre. Lu par factory/pause-check.sh.
+  file: factory/PAUSE
+concurrency:
+  # Plafond de runs d'agents simultanes. Doit egaler `max-parallel` de la matrice de
+  # .github/workflows/claude-agent.yml (verifie par tests/factory/pause-test.sh).
+  # Jamais un groupe de concurrence unique : un groupe admet un run actif et un en attente, et annule le suivant.
+  max_parallel: 3
+  max_tickets_per_dispatch: 20
+billing:
+  # Une cle API facturee au token exige un plafond mensuel Console (geste MANDAT de Paul). Aucun euro par agent promis.
+  api_key_requires_console_monthly_cap: true
