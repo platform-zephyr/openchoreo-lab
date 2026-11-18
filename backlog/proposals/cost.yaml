@@ -1,0 +1,130 @@
+- key: COST-1
+  title: "Registre des limites free tier (valeur, date, source) et lint de péremption"
+  phase: P0
+  adr: ["NEW-COST"]
+  depends_on: ["T-001"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "coût"
+  scope: "docs/state/free-tier.yaml, tools/cost/lint_free_tier.py, tests/cost/"
+  intent: "Une seule table machine-lisible des limites gratuites (OCI, Cloudflare, Grafana, GitHub, Doppler, ntfy, Cloud Run), reconfirmées sur les pages officielles (web bloqué lors de la recherche du 2026-11-18)."
+  done:
+    - "chaque ligne a valeur, unité, URL source, date de vérification, prochaine revue"
+    - "le lint échoue si une ligne n'a pas été revérifiée depuis 90 jours"
+    - "la discordance A1 2/12 (dépôt) vs 4/24 (connaissance) est tranchée avec source datée"
+  notes: "Les valeurs [E] de docs/research/COST-FREE-TIER.md servent de point de départ, pas de preuve."
+
+- key: COST-2
+  title: "Estimation du budget OKE et contrôle périodique des quotas gratuits (cost-evidence.v1)"
+  phase: P0
+  adr: ["0003", "0004", "NEW-COST"]
+  depends_on: ["T-001", "COST-1"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "coût"
+  scope: "tools/oke/ (lecture), tools/cost/, docs/schema/cost-evidence.v1.json, docs/"
+  intent: "Reprend T-009 et ajoute un contrôle lecture seule, daté, des volumes (orphelins, boot), IP réservées détachées, backups, quotas réels (2 OCPU, 12 Go, 200 Go, LB 0) ; le MANDAT crée une clé OCI lecture seule dédiée."
+  done:
+    - "mesure datée requests/usage/pods/IP et tableau composant -> cluster recommandé (critères de T-009)"
+    - "sortie JSON cost-evidence.v1 avec PASS/FAIL/NOT_TESTED/BLOCKED et date"
+    - "FAIL si un volume n'est lié à aucun PVC, si le total dépasse 200 Go ou si un LB/IP publique existe"
+    - "exécution périodique (cron CI en lecture ou job planifié) sans écriture cluster"
+  absorbs: ["T-009"]
+  notes: "T-009 est absorbé : ses 3 critères sont repris et complétés. La clé OCI de lecture seule est une identité (MANDAT, une fois). k3d ne prouve rien sur OKE."
+
+- key: COST-3
+  title: "Refus CI de tout ce qui sort du free tier (volume sur OKE, LB, IP, hors région)"
+  phase: P1
+  adr: ["NEW-COST", "0003", "0004"]
+  depends_on: ["COST-1", "T-004", "T-030"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "appgen"
+  scope: "tools/appgen/, clusters/<cluster>/capabilities.yaml (freeTier), tests/appgen/"
+  intent: "capabilities.yaml déclare freeTier (blockGB restant, lb: 0) ; appgen et la CI refusent storage/base sur OKE hors budget, expose via LB, Service LoadBalancer, PVC rendu, avec message typé et correction attendue."
+  done:
+    - "un test par refus, sur valeurs effectives après overrides"
+    - "erreur typée cost-free-tier avec la correction"
+    - "aucun contournement de VAP/PSA/NetworkPolicy (AGENTS.md)"
+  notes: "Complète T-004 (frugalité dev) sans le remplacer ; les VAP qui refusent le LB sont du noyau protégé (REVUE si modifiées)."
+
+- key: COST-4
+  title: "Mesure R2 : Go, objets et opérations par bucket, alerte avant 10 Go"
+  phase: P2
+  adr: ["NEW-COST", "0008", "0009"]
+  depends_on: ["COST-1", "T-026"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "sauvegardes"
+  scope: "tools/cost/r2_usage.py, platform/ (CronJob homelab), docs/storage/"
+  intent: "R2 n'a pas d'API de facture lisible : compter Go et objets par bucket avec la clé reader existante, estimer les opérations classe A (WAL, restic) et définir lifecycle/expiration pour rester sous 10 Go et 1 M d'opérations."
+  done:
+    - "mesure datée par bucket publiée en cost-evidence.v1"
+    - "alerte ntfy à 7 Go et à 70 % des opérations estimées"
+    - "règle de lifecycle (WAL, versions non courantes) proposée par PR, sans supprimer de donnée sans restauration prouvée"
+  notes: "MANDAT : toute règle de suppression ou jeton R2. Verrous de bucket et rétention gonflent le stockage."
+
+- key: COST-5
+  title: "Compteur de minutes CI et garde « dépôt public »"
+  phase: P1
+  adr: ["NEW-COST", "0002"]
+  depends_on: ["T-002", "COST-1"]
+  class: REVUE
+  velocity: false
+  parallel_lane: "ci"
+  scope: ".github/workflows/cost-watch.yml, tools/cost/ci_minutes.py"
+  intent: "Agréger durée x multiplicateur des runs par semaine via l'API Actions, vérifier visibility=public (minutes et runners arm64 gratuits) et alerter à 70 % de 2000 min si le dépôt devient privé."
+  done:
+    - "rapport hebdomadaire JSON daté"
+    - "FAIL si le dépôt est privé sans décision de Paul"
+    - "mesure du coût de la CI k3d (T-002) en minutes"
+  notes: ".github/ est du noyau protégé (ADR-0002) : REVUE de Paul."
+
+- key: COST-6
+  title: "Plafond LLM : concurrence des agents, tours, durée et consommation par PR"
+  phase: P1
+  adr: ["NEW-COST", "0002"]
+  depends_on: ["T-068", "T-043"]
+  class: REVUE + MANDAT
+  velocity: true
+  parallel_lane: "agents"
+  scope: ".github/workflows/claude-agent.yml, docs/AGENT-PR-MODEL.md, tools/cost/agent_usage.py"
+  intent: "Borner les agents parallèles : concurrence par groupe, --max-turns et timeout existants, journal par PR (durée de job, tours, tokens si exposés) ; aucune clé API au token sans MANDAT et plafond de dépense fournisseur."
+  done:
+    - "concurrence maximale documentée et testée (workflow lint)"
+    - "chaque compte-rendu de PR porte durée, tours et tokens quand disponibles"
+    - "agrégat hebdomadaire par identité d'agent (T-068)"
+    - "règle écrite : une clé API facturée au token exige un plafond mensuel côté console (MANDAT)"
+  notes: "L'abonnement n'expose pas de facture par token : ne pas promettre d'euros par agent. Risque n°1 du domaine."
+
+- key: COST-7
+  title: "Coût par app en monnaie de CPU/Go (sans OpenCost)"
+  phase: P3
+  adr: ["NEW-COST", "0004"]
+  depends_on: ["T-010", "T-009"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "observabilité"
+  scope: "tools/appgen/ (calcul requests/volumes), tools/cost/app_footprint.py, docs/"
+  intent: "Sommer par app les requests CPU/mémoire de la cellule et les volumes déclarés, exprimés en part du budget nœud (70 %) ; décision écrite de ne pas déployer OpenCost ni le FinOps Agent."
+  done:
+    - "sortie app-footprint par app et par cluster, datée"
+    - "la somme par app est cohérente avec le total mesuré du nœud (écart documenté)"
+    - "note de décision : OpenCost/FinOps Agent réévalués seulement si un observability plane est déjà déployé"
+  notes: "OpenCost dépend de l'observability plane, lourd sur un nœud A1 à ~260m de marge avant 70 %."
+
+- key: COST-8
+  title: "Alertes de coût : relier billing_cost_eur et cost-evidence à ntfy, règle de fraîcheur"
+  phase: P3
+  adr: ["NEW-COST", "0011"]
+  depends_on: ["COST-2", "COST-4", "T-065"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "alertes"
+  scope: "docs/state/, contrat d'alerte (aucune écriture dans homelab-infra)"
+  intent: "Faire remonter vers T-065 les FAIL de cost-evidence et ajouter la règle de fraîcheur (absent_over_time) que billing.md de homelab-infra annonce ; la modification des règles Grafana se fait par une PR dans homelab-infra, par Paul."
+  done:
+    - "chaque FAIL de coût crée une issue et une alerte ntfy avec la cause typée"
+    - "un collecteur muet depuis plus de 2 jours alerte"
+    - "proposition de PR homelab-infra décrite (règle, seuil), non appliquée ici"
+  notes: "MANDAT : l'écriture dans homelab-infra et tout jeton Grafana."
