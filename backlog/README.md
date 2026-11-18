@@ -42,7 +42,9 @@ Valeurs contrôlées par `tools/backlog/check.py` (job CI `backlog`, requis via 
 
 Un périmètre exploitable est une liste, séparée par des virgules, de chemins ou de globs (`apps/<app>/`, `docs/**/*.md`) ;
 une parenthèse à la fin d'un élément est un commentaire. Un périmètre situé hors de ce dépôt s'écrit avec la mention
-`hors de ce dépôt` (ou `historique git`).
+`hors de ce dépôt` (ou `historique git`). Écrire des chemins précis (fichiers, sous-dossiers) : un dossier racine seul
+(`tools/`, `docs/`, `tests/`) revendique tout son sous-arbre et bloque les lots parallèles (règle de finesse de
+`tools/factory/overlap.py`, `docs/AGENT-RUNNERS.md`).
 
 Corps : `## Intention`, `## Périmètre de fichiers`, `## Critères de fin` (cases à cocher, chacune vérifiable :
 commande, test ou preuve runtime datée), `## Notes` (facultatif).
