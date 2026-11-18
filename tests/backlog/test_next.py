@@ -193,6 +193,17 @@ class Sortie(unittest.TestCase):
                 if a is not b:
                     self.assertIsNone(admission.any_overlap(a["perimeter"], b["perimeter"]))
 
+    def test_ready_order_follows_priority_score(self):
+        env = Env(self, {
+            "T-001": dict(perimeter="tools/a/x.py"),
+            "T-002": dict(perimeter="tools/b/x.py"),
+            "T-003": dict(perimeter="tools/c/x.py", deps="[T-002]"),
+            "T-004": dict(perimeter="tools/d/x.py", deps="[T-002]"),
+        })
+        out = env.run()
+        self.assertEqual([r["id"] for r in out["ready"]], ["T-002", "T-001"])
+        self.assertEqual([r["score"] for r in out["ready"]], [2, 0])
+
     def test_next_launches_nothing(self):
         src = (ROOT / "tools" / "backlog" / "next.py").read_text(encoding="utf-8")
         for banned in ("subprocess", "os.system", "urllib", "requests", "open("):

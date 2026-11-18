@@ -19,6 +19,7 @@
 - `fix-app` : diagnostic en lecture seule → correctif par PR → vérification → rollback par `git revert`.
 - `diagnose-app`, `promote-or-rollback`, `platform-guardrails` (classes AUTONOME / REVUE / MANDAT / INTERDIT).
 - Adaptés d'OpenChoreo : `openchoreo-platform-engineer-gitops`, `openchoreo-developer-gitops`, `migrate-to-openchoreo`, `openchoreo-setup`.
+- `orchestrate-backlog` : reprise d'un orchestrateur (état, score `tools/backlog/priority.py`, dispatch, fusion REST, suivi des PR).
 Golden paths et vérifications runtime en lecture seule : `golden-paths/`.
 
 ## Périmètre de lecture

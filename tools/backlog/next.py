@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import admission  # noqa: E402
+import priority
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = "ready.v1"
@@ -111,6 +112,19 @@ def _sort_key(t: Ticket) -> tuple[int, int, str]:
     return (STAGE_ORD.get(t["stage"], 99), 0 if t["velocity"] else 1, t["id"])  # type: ignore[arg-type]
 
 
+def _priority_keys(tickets: dict[str, Ticket]) -> dict[str, tuple]:
+    """Clé de tri (priority.py) et score de chaque ticket ; graphe invalide : repli sur `_sort_key`, score nul."""
+    nodes = [priority.Node(i, str(t["status"]), tuple(t["deps"]), str(t["stage"]),  # type: ignore[arg-type]
+                           t["header_model"] != "human" and "MANDAT" not in t["header_class"],  # type: ignore[operator]
+                           len(t["perimeter"]))  # type: ignore[arg-type]
+             for i, t in tickets.items()]
+    try:
+        sc = priority.scores(nodes)
+    except priority.PriorityError:
+        return {i: (*_sort_key(t), None) for i, t in tickets.items()}  # type: ignore[arg-type]
+    return {n.id: (*priority.sort_key(n, sc[n.id]), sc[n.id]) for n in nodes}
+
+
 def compute(tickets: dict[str, Ticket], core: admission.Core, limit: int | None = None,
             stage_open: str | None = None) -> dict[str, object]:
     ready = ready_ids(tickets)
@@ -121,7 +135,8 @@ def compute(tickets: dict[str, Ticket], core: admission.Core, limit: int | None 
     proposed: list[Ticket] = []
     held: list[dict[str, object]] = []
     excluded: list[dict[str, object]] = []
-    for tid in sorted(ready, key=lambda i: _sort_key(tickets[i])):
+    keys = _priority_keys(tickets)
+    for tid in sorted(ready, key=keys.__getitem__):
         t = tickets[tid]
         paths: list[str] = t["perimeter"]  # type: ignore[assignment]
         reason = None
@@ -146,7 +161,7 @@ def compute(tickets: dict[str, Ticket], core: admission.Core, limit: int | None 
         proposed.append({
             "id": tid, "title": t["title"], "stage": t["stage"], "lane": t["lane"],
             "class": admission.compute_class(paths, core), "model": model, "effort": effort,
-            "routing": routing, "perimeter": paths,
+            "routing": routing, "perimeter": paths, "score": keys[tid][-1],
         })
         if limit is not None and len(proposed) >= limit:
             break

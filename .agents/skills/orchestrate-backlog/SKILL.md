@@ -1,0 +1,51 @@
+---
+name: orchestrate-backlog
+description: Reprendre seul l'orchestration du backlog du labo après une compaction ou dans une session neuve — lire l'état, choisir les tickets par score, les dispatcher (sous-agents locaux ou usine claude-agent.yml), intégrer les branches, fusionner par REST, suivre les PR. À charger pour « reprends le backlog », « lance la prochaine vague », « orchestre », « intègre les agents ».
+---
+
+# orchestrate-backlog
+
+Charger `platform-guardrails`. Tu orchestres ; tu ne codes pas les tickets toi-même. Dépôt PUBLIC : aucune valeur sensible nulle part.
+Réponses en français, conclusion d'abord.
+
+## 1. Lire l'état (dans cet ordre, 5 minutes)
+1. `git fetch origin && git merge origin/<ta branche>` puis `git merge origin/main` ; `git status` propre.
+2. `docs/state/HANDOFF-COORDINATEUR.md` (procédures, décisions de Paul), `backlog/NEXT.md` (quoi lancer), `backlog/STATUS.md` (généré).
+3. `python3 tools/backlog/priority.py --top 10` (file par score), `python3 tools/backlog/next.py` (prêts, classe, modèle recalculés).
+4. PR et issues ouvertes (REST, voir §5) ; branches `worktree-agent-*` non intégrées : `git branch -a --no-merged`.
+Un ticket `in-progress` porte une ligne « Reste » : c'est son état réel, pas son en-tête.
+
+## 2. Choisir
+- Score (`tools/backlog/priority.py`) = tickets non terminés débloqués, directement ou transitivement ; départage : étape, petit périmètre, id. Un ticket `human` ou MANDAT passe après les tickets exécutables.
+- `next.py` ne liste que les tickets dont les dépendances sont `done` et dont l'étape est ouverte. Pendant S0/S1 beaucoup de dépendances sont `in-progress` : compléter à la main avec `priority.py --all` et le jugement de `NEXT.md`.
+- Garde de recouvrement avant tout lot : `python3 tools/factory/overlap.py --tickets T-a,T-b,...` (code 4 = recouvrement, 3 = périmètre non résolu). Points chauds jamais en parallèle : `ci.yaml`, `tools/dev/check`, `ci-map.tsv`, `CODEOWNERS`, `AGENTS.md`, `STATE.md`, `ROADMAP.md`.
+- Classes (`platform-guardrails`) : AUTONOME et REVUE se délèguent (mode dev : merge après `ci-ok`) ; MANDAT = geste de Paul, rien à dispatcher, le dire dans le rapport.
+- Modèles (ADR-0023) : R1 noyau/sensible (authz, VAP, secrets, cluster-agent, FINAL) = Opus `high` ; R2 texte hors noyau = Haiku `medium` + revue Sonnet ; R3 défaut = Sonnet `high`. Suivre le champ `model:` du ticket ; Sonnet suffit pour orchestrer.
+
+## 3. Dispatcher
+**Petit lot disjoint (≤ 5 à 7 sous-agents)** : un sous-agent par ticket, `isolation: worktree`, en arrière-plan, modèle du ticket. Brief type : `docs/state/HANDOFF-COORDINATEUR.md` § « Brief type » (périmètre, `prior-art`, tests négatifs, ne pas pousser, trailers de commit, rapport). Ajouter la liste des fichiers interdits au brief.
+**Sujet long ou parallélisme élevé : usine** (`.github/workflows/claude-agent.yml`, matrice `max-parallel: 3`, doc : `docs/CLOUD-AGENTS.md`).
+1. Créer l'issue (label `agent:dev`) avec le contenu du ticket et un renvoi vers `backlog/T-NNN-*.md`.
+2. Renseigner `github_issue: <n>` dans l'en-tête du ticket (même PR).
+3. Vérifier `factory/PAUSE` absent, puis `gh workflow run claude-agent.yml -f tickets="<n1>,<n2>" -f model=<id> -f effort=<niveau>` (ou l'outil `actions_run_trigger`).
+4. Relever par issue : branche, PR, coût, tours (artefact `mission-result-<n>`). Le planificateur refuse un lot en recouvrement.
+
+## 4. Intégrer et fusionner
+1. Brouillon d'abord : `git merge --no-ff worktree-agent-<id>` dans la branche coordinateur. Conflits connus : liste `needs` de `ci-ok` (garder l'union), `backlog/README.md`, fichier du ticket (version la plus avancée).
+2. Avant de pousser : `python3 tools/backlog/check.py` (0 erreur), `python3 -m unittest discover -s tests/backlog`, `python3 tools/quality/check.py` (cliquet), `python3 tools/backlog/status.py --write`, `python3 tools/backlog/roadmap.py`, puis `tools/dev/check --static --changed`. Jamais `seed.py`.
+3. Pousser (jamais de force-push), PR en brouillon (gabarit `.github/pull_request_template.md`, section « Implémentations publiques consultées », verdict et niveau du check local).
+4. Quand `ci-ok` est vert : `update_pull_request` (`draft: false`) puis `merge_pull_request` (`squash`). La file de fusion fait la CI finale.
+5. Après la fusion : `git fetch origin main && git merge origin/main` ; la branche coordinateur repart de `main`. Régénérer `STATUS.md`.
+
+## 5. Suivre
+- REST seulement : GraphQL est bloqué (`gh pr checks`, `gh pr view --json` échouent). `ci-ok` d'un commit : `gh api "repos/<owner>/<repo>/commits/<sha>/check-runs?per_page=50" --jq '[.check_runs[]|select(.name=="ci-ok")|.conclusion // "pending"]|first // "none"'`. Attendre avec l'outil Monitor et une boucle `until`, jamais `sleep` seul.
+- Abonner la session aux PR ouvertes (`subscribe_pr_activity`) ; se désabonner à la fusion.
+- Après chaque jalon : lignes « Reste » des tickets, `NEXT.md`, `docs/state/HANDOFF-COORDINATEUR.md` si une procédure change.
+
+## 6. Pièges résolus
+- Jeton fin personnel : écriture impossible dans le dépôt d'une organisation ; l'usine utilise une GitHub App.
+- `actions/checkout` : `persist-credentials: false`, sinon le push d'un fichier de workflow est refusé.
+- La sortie `branch_name` de l'action est vide quand l'agent ouvre sa PR : retrouver la branche par la PR qui cite l'issue.
+- Les agents ne lisent pas les dépôts tiers avec `gh api` ; `git ls-remote` et `curl` sur `raw.githubusercontent.com` fonctionnent. Art antérieur indisponible = `NOT_TESTED`, jamais « aucune trouvée ».
+- Un résultat n'est `PASS` qu'avec une preuve runtime datée ; STATIC n'est pas RUNTIME ; `NOT_TESTED` et `INCOMPLET` se disent.
+- Un sous-agent qui rend « terminé » sans preuve par critère : ticket `in-progress`, ligne « Reste », case non cochée.

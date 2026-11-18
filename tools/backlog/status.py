@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check
+import priority
 
 ROOT = Path(__file__).resolve().parents[2]
 REPO = "platform-zephyr/openchoreo-lab"  # base des liens d'issues (surchargeable : --repo)
@@ -142,17 +143,37 @@ def section_blocked(rows: dict[str, Row], repo: str) -> list[str]:
     return ["## Bloqué (`blocked`)", "", *table(["Ticket", "Titre", "Blocage", "Issue"], lines)]
 
 
-def section_todo(rows: dict[str, Row], repo: str) -> list[str]:
-    ready: list[list[str]] = []
-    waiting: list[list[str]] = []
+def priority_info(backlog: Path) -> tuple[dict[str, int], dict[str, tuple], str]:
+    """(score par ticket, clé de tri par ticket, erreur de graphe éventuelle) ; vide si le graphe est invalide."""
+    nodes = priority.load_nodes(backlog)
+    try:
+        sc = priority.scores(nodes)
+    except priority.PriorityError as e:
+        return {}, {}, str(e)
+    return sc, {n.id: priority.sort_key(n, sc[n.id]) for n in nodes}, ""
+
+
+def section_todo(rows: dict[str, Row], repo: str, sc: dict[str, int] | None = None,
+                 keys: dict[str, tuple] | None = None) -> list[str]:
+    sc, keys = sc or {}, keys or {}
+    ready: list[tuple[Row, list[str]]] = []
+    waiting: list[tuple[Row, list[str]]] = []
     for r in by_status(rows, "todo"):
         wait, unknown = dep_state(rows, r)
+        score = str(sc.get(str(r["id"]), "—"))
         if wait or unknown:
             what = [f"{d} ({rows[d]['status']})" for d in wait] + [f"{d} (inconnue)" for d in unknown]
-            waiting.append([link(r), cell(str(r["title"]), 100), ", ".join(what), issue(r, repo)])
+            waiting.append((r, [link(r), score, cell(str(r["title"]), 100), ", ".join(what), issue(r, repo)]))
         else:
-            ready.append([link(r), cell(str(r["title"]), 120), boxes(r), issue(r, repo)])
-    return (["## À faire, prêts (`todo`, dépendances toutes `done`)", "", *table(["Ticket", "Titre", "Critères", "Issue"], ready), "## À faire, bloqués par dépendance", "", *table(["Ticket", "Titre", "Attend", "Issue"], waiting)])
+            ready.append((r, [link(r), score, cell(str(r["title"]), 120), boxes(r), issue(r, repo)]))
+    for group in (ready, waiting):  # tri par score décroissant (priority.py), sinon ordre naturel
+        group.sort(key=lambda p: keys.get(str(p[0]["id"]), ()) or (9, 0, 99, 0, natural_key(str(p[0]["id"]))))
+    note = ("Score = tickets non terminés débloqués, directement ou transitivement ; file triée par "
+            "`python3 tools/backlog/priority.py` (agent d'abord, score, étape, périmètre, id).")
+    return ["## À faire, prêts (`todo`, dépendances toutes `done`)", "", note, "",
+            *table(["Ticket", "Score", "Titre", "Critères", "Issue"], [x[1] for x in ready]),
+            "## À faire, bloqués par dépendance", "",
+            *table(["Ticket", "Score", "Titre", "Attend", "Issue"], [x[1] for x in waiting])]
 
 
 def section_other(rows: dict[str, Row]) -> list[str]:
@@ -163,8 +184,10 @@ def section_other(rows: dict[str, Row]) -> list[str]:
     return [*out, ""]
 
 
-def anomalies(rows: dict[str, Row], problems: list[str]) -> list[str]:
+def anomalies(rows: dict[str, Row], problems: list[str], graph_error: str = "") -> list[str]:
     out = list(problems)
+    if graph_error:
+        out.append(f"score de priorité indisponible : {graph_error}")
     for k in sorted(rows, key=natural_key):
         r = rows[k]
         _, unknown = dep_state(rows, r)
@@ -181,6 +204,7 @@ def anomalies(rows: dict[str, Row], problems: list[str]) -> list[str]:
 
 def render(backlog: Path, repo: str = REPO) -> str:
     rows, problems = load(backlog)
+    sc, keys, graph_error = priority_info(backlog)
     count = Counter(str(r["status"]) for r in rows.values())
     head = [
         "# État du backlog (généré)", "",
@@ -192,8 +216,8 @@ def render(backlog: Path, repo: str = REPO) -> str:
     ]
     head += table(["Statut", "Tickets"], [[f"`{s}`", str(count.get(s, 0))] for s in ORDER]
                   + [["**Total**", f"**{len(rows)}**"]])
-    parts = [head, section_progress(rows, repo), section_blocked(rows, repo), section_todo(rows, repo),
-             section_done(rows, repo), section_other(rows), anomalies(rows, problems)]
+    parts = [head, section_progress(rows, repo), section_blocked(rows, repo), section_todo(rows, repo, sc, keys),
+             section_done(rows, repo), section_other(rows), anomalies(rows, problems, graph_error)]
     return "\n".join(line for p in parts for line in p).rstrip("\n") + "\n"
 
 
