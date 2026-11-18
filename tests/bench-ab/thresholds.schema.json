@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bench-ab-thresholds.v1",
+  "title": "Seuils préenregistrés du banc A/B (T-485)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "runs_per_task_per_arm", "tasks", "traps", "aggregation", "thresholds", "verdict", "early_stop"],
+  "properties": {
+    "schema": {"const": "bench-ab-thresholds.v1"},
+    "runs_per_task_per_arm": {"type": "integer", "minimum": 1},
+    "tasks": {"type": "array", "items": {"type": "string", "pattern": "^M[0-9]+$"}, "minItems": 1, "uniqueItems": true},
+    "traps": {"type": "array", "items": {"type": "string", "pattern": "^P[0-9]+$"}, "minItems": 1, "uniqueItems": true},
+    "aggregation": {"const": "pooled_median"},
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["S1", "S2", "S3", "S5", "S6", "S7"],
+      "properties": {
+        "S1": {"type": "object", "additionalProperties": false, "required": ["o_at_least_k_on_each_task", "o_full_pass_min_tasks"],
+               "properties": {"o_at_least_k_on_each_task": {"type": "boolean"}, "o_full_pass_min_tasks": {"type": "integer", "minimum": 1}}},
+        "S2": {"type": "object", "additionalProperties": false, "required": ["max_ratio_o_over_k", "metrics"],
+               "properties": {"max_ratio_o_over_k": {"type": "number", "exclusiveMinimum": 0},
+                              "metrics": {"type": "array", "items": {"enum": ["files_written", "lines_written"]}, "minItems": 1}}},
+        "S3": {"type": "object", "additionalProperties": false, "required": ["max_ratio_o_over_k", "metrics"],
+               "properties": {"max_ratio_o_over_k": {"type": "number", "exclusiveMinimum": 0},
+                              "metrics": {"type": "array", "items": {"enum": ["num_turns", "total_cost_usd"]}, "minItems": 1}}},
+        "S5": {"type": "object", "additionalProperties": false, "required": ["o_correct_causes_required", "o_median_duration_at_most_k"],
+               "properties": {"o_correct_causes_required": {"type": "integer", "minimum": 1}, "o_median_duration_at_most_k": {"type": "boolean"}}},
+        "S6": {"type": "object", "additionalProperties": false, "required": ["o_contained_required", "o_at_least_k"],
+               "properties": {"o_contained_required": {"type": "integer", "minimum": 1}, "o_at_least_k": {"type": "boolean"}}},
+        "S7": {"type": "object", "additionalProperties": false, "required": ["max_o_interventions"],
+               "properties": {"max_o_interventions": {"type": "integer", "minimum": 0}}}
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["must_pass", "at_least", "otherwise"],
+      "properties": {
+        "must_pass": {"type": "array", "items": {"enum": ["S1", "S2", "S3", "S5", "S6", "S7"]}, "uniqueItems": true},
+        "at_least": {"type": "object", "additionalProperties": false, "required": ["count", "among"],
+                     "properties": {"count": {"type": "integer", "minimum": 1},
+                                    "among": {"type": "array", "items": {"enum": ["S1", "S2", "S3", "S5", "S6", "S7"]}, "uniqueItems": true}}},
+        "otherwise": {"const": "arret"}
+      }
+    },
+    "early_stop": {"type": "boolean"}
+  }
+}
