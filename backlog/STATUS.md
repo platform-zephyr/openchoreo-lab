@@ -7,12 +7,12 @@ Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` 
 | Statut | Tickets |
 |---|---|
 | `in-progress` | 28 |
-| `todo` | 124 |
+| `todo` | 125 |
 | `blocked` | 5 |
 | `deferred` | 43 |
-| `done` | 29 |
+| `done` | 30 |
 | `dropped` | 27 |
-| **Total** | **256** |
+| **Total** | **258** |
 
 ## En cours (`in-progress`)
 
@@ -63,12 +63,17 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 
 | Ticket | Score | Titre | Critères | Issue |
 |---|---|---|---|---|
-| [T-001](T-001-integrer-pr8-security-bundle.md) | 86 | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 0/3 | — |
+| [T-060](T-060-residu-kgateway.md) | 14 | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | 0/2 | — |
 | [T-041](T-041-context-engineering.md) | 8 | Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur | 0/3 | — |
+| [T-483](T-483-leak-guard-worktree-aveugle.md) | 0 | leak-guard : ne plus rendre PASS à vide depuis un worktree sous .claude/worktrees/ | 0/3 | — |
+| [T-423](T-423-reduire-complexite-argo-guard.md) | 0 | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | 0/3 | — |
 | [T-360](T-360-mesures-du-homelab-avant-dimensionnement-lecture.md) | 72 | Mesures du homelab avant dimensionnement (lecture seule) | 0/3 | — |
+| [T-366](T-366-bundle-multi-arch-installateur-lab.md) | 58 | Bundle de sécurité multi-arch et installateur pour le cluster lab | 0/4 | — |
 | [T-215](T-215-pack-identite.md) | 55 | Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1 | 0/9 | — |
+| [T-140](T-140-cost-1.md) | 10 | Registre des limites free tier (valeur, date, source) et lint de péremption | 0/14 | — |
 | [T-431](T-431-reglages-depot-actions-securite.md) | 5 | Réglages du dépôt, d'Actions et de sécurité as-code (repo, actions, security JSON) | 0/5 | — |
 | [T-434](T-434-gestes-organisation-paul.md) | 0 | Gestes d'organisation de Paul : 2FA, permissions de base, création de dépôts, PAT, Apps tierces, Actions | 0/3 | — |
+| [T-482](T-482-leak-guard-motifs-proprietaire.md) | 0 | Passe leak-guard avec les motifs propres au propriétaire sur le diff de la PR #8 et sur main | 0/3 | — |
 
 ## À faire, bloqués par dépendance
 
@@ -77,11 +82,10 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-365](T-365-capacites-du-cluster-homelab-clusters-homelab.md) | 64 | Capacités du cluster homelab (clusters/homelab/capabilities.yaml) : arch, availability, gvisor, sto… | T-214 (in-progress) | — |
 | [T-007](T-007-test-noyau-codeowners.md) | 47 | Test CI : le noyau de `CODEOWNERS` correspond à ADR-0002 | T-215 (todo) | — |
 | [T-435](T-435-k3d-ok-requis.md) | 47 | Check k3d requis : déclencheur merge_group et k3d-ok dans le ruleset | T-002 (in-progress) | — |
-| [T-003](T-003-env-development-promotion.md) | 42 | Environment `development`, promotion vers `production`, pins de release par environnement | T-001 (todo), T-002 (in-progress) | [#49](https://github.com/platform-zephyr/openchoreo-lab/issues/49) |
+| [T-003](T-003-env-development-promotion.md) | 42 | Environment `development`, promotion vers `production`, pins de release par environnement | T-002 (in-progress) | [#49](https://github.com/platform-zephyr/openchoreo-lab/issues/49) |
 | [T-025](T-025-classe-donnees.md) | 21 | Classe de donnée dans le contrat et labels `data-class` (G8) | T-002 (in-progress), T-214 (in-progress) | — |
-| [T-010](T-010-probes-quota.md) | 20 | Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4) | T-001 (todo), T-002 (in-progress) | — |
+| [T-010](T-010-probes-quota.md) | 20 | Probes depuis `healthPath` (G2) et quota de cellule dérivé (G4) | T-002 (in-progress) | — |
 | [T-120](T-120-upg-1.md) | 19 | Renovate durci : catégories, âge minimal, limites de PR, dashboard, labels | T-002 (in-progress) | — |
-| [T-060](T-060-residu-kgateway.md) | 14 | Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL) | T-001 (todo) | — |
 | [T-337](T-337-definition-of-done-executable-verify-par.md) | 12 | Definition of done exécutable : `verify:` par critère et `done.py` avec preuve datée | T-332 (in-progress) | — |
 | [T-043](T-043-plan-compte-rendu.md) | 12 | Gabarits de plan et de compte rendu dans `add-app` | T-005 (todo) | — |
 | [T-184](T-184-ids-5.md) | 12 | OpenBao : politiques, rôles et auth as code, tests de moindre privilège | T-022 (todo) | — |
@@ -108,7 +112,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-470](T-470-devcontainer-fichiers-alignes-lock.md) | 3 | Devcontainer : fichiers alignés sur le lock (sans build) | T-332 (in-progress) | [#74](https://github.com/platform-zephyr/openchoreo-lab/issues/74) |
 | [T-162](T-162-ai-3.md) | 3 | Schéma et appgen : déclaration ai {models, mcp, budget} et clé virtuelle | T-010 (todo), T-023 (todo), T-161 (todo) | — |
 | [T-412](T-412-verificateur-prior-art-ci.md) | 2 | Vérificateur `tools/dev/prior_art.py`, job CI `prior-art` requis dans `ci-ok`, hook Stop | T-411 (in-progress), T-331 (in-progress), T-332 (in-progress) | — |
-| [T-062](T-062-lab-platform-auto.md) | 2 | `lab-platform` en synchronisation automatique (hors lab-pg) | T-001 (todo), T-002 (in-progress), T-363 (todo) | — |
+| [T-062](T-062-lab-platform-auto.md) | 2 | `lab-platform` en synchronisation automatique (hors lab-pg) | T-002 (in-progress), T-363 (todo) | — |
 | [T-004](T-004-garde-frugalite-dev.md) | 2 | Check CI de frugalité du dev | T-003 (todo) | [#50](https://github.com/platform-zephyr/openchoreo-lab/issues/50) |
 | [T-011](T-011-archetype-d-worker-cron.md) | 2 | Archétype D : `spec.kind: worker \| cronjob` (G1) | T-010 (todo) | — |
 | [T-124](T-124-upg-5.md) | 2 | Porte de merge des apps : dev, preuve PASS, promotion automatique, revert automatique | T-003 (todo), T-005 (todo), T-122 (todo) | — |
@@ -135,7 +139,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-344](T-344-supprimer-le-point-chaud-lab-apps.md) | 0 | Supprimer le point chaud `lab-apps.yaml` (ApplicationSet par répertoire) et file de fusion pour PR… | T-062 (todo), T-214 (in-progress) | — |
 | [T-345](T-345-agent-dans-un-conteneur-durci-devcontainer.md) | 0 | Agent dans un conteneur durci (devcontainer) : claude, sandbox et réseau limité | T-332 (in-progress) | — |
 | [T-417](T-417-typage-mypy.md) | 0 | Typage : `mypy` sans erreur sur `tools/appgen`, puis `--strict` module par module | T-214 (in-progress) | — |
-| [T-423](T-423-reduire-complexite-argo-guard.md) | 0 | Réduire la complexité de `tools/oke/argo_guard.py` et `psa_check.py` (frontière GitOps) | T-001 (todo) | — |
 | [T-439](T-439-essai-dependency-review.md) | 0 | Essai de dependency review sur ce dépôt (gratuité contradictoire dans la documentation) | T-431 (todo) | — |
 | [T-465](T-465-nuit-check-complet.md) | 0 | Contrôle nocturne : check --full --k3d, dérive amont, évasions, alerte (SL-11) | T-461 (in-progress), T-451 (in-progress), T-452 (in-progress) | — |
 | [T-070](T-070-garde-contrat.md) | 0 | Garde du contrat : compatibilité du schéma et aucun objet Kubernetes hors `apps/`/`generated/` | T-002 (in-progress) | — |
@@ -153,9 +156,8 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-204](T-204-data-5.md) | 0 | Grille de maturité cloud native CNCF automatisée (niveaux 1-5) | T-201 (in-progress) | — |
 | [T-361](T-361-vm-talos-lab-dediee-sur-proxmox.md) | 69 | VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops) | T-360 (todo) | — |
 | [T-362](T-362-isolation-reseau-de-la-vm-lab.md) | 68 | Isolation réseau de la VM lab (UniFi, pare-feu) | T-361 (todo) | — |
-| [T-363](T-363-socle-de-la-plateforme-sur-la.md) | 67 | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stocka… | T-001 (todo), T-361 (todo), T-362 (todo) | — |
-| [T-366](T-366-bundle-multi-arch-installateur-lab.md) | 58 | Bundle de sécurité multi-arch et installateur pour le cluster lab | T-001 (todo) | — |
-| [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md) | 57 | OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab | T-001 (todo), T-360 (todo), T-363 (todo), T-365 (todo), T-366 (todo) | — |
+| [T-363](T-363-socle-de-la-plateforme-sur-la.md) | 67 | Socle de la plateforme sur la VM lab (Cilium, Gateway API, cert-manager, ESO, Kyverno, Argo, stocka… | T-361 (todo), T-362 (todo) | — |
+| [T-364](T-364-openchoreo-cp-dp-co-localises-sur.md) | 57 | OpenChoreo CP + DP sur la VM lab (CP définitif, D11) et ClusterDataPlane homelab | T-360 (todo), T-363 (todo), T-365 (todo), T-366 (todo) | — |
 | [T-400](T-400-retrait-bypass-admin-ruleset.md) | 46 | Retirer le contournement admin du ruleset (bypass_actors) et écrire la procédure de réactivation po… | T-007 (todo), T-215 (todo), T-435 (todo) | — |
 | [T-403](T-403-rotation-secrets-dev.md) | 45 | Rotation des secrets et identités créés en mode dev (FINAL0) | T-215 (todo) | — |
 | [T-404](T-404-jalon-final0.md) | 44 | Jalon FINAL0 : identité d'usine, contournement retiré, secrets de dev tournés, revue des code owner… | T-007 (todo), T-215 (todo), T-400 (todo), T-403 (todo) | — |
@@ -163,7 +165,6 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-022](T-022-spike-openbao.md) | 29 | OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill | T-404 (todo) | — |
 | [T-023](T-023-secrets-generate-provided.md) | 13 | Secrets `generate` et `provided` via OpenBao + ESO, statut `secret-missing` | T-005 (todo), T-022 (todo), T-060 (todo) | — |
 | [T-026](T-026-sauvegardes.md) | 12 | Sauvegarde des bases : CNPG → R2 par préfixe | T-025 (todo), T-364 (todo), T-404 (todo) | — |
-| [T-140](T-140-cost-1.md) | 10 | Registre des limites free tier (valeur, date, source) et lint de péremption | T-001 (todo) | — |
 | [T-185](T-185-ids-6.md) | 9 | Transport des blueprints vers l'Authentik de production (ConfigMap dédié) | T-404 (todo) | — |
 | [T-031](T-031-placement-coupure.md) | 7 | Test de reprise et « jour 2 » du cluster lab (critère C4 révisé) | T-364 (todo) | — |
 | [T-164](T-164-ai-5.md) | 7 | Identité des agents : client Authentik par agent, inventaire et coupe-circuit | T-404 (todo) | — |
@@ -173,7 +174,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 | [T-181](T-181-ids-2.md) | 3 | Séance de migration Doppler : inventaire, cible (1 projet, 7 jetons), injection dans OpenBao | T-022 (todo), T-190 (todo), T-404 (todo) | — |
 | [T-160](T-160-ai-1.md) | 3 | gVisor et vcluster jetables pour les agents sur le cluster lab | T-364 (todo) | — |
 | [T-107](T-107-obs-7.md) | 2 | Escalade ntfy : contact points, script de notification, route différée | T-100 (in-progress) | — |
-| [T-132](T-132-upg-13.md) | 2 | Runbook et preflight de montée Kubernetes OKE (nœud unique) | T-001 (todo), T-140 (todo) | — |
+| [T-132](T-132-upg-13.md) | 2 | Runbook et preflight de montée Kubernetes OKE (nœud unique) | T-140 (todo) | — |
 | [T-322](T-322-calibrage-du-quota-pilote-24-h.md) | 1 | Calibrage du quota : pilote 24 h à N=3, paliers décidés par Paul, et décision Max/Ultra | T-303 (in-progress), T-305 (in-progress), T-311 (in-progress), T-313 (in-progress), T-411 (in-progress) | — |
 | [T-316](T-316-ntfy-seulement-si-necessaire-et-resume.md) | 1 | ntfy seulement si nécessaire et résumé quotidien unique | T-314 (todo) | — |
 | [T-437](T-437-durcir-executant-environnement.md) | 1 | Durcir l'exécutant claude-agent : environnement agent-runner, author_association, politique d'acteu… | T-313 (in-progress), T-431 (todo) | — |
@@ -197,6 +198,7 @@ Score = tickets non terminés débloqués, directement ou transitivement ; file 
 
 | Ticket | Titre | Date | Preuve citée | Issue |
 |---|---|---|---|---|
+| [T-001](T-001-integrer-pr8-security-bundle.md) | Fusionner la PR #8 (installation fail-closed avec le security bundle) | 2026-11-18 | — | — |
 | [T-008](T-008-lint-backlog.md) | Check CI des tickets `backlog/` : en-tête, graphe, étapes, champs `model` et `effort` | 2026-11-18 | — | — |
 | [T-061](T-061-aligner-mission-adr.md) | Acter ADR-0002 et ADR-0021 réduit, aligner MISSION et STATE (T-061a, prérequis du pilote) | 2026-11-18 | `PR #54` | — |
 | [T-061b](T-061b-acter-autres-adr.md) | Acter les autres ADR (0001, 0003-0006, 0010-0013, 0020, 0022, 0023, 0024) et les amendements du consensus n°2 (T-061b) | 2026-11-18 | `PR #54` | — |
