@@ -3,7 +3,8 @@
 Role : source unique des chemins du depot et des constantes (noms OpenChoreo, tailles, quotas, egress, motifs
 de secrets). Aucun calcul, aucune E/S.
 Entrees : aucune (ROOT est deduit de l'emplacement du fichier).
-Sorties : constantes importees par les autres modules ; `cli` lit PINS_PATH et PROJECT_PINS_PATH via ce module
+Sorties : constantes importees par les autres modules ; `cli` lit ROOT, PINS_PATH, PROJECT_PINS_PATH et
+RELEASE_PINS_PATH via ce module
 (les tests peuvent donc les remplacer ici).
 """
 from __future__ import annotations
@@ -17,6 +18,10 @@ SCHEMA_PATH = ROOT / "docs" / "schema" / "app.schema.json"
 CAPS_SCHEMA_PATH = ROOT / "docs" / "schema" / "capabilities.schema.json"
 PINS_PATH = ROOT / "pins" / "resource-releases.yaml"
 PROJECT_PINS_PATH = ROOT / "pins" / "project-releases.yaml"
+# Pins ComponentRelease par environnement (T-003, ecart G3) : `<composant>/<env>: <release>`. Ecrit par
+# `appgen promote` et `appgen rollback` ; production suit ce pin, development la release courante.
+RELEASE_PINS_PATH = ROOT / "pins" / "component-releases.yaml"
+RELEASE_PINS_FILE = "component-releases.yaml"
 
 # Annotations Argo exigees par APP-CONTRACT §5 (A1) : les finalizers de Component/Resource suppriment releases
 # et objets rendus ; une ComponentRelease referencee ne doit jamais etre purgee ni supprimee.

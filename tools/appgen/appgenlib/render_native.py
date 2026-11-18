@@ -1,8 +1,8 @@
 """Rendu d'une app native : cellule OpenChoreo (Project), composants, secrets, base, apercus egress, catalogue.
 
 Role : assembler tous les objets OpenChoreo d'une app native a partir de app.yaml et de la plateforme.
-Entrees : document app.yaml, index de platform/, cluster, pins ResourceRelease et ProjectRelease, politique du
-cluster, index des apps du depot, releases deja presentes (history).
+Entrees : document app.yaml, index de platform/, cluster, pins ResourceRelease, ProjectRelease et
+ComponentRelease par environnement, politique du cluster, index des apps du depot, releases deja presentes (history).
 Sorties : {chemin relatif sous generated/: objet} ; AppError si un objet ou un parametre de plateforme manque.
 """
 from __future__ import annotations
@@ -145,7 +145,7 @@ def _egress_previews(doc: dict, caps: dict, index: dict, files: dict) -> None:
 
 def render_native(doc: dict, platform: dict[tuple[str, str], dict], cluster: str, pins: dict,
                   caps: dict | None = None, index: dict | None = None, history: dict | None = None,
-                  project_pins: dict | None = None) -> dict[str, object]:
+                  project_pins: dict | None = None, release_pins: dict | None = None) -> dict[str, object]:
     spec = copy.deepcopy(doc["spec"])
     name = doc["metadata"]["name"]
     spec["_name"] = name
@@ -156,11 +156,12 @@ def render_native(doc: dict, platform: dict[tuple[str, str], dict], cluster: str
 
     _project_files(doc, platform, project_params(doc, caps, index), project_pins, files)
     targeted = egress_targets(index)
-    scratch: dict = {"__index__": index, "__history__": history or {}}
+    scratch: dict = {"__index__": index, "__history__": history or {}, "__release_pins__": release_pins or {}}
     for comp in components(doc):
         render_component(doc, comp, platform, caps, targeted, scratch)
     scratch.pop("__index__")
     scratch.pop("__history__")
+    scratch.pop("__release_pins__")
     files.update(scratch)
 
     if spec.get("secrets"):

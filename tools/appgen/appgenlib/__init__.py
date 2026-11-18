@@ -3,7 +3,8 @@
 Role : regrouper les modules d'appgen par responsabilite, a comportement constant par rapport a l'ancien
 appgen.py monolithique. Point d'entree inchange : `python3 tools/appgen/appgen.py <commande>`.
 Entrees : apps/*/app.yaml, clusters/*/capabilities.yaml, platform/, pins/, generated/ (releases conservees).
-Sorties : arbre generated/ (render), diagnostics (validate, check), pins/*.yaml (pin-resource, pin-project).
+Sorties : arbre generated/ (render), diagnostics (validate, check), pins/*.yaml (pin-resource, pin-project,
+promote, rollback).
 
 Modules, du plus bas au plus haut :
 - config : chemins et constantes de politique ;
@@ -13,5 +14,6 @@ Modules, du plus bas au plus haut :
 - semantic : regles semantiques d'une app native ou helm ; validate : validation de tout le depot ;
 - platform_index : index de platform/ (CCT, ClusterTrait, CPT, Environment) ; gateway : controle G1 ;
 - catalog, render_component, render_native, render_helm, render : rendu ;
-- gitops : controles de check (derive, releases supprimees, pins) ; cli : commandes.
+- gitops : controles de check (derive, releases supprimees, pins) ;
+- promotion : pins de production par promote et rollback (T-003) ; cli : commandes.
 """

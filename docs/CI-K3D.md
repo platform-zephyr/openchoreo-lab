@@ -15,7 +15,7 @@ Workflow : `.github/workflows/k3d-integration.yml`. Non bloquant : l'agrégat `k
 
 ## 2. Contournements temporaires
 
-- Environnement `development` : `tools/k3d/ci-bootstrap.sh` ne l'invente PAS si `platform/` le fournit (recherche d'un `Environment` nommé `development`). Absent aujourd'hui : il est alors dérivé de `production` (bruyant, noté dans le résumé du job). La CI teste donc une plateforme légèrement différente d'OKE. TEMPORAIRE : issue #49 l'ajoutera au manifeste de plateforme ; le contournement s'éteint alors tout seul, puis retirer le bloc.
+- Environnement `development` : plus de contournement (T-003). `platform/install/manifests/40-openchoreo-env.yaml` déclare `development` et `production` et le chemin de promotion ; `tools/k3d/ci-bootstrap.sh` applique ce manifeste sans rien dériver.
 
 ## 3. Suites (runs de référence 44287620940 et 44288812441, 2026-11-18)
 
@@ -60,6 +60,6 @@ Les preuves : `gh run download <id> -n k3d-<suite>`.
 
 Calendrier et forme proposés (nuit seule avant T-364, suite réduite requise à FINAL0) : `docs/research/K3D-REACTIVATION.md` §3.
 
-1. Corriger les FAIL et KNOWN_FAIL déclarés : B-09 (écart kube-ops), T12 (clé ESO), gitops (ancre du test, PR séparée sous `tests/`), issue #49 (retirer le contournement).
+1. Corriger les FAIL et KNOWN_FAIL déclarés : B-09 (écart kube-ops), T12 (clé ESO), gitops (ancre du test, PR séparée sous `tests/`) ; issue #49 : contournement retiré par T-003.
 2. Trois exécutions vertes consécutives de chaque suite retenue, sur `main`.
 3. Ajouter `k3d-ok` à `needs` de `ci-ok` dans `.github/workflows/ci.yaml`, puis mettre à jour la protection de branche (`tools/apply-branch-protection.sh`).

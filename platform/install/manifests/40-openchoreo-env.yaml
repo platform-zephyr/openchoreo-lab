@@ -1,7 +1,9 @@
 # Objets OpenChoreo minimaux attendus par les apps générées (namespace `default`, étape 9) :
-#   - Environment `production` (seul environnement cité par generated/ : `environment: production`) ;
-#   - DeploymentPipeline `standard` (tools/appgen/appgen.py l.39 : PIPELINE = "standard"), sans
-#     promotion (un seul environnement dans l'essai) ;
+#   - Environments `production` et `development` (ADR-0004 §1, T-003), sur le même ClusterDataPlane `default` ;
+#     leurs noms sont ceux de tools/appgen (config.ALLOWED_ENVIRONMENTS), vérifiés par tests/appgen/test_promotion.py ;
+#   - DeploymentPipeline `standard` (tools/appgen/appgenlib/config.py : PIPELINE = "standard") avec le chemin de
+#     promotion development -> production. La promotion GitOps est un pin par environnement écrit par
+#     `tools/appgen/appgen.py promote <app>` (pins/component-releases.yaml), jamais un geste dans le cluster ;
 #   - ClusterTrait `health-probes` (allowedTraits du CCT service-restricted), copié sans modification
 #     d'openchoreo/openchoreo v1.3.3 samples/getting-started/component-traits/health-probes-trait.yaml
 #     (Apache-2.0, voir NOTICE).
@@ -47,6 +49,45 @@ spec:
           listenerName: http
           port: 19080
 ---
+# Environment `development` (T-003) : même data plane et même passerelle que `production` (copie exacte de
+# spec.gateway, vérifiée par tests/appgen/test_promotion.py), isProduction: false. Remplace l'Environment que
+# tools/k3d/ci-bootstrap.sh dérivait de `production` par yq (issue #49). Frugalité du dev : ADR-0004 §3 (T-004).
+# [S : à valider sur OKE] deux Environments sur la même passerelle et le même hôte ; les routes OpenChoreo portent
+# le nom de l'environnement (namespace dp-default-<projet>-<env>).
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata:
+  name: development
+  namespace: default
+  labels:
+    openchoreo.dev/name: development
+    app.kubernetes.io/part-of: openchoreo-lab
+spec:
+  dataPlaneRef:
+    kind: ClusterDataPlane
+    name: default
+  isProduction: false
+  gateway:
+    ingress:
+      external:
+        name: gateway-default
+        namespace: openchoreo-data-plane
+        http:
+          host: lab.smadja.dev
+          listenerName: http
+          port: 19080
+        https:
+          host: lab.smadja.dev
+          listenerName: https
+          port: 19443
+      internal:
+        name: gateway-default
+        namespace: openchoreo-data-plane
+        http:
+          host: lab.internal
+          listenerName: http
+          port: 19080
+---
 apiVersion: openchoreo.dev/v1alpha1
 kind: DeploymentPipeline
 metadata:
@@ -56,7 +97,13 @@ metadata:
     openchoreo.dev/name: standard
     app.kubernetes.io/part-of: openchoreo-lab
 spec:
-  promotionPaths: []
+  promotionPaths:
+    - sourceEnvironmentRef:
+        kind: Environment
+        name: development
+      targetEnvironmentRefs:
+        - kind: Environment
+          name: production
 ---
 apiVersion: openchoreo.dev/v1alpha1
 kind: ClusterTrait

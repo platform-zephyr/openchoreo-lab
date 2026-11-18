@@ -2,9 +2,11 @@
 
 Role : traduire un composant normalise (model.components) en objets OpenChoreo. Le nom d'une ComponentRelease
 est le hash de sa spec (deterministe) ; les releases deja presentes dans generated/ sont conservees (A2, ajout
-seul) et une release modifiee a la main est refusee.
+seul) et une release modifiee a la main est refusee. Chaque ReleaseBinding pointe la release de son environnement
+(T-003, G3) : development suit la release courante, un environnement epingle suit son pin.
 Entrees : document app.yaml, composant, index de platform/, politique du cluster, cibles egress, et le
-dictionnaire `rendered` qui porte aussi `__index__` (apps du depot) et `__history__` (releases conservees).
+dictionnaire `rendered` qui porte aussi `__index__` (apps du depot), `__history__` (releases conservees) et
+`__release_pins__` (pins ComponentRelease `<composant>/<env>`).
 Sorties : fichiers ajoutes a `rendered` ({chemin relatif sous generated/: objet}) ; AppError en cas de refus.
 """
 from __future__ import annotations
@@ -175,10 +177,28 @@ def _check_strategy_change(cname: str, params: dict, past: dict) -> None:
             "(+ suppression operateur du Component), PR 2 re-ajout stateful ; ou garder RollingUpdate sans PVC RWO.")
 
 
+def _bound_release(spec: dict, cname: str, env: str, rel: str, known: set[str], pins: dict) -> str:
+    """Release d'un environnement (T-003, ecart G3).
+
+    Un pin `<composant>/<env>` l'emporte et doit viser une release conservee ; sans pin, la release courante.
+    Production sans pin alors que development est declare : refus (la meme release partirait partout)."""
+    pin = pins.get(f"{cname}/{env}")
+    if pin is not None:
+        if pin not in known:
+            raise AppError(f"{cname}/{env} : pin '{pin}' sans ComponentRelease conservee dans generated/ "
+                           f"(releases connues : {', '.join(sorted(known))})")
+        return pin
+    if env == "production" and "development" in spec["environments"]:
+        raise AppError(f"{cname} : production sans pin alors que development est declare ; valider en development "
+                       f"puis `tools/appgen/appgen.py promote {spec['_name']}` (pins/component-releases.yaml)")
+    return rel
+
+
 def _release_bindings(spec: dict, name: str, comp: dict, rel: str, trait_env: dict, cdir: str,
-                      rendered: dict) -> None:
-    """Un ReleaseBinding par environnement, pointant la release courante."""
+                      rendered: dict, known: set[str]) -> None:
+    """Un ReleaseBinding par environnement, pointant la release de cet environnement (_bound_release)."""
     cname, rt = comp["cname"], comp["rt"]
+    pins = rendered.get("__release_pins__", {})
     if comp["kind"] == "CronJob":
         env_cfg = {"size": rt["size"], "schedule": comp["schedule"]}
     else:
@@ -187,7 +207,7 @@ def _release_bindings(spec: dict, name: str, comp: dict, rel: str, trait_env: di
         rb_spec = {
             "owner": {"projectName": name, "componentName": cname},
             "environment": env,
-            "releaseName": rel,
+            "releaseName": _bound_release(spec, cname, env, rel, known, pins),
             "componentTypeEnvironmentConfigs": env_cfg,
         }
         if trait_env:
@@ -245,4 +265,4 @@ def render_component(doc: dict, comp: dict, platform: dict, caps: dict, targeted
     for name_, past_spec in past.items():   # A2 : releases deja dans Git conservees (ajout seul)
         rendered[f"{rdir}/{name_}.yaml"] = _component_release(name_, past_spec)
     rendered[f"{rdir}/{rel}.yaml"] = _component_release(rel, release_spec)
-    _release_bindings(spec, name, comp, rel, trait_env, cdir, rendered)
+    _release_bindings(spec, name, comp, rel, trait_env, cdir, rendered, {*past, rel})
