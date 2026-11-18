@@ -1,0 +1,7 @@
+# À insérer dans .github/workflows/ci.yaml (jobs:) puis ajouter `context-check` aux `needs` de `ci-ok`.
+  context-check:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@<SHA-épinglé-comme-les-autres-jobs>
+      - run: python3 tools/context-check/check_context.py --root .
+      - run: python3 -m unittest discover -s tools/context-check/tests -v
