@@ -7,7 +7,8 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 BASE="${1:-}"
 if [ -z "$BASE" ]; then
-  if [ -n "${GITHUB_BASE_REF:-}" ]; then BASE="origin/$GITHUB_BASE_REF"; else BASE="HEAD^"; fi
+  if [ -n "${MERGE_GROUP_BASE_SHA:-}" ]; then BASE="$MERGE_GROUP_BASE_SHA"   # file de fusion : base = tête de main
+  elif [ -n "${GITHUB_BASE_REF:-}" ]; then BASE="origin/$GITHUB_BASE_REF"; else BASE="HEAD^"; fi
 fi
 git rev-parse --verify -q "$BASE" >/dev/null || { echo "base introuvable : $BASE (fetch-depth: 0 requis)" >&2; exit 2; }
 fail=0

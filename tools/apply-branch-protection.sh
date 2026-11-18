@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Cree/met a jour le ruleset GitHub sur main : PR obligatoire, check "ci-ok" requis, revue des code owners (CODEOWNERS :
-# zones sensibles = approbation de Paul ; apps/** et generated/** libres), pas de force push, pas de suppression.
+# zones sensibles = approbation de Paul ; apps/** et generated/** libres), file de fusion native (merge_group : ci-ok rejoué sur le dernier état de main, sans rebase manuel), pas de force push, pas de suppression.
 # L'admin du depot (Paul) peut contourner en mode "pull_request" (merge explicite) ; un compte agent (role Write) ne le peut pas.
 # Par defaut : affiche la charge utile (aucun appel reseau en ecriture). Ecriture seulement avec --apply.
 # Usage : tools/apply-branch-protection.sh [--apply] [owner/repo]
@@ -37,8 +37,17 @@ PAYLOAD="$(cat <<JSON
       "require_last_push_approval": false,
       "required_review_thread_resolution": false
     }},
+    {"type": "merge_queue", "parameters": {
+      "check_response_timeout_minutes": 30,
+      "grouping_strategy": "ALLGREEN",
+      "max_entries_to_build": 5,
+      "max_entries_to_merge": 5,
+      "merge_method": "SQUASH",
+      "min_entries_to_merge": 1,
+      "min_entries_to_merge_wait_minutes": 1
+    }},
     {"type": "required_status_checks", "parameters": {
-      "strict_required_status_checks_policy": true,
+      "strict_required_status_checks_policy": false,
       "required_status_checks": [{"context": "ci-ok"}]
     }}
   ]
