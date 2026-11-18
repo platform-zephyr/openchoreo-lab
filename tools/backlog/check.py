@@ -1,6 +1,9 @@
+import sys
 import re,glob,functools,sys
+import os as _os
+ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..'))
 T={}
-for f in glob.glob('/home/user/openchoreo-lab/backlog/T-*.md'):
+for f in glob.glob(ROOT+'/backlog/T-*.md'):
     s=open(f).read()
     g=lambda k: re.search(rf'^{k}: (.*)$',s,re.M).group(1).strip()
     deps=[d.strip() for d in g('depends_on').strip('[]').split(',') if d.strip()]
@@ -8,6 +11,8 @@ for f in glob.glob('/home/user/openchoreo-lab/backlog/T-*.md'):
                 model=(re.search(r'^model: (.*)$',s,re.M).group(1).strip() if re.search(r'^model:',s,re.M) else ''),
                 effort=(re.search(r'^effort: (.*)$',s,re.M).group(1).strip() if re.search(r'^effort:',s,re.M) else ''))
 ORD={k:n for n,k in enumerate(['S0','S1','S2','S3','PORTE','I1','I1bis','I2','I3','I4','I5','I6','I7','I8','FINAL','I9','après-porte'])}
+if not T:
+    print('ERREUR : aucun ticket trouvé sous', ROOT+'/backlog'); sys.exit(1)
 bad=0
 # Routage des modèles (ADR-0023 proposé, backlog/proposals/model-routing.yaml) : model et effort obligatoires sur un ticket actif
 MODELS={'claude-haiku-5-5','claude-sonnet-5-5','claude-opus-5-5','human'}
@@ -40,3 +45,4 @@ act={k:v for k,v in T.items() if v['st']=='todo'}
 @functools.lru_cache(None)
 def L(n): return 1+max([L(d) for d in act[n]['deps'] if d in act]+[0])
 print('actifs',len(act),'erreurs',bad,'profondeur',max(L(n) for n in act))
+sys.exit(1 if bad else 0)

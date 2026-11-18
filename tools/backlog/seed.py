@@ -1,5 +1,7 @@
 import os, textwrap
-B = "/home/user/openchoreo-lab/backlog"
+import os as _os
+ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '..', '..'))
+B = ROOT+"/backlog"
 T = []
 def t(id, slug, title, phase, adr, deps, cls, scope, intent, done, notes="", issue=None):
     T.append(dict(id=id, slug=slug, title=title, phase=phase, adr=adr, deps=deps, cls=cls, scope=scope,
@@ -294,7 +296,7 @@ add_done("T-007","couvre aussi tools/k3d, tests/k3d, tests/gitops-k3d, tests/arg
 
 # ===== Intégration des propositions de recherche (2026-11-18) =====
 import yaml
-P = "/home/user/openchoreo-lab/backlog/proposals/"
+P = ROOT+"/backlog/proposals/"
 BASE = {"observability":100,"upgrades":120,"cost":140,"ai-services":160,"identity-secrets":180,"data-platform":200}
 NEWADR = {"NEW-OBS":"0015","NEW-UPGRADES":"0016","NEW-COST":"0017","NEW-AI":"0018","NEW-AI-SERVICES":"0018","NEW-IDS":"0014","NEW-DATA":"0019"}
 keymap = {}; props = []
@@ -945,7 +947,7 @@ for x in T:
         x["deps"] = sorted(set(x["deps"]) | {"T-061b"})
 
 # --- 9. Routage à 3 règles (décision 8, ADR-0023) : recalcul de model/effort de chaque ticket actif
-_CO = [l.split()[0].lstrip("/") for l in open("/home/user/openchoreo-lab/.github/CODEOWNERS") if l.strip() and not l.startswith("#") and len(l.split()) > 1]
+_CO = [l.split()[0].lstrip("/") for l in open(ROOT+"/.github/CODEOWNERS") if l.strip() and not l.startswith("#") and len(l.split()) > 1]
 NOYAU = sorted(set(_CO + ["docs/adr/", "docs/review/", "CODEOWNERS"]))
 def _tokens(scope):
     s = _re.sub(r"\([^)]*\)", "", scope)
