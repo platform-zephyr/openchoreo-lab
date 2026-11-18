@@ -25,11 +25,6 @@
     "tests/mcp/thunder.py": {
       "ruff": 3
     },
-    "tools/appgen/appgen.py": {
-      "lines": 1481,
-      "ruff": 8,
-      "mypy": 12
-    },
     "tools/backlog/check.py": {
       "ruff": 1
     },
@@ -57,30 +52,6 @@
     "tests/mcp/matrix.py::main": {
       "cc": 32,
       "len": 194
-    },
-    "tools/appgen/appgen.py::_native_errors": {
-      "cc": 41
-    },
-    "tools/appgen/appgen.py::egress_errors": {
-      "cc": 21
-    },
-    "tools/appgen/appgen.py::gateway_errors": {
-      "cc": 20
-    },
-    "tools/appgen/appgen.py::render_component": {
-      "cc": 46,
-      "len": 136
-    },
-    "tools/appgen/appgen.py::render_native": {
-      "cc": 19,
-      "len": 106
-    },
-    "tools/appgen/appgen.py::semantic_check": {
-      "cc": 45,
-      "len": 102
-    },
-    "tools/appgen/appgen.py::validate_all_full": {
-      "cc": 16
     },
     "tools/backlog/identities_lint.py::lint": {
       "cc": 16

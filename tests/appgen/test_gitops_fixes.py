@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "tools" / "appgen"))
 sys.path.insert(0, str(ROOT / "tests" / "appgen"))
 
 import appgen  # noqa: E402
+from appgenlib import config as appgen_config  # noqa: E402
 from test_extensions import Base, Sandbox, whoami  # noqa: E402
 
 MANIFESTS = ROOT / "platform" / "install" / "manifests"
@@ -209,9 +210,10 @@ class A3ProjectPin(Base):
 
     def test_pin_project_command(self):
         pins = self.sb.root / "pins" / "project-releases.yaml"
-        old = appgen.PROJECT_PINS_PATH
-        appgen.PROJECT_PINS_PATH = pins
-        self.addCleanup(setattr, appgen, "PROJECT_PINS_PATH", old)
+        # T-214 : la CLI lit le chemin dans appgenlib.config (le module appgen n'est plus qu'une facade).
+        old = appgen_config.PROJECT_PINS_PATH
+        appgen_config.PROJECT_PINS_PATH = pins
+        self.addCleanup(setattr, appgen_config, "PROJECT_PINS_PATH", old)
         self.assertEqual(appgen.main(["pin-project", "whoami", "production", "whoami-7c4886dc7d"]), 0)
         self.assertEqual(appgen.load_yaml(pins)["pins"], {"whoami/production": "whoami-7c4886dc7d"})
         self.assertEqual(appgen.main(["pin-project", "whoami", "production", "other-7c4886dc7d"]), 1)
