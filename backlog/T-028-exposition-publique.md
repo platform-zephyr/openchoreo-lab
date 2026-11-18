@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: exposition
 stage: I3
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-028 — Exposition `private | internal | public` : route par hôte (G6) et refus « public sans auth »

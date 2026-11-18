@@ -4,11 +4,14 @@ title: "Preuve runtime automatique après sync (Job PostSync + publication)"
 status: todo
 phase: P0
 adr: [0011]
-depends_on: [T-003, T-061, T-072, T-215]
+depends_on: [T-003, T-061, T-072, T-215, T-364]
 class: AUTONOME + REVUE + MANDAT
 velocity: true
 lane: preuve
 stage: S1
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: 51
 ---
 # T-005 — Preuve runtime automatique après sync (Job PostSync + publication)
@@ -21,7 +24,7 @@ platform/ (Job PostSync, SA lecture), golden-paths/_checks/, tools/, tests/
 
 ## Critères de fin
 - [ ] k3d CI : PASS puis FAIL volontaire typé
-- [ ] preuve OKE datée sans coordinateur
+- [ ] preuve runtime datée sur le cluster lab, sans coordinateur
 - [ ] Job ≤ 50m / 64Mi, se termine
 - [ ] (repris de T-105) lab_app_status{app,env,verdict,cause_type} visible dans Grafana après un FAIL volontaire (k3d et OKE)
 - [ ] (repris de T-105) Job ≤ 50m / 64Mi (critère T-005 conservé)

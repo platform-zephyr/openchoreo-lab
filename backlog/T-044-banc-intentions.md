@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: intention
 stage: S3
+model: claude-sonnet-5-5
+effort: high
+routing: R14-banc-intentions
 github_issue: null
 ---
 # T-044 — Banc d'essai de 5 intentions A (MVP)

@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: homelab
 stage: après-porte
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-206 — Jobs de calcul sur le homelab (CronJob lab-data) et restitution statique

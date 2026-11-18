@@ -5,10 +5,13 @@ status: todo
 phase: P1
 adr: [0017]
 depends_on: [T-001, T-061]
-class: AUTONOME
+class: AUTONOME + MANDAT
 velocity: false
 lane: coût
 stage: S3
+model: claude-sonnet-5-5
+effort: medium
+routing: R10-code-simple
 github_issue: null
 ---
 # T-140 — Registre des limites free tier (valeur, date, source) et lint de péremption
@@ -30,8 +33,14 @@ docs/state/free-tier.yaml, tools/cost/lint_free_tier.py, tests/cost/
 - [ ] (repris de T-142) un test par refus, sur valeurs effectives après overrides
 - [ ] (repris de T-142) erreur typée cost-free-tier avec la correction
 - [ ] (repris de T-142) aucun contournement de VAP/PSA/NetworkPolicy (AGENTS.md)
+- [ ] (repris de HOME-11) registre : valeur 2/12, URL, date de lecture, prochaine revue (lint 90 jours) ; discordance 2/12 vs 4/24 tranchée
+- [ ] (repris de HOME-11) quota OCI du dépôt inchangé (2/12) ; coût mensuel d'un dépassement chiffré avec le tarif relu
+- [ ] (repris de HOME-11) MANDAT Paul : relevé Cost Analysis du mois (coût A1 = 0)
+- [ ] A1 Always Free = 2 OCPU / 12 Go même en PAYG (vérification du 2026-11-18) ; MISSION.md et STATE.md corrigés (plus de « 4/24 »)
 
 ## Notes
 Les valeurs [E] de docs/research/COST-FREE-TIER.md servent de point de départ, pas de preuve.
 
 Proposé par la recherche `cost` (clé T-140).
+
+Intégration 2 : absorbe HOME-11 (confirmation de facturation A1).

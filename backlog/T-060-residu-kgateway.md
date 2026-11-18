@@ -9,6 +9,9 @@ class: REVUE
 velocity: false
 lane: socle-oke
 stage: I2
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-060 — Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL)

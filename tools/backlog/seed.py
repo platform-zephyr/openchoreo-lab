@@ -505,6 +505,235 @@ for x in T:
         if d!=x["id"]: nd.add(d)
     x["deps"]=sorted(nd)
 X["T-190"]["deps"]=[d for d in X["T-190"]["deps"] if d!="T-181"]
+# ===== Intégration 2 (2026-11-18 soir) : sensitive, factory, harness, homelab, model-routing =====
+# Détail et table de correspondance : backlog/INTEGRATION-2.md. Ids : SEC → T-300.., FAC → T-310.., HAR → T-330.., HOME → T-360.., MOD → T-380..
+import fnmatch, unicodedata, re as _re
+props2 = {}; dom2 = {}
+for dom in ("sensitive", "factory", "harness", "homelab"):
+    for p in yaml.safe_load(open(P + dom + ".yaml")):
+        props2[p["key"]] = p; dom2[p["key"]] = dom
+_MR = yaml.safe_load(open(P + "model-routing.yaml"))
+for p in _MR["tickets"]:
+    props2[p["key"]] = p; dom2[p["key"]] = "model-routing"
+ROUTING = _MR["rules"]
+def kid(k):
+    pre, n = k.rsplit("-", 1)
+    return "T-%03d" % ({"SEC": 299, "FAC": 309, "HAR": 330, "HOME": 360, "MOD": 379}[pre] + int(n))
+# Propositions fusionnées dans un ticket (aucun fichier créé ; voir INTEGRATION-2.md)
+MERGED2 = {"FAC-1": "T-215", "FAC-3": "T-210", "FAC-15": "T-008", "HAR-3": "T-313", "HAR-5": "T-210", "HAR-6": "T-303",
+           "HAR-21": "T-323", "HOME-6": "T-031", "HOME-9": "T-160", "HOME-10": "T-022", "HOME-11": "T-140", "HOME-13": "T-061",
+           "MOD-1": "T-061", "MOD-2": "T-008", "MOD-4": "T-313", "MOD-5": "T-313", "MOD-6": "T-323", "MOD-8": "T-322", "MOD-12": "T-350"}
+NEWADR2 = {"NEW-FACTORY": "0021", "NEW-HARNESS": "0022", "NEW-MODELS": "0023"}
+def ref2(s):
+    s = _re.sub(r"\b(SEC|FAC|HAR|HOME|MOD)-\d+\b", lambda m: MERGED2.get(m.group(0), kid(m.group(0))), s)
+    return s.replace("T-145", "T-311").replace("ADR-0021", "ADR-0021/0022/0023")
+def slug2(s):
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
+    s = _re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return "-".join(s.split("-")[:6])[:48].strip("-")
+# Dépendances fixées à la main (jugement d'intégration), stage si différent de la proposition
+DEPS2 = {
+ "SEC-1": [], "SEC-2": ["T-300", "T-302", "T-303"], "SEC-3": ["T-303"], "SEC-4": [],
+ "FAC-2": ["T-061", "T-215"], "FAC-4": ["T-215", "T-210", "T-311"], "FAC-5": ["T-311", "T-210", "T-313", "T-301"],
+ "FAC-6": ["T-215", "T-210", "T-321", "T-007"], "FAC-7": ["T-314"], "FAC-8": ["T-314", "T-382"],
+ "FAC-9": ["T-002", "T-313", "T-360"], "FAC-10": ["T-318"], "FAC-11": ["T-316"], "FAC-12": ["T-313", "T-002", "T-382"],
+ "FAC-13": ["T-311", "T-313", "T-301"], "FAC-14": ["T-311", "T-313", "T-314", "T-346"], "FAC-16": ["T-008"],
+ "HAR-0": ["T-061"], "HAR-1": ["T-330", "T-332", "T-303"], "HAR-2": [], "HAR-4": ["T-332"], "HAR-7": ["T-008", "T-332"],
+ "HAR-8": ["T-002", "T-332"], "HAR-9": ["T-002", "T-216", "T-332"], "HAR-10": ["T-210", "T-337"], "HAR-11": ["T-330", "T-337"],
+ "HAR-12": ["T-363"], "HAR-13": ["T-342"], "HAR-14": ["T-214", "T-062"], "HAR-15": ["T-330", "T-332"],
+ "HAR-16": ["T-332", "T-337", "T-338", "T-339", "T-311"], "HAR-17": ["T-338", "T-341", "T-346"], "HAR-18": ["T-342", "T-343", "T-004", "T-005"],
+ "HAR-19": ["T-346", "T-343", "T-120"], "HAR-20": ["T-346", "T-311", "T-164", "T-386", "T-388"], "HAR-22": ["T-340", "T-346"],
+ "HOME-0": [], "HOME-1": ["T-360"], "HOME-2": ["T-361"], "HOME-3": ["T-361", "T-362", "T-001"], "HOME-4": ["T-363", "T-365", "T-360"],
+ "HOME-5": ["T-214"], "HOME-7": ["T-363", "T-215", "T-311", "T-343"], "HOME-8": ["T-360", "T-363"], "HOME-12": ["T-140", "T-364"],
+ "MOD-3": ["T-008"], "MOD-7": ["T-044", "T-346", "T-323"], "MOD-9": [], "MOD-10": ["T-161", "T-023", "T-388"], "MOD-11": ["T-389", "T-025"],
+ "MOD-13": ["T-323", "T-388"],
+}
+STAGE2 = {"FAC-14": "S3", "HOME-4": "S1", "HOME-6": "S3", "HOME-7": "après-porte", "HOME-12": "après-porte", "MOD-13": "I9", "HAR-12": "S2"}
+STATUS2 = {"HOME-7": "blocked", "HOME-12": "blocked"}
+EXEMPT2 = {"T-300", "T-301", "T-302", "T-303", "T-332", "T-360", "T-325"}   # sans T-061 : purge, garde de fuite, outillage, mesure en lecture
+for k, p in props2.items():
+    if k in MERGED2: continue
+    nid = kid(k)
+    adr = sorted({NEWADR2.get(str(a), str(a).replace("ADR-", "")) for a in (p.get("adr") or [])})
+    notes = ref2((p.get("notes") or "").strip())
+    if p.get("absorbs"): notes += f"\n\nLa proposition visait : {', '.join(p['absorbs'])} (décision d'intégration : INTEGRATION-2.md)."
+    notes = (notes + f"\n\nProposé par la recherche `{dom2[k]}` (clé {k}) ; intégration 2 du 2026-11-18.").strip()
+    deps = list(DEPS2[k]) + ([] if nid in EXEMPT2 else ["T-061"])
+    mk(nid, slug2(p["title"]), ref2(p["title"]).replace('"', "'"), p["phase"], adr, sorted(set(deps)), p["class"], ref2(p.get("scope", "")),
+       ref2((p.get("intent") or "").strip()), [ref2(d) for d in (p.get("done") or [])], notes, bool(p.get("velocity")), p.get("parallel_lane") or dom2[k])
+    X[nid]["stage"] = STAGE2.get(k, p.get("stage", "I9")); X[nid]["proposed_model"] = str(p.get("model") or "")
+    if k in STATUS2: X[nid]["status"] = STATUS2[k]
+def rep(id, *c, key=None):
+    X[id]["done"] += [(f"(repris de {key}) " if key else "") + ref2(d) for d in c]
+def note(id, s): X[id]["notes"] = (X[id]["notes"] + "\n\n" + s).strip()
+def drop2(old, into, why):
+    X[old]["status"] = "dropped"; note(old, f"{why} Fusionné dans {into} (intégration 2 du 2026-11-18).")
+
+# --- Sécurité du dépôt public : la garde de fuite absorbe HAR-6
+X["T-303"]["scope"] += ", tools/dev/leak-guard.sh, tests/leak-guard/"
+rep("T-303", "cas négatifs : une IP privée, un OCID factice et un jeton factice font échouer la garde", "cas positif : les adresses documentaires (plages réservées) passent",
+    "même script en local, en CI et dans le hook Stop (T-331) ; seuls fichier et ligne sont affichés, jamais la valeur", key="HAR-6")
+note("T-301", "À faire AVANT le pilote 24 h (T-322) et le dispatcher planifié (T-314) : chaque branche ouverte serait à recréer après la réécriture.")
+note("T-300", "Le retour en public rétablit la règle « aucun runner auto-hébergé » (T-343).")
+# --- Identité : T-215 absorbe FAC-1 (mandat de lot, App étendue)
+X["T-215"]["title"] = "Pack identité et mandat de lot : compte agent, GitHub App (dispatch, merge sous conditions), mandate.v1"
+X["T-215"]["cls"] = "REVUE + MANDAT"
+X["T-215"]["scope"] = "docs/AGENT-IDENTITY.md, docs/AGENT-PR-MODEL.md, missions/mandates/, .github/ (CODEOWNERS : ligne missions/mandates/)"
+X["T-215"]["intent"] += " Ajoute le mandat de lot (étape, tickets, chemins, plafonds de diff et de dépense, expiration) signé par PR dans le noyau ; l'App reçoit les permissions de dispatch et de merge sous conditions (merge effectif : T-315)."
+rep("T-215", *props2["FAC-1"]["done"], key="FAC-1")
+rep("T-215", "GITHUB_TOKEN ne déclenche pas la CI sur les PR qu'il ouvre et plafonne à 1 000 req/h (vérification du 2026-11-18) : dispatch, Renovate et remédiation passent par l'App")
+note("T-215", "MANDAT : création de l'App, option « Allow auto-merge ». Le mandat n'ouvre jamais secret, accès, dépense hors free tier, apply, INTERDIT (platform-guardrails). Fusion de FAC-1.")
+# --- Dispatcher : T-210 = cerveau (next.py + admission) ; FAC-3 et HAR-5 absorbés ; l'exécution passe à T-313
+X["T-210"]["title"] = "Dispatcher (cerveau) : next.py et admission — prêts, classe recalculée, couloirs, ressources exclusives, chevauchement de périmètres"
+X["T-210"]["scope"] = "tools/backlog/next.py, tools/backlog/admission.py, tests/backlog/"
+X["T-210"]["intent"] = ref2(props2["FAC-3"]["intent"]) + " Un ticket n'est proposé que si les globs de son périmètre ne recoupent ni un ticket `in-progress`, ni une PR ouverte, ni une `exclusive_resources` (HAR-5)."
+X["T-210"]["done"] = [ref2(d) for d in props2["FAC-3"]["done"]] + [ref2(d) for d in props2["HAR-5"]["done"][:2]] + [
+    "plafond global 4 au départ (relevé par T-322), 2 par couloir, 1 sur contrat-appgen avant T-214 ; contrat de mission d'Atlas (max_attempts 2)",
+    "l'admission lit le gouverneur de quota (T-311) quand il existe : refus au-delà du seuil (test hors ligne)",
+    "le modèle et l'effort de chaque ticket admis viennent de route.py (T-382) ou, à défaut, de l'en-tête"]
+note("T-210", "Intégration 2 : absorbe FAC-3 et HAR-5. Le lancement (workflow_dispatch, preuve de 3 PR parallèles) passe à T-313.")
+# --- Exécutant : T-313 absorbe HAR-3 (même fichier), MOD-4 (passage du modèle) et MOD-5 (trailers, mission-result.v1)
+X["T-313"]["title"] = "Exécutant claude-agent.yml : workflow_dispatch(ticket, modèle, effort), outils étroits, journal JSON, mission-result.v1"
+X["T-313"]["scope"] += ", .github/pull_request_template.md, docs/schema/mission-result.v1.json"
+rep("T-313", *props2["HAR-3"]["done"], key="HAR-3")
+rep("T-313", props2["MOD-4"]["done"][0], "entrées `model` et `effort` du workflow passées à claude_args (--model, --effort) ; Sonnet plafonné à `xhigh`", key="MOD-4")
+rep("T-313", "trailers Model, Effort, Escalated-from sur chaque PR d'agent ; mission-result.v1 contient modèle, effort, escalade, tokens, tours, durée, échecs CI, sans aucun prompt", key="MOD-5")
+note("T-313", "Fusion de HAR-3 (même fichier), de la partie « passage du modèle » de MOD-4 et du schéma de MOD-5 (un seul schéma : mission-result.v1, pas de model-run.v1 séparé). L'escalade de MOD-4 est dans T-317.")
+rep("T-317", props2["MOD-4"]["done"][1], "l'escalade suit l'échelle de la règle de routage (T-382), étiquette `escalated-from`", key="MOD-4")
+X["T-317"]["title"] = "Reprise automatique et escalade de modèle : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle"
+note("T-317", "Vocabulaire des classes d'échec partagé avec le protocole T-340.")
+# --- Lint des tickets : T-008 absorbe FAC-15, MOD-2 et la règle de périmètre de HAR-5
+X["T-008"]["title"] = "Check CI des tickets `backlog/` : en-tête, graphe, étapes, champs `model` et `effort`"
+X["T-008"]["scope"] = "tools/backlog/check.py, tests/backlog/, backlog/README.md, backlog/proposals/FORMAT.md, .github/workflows/ci.yaml (REVUE)"
+X["T-008"]["intent"] += " Valide aussi `stage`, `model` (ID complet épinglé ou `human`) et `effort`, et leur cohérence avec la règle de routage (ADR-0023 proposé)."
+rep("T-008", *props2["FAC-15"]["done"], key="FAC-15"); rep("T-008", *props2["MOD-2"]["done"], key="MOD-2")
+rep("T-008", props2["HAR-5"]["done"][2], key="HAR-5")
+note("T-008", "Intégration 2 : la présence de `model`/`effort` est déjà vérifiée par tools/backlog/check.py (2026-11-18) ; restent les tests, le job CI requis et le refus des valeurs inconnues en CI.")
+# --- Gouverneur de quota : T-311 (FAC-2) absorbe T-145 ; T-322 (FAC-13) absorbe MOD-8 et la collecte de MOD-5
+drop2("T-145", "T-311", "Le gouverneur de quota (FAC-2) couvre concurrence, tours, durée et règle de clé API.")
+rep("T-311", "concurrence maximale documentée et testée (workflow lint)", "agrégat hebdomadaire par identité d'agent", key="T-145")
+rep("T-322", *props2["MOD-8"]["done"], "seuil de repli fixé : quota hebdomadaire > 70 % ⇒ Opus → Sonnet high hors noyau", key="MOD-8")
+note("T-322", "C'est le pilote 24 h à N=3 (section « Lancement 24/7 » de ROADMAP.md), puis N=6, puis 8-10. Ne démarre qu'après la réécriture de l'historique (T-301).")
+# --- Observabilité de l'usine : T-323 (FAC-14) absorbe MOD-6, HAR-21 et T-209
+X["T-323"]["title"] = "Observabilité de l'usine : indicateurs, rapport hebdomadaire par (type de tâche, modèle), écart banc/réel, drill de panne"
+X["T-323"]["scope"] += ", tools/metrics/model-routing/report.py, docs/metrics/agents-scorecard.md"
+rep("T-323", *props2["MOD-6"]["done"], key="MOD-6"); rep("T-323", *props2["HAR-21"]["done"], key="HAR-21")
+drop2("T-209", "T-323", "Coût LLM par agent couvert par le ledger (T-311) et le rapport de l'usine.")
+# --- Remontées de la vérification en ligne (docs/research/VERIFICATION-2026-11-18.md)
+rep("T-140", *props2["HOME-11"]["done"], key="HOME-11")
+rep("T-140", "A1 Always Free = 2 OCPU / 12 Go même en PAYG (vérification du 2026-11-18) ; MISSION.md et STATE.md corrigés (plus de « 4/24 »)")
+X["T-140"]["cls"] = "AUTONOME + MANDAT"; note("T-140", "Intégration 2 : absorbe HOME-11 (confirmation de facturation A1).")
+rep("T-132", "aucun nœud de surge (au-delà de 2/12 = payant) : montée par « Replace boot volume » ou coupure planifiée (vérification du 2026-11-18)")
+note("T-372", "Vérification du 2026-11-18 : tout ce qui dépasse 2/12 est facturé, même en PAYG ; pas de nœud de surge.\n\nBloqué par : aucune app OKE demandée par Paul.")
+rep("T-100", "Grafana Free : date de création du stack relevée ; si postérieure au 2026-04-20, webhook seul (ni e-mail ni Cloud Alertmanager) ; budget ≤ 500 règles (vérification du 2026-11-18)")
+rep("T-107", "contact point webhook vers ntfy (pas d'e-mail Grafana sur un stack Free récent)")
+note("T-170", "Vérification du 2026-11-18 : les agents SRE et Portal Assistant d'OpenChoreo sont routables par agentgateway (baseUrl), FinOps non. Option après la porte : SRE derrière une clé virtuelle à budget bas.")
+rep("T-181", "journal d'activité Doppler Developer limité à 3 jours : décision de Paul consignée (export du journal vers un webhook ou plan Team) avant la séance")
+rep("T-193", "chaque étape de nettoyage garde la copie OpenBao vérifiée (retour arrière Doppler limité à 3 jours)")
+rep("T-201", "ingestion budgétée sous 1 000 req/h (limite du jeton Actions) ou par l'App")
+rep("T-203", "SLSA affiché « Build L2 » (attestations GitHub) ; L3 seulement avec un workflow réutilisable vérifié")
+rep("T-026", "test de restauration : les mots de passe des rôles gérés CNPG sont réalignés après restauration (non documenté en amont, à prouver avant de s'y fier)")
+# --- Homelab : VM lab dédiée, CP + DP sur la VM pendant la porte ; T-030 recadré
+X["T-364"]["done"] = [d for d in X["T-364"]["done"]] + ["(repris de T-030) Environments development et production sur le cluster lab, clientCA du cluster-gateway correct",
+    "(repris de T-003) une app A en development, release de production inchangée, preuve datée"]
+note("T-364", "Emplacement DÉFINITIF du control plane NON tranché : décision de Paul à la porte (D11, T-211). Le CP est sur la VM lab pendant la porte seulement (recommandation homelab, ADR-0003 amendé par T-061).\n\nRemplace le cœur de T-030 (recadré en DP distant, gelé).")
+X["T-030"].update(status="deferred", title="Data plane distant entre le cluster lab et OKE (selon la décision D11)",
+    intent="Seulement si Paul demande une app sur OKE ou déplace le CP (D11) : CP sur lab ⇒ DP OKE (exception de flux OKE → homelab, D13) ; CP sur OKE ⇒ DP lab par NetBird L4.",
+    done=["agent du DP distant connecté au CP, mTLS et clientCA corrects, preuve datée", "flux réseau conforme à la décision D11/D13, ACL limitée au port de la cluster-gateway",
+          "(repris de T-031) même app déplacée oke ↔ homelab par changement de `cluster`", "MANDAT Paul : ACL NetBird, enrôlement"])
+note("T-030", "Recadré par l'intégration 2 : le cœur (DP homelab, Environments, app A) est passé à T-364 (S1).\n\nDifféré après la porte OpenChoreo (D11).")
+X["T-031"].update(title="Test de reprise du cluster lab (critère C4 révisé)", intent=ref2(props2["HOME-6"]["intent"]),
+    scope="tests/, docs/architecture/MULTI-DATAPLANE.md", done=[ref2(d) for d in props2["HOME-6"]["done"]] + ["résultat C4 transmis au rapport de porte (T-211)"])
+note("T-031", "Intégration 2 : absorbe HOME-6. La règle de placement passe à T-365, le déplacement oke ↔ homelab à T-030.")
+X["T-213"]["status"] = "deferred"
+note("T-213", "Intégration 2 : plus bloquant du MVP (CP sur la VM lab pendant la porte ; lab-argocd devient l'Argo du lab, D4). Dégel si OKE héberge le CP ou des apps (D11). L'emplacement d'Authentik passe à T-211.")
+rep("T-211", "C1, C2 et C4 mesurés sur le cluster lab selon ADR-0020 amendé (T-061)", "D11 : Paul décide l'emplacement définitif du CP (lab ou OKE) ; le backlog ne le tranche pas",
+    "emplacement d'Authentik décidé par Paul (repris de T-213)")
+X["T-022"].update(title="OpenBao sur le cluster lab : stockage, déscellement, sauvegarde hors site, drill")
+X["T-022"]["done"] = [("pod OpenBao inscrit dans le budget du cluster lab (T-360) avant installation ; OKE, s'il sert, lit Doppler" if "nomenclature OKE" in d else d) for d in X["T-022"]["done"]]
+rep("T-022", "Raft local sur un seul volume du cluster lab, snapshot chiffré hors site (hors Oracle)", key="HOME-10")
+rep("T-022", "option backend PostgreSQL (production ready, HA depuis 2.7.0) comparée à Raft ; dépendance circulaire CNPG ↔ OpenBao tranchée et écrite (vérification du 2026-11-18)")
+note("T-022", "Intégration 2 : absorbe HOME-10 (variante lab prioritaire). Seal statique : décision de Paul (CONSENSUS).")
+X["T-160"].update(title="gVisor et vcluster jetables pour les agents sur le cluster lab", scope=X["T-160"]["scope"] + ", platform/ai-sandbox/")
+rep("T-160", *props2["HOME-9"]["done"], key="HOME-9")
+note("T-160", "Intégration 2 : absorbe HOME-9 ; le mécanisme vcluster est choisi par le spike T-342.")
+X["T-342"]["intent"] = ("Le cluster lab (T-361) existe : comparer sur lui (a) vcluster par PR en nœuds partagés, (c) namespaces `lab-dev-*` seuls, et (b) une VM Talos de dev "
+    "supplémentaire (défavorisée par le budget T-360). Mesurer démarrage, RAM au repos, nettoyage, isolation entre agents, compatibilité PSA restricted et default-deny ; seuils (≤ 2 previews, TTL 24 h).")
+rep("T-343", "décision écrite : runner Actions sur le homelab seulement si le dépôt devient durablement privé (T-300 n'est que temporaire)", key="FAC-9")
+X["T-318"]["done"] = [d for d in X["T-318"]["done"] if not d.startswith("décision écrite")] + ["taille de la VM dans le budget du homelab (T-360) ; concurrence plafonnée par la RAM et la température (Tctl)"]
+note("T-318", "Conflit à trancher par Paul : la proposition visait 8 vCPU / 32 Go alors que le budget homelab (64 Gio) laisse 6-8 Gio de marge après la VM lab ; la taille vient de T-360.")
+note("T-367", "Bloqué par : décision (b) de T-343 (runners ARC) ; par défaut (a) aucun runner homelab sur un dépôt public.")
+X["T-062"]["deps"] += ["T-363"]; note("T-062", "Intégration 2 : cible = Argo du cluster qui porte le CP (lab-argocd pendant la porte, D4).")
+X["T-212"]["deps"] += ["T-363"]; note("T-212", "Intégration 2 : cible = cluster lab (T-363).")
+X["T-003"]["done"] = [d for d in X["T-003"]["done"] if not d.startswith("preuve OKE")] + ["preuve k3d CI : une app A en development, release de production inchangée (la preuve runtime est dans T-364)"]
+X["T-005"]["done"] = [("preuve runtime datée sur le cluster lab, sans coordinateur" if d.startswith("preuve OKE") else d) for d in X["T-005"]["done"]]
+X["T-005"]["deps"] += ["T-364"]
+for _v in ("T-363", "T-364"): X[_v]["velocity"] = True   # chemin critique vers la preuve automatique
+X["T-214"]["stage"] = "S1"   # vélocité : débloque T-365 et le couloir contrat
+rep("T-007", "couvre aussi .claude/, factory/, missions/mandates/, backlog/routing.yaml (ADR-0021/0022/0023)")
+# --- T-061 absorbe HOME-13 (amendements homelab) et MOD-1 (ADR-0023) ; actage des trois nouveaux ADR
+X["T-061"]["title"] = "Acter les ADR 0001-0006, 0010-0013, 0020-0023 (+ amendements homelab), réaligner MISSION sur le homelab"
+X["T-061"]["scope"] += ", docs/architecture/"
+rep("T-061", "ADR-0021 (usine 24/7), ADR-0022 (harness), ADR-0023 (routage des modèles) rédigés au gabarit depuis docs/research/ et actés (ou amendés)",
+    "amendements homelab (HOMELAB-CAPACITY-DATAPLANE §5) : ADR-0003 et ADR-0020 (C1, C2, C4) amendés et actés ; texte d'ADR-0017 amendé (acté avec T-218) ; TARGET-ARCHITECTURE, MULTI-DATAPLANE, DECISIONS-OPEN (D1 reformulée, D11-D14) à jour",
+    "D11 (emplacement définitif du CP) laissé ouvert jusqu'à la porte", "Paul a tranché pour ADR-0023 : plancher Opus du noyau, Fable sur demande seulement, DeepSeek Flash sur données publiques (MANDAT de dépense)",
+    "aucun ticket ne cite encore « Talos éteint la nuit » ou « CP sur OKE » comme prérequis", "MISSION.md et STATE.md : A1 = 2/12, plus de « 4/24 »")
+note("T-061", "Intégration 2 : absorbe HOME-13 et MOD-1 pour garder un seul geste de Paul. Ticket lourd sur le chemin critique : Paul peut le scinder (question dans INTEGRATION-2.md).")
+# --- Redirections de dépendances
+for x in T:
+    if x.get("status", "todo") == "dropped": continue
+    nd = set()
+    for d in x["deps"]:
+        d = {"T-145": "T-311", "T-209": "T-323"}.get(d, d)
+        if x.get("status", "todo") == "todo" and d == "T-030": d = "T-364"
+        if d == "T-213" and x.get("status", "todo") == "todo": continue
+        if d != x["id"]: nd.add(d)
+    x["deps"] = sorted(nd)
+for x in T:   # homelab : les tickets gelés qui visaient T-030 visent le cluster lab
+    if x["id"] in ("T-029", "T-133", "T-205"): x["deps"] = sorted({("T-364" if d == "T-030" else d) for d in x["deps"]})
+X["T-211"]["deps"] = sorted(set(X["T-211"]["deps"]) | {"T-364"})
+for x in T:
+    if x.get("status") in ("deferred", "blocked") and x.get("stage") not in (None, "après-porte", "I1bis"): x["stage"] = "après-porte"
+
+# ===== Routage des modèles (backlog/proposals/model-routing.yaml `rules:`, première règle qui s'applique) =====
+LADDER = ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"]
+def parse_model(s):
+    s = (s or "").lower()
+    if not s: return None
+    if s.startswith("aucun"): return "human"
+    for m in ("opus", "sonnet", "haiku"):
+        if m in s: return f"claude-{m}-5-5"
+    return None
+def infer_kind(x):
+    t = x["title"].lower()
+    if t.startswith(("acter", "porte")): return "plan"
+    if "spike" in t: return "research"
+    if t.startswith("banc"): return "bench"
+    if t.startswith(("veille", "revue trimestrielle")): return "watch"
+    if t.startswith(("guide", "runbook")): return "doc"
+    return None
+def _glob(g): return _re.escape(g).replace(r"\*\*", ".*").replace(r"\*", r"[^/,\s]*")
+def rule_match(r, x, kind):
+    m = r.get("match") or {}
+    sel = not any(k in m for k in ("lane", "paths", "kind"))
+    if "lane" in m and any(fnmatch.fnmatch(x.get("lane", ""), l) for l in m["lane"]): sel = True
+    if "paths" in m and any(_re.search(r"(^|[\s,(`])" + _glob(g), x["scope"]) for g in m["paths"]): sel = True
+    if "kind" in m and kind in m["kind"]: sel = True
+    if not sel: return False
+    if "class" in m and not any(c in x["cls"] for c in m["class"]): return False
+    if "keywords" in m and not any(k.lower() in (x["title"] + " " + x["intent"]).lower() for k in m["keywords"]): return False
+    return True
+for x in T:
+    if x.get("status", "todo") == "dropped": continue
+    kind = infer_kind(x)
+    r = next(r for r in ROUTING if "model" in r and rule_match(r, x, kind))
+    model, eff = r["model"], r["effort"]; floor = r.get("floor", model)
+    pm = parse_model(x.get("proposed_model"))
+    if pm == "human": model, eff = "human", "none"
+    elif pm and LADDER.index(pm) >= LADDER.index(floor) and LADDER.index(pm) > LADDER.index(model): model, eff = pm, "high"
+    if model == "claude-sonnet-5-5" and eff == "max": eff = "xhigh"
+    x["model"], x["effort"], x["routing"] = model, eff, r["id"]
+
 SP={"S0":"P0","S1":"P0","S2":"P1","S3":"P1","PORTE":"P1","I1":"P2","I1bis":"P2","I2":"P2","I3":"P2","I4":"P3","I5":"P3","I6":"P3","I7":"P4","I8":"P4","I9":"P4","après-porte":"P5"}
 for x in T:
     if x.get("stage") in SP: x["phase"]=SP[x["stage"]]
@@ -512,6 +741,7 @@ PH = {"P0":"Fondations : débloquer l'autonomie","P1":"Golden path complet","P2"
 for x in T:
     deps = "[" + ", ".join(x["deps"]) + "]"
     adr = "[" + ", ".join(x["adr"]) + "]"
+    mline = f"model: {x['model']}\neffort: {x['effort']}\nrouting: {x['routing']}\n" if x.get('model') else ''
     body = f"""---
 id: {x['id']}
 title: "{x['title']}"
@@ -523,7 +753,7 @@ class: {x['cls']}
 velocity: {str(x.get('velocity', False)).lower()}
 lane: {x.get('lane','divers')}
 stage: {x.get('stage','I9')}
-{('github_issue: ' + str(x['issue'])) if x['issue'] else 'github_issue: null'}
+{mline}{('github_issue: ' + str(x['issue'])) if x['issue'] else 'github_issue: null'}
 ---
 # {x['id']} — {x['title']}
 
@@ -541,9 +771,9 @@ stage: {x.get('stage','I9')}
 
 rows = []
 for p in PH:
-    rows.append(f"\n### {p} — {PH[p]}\n\n| Ticket | Titre | Dépend de | Classe | ADR |\n|---|---|---|---|---|")
+    rows.append(f"\n### {p} — {PH[p]}\n\n| Ticket | Titre | Dépend de | Classe | Modèle | ADR |\n|---|---|---|---|---|---|")
     for x in T:
         if x["phase"] == p:
-            rows.append(f"| [{x['id']}]({x['id']}-{x['slug']}.md) | {x['title']} | {', '.join(x['deps']) or '—'} | {x['cls']} | {', '.join(x['adr'])} |")
+            rows.append(f"| [{x['id']}]({x['id']}-{x['slug']}.md) | {x['title']} | {', '.join(x['deps']) or '—'} | {x['cls']} | {x.get('model','—')} | {', '.join(x['adr'])} |")
 open(os.path.join(B, "INDEX.md"), "w").write("# Index du backlog (généré)\n\nGénéré à partir des en-têtes ; ne pas éditer à la main.\n" + "\n".join(rows) + "\n")
 print(len(T))

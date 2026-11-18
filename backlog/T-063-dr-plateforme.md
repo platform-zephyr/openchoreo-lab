@@ -9,6 +9,9 @@ class: AUTONOME + MANDAT
 velocity: false
 lane: exploitation
 stage: après-porte
+model: claude-sonnet-5-5
+effort: high
+routing: R03-incident-prod
 github_issue: null
 ---
 # T-063 — Reprise après sinistre de la plateforme : runbook de reconstruction et drill

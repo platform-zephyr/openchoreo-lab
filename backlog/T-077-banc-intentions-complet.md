@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: intention
 stage: après-porte
+model: claude-sonnet-5-5
+effort: high
+routing: R14-banc-intentions
 github_issue: null
 ---
 # T-077 — Banc complet de 10 intentions (OIDC, base, publique, worker, supprime)

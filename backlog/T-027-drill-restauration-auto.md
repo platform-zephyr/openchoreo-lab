@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: donnees
 stage: I1
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-027 — Drill de restauration automatique et `restore-evidence`

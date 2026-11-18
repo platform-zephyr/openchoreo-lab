@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: données
 stage: I8
+model: claude-sonnet-5-5
+effort: medium
+routing: R10-code-simple
 github_issue: null
 ---
 # T-204 — Grille de maturité cloud native CNCF automatisée (niveaux 1-5)

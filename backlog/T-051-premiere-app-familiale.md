@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: apps
 stage: I3
+model: claude-sonnet-5-5
+effort: high
+routing: R99-defaut
 github_issue: null
 ---
 # T-051 — Première app familiale complète (OIDC + base + sauvegarde) sur le homelab

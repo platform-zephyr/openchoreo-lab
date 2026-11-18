@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: S3
+model: claude-sonnet-5-5
+effort: high
+routing: R99-defaut
 github_issue: 50
 ---
 # T-004 — Check CI de frugalité du dev

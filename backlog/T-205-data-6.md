@@ -4,11 +4,14 @@ title: "Spike Garage sur le homelab (objet S3, volume, sauvegarde R2)"
 status: deferred
 phase: P5
 adr: [0008, 0019]
-depends_on: [T-025, T-026, T-030]
+depends_on: [T-025, T-026, T-364]
 class: AUTONOME + MANDAT
 velocity: false
 lane: homelab
 stage: après-porte
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-205 — Spike Garage sur le homelab (objet S3, volume, sauvegarde R2)

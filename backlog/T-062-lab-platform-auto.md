@@ -4,11 +4,14 @@ title: "`lab-platform` en synchronisation automatique (hors lab-pg)"
 status: todo
 phase: P1
 adr: [0002]
-depends_on: [T-001, T-002, T-061]
+depends_on: [T-001, T-002, T-061, T-363]
 class: REVUE
 velocity: true
 lane: socle-oke
 stage: S2
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-062 — `lab-platform` en synchronisation automatique (hors lab-pg)
@@ -23,3 +26,6 @@ platform/install/argocd/
 - [ ] sync auto, `prune: false`, selfHeal
 - [ ] lab-pg exclu tant que le volume n'est pas autorisé
 - [ ] preuve : un changement de CCT appliqué après merge
+
+## Notes
+Intégration 2 : cible = Argo du cluster qui porte le CP (lab-argocd pendant la porte, D4).

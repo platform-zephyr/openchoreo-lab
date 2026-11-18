@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: données
 stage: I8
+model: claude-sonnet-5-5
+effort: high
+routing: R99-defaut
 github_issue: null
 ---
 # T-203 — Métriques sécurité (Scorecard, SLSA, couverture ADR-0006, CVE, secrets)
@@ -23,6 +26,7 @@ tools/metrics/security/
 - [ ] Scorecard ingéré par check
 - [ ] tableau des 8 primitives PASS/FAIL/NOT_TESTED datés
 - [ ] S8 aligné sur T-007
+- [ ] SLSA affiché « Build L2 » (attestations GitHub) ; L3 seulement avec un workflow réutilisable vérifié
 
 ## Notes
 S3 (SLSA) exige l'activation des attestations de build : à vérifier [E].

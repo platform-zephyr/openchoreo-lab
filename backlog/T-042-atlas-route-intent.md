@@ -9,6 +9,9 @@ class: REVUE + MANDAT
 velocity: false
 lane: connaissance
 stage: après-porte
+model: claude-sonnet-5-5
+effort: high
+routing: R99-defaut
 github_issue: null
 ---
 # T-042 — Atlas : entrée de catalogue et skill de routage d'intention

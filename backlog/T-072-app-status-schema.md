@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: true
 lane: preuve
 stage: S1
+model: claude-sonnet-5-5
+effort: medium
+routing: R10-code-simple
 github_issue: null
 ---
 # T-072 — Schéma `app-status.v1` et `_checks` en sortie JSON stable

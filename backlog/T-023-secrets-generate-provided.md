@@ -9,6 +9,9 @@ class: AUTONOME + REVUE + MANDAT
 velocity: false
 lane: secrets
 stage: I2
+model: claude-sonnet-5-5
+effort: high
+routing: R08-manifestes-k8s-openchoreo
 github_issue: null
 ---
 # T-023 — Secrets `generate` et `provided` via OpenBao + ESO, statut `secret-missing`

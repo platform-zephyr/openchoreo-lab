@@ -2,13 +2,16 @@
 id: T-214
 title: "Découper appgen en modules (avant le couloir contrat)"
 status: todo
-phase: P1
+phase: P0
 adr: [0001, 0005]
 depends_on: [T-061]
 class: AUTONOME
 velocity: true
 lane: contrat-appgen
-stage: S2
+stage: S1
+model: claude-sonnet-5-5
+effort: high
+routing: R06-refactor-appgen
 github_issue: null
 ---
 # T-214 — Découper appgen en modules (avant le couloir contrat)

@@ -9,6 +9,9 @@ class: REVUE
 velocity: false
 lane: securite
 stage: S0
+model: claude-opus-5-5
+effort: high
+routing: R01-noyau-securite
 github_issue: null
 ---
 # T-217 — VAP : refus d'un namespace de cellule sans NetworkPolicy default-deny

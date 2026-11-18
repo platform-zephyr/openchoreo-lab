@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: intention
 stage: S3
+model: claude-sonnet-5-5
+effort: high
+routing: R14-banc-intentions
 github_issue: null
 ---
 # T-040 — Catalogue de recettes d'apps homelab vérifiées

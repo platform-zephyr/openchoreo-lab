@@ -9,6 +9,9 @@ class: AUTONOME
 velocity: false
 lane: contrat-appgen
 stage: I1
+model: claude-sonnet-5-5
+effort: high
+routing: R99-defaut
 github_issue: null
 ---
 # T-012 — `spec.verify` : vérification fonctionnelle déclarée (G10)
