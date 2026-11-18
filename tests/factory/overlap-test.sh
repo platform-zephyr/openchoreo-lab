@@ -3,4 +3,4 @@
 # Usage : tests/factory/overlap-test.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-exec env PYTHONDONTWRITEBYTECODE=1 python3 -I "$ROOT/tests/factory/overlap_test.py"
+exec python3 -I -B "$ROOT/tests/factory/overlap_test.py"

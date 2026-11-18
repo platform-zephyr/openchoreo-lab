@@ -28,8 +28,10 @@ import re
 import sys
 from pathlib import Path
 
+# `python3 -I` ignore PYTHONDONTWRITEBYTECODE : sans ceci, l'import laisse tools/backlog/__pycache__ (T-475).
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backlog"))
-import admission
+import admission  # noqa: E402  (après sys.dont_write_bytecode)
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = "overlap-guard.v1"
