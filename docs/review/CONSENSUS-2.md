@@ -60,3 +60,23 @@ worktrees, kube-ops) ; gain de quota perdu avec un routage simplifié ; usage r�
 10. **Doppler** : accès étendu accepté pendant le dev ; pas de plan Team ; export des valeurs avant migration.
 11. **Faille amont** : Paul ne prévient pas l'amont ; la réécriture de l'historique suffit.
 12. **Plan Claude** : Max ou Ultra décidé après le pilote, sur la consommation mesurée.
+
+## Arbitrages de Paul n°3 (2026-11-18, POC accéléré) — ils priment sur la stratégie du matin
+13. **Machine locale** : le Mac de Paul est Apple Silicon (M1, arm64). Colima y est permis pour ce dépôt seulement
+    (profil `openchoreo`, repli et k3d local) ; la règle « VM Linux du Mac » de homelab-infra reste entière ailleurs.
+    Conséquence : le bundle arm64 suffit jusqu'à la porte 2 ; T-366 (amd64) est hors chemin critique.
+14. **OKE** : aucune donnée importante ni volumineuse. Gel ou réinitialisation d'OKE sans cérémonie ; aucune contrainte
+    de continuité de service ni de sauvegarde sur OKE et en local. La recréation d'OKE passe par homelab-infra (T-490).
+15. **Statut des apps** : il est publié aujourd'hui sous l'identité de Paul ; la cible est une identité d'agent, pour
+    que les agents soient autonomes avec ou sans le compte de Paul (T-489 : GitHub App dédiée aux statuts).
+16. **Voie d'intégration** : indifférente ; la vitesse prime sur la rigueur du banc, sans retirer la falsifiabilité ni
+    les tests de sûreté (banc minimal, ADR-0025 accéléré).
+17. **Aucun utilisateur** : discontinuité de service et perte de données acceptées sur OKE et en local. Les données
+    personnelles du homelab restent protégées (limite permanente) : export et restauration avant toute bascule (T-052).
+18. **Livraison** : s'appuyer sur kube-ops et sa livraison Argo CD déjà implémentée quand cela accélère : réutilisation
+    des artefacts (ApplicationSet `apps-generated`, chart `platform-app`) pendant le POC ; branchement sur l'Argo de
+    kube-ops à la cible (T-491, T-492). Objectif : finir le chantier le plus vite possible.
+19. **Surface accessible depuis le cloud** : une surface vraiment joignable depuis les sessions cloud, avec des
+    identités bien gérées et Cloudflare Access, est souhaitée pour éviter le goulot d'accès. Retenu : MCP OpenChoreo
+    en lecture seule derrière Tunnel + Access, un service token par identité d'agent, jamais l'apiserver (T-006) ;
+    exécution cluster depuis le cloud à l'essai (T-493), sans la présenter comme acquise.

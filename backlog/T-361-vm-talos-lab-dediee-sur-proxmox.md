@@ -37,3 +37,5 @@ Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas néc
 (consensus n°2 et arbitrages de Paul, 2026-11-18) : contraintes thermique et NVMe levées (arbitrage 3). Des services de kube-ops peuvent être désactivés pour faire de la place à la VM lab : liste et gain mesurés par T-360, désactivation par PR dans kube-ops, geste de Paul.
 
 Retardé par ADR-0025 (2026-11-18) : dépend de la porte 1 (T-488) ; aucun geste sur le homelab avant une valeur prouvée pour les agents.
+
+Inchangé (arbitrages de Paul n°3, 2026-11-18) : reste derrière la porte 1 (T-488).
