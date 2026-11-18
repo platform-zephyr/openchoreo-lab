@@ -47,7 +47,7 @@
 | Namespaces témoins | N01 CREATE dp-* conforme (`oldObject` nul), N07 annotation, N08 CREATE dp-* `baseline` direct (m1, connu), N10 DELETE dp-* | admis |
 | Namespacés | W01 kube-system, W04 delete `lab-pg-superuser`, W05 ConfigMap lab-pg, W06 Deployment dans `openchoreo-data-plane`, W07 groupe étranger | refus ; W02 dp-*, W03 Event : admis |
 | RBAC/politiques | R02 RoleBinding→admin, R03 2e sujet (R4), R04 Role, R05 ClusterRole, R06 CRB, R07 CCNP, R09 VWC | refus ; R01 amorce conforme, R10 TokenReview : admis |
-| lab-pg (R6) | P02 cible superuser, P03/P03b, P05 clé hors `lab-pg-roles/`, P06 sélection superuser, P07 sans `data`, P09 jeton SA, P10 image busybox, P11 autre secretKeyRef, P12 hostPath, P13 nom | refus ; P01, P04, P08, P14 (gabarit CRT) : admis |
+| lab-pg (R6) | P02 cible superuser, P03/P03b, P05 clé hors `lab-pg-roles-`, P05b-e (T-456, NOT_TESTED en runtime à ce jour) ancienne clé `lab-pg-roles/app`, clé d'une autre app, préfixe seul, clé suffixée, P06 sélection superuser, P07 sans `data`, P09 jeton SA, P10 image busybox, P11 autre secretKeyRef, P12 hostPath, P13 nom | refus ; P01, P04, P08, P14 (gabarit CRT) : admis |
 | Identités d'app | A01 ClusterRole, A02-A03 hors cellule | refus ; A04 dans sa cellule : admis |
 
 ## VAP-2 `lab-cell-pod-hardening` et baseline OKE
