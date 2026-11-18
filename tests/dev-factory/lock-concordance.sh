@@ -10,6 +10,9 @@
 #    <OUTIL>_SHA256 (arm64) / <OUTIL>_AMD64_SHA256 (amd64) égale au lock, choisie par TARGETARCH. Un outil installé par
 #    le Dockerfile dont le lock n'a pas l'empreinte amd64 est BLOCKED (ARG vide, build amd64 arrêté) : jamais inventée.
 #    Verdict par architecture : PASS arm64 ; PASS amd64 seulement si aucune empreinte amd64 ne manque ;
+#  - T-472, apt reproductible : DEBIAN_SNAPSHOT du lock = ARG du Dockerfile (forme AAAAMMJJTHHMMSSZ), sources apt réécrites
+#    vers snapshot.debian.org à cet instant, chaque paquet de `apt-get install` épinglé (nom=version), aucun
+#    --allow-downgrades ni retrait de l'épinglage (le build réel reste à prouver : devcontainer-build.yaml) ;
 #  - les paquets pip (yamllint, PyYAML, jsonschema) sont identiques dans le Dockerfile, ci.yaml (yamllint, PyYAML)
 #    et tools/appgen/requirements.txt (PyYAML, jsonschema).
 # Usage : tests/dev-factory/lock-concordance.sh      (LOCK, DF, CI, REQ surchargeables : sert aux cas négatifs)
@@ -106,6 +109,24 @@ for t in "${tools_df[@]}"; do
   grep -Fq "sha=\"\${${t}_SHA256}\"" "$DF" || ko "$t : branche arm64 de TARGETARCH absente"
 done
 [[ "${#tools_df[@]}" -gt 0 ]] || ko "aucun outil binaire détecté dans le Dockerfile"
+
+# T-472 : paquets apt épinglés et sources figées à l'instant du lock (sans réseau).
+snap="${lock[DEBIAN_SNAPSHOT]:-}"
+[[ "$snap" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || ko "DEBIAN_SNAPSHOT absent ou invalide dans $LOCK"
+if ! { grep -Eq 'snapshot\.debian\.org/archive/debian-security/\$\{DEBIAN_SNAPSHOT\}' "$DF" &&
+  grep -Eq 'snapshot\.debian\.org/archive/debian/\$\{DEBIAN_SNAPSHOT\}' "$DF"; }; then
+  ko "Dockerfile : sources apt non réécrites vers snapshot.debian.org/\${DEBIAN_SNAPSHOT}"
+fi
+! grep -Eq -- '--allow-downgrades|--allow-unauthenticated|Check-Valid-Until=true' "$DF" || ko "Dockerfile : option apt affaiblissant l'épinglage"
+apt_block="$(awk '/apt-get .*install/{f=1;next} f&&/rm -rf \/var\/lib\/apt\/lists/{f=0} f' "$DF")"
+npkg=0
+while IFS= read -r l; do
+  l="${l//[ \\;]/}"
+  [[ -z "$l" ]] && continue
+  npkg=$((npkg + 1))
+  [[ "$l" =~ ^[a-z0-9][a-z0-9.+-]*=[^=]+$ ]] || ko "Dockerfile : paquet apt non épinglé (nom=version attendu) : $l"
+done <<<"$apt_block"
+[[ "$npkg" -gt 0 ]] || ko "Dockerfile : aucun paquet apt détecté"
 
 # Chaque outil requis de doctor a sa version épinglée dans le lock et son installation dans cloud-setup.sh.
 for t in helm kubeconform actionlint gitleaks shellcheck ruff yq pre-commit; do

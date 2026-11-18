@@ -47,3 +47,7 @@ RUFF_VERSION=0.16.9
 RUFF_AMD64_SHA256=1bfbb819b5d4f9af501748862276b60e412d336034d99387691a4d4bce7a6f13
 PRECOMMIT_VERSION=4.6.0
 PRECOMMIT_PYZ_SHA256=ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65
+# Instant snapshot.debian.org des sources apt du Dockerfile (T-472) : celui du commentaire de /etc/apt/sources.list.d/debian.sources
+# de l'image de base python:3.12-slim-bookworm@sha256:935c3c5b... (construite le 2026-11-05). Les paquets apt épinglés du Dockerfile
+# sont les versions de cet instant ; toute montée du digest de base change cette ligne, le Dockerfile ET les versions apt.
+DEBIAN_SNAPSHOT=20261104T212339Z

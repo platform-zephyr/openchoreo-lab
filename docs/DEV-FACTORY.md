@@ -89,7 +89,7 @@ Limite : le pre-push exécute le périmètre `--changed` ; la CI reste la preuve
 
 - Le processus Claude Code tourne sur l'hôte, dans le worktree : l'isolation couvre les **commandes** exécutées (`dev exec`), pas l'agent lui-même.
 - Le conteneur écrit dans le `.git` commun (monté au même chemin pour que les worktrees fonctionnent).
-- Les paquets apt sont épinglés à la version bookworm du moment ; une mise à jour de sécurité peut les rendre introuvables : mettre à jour la PR.
+- Les paquets apt sont épinglés aux versions de l'instant snapshot.debian.org de l'image de base (`DEBIAN_SNAPSHOT`, tools/dev/toolchain.lock ; T-472) : l'index est immuable, une mise à jour de sécurité ne casse plus le build. Montée de la base = nouveau digest + nouvel instant + nouvelles versions.
 - Les tests `crd-schema` (clone du dépôt OpenChoreo) et `tests/k3d` restent hors `dev test`.
 - Pas de build d'image en CI : le job `dev-factory` vérifie les textes (shellcheck, yamllint, JSON, pins, garde-fou négatif).
 
