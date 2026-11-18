@@ -327,13 +327,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Historique complet : statut derive (tools/backlog/derive.py) = cases + trailers `Ticket:` de origin/main.
+          fetch-depth: 0
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-      - name: Tests, controle des tickets et fraicheur de backlog/STATUS.md (tools/dev/check)
-        # backlog-status (T-473) : python3 tools/backlog/status.py --check, rc 1 si STATUS.md est perime
-        # (regenerer : python3 -B tools/backlog/status.py --write).
+      - name: Tests, controle des tickets et generation de la vue d'etat (tools/dev/check)
+        # backlog-status : la vue se genere sans erreur ; STATUS.md n'est plus versionne ni exige a jour.
         run: tools/dev/check --static --only backlog-unittest,backlog,backlog-status --strict
+      - name: Vue d'etat du backlog publiee dans le resume du job
+        run: python3 -B tools/backlog/status.py >>"$GITHUB_STEP_SUMMARY"
 
   lint-code:
     # ADR-0024, T-413 : ruff (bogues F,B,E9 bloquants ; jeu complet en avertissement) et shellcheck -S warning sur tous les *.sh versionnes.
