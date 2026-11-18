@@ -3,7 +3,7 @@
 Date : 2026-11-18. Niveau de preuve : STATIC. Dépôt PUBLIC : aucune IP, aucun hôte interne, aucun secret.
 
 ## Conclusion
-- Le contenu du bac à sable est prêt (55 fichiers), mais il n'est **pas poussé** : BLOCKED (§5).
+- Le contenu du bac à sable (55 fichiers) est poussé sur `main` du bac à sable, commit `742bbd6b8c4e894b8bc31800ee234de0d2b80dd6` (2026-11-18, poussé par la session coordinatrice : l'agent n'avait pas le droit de pousser).
 - `helm template` du chart `platform-app` : PASS pour `echo-bench` seulement. Pour `miniflux`, le chart
   refuse la base par conception ; pour `ntfy`, le contrat ne sait pas passer l'argument `serve`. Ces deux apps
   suivent donc le chemin Kustomize de kube-ops.
@@ -15,7 +15,7 @@ Date : 2026-11-18. Niveau de preuve : STATIC. Dépôt PUBLIC : aucune IP, aucun 
 | kube-ops (dépôt public) | `SmadjaPaul/kube-ops`, SHA `ef50472bc427bbb5fb342cebf2f4db408157f5b3` (branche `main`) |
 | Lecture | 56 fichiers lus par `raw.githubusercontent.com` à ce SHA, identiques à un clone local du même SHA |
 | API GitHub publique pour kube-ops | NOT_TESTED : refusée par le proxy de la session (le SHA vient du clone local, puis la lecture par raw le confirme) |
-| Bac à sable | `platform-zephyr/bench-ab-arm-k` (privé, vide sur `main`) ; SHA du commit : **aucun (non poussé)** |
+| Bac à sable | `platform-zephyr/bench-ab-arm-k` (privé, vide sur `main`) ; SHA du commit : `742bbd6b8c4e894b8bc31800ee234de0d2b80dd6` (poussé le 2026-11-18) |
 | Empreinte du contenu préparé | sha256 de la liste `sha256sum` triée des 55 fichiers : `0183e729f6b395162f78f5b15965481734f61f73e1ae64aba5962053f9796078` |
 
 ## 2. Contenu du bac à sable
@@ -74,7 +74,7 @@ garde l'URL de kube-ops et `svc-<app>`. Aucun secret : `gitleaks dir` PASS (aucu
 | kubeconform (`-strict -ignore-missing-schemas`) | PASS (STATIC) | 29 ressources : 16 valides, 0 invalide, 13 ignorées (CRD sans schéma) |
 | `kustomize build` ntfy, miniflux | NOT_TESTED | binaire absent de la session |
 | Diff des 3 fichiers de livraison | PASS (STATIC) | seuls D1-D5 changent (diff unifié lu) |
-| Poussée du commit initial | BLOCKED | `git` refusé dans le clone du bac à sable par l'isolation du worktree de la session ; écriture par l'API GitHub refusée par le proxy (HTTP 403). Le contenu est écrit dans le clone, sans commit |
+| Poussée du commit initial | PASS (2026-11-18, `742bbd6`, par la session coordinatrice) ; l'état BLOCKED d'origine était : | `git` refusé dans le clone du bac à sable par l'isolation du worktree de la session ; écriture par l'API GitHub refusée par le proxy (HTTP 403). Le contenu est écrit dans le clone, sans commit |
 | Accès de l'App de l'usine au bac à sable | NOT_PROVEN | dépôt privé lisible et inscriptible par l'identité de la session seulement |
 | Applications du bras K rattachées à `lab-k` sur OKE | NOT_TESTED | l'AppProject `lab-k` n'apparaît pas dans la preuve de l'étape 11 de T-487 (projets listés : `lab-platform`, `lab-o`, `lab-authz`, `lab-root`) |
 | Check run publié par Argo CD Notifications | NOT_TESTED | T-005, T-489 |
