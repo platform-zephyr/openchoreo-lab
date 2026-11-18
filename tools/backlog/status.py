@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Vue d'état du backlog (T-473) : ce qui est fait, en cours, bloqué, prêt. Génère `backlog/STATUS.md`.
 
-Lecture seule des tickets `backlog/T-*.md` (analyse d'en-tête partagée avec check.py). Sortie déterministe : tri
-naturel par identifiant, aucun horodatage de génération ; une date n'apparaît que si elle est écrite dans les notes
-du ticket.
+Lecture seule des tickets `backlog/T-*.md` (analyse d'en-tête partagée avec check.py). Statut affiché : statut
+dérivé (`derive.py` : cases + historique git local), l'écart avec l'en-tête est listé dans les anomalies. Sortie
+déterministe pour un même historique : tri naturel par identifiant, aucun horodatage de génération ; une date
+n'apparaît que si elle est écrite dans les notes du ticket.
+
+`backlog/STATUS.md` n'est plus versionné (conflit à chaque fusion concurrente) : la CI publie la vue dans le résumé du
+job `backlog` ; en local, `--write` l'écrit pour la lire.
 
 Usage :
   python3 tools/backlog/status.py            # imprime la vue sur stdout
-  python3 tools/backlog/status.py --write    # écrit backlog/STATUS.md
-  python3 tools/backlog/status.py --check    # code 1 si backlog/STATUS.md est périmé (branchable en CI plus tard)
+  python3 tools/backlog/status.py --write    # écrit backlog/STATUS.md (local, ignoré par git)
+  python3 tools/backlog/status.py --check    # code 1 si backlog/STATUS.md diffère de la vue calculée
 """
 from __future__ import annotations
 
@@ -20,6 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check
+import derive
 import priority
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,8 +55,9 @@ def cell(text: str, limit: int = MAX_CELL) -> str:
     return one if len(one) <= limit else one[: limit - 1].rstrip() + "…"
 
 
-def load(backlog: Path) -> tuple[dict[str, Row], list[str]]:
-    """Lit les tickets ; renvoie (lignes par id, anomalies de lecture)."""
+def load(backlog: Path, evidence: derive.Evidence | None = None) -> tuple[dict[str, Row], list[str]]:
+    """Lit les tickets ; renvoie (lignes par id, anomalies de lecture). Statut : dérivé (derive.py)."""
+    ev = evidence if evidence is not None else derive.collect(backlog.resolve().parent)
     rows: dict[str, Row] = {}
     problems: list[str] = []
     for f in sorted(backlog.glob("T-*.md")):
@@ -70,7 +76,8 @@ def load(backlog: Path) -> tuple[dict[str, Row], list[str]]:
         title = TITLE_RE.search(f.read_text(encoding="utf-8"))
         blocked = BLOCK_RE.search(notes)
         rows[t.id] = {
-            "id": t.id, "file": f.name, "title": title.group(1) if title else t.get("title"), "status": t.status, "deps": t.deps,
+            "id": t.id, "file": f.name, "title": title.group(1) if title else t.get("title"), "deps": t.deps,
+            "status": derive.derive(t.id, t.status, crit, ev, t.get("github_issue")), "declared": t.status,
             "issue": t.get("github_issue"), "checked": sum(b != " " for b in boxes), "total": len(boxes),
             "date": max(dates) if dates else "", "proofs": proofs,
             "reste": reste.group(1) if reste else "",
@@ -143,9 +150,9 @@ def section_blocked(rows: dict[str, Row], repo: str) -> list[str]:
     return ["## Bloqué (`blocked`)", "", *table(["Ticket", "Titre", "Blocage", "Issue"], lines)]
 
 
-def priority_info(backlog: Path) -> tuple[dict[str, int], dict[str, tuple], str]:
+def priority_info(backlog: Path, evidence: derive.Evidence | None = None) -> tuple[dict[str, int], dict[str, tuple], str]:
     """(score par ticket, clé de tri par ticket, erreur de graphe éventuelle) ; vide si le graphe est invalide."""
-    nodes = priority.load_nodes(backlog)
+    nodes = priority.load_nodes(backlog, evidence)
     try:
         sc = priority.scores(nodes)
     except priority.PriorityError as e:
@@ -193,6 +200,8 @@ def anomalies(rows: dict[str, Row], problems: list[str], graph_error: str = "") 
         _, unknown = dep_state(rows, r)
         if unknown:
             out.append(f"{r['id']} : dépendance inconnue {', '.join(unknown)}")
+        if r["declared"] != r["status"]:
+            out.append(f"{r['id']} : en-tête `{r['declared']}`, statut dérivé `{r['status']}` (le calcul fait foi)")
         if r["status"] in check.ACTIVE and not r["total"]:
             out.append(f"{r['id']} : aucun critère de fin (cases à cocher)")
         if r["status"] == "in-progress" and not r["reste"] and not r["first_open"]:
@@ -202,13 +211,15 @@ def anomalies(rows: dict[str, Row], problems: list[str], graph_error: str = "") 
     return ["## Anomalies de lecture", ""] + ([f"- {a}" for a in out] if out else ["_Aucune._"]) + [""]
 
 
-def render(backlog: Path, repo: str = REPO) -> str:
-    rows, problems = load(backlog)
-    sc, keys, graph_error = priority_info(backlog)
+def render(backlog: Path, repo: str = REPO, evidence: derive.Evidence | None = None) -> str:
+    ev = evidence if evidence is not None else derive.collect(backlog.resolve().parent)
+    rows, problems = load(backlog, ev)
+    sc, keys, graph_error = priority_info(backlog, ev)
     count = Counter(str(r["status"]) for r in rows.values())
     head = [
         "# État du backlog (généré)", "",
-        "Généré par `python3 tools/backlog/status.py --write` depuis `backlog/T-*.md` ; ne pas éditer à la main. "
+        "Généré par `python3 tools/backlog/status.py` depuis `backlog/T-*.md` et l'historique git local "
+        "(statut dérivé : cases cochées + PR fusionnée) ; non versionné, ne pas éditer à la main. "
         "Aucune date de génération : une date n'est affichée que si le ticket l'écrit dans ses notes. "
         "La preuve est la référence citée dans le ticket (fichier `evidence/` ou `PR #n`), pas une vérification runtime. "
         "Ordre de travail : [ROADMAP.md](ROADMAP.md) ; prochaines étapes : [NEXT.md](NEXT.md).", "",
