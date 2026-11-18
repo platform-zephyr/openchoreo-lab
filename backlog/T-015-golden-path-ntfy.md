@@ -6,6 +6,8 @@ phase: P1
 adr: [0004, 0011]
 depends_on: [T-003, T-005]
 class: AUTONOME
+velocity: false
+lane: apps
 github_issue: 53
 ---
 # T-015 — Golden path n°2 (ntfy interne) : development puis production

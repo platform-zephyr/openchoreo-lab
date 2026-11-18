@@ -6,6 +6,8 @@ phase: P0
 adr: [0006]
 depends_on: [T-001]
 class: REVUE
+velocity: false
+lane: socle-oke
 github_issue: null
 ---
 # T-060 — Résidu kgateway : SA avec lecture des Secrets cluster-wide (B6-sa-effective FAIL)

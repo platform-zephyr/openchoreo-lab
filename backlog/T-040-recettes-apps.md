@@ -6,6 +6,8 @@ phase: P4
 adr: [0013]
 depends_on: [T-010]
 class: AUTONOME
+velocity: false
+lane: intention
 github_issue: null
 ---
 # T-040 — Catalogue de recettes d'apps homelab vérifiées

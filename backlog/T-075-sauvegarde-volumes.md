@@ -6,6 +6,8 @@ phase: P2
 adr: [0008]
 depends_on: [T-025, T-030]
 class: AUTONOME
+velocity: false
+lane: donnees
 github_issue: null
 ---
 # T-075 — Sauvegarde des volumes : spike VolSync/restic vs Velero/Kopia

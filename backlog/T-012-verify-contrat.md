@@ -6,6 +6,8 @@ phase: P1
 adr: [0011, 0013]
 depends_on: [T-005]
 class: AUTONOME
+velocity: false
+lane: contrat-appgen
 github_issue: null
 ---
 # T-012 — `spec.verify` : vérification fonctionnelle déclarée (G10)

@@ -6,6 +6,8 @@ phase: P1
 adr: [0013]
 depends_on: [T-005]
 class: AUTONOME
+velocity: true
+lane: intention
 github_issue: null
 ---
 # T-043 — Gabarits de plan et de compte rendu dans `add-app`

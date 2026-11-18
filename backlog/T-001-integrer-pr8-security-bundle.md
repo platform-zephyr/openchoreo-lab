@@ -6,6 +6,8 @@ phase: P0
 adr: [0002]
 depends_on: []
 class: REVUE
+velocity: true
+lane: socle-oke
 github_issue: null
 ---
 # T-001 — Fusionner la PR #8 (installation fail-closed avec le security bundle)

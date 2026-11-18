@@ -4,8 +4,10 @@ title: "Exposition `private | internal | public` : route par hôte (G6) et refus
 status: todo
 phase: P2
 adr: [0010, 0009]
-depends_on: [T-024, T-061]
+depends_on: [T-061, T-189]
 class: AUTONOME
+velocity: false
+lane: exposition
 github_issue: null
 ---
 # T-028 — Exposition `private | internal | public` : route par hôte (G6) et refus « public sans auth »

@@ -1,11 +1,13 @@
 ---
 id: T-009
 title: "Estimer le budget OKE et tenir le registre des quotas gratuits"
-status: todo
+status: dropped
 phase: P0
 adr: [0003, 0004]
 depends_on: [T-001]
 class: AUTONOME
+velocity: false
+lane: cout
 github_issue: null
 ---
 # T-009 — Estimer le budget OKE et tenir le registre des quotas gratuits
@@ -20,3 +22,6 @@ tools/oke/verify.sh (lecture), docs/
 - [ ] mesure datée (requests, usage, pods, IP)
 - [ ] tableau : composant → cluster recommandé
 - [ ] registre des quotas gratuits (volumes orphelins, disque de boot) et contrôle périodique
+
+## Notes
+Absorbé par T-141 (intégration des recherches du 2026-11-18).

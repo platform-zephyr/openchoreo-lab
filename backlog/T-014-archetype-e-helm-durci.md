@@ -6,6 +6,8 @@ phase: P1
 adr: [0005, 0006]
 depends_on: [T-010]
 class: AUTONOME
+velocity: false
+lane: contrat-appgen
 github_issue: null
 ---
 # T-014 — Archétype E : chart Helm tiers encapsulé dans une cellule durcie (G7)

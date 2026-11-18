@@ -6,6 +6,8 @@ phase: P0
 adr: [0012]
 depends_on: []
 class: REVUE
+velocity: true
+lane: ci
 github_issue: null
 ---
 # T-008 — Check CI des tickets `backlog/`

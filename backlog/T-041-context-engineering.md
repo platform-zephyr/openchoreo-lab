@@ -6,6 +6,8 @@ phase: P1
 adr: [0012]
 depends_on: []
 class: REVUE
+velocity: true
+lane: connaissance
 github_issue: null
 ---
 # T-041 — Context engineering : contexte en couches, AGENTS.md court, checks de fraîcheur

@@ -6,6 +6,8 @@ phase: P2
 adr: [0008, 0003]
 depends_on: [T-022, T-062]
 class: AUTONOME + MANDAT
+velocity: false
+lane: exploitation
 github_issue: null
 ---
 # T-063 — Reprise après sinistre de la plateforme : runbook de reconstruction et drill

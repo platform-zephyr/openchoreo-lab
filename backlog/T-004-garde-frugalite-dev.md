@@ -6,6 +6,8 @@ phase: P0
 adr: [0004]
 depends_on: [T-003]
 class: AUTONOME
+velocity: false
+lane: contrat-appgen
 github_issue: 50
 ---
 # T-004 — Check CI de frugalité du dev

@@ -6,6 +6,8 @@ phase: P0
 adr: [0010, 0007]
 depends_on: [T-001, T-060]
 class: REVUE + MANDAT
+velocity: false
+lane: acces-mcp
 github_issue: 52
 ---
 # T-006 — MCP OpenChoreo lisible depuis les sessions cloud (Tunnel + Access + authz)

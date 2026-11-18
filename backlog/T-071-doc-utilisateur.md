@@ -4,8 +4,10 @@ title: "Guide utilisateur : demander, suivre, annuler, déposer un secret"
 status: todo
 phase: P4
 adr: [0013, 0014]
-depends_on: [T-043, T-023]
+depends_on: [T-023, T-043]
 class: AUTONOME
+velocity: false
+lane: intention
 github_issue: null
 ---
 # T-071 — Guide utilisateur : demander, suivre, annuler, déposer un secret

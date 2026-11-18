@@ -4,8 +4,10 @@ title: "Banc d'essai initial de 10 intentions (A, répare, promeut)"
 status: todo
 phase: P4
 adr: [0013]
-depends_on: [T-015, T-041, T-043, T-040]
+depends_on: [T-015, T-040, T-041, T-043]
 class: AUTONOME
+velocity: false
+lane: intention
 github_issue: null
 ---
 # T-044 — Banc d'essai initial de 10 intentions (A, répare, promeut)

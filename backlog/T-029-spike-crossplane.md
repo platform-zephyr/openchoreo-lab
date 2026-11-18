@@ -4,8 +4,10 @@ title: "Spike Crossplane sur le homelab (provider Cloudflare pour Access)"
 status: todo
 phase: P2
 adr: [0009]
-depends_on: [T-030, T-009, T-061]
+depends_on: [T-030, T-061, T-141]
 class: AUTONOME + MANDAT
+velocity: false
+lane: exposition
 github_issue: null
 ---
 # T-029 — Spike Crossplane sur le homelab (provider Cloudflare pour Access)

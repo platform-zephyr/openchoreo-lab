@@ -1,11 +1,13 @@
 ---
 id: T-024
 title: "Identité déclarée : `identity.mode: oidc | proxy | none`"
-status: todo
+status: dropped
 phase: P2
 adr: [0007]
-depends_on: [T-023, T-074, T-061]
+depends_on: [T-023, T-061, T-074]
 class: REVUE
+velocity: false
+lane: identite
 github_issue: null
 ---
 # T-024 — Identité déclarée : `identity.mode: oidc | proxy | none`
@@ -22,3 +24,5 @@ docs/schema/, tools/appgen/, platform/identity/, clusters/*/capabilities.yaml
 
 ## Notes
 Préciser comment les blueprints atteignent l'Authentik de production (kube-ops #1630) et où tourne Authentik en k3d. `platform/identity/` est dans le noyau.
+
+Absorbé par T-189 (intégration des recherches du 2026-11-18).

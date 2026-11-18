@@ -6,6 +6,8 @@ phase: P0
 adr: [0002]
 depends_on: [T-001, T-002]
 class: REVUE
+velocity: true
+lane: socle-oke
 github_issue: null
 ---
 # T-062 — `lab-platform` en synchronisation automatique (hors lab-pg)
