@@ -1,0 +1,278 @@
+# Propositions du domaine « Usine d'agents 24/7 et minimisation des interventions humaines »
+# ADR proposé : NEW-FACTORY = ADR-0021 (docs/research/AGENT-FACTORY-24-7.md §9). Champs en plus du format : stage, model (suggestions).
+# Absorbe ou modifie : T-210 (dispatcher, réécrit par FAC-3/4/5), T-145 (plafond LLM, absorbé par FAC-2), T-215 (identité, étendu par FAC-1),
+# T-008 (lint des tickets : champ `model`, FAC-15). Aucun secret : seuls des noms de secrets apparaissent.
+- key: FAC-1
+  title: "Mandat de lot et identité de merge : charte, GitHub App étendue, aucun merge avec le compte de Paul"
+  phase: P0
+  adr: ["NEW-FACTORY", "0002"]
+  depends_on: ["T-061", "T-215"]
+  class: REVUE + MANDAT
+  velocity: true
+  parallel_lane: "gouvernance"
+  stage: S0
+  model: opus
+  scope: "missions/mandates/, docs/AGENT-IDENTITY.md, docs/AGENT-PR-MODEL.md, .github/CODEOWNERS (ligne missions/mandates/)"
+  intent: "Définir le mandat de lot (étape, tickets, chemins, plafond de diff et de dépense, expiration, conditions) signé par PR dans le noyau, et étendre l'App de T-215 aux permissions de dispatch et de merge sous conditions."
+  done:
+    - "schéma `mandate.v1` + validateur ; un mandat expiré ou hors liste de chemins est refusé (test négatif)"
+    - "App : permissions listées (Contents RW, Pull requests RW, Actions RW, Metadata R), installée sur ce dépôt seul ; essai : une PR du noyau ouverte par l'App n'est pas fusionnable"
+    - "essai daté : une session cloud ouvre une PR du noyau ; l'identité de l'auteur et la non-fusionnabilité sont consignées"
+  notes: "MANDAT : création de l'App et option « Allow auto-merge » par Paul. Le mandat n'ouvre jamais secret, accès, dépense hors free tier, apply, INTERDIT (platform-guardrails §1-2)."
+  absorbs: ["T-215"]
+- key: FAC-2
+  title: "Gouverneur de quota : ledger 5 h et hebdomadaire, seuils, disjoncteur, kill-switch PAUSE"
+  phase: P0
+  adr: ["NEW-FACTORY", "0017"]
+  depends_on: ["T-061", "FAC-1"]
+  class: REVUE + MANDAT
+  velocity: true
+  parallel_lane: "agents"
+  stage: S0
+  model: sonnet
+  scope: "factory/config.yaml, factory/PAUSE, tools/factory/ledger.py, tools/cost/agent_usage.py, docs/AGENT-PR-MODEL.md"
+  intent: "Sommer par tentative total_cost_usd, tours et durée (JSON de claude -p) par fenêtre de 5 h et par semaine ; ralentir à 70 %, arrêter l'AUTONOME à 85 %, pause à 100 %, réserve de 15 % pour Paul ; disjoncteur sur le message de limite et reprise au reset."
+  done:
+    - "test hors ligne : un ledger simulé à 70/85/100 % change l'admission comme prévu"
+    - "disjoncteur : une réponse « session limit » simulée stoppe les lancements et programme la reprise au reset annoncé"
+    - "factory/PAUSE présent = aucun lancement, aucun merge automatique (test)"
+    - "règle écrite : une clé API facturée au token exige un plafond mensuel Console (MANDAT) ; aucun euro par agent promis"
+  notes: "Les valeurs sont des estimations côté client (docs headless), pas la facture. Pas d'API de solde d'abonnement lue : NOT_PROVEN, ne pas gratter claude.ai. Fichiers du noyau (factory/) : REVUE."
+  absorbs: ["T-145"]
+- key: FAC-3
+  title: "next.py et admission : prêts, classe recalculée, couloirs, ressources exclusives, chevauchement de chemins"
+  phase: P0
+  adr: ["NEW-FACTORY", "0012", "0013"]
+  depends_on: ["T-007", "T-008", "T-061"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  stage: S0
+  model: sonnet
+  scope: "tools/backlog/next.py, tools/backlog/admission.py, tests/backlog/"
+  intent: "Calculer les tickets prêts (dépendances done, étape ouverte, aucun geste humain en attente) puis l'admission : au plus 2 par couloir, 1 sur contrat-appgen avant T-214, exclusive_resources libres, aucun chevauchement de `scope` avec une PR ouverte, budget du gouverneur."
+  done:
+    - "next.py liste prêts et débloqués, sortie JSON stable (`ready.v1`)"
+    - "classe recalculée depuis les chemins touchés, jamais lue de l'en-tête ; un chemin du noyau force REVUE (test)"
+    - "tests : deux tickets du même couloir, deux scopes qui se chevauchent, une ressource exclusive occupée : un seul est admis"
+  notes: "tools/backlog/ est noyau (CONSENSUS #1) : REVUE. Cœur de T-210."
+  absorbs: ["T-210"]
+- key: FAC-4
+  title: "Exécutant claude-agent.yml par workflow_dispatch : ticket, modèle, journal JSON, mission-result.v1"
+  phase: P0
+  adr: ["NEW-FACTORY", "0002", "0013"]
+  depends_on: ["T-215", "FAC-1", "FAC-3"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  stage: S0
+  model: sonnet
+  scope: ".github/workflows/claude-agent.yml, tools/factory/run-ticket.sh, docs/AGENT-RUNNERS.md"
+  intent: "Remplacer le déclencheur par label (acteur SmadjaPaul) par workflow_dispatch(ticket, modèle) lancé par Paul ou l'App ; une session neuve par ticket ; --model, --max-turns, timeout, concurrence par ticket ; sortie JSON archivée ; compte rendu au format de mission-contract Atlas."
+  done:
+    - "lancement manuel avec une liste d'ID : N PR parallèles sur couloirs distincts (preuve datée)"
+    - "chaque PR porte durée, tours, coût estimé et statuts PASS/FAIL/NOT_TESTED"
+    - "`show_full_output` absent ; aucun secret hors jeton Claude ; `--permission-mode auto --permission-prompts none` (ou dontAsk + allowedTools) vérifié"
+    - "une PR du noyau lancée par l'exécutant reste non fusionnable"
+  notes: "Un label posé par GITHUB_TOKEN ne déclenche pas de workflow : utiliser dispatch avec le jeton de l'App. Plafond de départ 4, relevé par FAC-13."
+  absorbs: ["T-210"]
+- key: FAC-5
+  title: "Dispatcher planifié : cron 15 min et sur merge, file par couloir, boucle d'admission"
+  phase: P0
+  adr: ["NEW-FACTORY"]
+  depends_on: ["FAC-2", "FAC-3", "FAC-4"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  stage: S1
+  model: sonnet
+  scope: ".github/workflows/factory-dispatch.yml, tools/factory/dispatch.py"
+  intent: "À chaque tick : relire backlog, PR, runs ; admettre les prêts selon FAC-3 et le gouverneur ; lancer FAC-4 ; ne jamais dupliquer un lancement (vérifier branche, PR et run avant)."
+  done:
+    - "idempotence : deux ticks consécutifs ne lancent pas deux fois le même ticket (test)"
+    - "preuve : 24 h de ticks, 0 doublon, 0 lancement pendant PAUSE ou disjoncteur ouvert"
+    - "étape fermée = aucun lancement ; seules une ou deux étapes ouvertes à la fois"
+  notes: "S0 reste manuel (CONSENSUS #11) ; le cron s'active après la preuve de FAC-4."
+- key: FAC-6
+  title: "Merge automatique sous conditions (App de merge) et merge armé pour le noyau"
+  phase: P0
+  adr: ["NEW-FACTORY", "0002"]
+  depends_on: ["FAC-1", "FAC-3", "FAC-12", "T-007"]
+  class: REVUE + MANDAT
+  velocity: true
+  parallel_lane: "gouvernance"
+  stage: S1
+  model: opus
+  scope: ".github/workflows/factory-merge.yml, tools/factory/merge_gate.py, tests/factory/"
+  intent: "Armer `gh pr merge --auto --squash` avec le jeton de l'App quand : auteur claude/*, chemins hors noyau, classe AUTONOME recalculée, ci-ok vert, revue indépendante PASS, diff sous le seuil, une seule PR par (app, env), pas de PAUSE. Noyau : armer aussi, mais l'approbation de Paul sur mobile reste requise."
+  done:
+    - "matrice de tests : chaque condition fausse = label needs-paul, aucun merge (7 cas négatifs)"
+    - "essai daté : PR AUTONOME fusionnée sans humain ; PR du noyau fusionnée après un seul tap d'approbation de Paul"
+    - "aucun contournement : pas de --admin, ruleset et checks requis intacts"
+  notes: "MANDAT : activer « Allow auto-merge » ; vérifier le comportement avec le ruleset à 0 approbation (NOT_PROVEN à ce jour). Pas d'automerge des digests d'actions ni d'apps avant T-124 (CONSENSUS #10)."
+- key: FAC-7
+  title: "ntfy seulement si nécessaire et résumé quotidien unique"
+  phase: P1
+  adr: ["NEW-FACTORY", "0015"]
+  depends_on: ["FAC-5"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "observabilité"
+  stage: S1
+  model: haiku
+  scope: "tools/factory/notify.py, .github/workflows/factory-digest.yml, docs/FACTORY-RUNBOOK.md"
+  intent: "Notifier par ntfy quatre cas : needs-paul, usine en pause, ticket blocked > 6 h, incident runtime. Un commentaire quotidien dans l'issue « Usine : résumé » (fusionnées, en cours, bloquées, % de quota, gestes attendus)."
+  done:
+    - "test : 4 cas déclenchent une notification, une PR fusionnée normale n'en déclenche aucune"
+    - "dédoublonnage : au plus 1 notification par cause et par 6 h"
+    - "résumé daté publié pendant 3 jours consécutifs sans intervention"
+  notes: "MANDAT : sujet ntfy privé, jeton en secret du dépôt (nom seulement), abonnement du téléphone. Le contenu public d'un sujet ntfy n'est pas secret : ne jamais y mettre de détail sensible."
+- key: FAC-8
+  title: "Reprise automatique : max_attempts, tickets bloqués, rebase par l'App, disjoncteur de boucle"
+  phase: P1
+  adr: ["NEW-FACTORY"]
+  depends_on: ["FAC-5"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "agents"
+  stage: S1
+  model: sonnet
+  scope: "tools/factory/recover.py, tests/factory/"
+  intent: "Une tentative échouée relance une fois sur branche neuve avec le journal d'échec ; deux échecs passent le ticket en blocked avec la cause et la demande précise ; verrou abandonné après 3 h sans commentaire ; rebase automatique des PR en conflit ; refus d'une 3e tentative et d'une seconde PR d'agent sur la même (app, env)."
+  done:
+    - "tests : échec simulé, reprise unique, puis blocked ; verrou périmé libéré"
+    - "test de boucle : un bot ne déclenche pas un bot (allowed_bots vide)"
+    - "conflit simulé sur lab-apps.yaml : rebase automatique ou needs-paul"
+- key: FAC-9
+  title: "Travailleur homelab en tirage sortant (claude -p) sur VM isolée, sans runner GitHub ni secret"
+  phase: P1
+  adr: ["NEW-FACTORY", "0003"]
+  depends_on: ["T-002", "FAC-4"]
+  class: REVUE + MANDAT
+  velocity: true
+  parallel_lane: "hybride"
+  stage: S2
+  model: opus
+  scope: "ops/workers/ (compose, scripts de bootstrap), docs/AGENT-RUNNERS.md"
+  intent: "VM Proxmox dédiée (environ 8 vCPU, 32 Go, VLAN isolé) ; un travailleur interroge GitHub en sortant, prend un ticket affecté, exécute claude -p dans un worktree conteneurisé détruit après le job ; aucun kubeconfig, aucun identifiant de production ; pas de runner Actions enregistré sur ce dépôt public."
+  done:
+    - "aucune connexion entrante ; un job conteneurisé fait un cycle complet puis le conteneur disparaît (preuve datée)"
+    - "mesure : mémoire et CPU pour N jobs simultanés, N maximal consigné"
+    - "preuve que claude -p avec CLAUDE_CODE_OAUTH_TOKEN s'authentifie par l'abonnement (/status) : PASS/FAIL daté"
+    - "décision écrite : runner Actions sur le homelab seulement si le dépôt devient privé"
+  notes: "MANDAT : création de la VM et du réseau (homelab-infra possède Proxmox : suivre ses règles). GitHub déconseille les runners auto-hébergés sur dépôt public (docs secure-use, lue le 2026-11-18) et les minutes hébergées y sont gratuites : gain faible, risque élevé. Les environnements auto-hébergés officiels sont Team/Enterprise."
+- key: FAC-10
+  title: "Pool Remote Control sur le homelab pour les tâches à ressources locales"
+  phase: P2
+  adr: ["NEW-FACTORY"]
+  depends_on: ["FAC-9"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "hybride"
+  stage: I2
+  model: sonnet
+  scope: "ops/runners/remote-control.md, tools/factory/rc-pool.sh"
+  intent: "claude remote-control --spawn worktree --capacity N dans la VM, supervisé ; sert aux travaux qui ont besoin du homelab et au pilotage depuis le téléphone ; renouvellement du login avant expiration."
+  done:
+    - "3 sessions simultanées en worktrees isolés (preuve datée)"
+    - "alerte avant expiration du login ; reconnexion documentée"
+  notes: "MANDAT : un /login interactif de Paul. Le jeton setup-token ne peut pas ouvrir de session RC."
+- key: FAC-11
+  title: "Trieur quotidien : tâche planifiée cloud en lecture seule + issue de résumé"
+  phase: P1
+  adr: ["NEW-FACTORY", "0012"]
+  depends_on: ["FAC-7"]
+  class: AUTONOME + MANDAT
+  velocity: false
+  parallel_lane: "agents"
+  stage: S2
+  model: sonnet
+  scope: "docs/FACTORY-RUNBOOK.md, tools/backlog/roadmap.py (appel)"
+  intent: "Une routine cloud par jour : relire backlog, PR, runs ; régénérer ROADMAP ; signaler tickets bloqués, dépendances rompues, étapes prêtes à ouvrir ; poster le résumé. Ne lance aucun agent."
+  done:
+    - "routine documentée (prompt, dépôt, environnement, connecteurs retirés) et exécutée 3 jours de suite"
+    - "aucune écriture hors commentaire du résumé (journal de la routine)"
+  notes: "MANDAT : création de la routine sur le web (la tâche s'exécute sous l'identité de Paul : lecture et commentaire seulement). Aperçu de recherche : plafonds susceptibles de changer."
+- key: FAC-12
+  title: "Revue indépendante automatique avant merge (modèle différent, lecture seule)"
+  phase: P1
+  adr: ["NEW-FACTORY", "0002"]
+  depends_on: ["FAC-4", "T-002"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  stage: S1
+  model: opus
+  scope: ".github/workflows/factory-review.yml, .agents/skills/review-pr/SKILL.md"
+  intent: "Sur chaque PR claude/*, une session de revue indépendante (autre modèle, outils en lecture, `--comment`) vérifie périmètre, classe, preuves déclarées et absence de secret ; elle publie PASS ou FAIL comme statut requis pour le merge automatique."
+  done:
+    - "PR volontairement fautive (chemin du noyau modifié, secret factice) : FAIL"
+    - "PR correcte : PASS sans commentaire superflu"
+    - "coût par revue mesuré et plafonné (--max-turns)"
+  notes: "Le reviewer ne modifie jamais la branche (coordination Atlas). Sur dépôt public, la revue ne tourne que sur les branches du dépôt (secrets non transmis aux forks)."
+- key: FAC-13
+  title: "Calibrage du quota : pilote 24 h à N=3, puis 6, puis 8-10, et décision Max/Ultra"
+  phase: P0
+  adr: ["NEW-FACTORY", "0017"]
+  depends_on: ["FAC-2", "FAC-4"]
+  class: AUTONOME + MANDAT
+  velocity: true
+  parallel_lane: "agents"
+  stage: S1
+  model: sonnet
+  scope: "docs/research/AGENT-FACTORY-24-7.md (§6 recalculé), factory/config.yaml (concurrence)"
+  intent: "Mesurer le coût réel par ticket et par classe, le pourcentage de quota 5 h et hebdomadaire consommé, la concurrence cloud maximale, puis recalculer le calendrier et fixer N, le modèle par défaut et la décision de plan."
+  done:
+    - "tableau mesuré : coût estimé, tours, durée par ticket sur ≥ 20 tickets ; % de quota relevé par Paul (/usage) à 0, 24, 48 h"
+    - "test de concurrence cloud : 6, 10, 15 sessions ; seuil observé ou NOT_PROVEN consigné"
+    - "décision écrite : N, modèle par défaut, Max ou Ultra (seuil 70 % hebdomadaire au jour 3)"
+  notes: "MANDAT : Paul relève les pourcentages et décide du plan et du plafond de crédits d'usage. Remplace les hypothèses H1-H5 du §6."
+- key: FAC-14
+  title: "Observabilité de l'usine : indicateurs, tableau lisible, drill de panne"
+  phase: P2
+  adr: ["NEW-FACTORY", "0019"]
+  depends_on: ["FAC-5", "FAC-2"]
+  class: AUTONOME
+  velocity: false
+  parallel_lane: "observabilité"
+  stage: I2
+  model: haiku
+  scope: "tools/factory/metrics.py, docs/FACTORY-RUNBOOK.md"
+  intent: "Agréger tickets/jour, délai ticket→merge, succès à la 1re tentative, taux de revert, gestes humains/jour, % de quota, inactivité des slots ; sortie JSON + page statique ; drill : limite de quota, runner perdu, boucle."
+  done:
+    - "indicateurs calculés depuis les artefacts mission-result.v1 (test hors ligne)"
+    - "drill de limite de quota : lancements stoppés, reprise au reset, preuve datée"
+- key: FAC-15
+  title: "Champs `stage` et `model` des tickets : lint et routage par ticket"
+  phase: P0
+  adr: ["NEW-FACTORY"]
+  depends_on: ["T-008"]
+  class: REVUE
+  velocity: true
+  parallel_lane: "ci"
+  stage: S0
+  model: haiku
+  scope: "tools/backlog/check.py, backlog/README.md"
+  intent: "Ajouter `model` (haiku|sonnet|opus, défaut sonnet) à l'en-tête des tickets, valider les valeurs et la cohérence avec la classe (noyau et sécurité : opus), et l'exposer à next.py."
+  done:
+    - "check.py refuse un modèle inconnu ; un ticket REVUE sur le noyau sans model opus déclenche un avertissement"
+    - "backlog/README.md décrit le champ"
+  absorbs: ["T-008"]
+  notes: "Modifie T-008 (même fichier) : à fusionner avec lui si T-008 n'est pas encore démarré."
+- key: FAC-16
+  title: "Assistant des gestes humains : une séance par étape, généré depuis les tickets MANDAT"
+  phase: P0
+  adr: ["NEW-FACTORY", "0013"]
+  depends_on: ["FAC-3"]
+  class: AUTONOME
+  velocity: true
+  parallel_lane: "connaissance"
+  stage: S0
+  model: sonnet
+  scope: "tools/factory/gestes.sh, docs/GESTES-PAUL.md (généré)"
+  intent: "Produire pour chaque étape la liste ordonnée des gestes exacts (noms de secrets, pas de valeurs ; liens ; durée) et un script interactif qui vérifie chaque effet en lecture seule (secret présent, label, App installée, runner enregistré)."
+  done:
+    - "sortie pour S0 : toutes les demandes des tickets S0 en MANDAT, ordonnées, ≤ 30 min estimées"
+    - "aucune valeur de secret ni sortie sensible affichée ou écrite (test gitleaks)"
+    - "le script marque chaque geste PASS/FAIL/NOT_TESTED avec horodatage"
+  notes: "Le geste est fait par Paul ; le script ne crée aucun accès (platform-guardrails §2). Réduit le temps de séance, pas les droits."

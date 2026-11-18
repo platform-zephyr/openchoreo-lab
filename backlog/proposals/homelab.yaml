@@ -76,7 +76,7 @@
   title: "OpenChoreo CP + DP co-localisés sur la VM lab et ClusterDataPlane homelab"
   phase: P1
   adr: ["0003", "0020"]
-  depends_on: ["HOME-3", "T-061", "HOME-5"]
+  depends_on: ["HOME-3", "T-061", "HOME-5", "HOME-0"]
   class: REVUE + MANDAT
   stage: S1
   model: opus
@@ -197,21 +197,22 @@
   absorbs: ["T-022"]
 
 - key: HOME-11
-  title: "Vérifier la limite A1 en PAYG et le risque de facturation (preuve Cost Analysis)"
+  title: "Confirmer la facturation A1 au-delà de 2/12 et corriger le registre free tier"
   phase: P0
   adr: ["0017"]
   depends_on: ["T-140"]
-  class: MANDAT
+  class: AUTONOME + MANDAT
   stage: S2
   model: sonnet
   velocity: false
   parallel_lane: "coût"
   scope: "docs/state/free-tier.yaml, docs/research/"
-  intent: "Relire la page Oracle Always Free (hôte à autoriser), relever la colonne gratuit de « Limits, Quotas and Usage », puis, si Paul le décide, un nœud de 1 OCPU / 6 Go au-delà de 2/12 pendant 48 h avec Cost Analysis = 0 ; consigner la valeur 2/12 ou 4/24 avec source et date."
+  intent: "Consigner la valeur Oracle relue le 2026-11-18 (1 500 h-OCPU et 9 000 h-Go par mois pour tous les tenancies = 2/12 ; PAYG facture le dépassement) ; Paul confirme dans Cost Analysis qu'aucun poste A1 n'est facturé aujourd'hui."
   done:
-    - "valeur retenue, URL, date de lecture, prochaine revue dans le registre (lint 90 jours)"
-    - "quota OCI du dépôt cohérent avec la valeur retenue ; aucune montée sans MANDAT"
-  notes: "Discordance 2/12 vs 4/24 de T-140 tranchée ici. Pire cas facturé ≈ 28 USD/mois [estimé]."
+    - "registre : valeur 2/12, URL, date de lecture, prochaine revue (lint 90 jours) ; discordance 2/12 vs 4/24 tranchée"
+    - "quota OCI du dépôt inchangé (2/12) ; coût mensuel d'un dépassement chiffré avec le tarif relu"
+    - "MANDAT Paul : relevé Cost Analysis du mois (coût A1 = 0)"
+  notes: "Reprend la discordance de T-140. Aucun essai de 4/24 : non gratuit selon la page Oracle."
   absorbs: ["T-140"]
 
 - key: HOME-12
@@ -225,7 +226,7 @@
   velocity: false
   parallel_lane: "socle-oke"
   scope: "dépôt homelab-infra terraform/oracle-a1 (hors de ce dépôt) ; ici : décision et mesures"
-  intent: "Seulement si HOME-11 conclut gratuit ET Paul demande une app sur OKE : second nœud 2/12 par redimensionnement du pool, libération des volumes de drill (D5), nomenclature remesurée, DP OKE et exception de flux OKE → homelab."
+  intent: "Seulement si Paul demande une app sur OKE ET accepte le coût (≈ 28 USD/mois [estimé]) : second nœud 2/12 par redimensionnement du pool, libération des volumes de drill (D5), nomenclature remesurée, DP OKE et exception de flux OKE → homelab."
   done:
     - "second nœud Ready sans remplacement du premier, 2 × 31 IP de pods mesurées"
     - "bloc : 0 volume orphelin, total ≤ 200 Gio"
