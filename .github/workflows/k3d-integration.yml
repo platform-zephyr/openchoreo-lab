@@ -1,7 +1,13 @@
 # Suites d'intégration k3d, un cluster JETABLE par job (un runner par suite, rien d'état partagé).
 # Non bloquant : le check requis reste `ci-ok` (ci.yaml). Agrégat propre : `k3d-ok`.
 # Aucun secret : ni `secrets.*` ni jeton. Actions épinglées par SHA ; binaires épinglés par sha256.
-# Plan pour le rendre requis : docs/CI-K3D.md §4.
+# Plan pour le rendre requis : docs/CI-K3D.md §6.
+# Pas de déclencheur merge_group : ce workflow n'est pas un check requis, la file de fusion n'a donc pas à l'attendre
+# (seul `ci-ok` de ci.yaml l'est). Ajouter `merge_group` seulement quand `k3d-ok` deviendra requis (docs/CI-K3D.md §6).
+# Limite : le chart OpenChoreo est installé SANS security bundle (docs/SECURITY-BUNDLE.md) ; un PASS ne prouve pas
+# l'installation durcie d'OKE.
+# Art antérieur : k3d-io/k3d .github/workflows/test-install-osmatrix.yaml (fb87e3a) ; AbsaOSS/k3d-action ;
+# helm/kind-action ; kubernetes-sigs/kind site/content/docs/user/auditing.md (audit API server en CI).
 name: k3d-integration
 
 on:
@@ -31,7 +37,7 @@ env:
 jobs:
   gate:
     # Décide si la suite tourne : workflow_dispatch, label `k3d`, ou fichiers touchés sous platform/, tools/oke/,
-    # tools/appgen/, tests/ (ou ce workflow).
+    # tools/k3d/, tools/appgen/, tests/ (ou ce workflow).
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     outputs:
@@ -55,7 +61,7 @@ jobs:
           elif jq -e 'index("k3d") != null' <<<"$LABELS" >/dev/null; then
             run=true
           elif git diff --name-only "$BASE" "$HEAD" \
-              | grep -Eq '^(platform/|tools/oke/|tools/appgen/|tests/|\.github/workflows/k3d-integration\.yml$)'; then
+              | grep -Eq '^(platform/|tools/oke/|tools/k3d/|tools/appgen/|tests/|\.github/workflows/k3d-integration\.yml$)'; then
             run=true
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
@@ -94,8 +100,9 @@ jobs:
             timeout: 60
             command: tests/k3d/run.sh
             evidence: tests/k3d/evidence
-          # gitops-k3d : ECHEC CONNU (non bloquant). Son patch T-DEPLOY cherche une ancre que main a changee
-          # (40-openchoreo-env.yaml). Le test n'est pas contourne : il reste execute, resultat KNOWN_FAIL.
+          # gitops-k3d : ECHEC CONNU (non bloquant), GARDE dans la matrice (ne pas le retirer). Son patch T-DEPLOY
+          # cherche une ancre que main a changee (40-openchoreo-env.yaml). Le test n'est pas contourne : il reste
+          # execute, resultat KNOWN_FAIL ; s'il passe, la suite l'annonce (retirer alors known_fail).
           - suite: gitops-k3d
             cluster: gitops
             bootstrap: oc
@@ -170,6 +177,26 @@ jobs:
           echo "cluster prêt en $((SECONDS - start)) s"
           kubectl get nodes -o wide
 
+      - name: Audit API server (suite vap seulement)
+        if: matrix.audit == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # tests/vap/run.sh lit le journal dans le noeud k3d-lab-sec-vap-server-0 : nom de cluster impose.
+          [ "${{ matrix.cluster }}" = "lab-sec-vap" ] || { echo "cluster d'audit inattendu" >&2; exit 1; }
+          node=k3d-lab-sec-vap-server-0
+          kubectl create namespace lab-audit-probe >/dev/null
+          kubectl delete namespace lab-audit-probe --wait=false >/dev/null
+          sleep 2
+          if docker exec "$node" test -s /var/log/lab-audit.log 2>/dev/null \
+             && docker exec "$node" grep -q lab-audit-probe /var/log/lab-audit.log 2>/dev/null; then
+            echo "AUDIT_ENABLED=true" >> "$GITHUB_ENV"
+            echo "audit API server actif (evenement sonde present dans /var/log/lab-audit.log)"
+          else
+            echo "AUDIT_ENABLED=false" >> "$GITHUB_ENV"
+            echo "::warning::audit API server NON actif : les tests AUD-* seront NOT_TESTED, jamais PASS"
+          fi
+
       - name: Bootstrap OpenChoreo 1.3.3 (matrice bootstrap=oc)
         if: matrix.bootstrap == 'oc'
         shell: bash
@@ -180,6 +207,8 @@ jobs:
           start=$SECONDS
           tools/k3d/ci-bootstrap.sh "${{ matrix.cluster }}"
           echo "bootstrap OpenChoreo en $((SECONDS - start)) s"
+          echo "limite: chart OpenChoreo installe SANS security bundle (docs/SECURITY-BUNDLE.md) ; un PASS ne prouve pas l'installation durcie d'OKE" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Suite ${{ matrix.suite }}
         shell: bash
@@ -195,8 +224,27 @@ jobs:
           set -e
           dur=$((SECONDS - start))
           echo "suite=${{ matrix.suite }} rc=$rc duree=${dur}s" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Audit API server non actif : les AUD-* ne prouvent rien. Ils deviennent NOT_TESTED (jamais PASS) et ne
+          # comptent plus comme echec ; tout autre echec reste bloquant.
+          if [ "${{ matrix.audit }}" = "true" ] && [ "${AUDIT_ENABLED:-false}" != "true" ]; then
+            res="${{ matrix.evidence }}/ci/results.tsv"
+            if [ -f "$res" ]; then
+              awk -F'\t' 'BEGIN{OFS="\t"} $1 ~ /^AUD-/ {$2="NOT_TESTED"} {print}' "$res" > "$res.tmp" && mv "$res.tmp" "$res"
+              others="$(awk -F'\t' '$2=="FAIL"' "$res" | wc -l)"
+              [ "$others" -eq 0 ] && rc=0
+            fi
+            echo "AUD-*: NOT_TESTED (audit API server non actif)" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [ "$rc" -eq 0 ]; then
+              echo "RESULTAT: PASS_PARTIEL (AUD-* NOT_TESTED)" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
+            fi
+          fi
           if [ "$rc" -eq 0 ]; then
-            echo "RESULTAT: PASS" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
+            if [ "${{ matrix.known_fail }}" = "true" ]; then
+              echo "RESULTAT: PASS (suite a echec connu : retirer known_fail et mettre docs/CI-K3D.md a jour)" | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "RESULTAT: PASS" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 0
           elif [ "${{ matrix.known_fail }}" = "true" ]; then
             echo "RESULTAT: KNOWN_FAIL (non bloquant, voir docs/CI-K3D.md)" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
           fi
