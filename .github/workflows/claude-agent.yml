@@ -43,7 +43,6 @@ jobs:
           base_branch: main
           branch_prefix: "claude/"
           claude_args: |
-            --model claude-sonnet-5-5
             --max-turns 60
             --allowedTools "Edit,Read,Write,Glob,Grep,Bash(python3:*),Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(yamllint:*),Bash(shellcheck:*)"
             --append-system-prompt "Lis AGENTS.md, STATE.md et docs/AGENT-PR-MODEL.md. Aucun accès cluster ni secret. Une PR par issue, périmètre de fichiers de l'issue seulement ; apps/**, generated/** (via appgen) libres ; platform/, tools/, tests/, .github/ exigent l'approbation de Paul. N'appelle jamais kubectl/helm vers un cluster. Ouvre la PR avec les commandes exécutées, leurs résultats et ce qui reste NOT_TESTED."
