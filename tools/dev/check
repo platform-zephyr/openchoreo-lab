@@ -288,7 +288,7 @@ shellcheck_list() {
   local f
   shopt -s nullglob
   for f in tools/dev/dev tools/dev/check tools/dev/guard-check.sh tests/dev-factory/*.sh tools/oke/*.sh \
-    tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh \
+    tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/oke-verify/*.sh tests/cell-cpt/*.sh \
     tests/release-history/*.sh tests/appgen/*.sh tests/leak-guard/*.sh tests/identities/*.sh tests/hooks/*.sh \
     tools/dev/leak-guard.sh; do
     [[ -f "$f" ]] && echo "$f"
@@ -524,6 +524,7 @@ run_static() {
   step release-history git tests/release-history/check.sh
   step cell-cpt python3,py:yaml tests/cell-cpt/run.sh
   step security-bundle helm,jq,python3,shasum locked tests/security-bundle/run.sh
+  step oke-verify-all bash tests/oke-verify/run.sh
   step render-check helm,yq,python3,shasum locked tools/oke/render-check.sh
   step uninstall-guards helm locked env ARGO_GUARD_CHART_CACHE="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}/charts" tests/argo-guard/uninstall-guards.sh
   step kubeconform-platform helm,kubeconform,python3,curl,shasum locked tools/oke/kubeconform-platform.sh

@@ -20,7 +20,7 @@ leak-guard	leak-guard	L2	check
 actionlint	actionlint	L2	check
 charts	CI-ONLY	L3	garde de présence de Chart.yaml (find) : aucun chart local, rien à contrôler en local
 platform	yamllint-platform,shellcheck,argo-guard-rules,argo-guard-negative,cell-cpt	L2	check
-platform-render	security-bundle,render-check,uninstall-guards,kubeconform-platform	L3	check
+platform-render	oke-verify-all,security-bundle,render-check,uninstall-guards,kubeconform-platform	L3	check
 release-history	release-history	L3	check
 dev-factory	dev-factory-static,devcontainer-json,ci-parity,factory	L2	check
 backlog	backlog-unittest,backlog,backlog-status	L2	check
