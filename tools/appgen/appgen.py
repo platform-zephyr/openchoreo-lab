@@ -118,13 +118,9 @@ class AppError(Exception):
 # --------------------------------------------------------------------------- chargement
 
 
-# libyaml (C) si disponible, sinon parseur Python pur : mêmes constructeurs sûrs, sortie identique.
-_SafeLoader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
-
-
 def load_yaml(path: Path):
     with path.open("r", encoding="utf-8") as fh:
-        return yaml.load(fh, Loader=_SafeLoader)  # noqa: S506 (équivalent de safe_load)
+        return yaml.load(fh, Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader))  # libyaml si dispo (= safe_load)
 
 
 def _walk_strings(node, path=""):
@@ -640,7 +636,7 @@ def validate_all(root: Path, cluster_gate_open: bool = True, examples: bool = Tr
 # --------------------------------------------------------------------------- platform
 
 
-class _PlatformLoader(_SafeLoader):
+class _PlatformLoader(yaml.SafeLoader):
     """Lecture tolerante des fichiers de platform/ qui ne sont pas des objets OpenChoreo (ex. blueprints
     Authentik : tags !Find, !KeyOf). Les tags inconnus donnent None ; seuls CCT/ClusterTrait/CPT sont retenus.
     Les descripteurs d'applications restent lus par yaml.safe_load (tag inconnu = erreur)."""
