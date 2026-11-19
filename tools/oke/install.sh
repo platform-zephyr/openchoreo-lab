@@ -19,6 +19,8 @@
 #     Les charts OpenChoreo ne passent QUE par helm_secure (tools/oke/security-bundle.sh) ; rollback : idem.
 #   - --confirm-storage : requis pour l'étape 10 (lab-pg = 1 block volume OCI de 50 Go), après accord
 #     de Paul sur le budget de stockage (docs/PHASE-B.md §4).
+#   - Étape 11 : Argo CD Notifications (platform/install/argocd/notifications/, T-489) posé seulement si le Secret
+#     lab-secrets/openchoreo-status existe (présence par -o name) ; sinon « notifications non appliquées », sans échec.
 # Après chaque étape (3 à 12) : mesure au repos de la pile et ARRÊT (code 3) si > 1,5 Gi ou > 300m.
 # Puis lancer tools/oke/verify.sh --step N (critère de sortie) avant l'étape suivante.
 set -euo pipefail
@@ -254,7 +256,7 @@ step_10() { # Opérateur CNPG + lab-pg (1 PVC = 1 block volume OCI de 50 Go)
   run kubectl -n lab-pg wait --for=condition=Ready --timeout=600s cluster.postgresql.cnpg.io/lab-pg
 }
 
-step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProjects lab-* (dont lab-k, lab-k-root : T-495) + racine
+step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProjects lab-* (dont lab-k, lab-k-root : T-495) + racine + notifications
   # project-lab.yaml porte aussi lab-k et lab-k-root (bras K) ; l'Application lab-k-root arrive par lab-root et
   # reste à synchroniser À LA MAIN (fenêtre deny) ; contrôles : verify.sh --step 11 (B11-lab-k-*).
   # Bootstrap PRIVILÉGIÉ (revue PR #8, P1) : le projet `default` est verrouillé AVANT toute Application,
@@ -267,6 +269,9 @@ step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProjects lab-* (
   run "${KA[@]}" --force-conflicts -f "$INSTALL_DIR/argocd/project-default-locked.yaml"
   run "${KA[@]}" -f "$INSTALL_DIR/argocd/project-lab.yaml"
   run "${KA[@]}" -f "$INSTALL_DIR/argocd/root-application.yaml"
+  # Notifications (check runs `argocd/<app>` de l'App openchoreo-status, T-489) : APRÈS Argo CD, seulement si le
+  # Secret source existe dans lab-secrets (présence par -o name, jamais de valeur) ; sinon message et poursuite.
+  apply_status_notifications
 }
 
 step_12() { # SANS EFFET : le RBAC du cluster-agent est rendu avec le chart à l'étape 7 (security bundle)

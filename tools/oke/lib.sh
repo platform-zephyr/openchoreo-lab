@@ -272,3 +272,22 @@ fetch_gw_crds() {
 wait_deploys() {
   run kubectl -n "$1" wait --for=condition=Available deployment --all --timeout="${2:-300s}"
 }
+
+# Argo CD Notifications (T-489, T-497) : platform/install/argocd/notifications/ (ConfigMap, ExternalSecret,
+# CiliumNetworkPolicy) posé APRÈS Argo CD, SEULEMENT si le Secret source `openchoreo-status` existe dans lab-secrets
+# (geste de l'opérateur depuis Doppler). Présence lue par `-o name` SEULEMENT : aucune valeur du Secret n'est lue.
+# Secret absent ou lecture en erreur : message explicite et poursuite (jamais d'échec de l'installation).
+# Dry-run (défaut) : la lecture de présence a lieu, l'apply est seulement affiché.
+STATUS_SECRET_NS=lab-secrets STATUS_SECRET=openchoreo-status
+apply_status_notifications() {
+  local found
+  if ! found="$(kubectl -n "$STATUS_SECRET_NS" get secret "$STATUS_SECRET" --ignore-not-found -o name 2>/dev/null)"; then
+    log "notifications non appliquées : présence du Secret $STATUS_SECRET_NS/$STATUS_SECRET illisible (poursuite)"
+    return 0
+  fi
+  if [[ "$found" != "secret/$STATUS_SECRET" ]]; then
+    log "notifications non appliquées : Secret absent ($STATUS_SECRET_NS/$STATUS_SECRET, geste de l'opérateur, docs/AGENT-IDENTITY.md) ; poursuite"
+    return 0
+  fi
+  run kubectl apply --server-side --field-manager=openchoreo-lab -f "$INSTALL_DIR/argocd/notifications/"
+}
