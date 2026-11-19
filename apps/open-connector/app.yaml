@@ -16,6 +16,7 @@ spec:
   runtime:
     port: 3000
     healthPath: /health
+    healthProbe: false   # [S] /health non prouve en amont (T-010) : pas de probe tant que non lu dans le code
     size: medium
     runAsUser: 10001
     env:

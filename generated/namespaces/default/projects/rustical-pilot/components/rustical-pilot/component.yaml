@@ -34,7 +34,7 @@ spec:
         handler: &id001
           httpGet:
             port: 4000
-            path: /
+            path: /ping
         initialDelaySeconds: 10
         periodSeconds: 10
       readiness:

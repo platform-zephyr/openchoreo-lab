@@ -9,7 +9,7 @@ spec:
     projectName: rustical-pilot
     componentName: rustical-pilot
   environment: production
-  releaseName: rustical-pilot-35c5659ebb
+  releaseName: rustical-pilot-a50d114c0c
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1

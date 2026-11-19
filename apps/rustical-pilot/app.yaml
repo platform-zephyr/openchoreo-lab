@@ -15,7 +15,7 @@ spec:
   profile: stateful
   runtime:
     port: 4000
-    healthPath: /   # [S] kube-ops sonde `rustical health` (exec) ; sonde HTTP a prouver
+    healthPath: /ping   # [C] route axum `/ping` -> "Pong!" (src/app.rs, v0.18.0) ; sonde HTTP a prouver au runtime
     size: small
     runAsUser: 1000   # comme kube-ops [C]
     env:

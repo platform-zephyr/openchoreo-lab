@@ -9,7 +9,7 @@ spec:
     projectName: open-connector
     componentName: open-connector
   environment: production
-  releaseName: open-connector-ab9a717fef
+  releaseName: open-connector-af07e43055
   componentTypeEnvironmentConfigs:
     size: medium
     replicas: 1
@@ -17,5 +17,3 @@ spec:
     data:
       size: 2Gi
       storageClass: local-path
-    probes:
-      enabled: true
