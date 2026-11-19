@@ -46,3 +46,12 @@ le MAX d'un pic de démarrage : à relativiser (ticket).
 - `lab-k-root` NON synchronisé : ses deux ApplicationSets ont `syncPolicy.automated` (prune, selfHeal) et le contrôleur est
   actif ; les synchroniser déploierait immédiatement `echo-bench` (lab-k-echo-bench). Consigne : ne pas synchroniser les apps
   (« la passe 0 viendra après »). NOT_TESTED.
+
+## verify.sh --all avec l'ApplicationSet actif (2026-11-19T00:32:39Z à 00:41:25Z)
+101 PASS, 2 FAIL, 1 NOT_TESTED, 0 BLOCKED.
+| Contrôle | Verdict | Cause |
+|---|---|---|
+| B1-vap-digest | FAIL connu | binding baseline-image-digest de kube-ops en Warn/Audit |
+| B6-sa-effective | FAIL accepté | SA kgateway : lecture des Secrets (risque accepté, credentials factices seulement) |
+| B6b-portal | NOT_TESTED | portail non demandé (--with-portal) |
+Étape 11 : tous les B11 PASS, dont B11-lab-k-*.
