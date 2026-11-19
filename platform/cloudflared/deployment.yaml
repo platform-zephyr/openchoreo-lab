@@ -1,0 +1,46 @@
+# T-006 : connecteur sortant seul (aucun port entrant, aucun Service). Repris de kube-ops
+# k8s/clusters/oracle-a1/cloudflared/deployment.yaml (MIT, voir NOTICE) ; écarts : namespace lab-tunnel,
+# image épinglée par digest (VAP baseline-image-digest) ; le port de métriques n'est ouvert par
+# aucune NetworkPolicy (sonde kubelet seulement).
+# Le routage (hôte unique, chemin /mcp seul vers openchoreo-api:8080) est la configuration distante du
+# tunnel, gérée par OpenTofu côté infrastructure ; tout autre chemin reçoit 404 du connecteur.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: lab-tunnel
+  labels: {app.kubernetes.io/part-of: openchoreo-lab, app.kubernetes.io/name: cloudflared}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: cloudflared}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: cloudflared, app.kubernetes.io/part-of: openchoreo-lab}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: cloudflared
+          # 2026.6.0, index multi-arch (amd64, arm64).
+          image: docker.io/cloudflare/cloudflared:2026.6.0@sha256:ba461b8aa9c042156dbd39c38657fe7431bafa063220eab8d5330a523863da9f
+          args: [tunnel, --no-autoupdate, --metrics, "0.0.0.0:2000", run]
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom: {secretKeyRef: {name: cloudflared-token, key: TUNNEL_TOKEN}}
+          livenessProbe:
+            httpGet: {path: /ready, port: 2000}
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+          resources:
+            requests: {cpu: 10m, memory: 48Mi}
+            limits: {cpu: 300m, memory: 192Mi}

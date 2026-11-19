@@ -358,6 +358,19 @@ class SyncedRules(unittest.TestCase):
         g.rule_s3_lab_pg_labels(REL, {**G.LAB_PG_LABELS, "pod-security.kubernetes.io/warn": "baseline"})
         self.assertIn("doit rester restricted", g.errs[0])
 
+    def test_s4_tunnel_named_objects(self):
+        lab = {"namespaceResourceWhitelist": [{"group": "apps", "kind": "Deployment"},
+                                              {"group": "cilium.io", "kind": "CiliumNetworkPolicy"}]}
+        ok = {"apiVersion": "apps/v1", "kind": "Deployment", "metadata": {"name": "cloudflared", "namespace": "lab-tunnel"}}
+        g = guard()
+        g.check_synced_object(REL, ok, "lab-platform", lab)
+        self.assertEqual(g.errs, [])
+        bad = {"apiVersion": "cilium.io/v2", "kind": "CiliumNetworkPolicy",
+               "metadata": {"name": "open-all", "namespace": "openchoreo-control-plane"}}
+        g.check_synced_object(REL, bad, "lab-platform", lab)
+        self.assertEqual(len(g.errs), 1)
+        self.assertIn("S4 CiliumNetworkPolicy openchoreo-control-plane/open-all", g.errs[0])
+
     def test_files_of_source(self):
         g = guard()
         g.files = {"platform/a.yaml": [], "platform/b.json": [], "platform/s/c.yaml": [], "platformx/d.yaml": []}

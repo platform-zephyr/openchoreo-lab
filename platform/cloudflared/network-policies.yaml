@@ -1,0 +1,77 @@
+# T-006 : réseau du connecteur de tunnel. Modèle de 02-network-policies.yaml : default-deny, puis
+# ouvertures nominatives. Le namespace lab-tunnel porte egress-isolated=true (namespace.yaml) pour que la
+# CCNP allow-egress-unisolated ne s'y ajoute pas (conflit C1).
+#  - lab-tunnel : egress DNS, edge Cloudflare (7844 TCP/UDP, 443 TCP), et openchoreo-api:8080 SEUL ;
+#    aucun ingress (connecteur sortant).
+#  - openchoreo-control-plane : ingress vers l'api-server sur 8080 depuis le seul pod cloudflared de
+#    lab-tunnel. Aucun autre port, aucun autre composant du control plane.
+# Le filtrage /mcp est fait par la règle d'ingress du tunnel (configuration distante) ; Cilium voit L4.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-default-deny
+  namespace: lab-tunnel
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-tunnel-egress-dns-api
+  namespace: lab-tunnel
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: cloudflared}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: openchoreo-control-plane}}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api-server
+              app.kubernetes.io/name: openchoreo-control-plane
+      ports: [{port: 8080, protocol: TCP}]
+---
+# Edge Cloudflare : connexions sortantes du connecteur (QUIC/HTTP2 sur 7844, API sur 443). Un ipBlock
+# 0.0.0.0/0 est refusé par argo_guard S2 : entité Cilium `world`, ports bornés.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: lab-tunnel-egress-edge
+  namespace: lab-tunnel
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  endpointSelector:
+    matchLabels: {app.kubernetes.io/name: cloudflared}
+  egress:
+    - toEntities: [world]
+      toPorts:
+        - ports:
+            - {port: "7844", protocol: TCP}
+            - {port: "7844", protocol: UDP}
+            - {port: "443", protocol: TCP}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lab-allow-tunnel-to-api
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: api-server
+      app.kubernetes.io/name: openchoreo-control-plane
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: lab-tunnel}}
+          podSelector: {matchLabels: {app.kubernetes.io/name: cloudflared}}
+      ports: [{port: 8080, protocol: TCP}]
