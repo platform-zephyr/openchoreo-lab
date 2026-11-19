@@ -5,20 +5,18 @@ description: Reprendre seul l'orchestration du backlog du labo après une compac
 
 # orchestrate-backlog
 
-**Tu délègues systématiquement ; voir `docs/ORCHESTRATION.md` § « Rôle de l'orchestrateur ».** Règle STOP : chercher,
-lire un script, lancer une vérification, poser un secret, coder ou diagnostiquer = lancer un agent. Toute action OKE
-va à un agent « opérateur OKE » local : lectures en parallèle, un écrivain par zone (`docs/ORCHESTRATION.md`). Cadence : relevé toutes les 15 à 30 min ; réflexion toutes les 2 à 3 h sur
-`docs/research/FRICTIONS-ORCHESTRATION.md` (regrouper les frictions à 2 occurrences ou plus, proposer 3 améliorations
-au plus à Paul, les déléguer).
+Charger `platform-guardrails`. Dépôt PUBLIC : aucune valeur sensible. Réponses en français, conclusion d'abord.
 
-Charger `platform-guardrails`. Tu orchestres ; tu ne codes pas les tickets toi-même. Dépôt PUBLIC : aucune valeur sensible nulle part.
-Réponses en français, conclusion d'abord.
+**Rôle, règle STOP, opérateur OKE, cadence, topologie, capacités et recettes : `docs/ORCHESTRATION.md` (fait foi en cas
+d'écart).** Tu dispatches, synchronises et réfléchis ; tu ne codes, ne diagnostiques ni n'exécutes (toute action OKE va à un
+opérateur OKE). Ce skill ne donne que les commandes.
 
-**Référence : `docs/ORCHESTRATION.md`** (topologie, cycle d'un ticket, découpage, capacités et limites mesurées,
-recettes, anti-patterns). Ce skill donne la procédure ; en cas d'écart, `docs/ORCHESTRATION.md` fait foi.
-Un seul orchestrateur, sur le Mac de Paul ; il DÉLÈGUE toute action OKE à des agents « opérateur OKE » locaux (lectures en parallèle, un écrivain
-par zone) et n'exécute jamais lui-même. Les couloirs de développement sont
-des sessions cloud (`create_session` ou `claude --cloud`), des sous-agents en worktree ou l'usine.
+## Comportement attendu
+- Délègue toujours, ne code jamais (même un petit suivi). Silence sur toute notification qui n'appelle aucune action.
+- Boucle locale d'environ 10 min : `git fetch`, liste des PR, fusion des PR prêtes (`ci-ok` sur la tête courante), dispatch de la vague suivante, lecture des rapports.
+- Dispatch parallèle par défaut de tout ce qui est prêt et disjoint ; écritures OKE par zone (opérateur OKE).
+- À Paul : une seule série groupée (≤ 10 lignes, lien + recommandation) pour décision, blocage, action externe ou fin de lot.
+- Réflexion toutes les 2 à 3 h dans `docs/research/FRICTIONS-ORCHESTRATION.md`.
 
 ## 1. Lire l'état (dans cet ordre, 5 minutes)
 1. `git fetch origin && git merge origin/<ta branche>` puis `git merge origin/main` ; `git status` propre.
@@ -52,11 +50,10 @@ standard de `docs/ORCHESTRATION.md` §6). Suivi en mode tirer : `list_sessions`,
 2. Avant de pousser : `python3 tools/backlog/check.py` (0 erreur), `python3 -m unittest discover -s tests/backlog`, `python3 tools/quality/check.py` (cliquet), `python3 tools/backlog/roadmap.py`, puis `tools/dev/check --static --changed`. Jamais `seed.py`.
 3. Pousser (jamais de force-push), PR en brouillon (gabarit `.github/pull_request_template.md`, section « Implémentations publiques consultées », verdict et niveau du check local).
 4. Quand `ci-ok` est vert sur la tête courante : `update_pull_request` (`draft: false`) puis `merge_pull_request` (`squash`). La file de fusion ne lance pas les suites k3d tant que `K3D_REQUIRED` n'est pas posée : dispatcher `k3d-integration` avant de fusionner un changement de `platform/`, `tools/appgen/` ou des fixtures.
-5. Effet sur le cluster : section « Preuve OKE demandée » dans la PR ; l'orchestrateur l'exécute après la fusion et archive la preuve datée.
-5. Après la fusion : `git fetch origin main && git merge origin/main` ; la branche coordinateur repart de `main`.
+5. Effet sur le cluster : section « Preuve OKE demandée » dans la PR. Après la fusion, tu la confies à un opérateur OKE (`docs/ORCHESTRATION.md`, brief type) qui la joue et archive la preuve datée ; tu ne l'exécutes pas.
+6. Après la fusion : `git fetch origin main && git merge origin/main` ; la branche coordinateur repart de `main`.
 
 ## 5. Suivre
-- Pas de boucle `gh api` (quota atteint une fois) : `git fetch`, abonnement aux PR, relevé toutes les 15 à 30 min.
 - REST seulement : GraphQL est bloqué (`gh pr checks`, `gh pr view --json` échouent). `ci-ok` d'un commit : `gh api "repos/<owner>/<repo>/commits/<sha>/check-runs?per_page=50" --jq '[.check_runs[]|select(.name=="ci-ok")|.conclusion // "pending"]|first // "none"'`. Attendre avec l'outil Monitor et une boucle `until` espacée (≥ 60 s), jamais `sleep` seul.
 - Abonner la session aux PR ouvertes (`subscribe_pr_activity`) ; se désabonner à la fusion ; `archive_session` du couloir terminé.
 - Après chaque jalon : lignes « Reste » des tickets, `NEXT.md`, `docs/state/HANDOFF-COORDINATEUR.md` si une procédure change.
@@ -74,7 +71,6 @@ Copies vendorées de `mattpocock/skills` (MIT, SHA figé dans chaque en-tête, g
 - `actions/checkout` : `persist-credentials: false`, sinon le push d'un fichier de workflow est refusé.
 - La sortie `branch_name` de l'action est vide quand l'agent ouvre sa PR : retrouver la branche par la PR qui cite l'issue.
 - Les agents ne lisent pas les dépôts tiers avec `gh api` ; `git ls-remote` et `curl` sur `raw.githubusercontent.com` fonctionnent. Art antérieur indisponible = `NOT_TESTED`, jamais « aucune trouvée ».
-- Un résultat n'est `PASS` qu'avec une preuve runtime datée ; STATIC n'est pas RUNTIME ; `NOT_TESTED` et `INCOMPLET` se disent.
 - Un sous-agent qui rend « terminé » sans preuve par critère : ticket `in-progress`, ligne « Reste », case non cochée.
 - Tester aussi hors root (`runuser -u nobody`), les runners ne sont pas root ; `jsonschema` à installer dans les jobs qui valident `mission-result.v1`.
 - PR d'agent rouge pour un vrai défaut (ex. cliquet de qualité) : ne pas pousser sur sa branche ; un agent local la reprend, livre par ta branche ; fermer la PR du bot. Échec réseau : relancer une fois (`rerun_failed_jobs`).

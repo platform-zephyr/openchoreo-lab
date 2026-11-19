@@ -17,18 +17,17 @@ Pour tout orchestrateur Claude : neuf, après compactage ou sur le Mac de Paul. 
 
 ## 2. Topologie cible
 
-Un seul orchestrateur, sur le Mac de Paul (appareil de confiance, bastion OKE, Docker/Colima). Il DÉLÈGUE
-systématiquement : il dispatche, synchronise, remonte les blocages et réfléchit aux frictions. Il ne code pas, ne
-diagnostique pas, n'exécute pas. Détail : § « Rôle de l'orchestrateur » ci-dessous.
+Un seul orchestrateur, sur le Mac de Paul (appareil de confiance, bastion OKE, Docker/Colima). Son rôle est décrit
+UNE fois : § « Rôle de l'orchestrateur ».
 
 | Rôle | Moyen | Parallélisme | Écrit | Ne fait jamais |
 |---|---|---|---|---|
-| Orchestrateur | Session Claude Code locale sur le Mac | 1 | PR de coordination, fusion des PR prêtes | Coder, diagnostiquer, lancer une vérification, poser un Secret, écrire sur OKE |
+| Orchestrateur | Session Claude Code locale sur le Mac | 1 | PR de coordination, fusion des PR prêtes | Voir § Rôle |
 | Couloir de développement | Session cloud (`create_session`, ou `claude --cloud` depuis le Mac) | 4 à 8 | Sa branche `claude/t-NNN-*`, sa PR | Écrire sur OKE, toucher un fichier hors périmètre |
 | Sous-agent | Outil Agent, `isolation: worktree` | 3 à 7 | Sa branche locale (l'orchestrateur pousse) | Pousser vers un autre dépôt |
 | Usine | `claude-agent.yml`, `workflow_dispatch` | 3 (`max-parallel`) | Branche `claude/issue-<n>-*` et PR | Accès cluster ; Sonnet/Haiku 45 min, Opus 90 min |
 | Suites k3d | `k3d-integration.yml`, `workflow_dispatch` | 1 run à la fois | Artefacts de preuve | Preuve OKE |
-| Opérateur OKE | Session locale sur le Mac, lancée par l'orchestrateur (brief du § Rôle) | Lectures : illimité. Écritures : 1 par zone (§ Écritures OKE en parallèle) | Secrets, synchros manuelles, preuves datées dans sa zone ; `tools/oke/install.sh` seulement s'il est le seul « plateforme » | Deux écrivains sur la même zone ; sortir de `openchoreo-*` et `lab-*` |
+| Opérateur OKE | Session locale sur le Mac (brief ci-dessous) | Lectures : illimité. Écritures : 1 par zone | Secrets, synchros, preuves datées dans sa zone ; `install.sh` seulement s'il est le seul « plateforme » | Deux écrivains sur une zone ; sortir de `openchoreo-*` et `lab-*` |
 
 Choix du moyen : couloir cloud pour un ticket long ou sur un autre dépôt cloné ; sous-agent pour un ticket court sur
 ce dépôt ; usine pour un lot d'issues sans interaction ; session locale pour ce qui exige le Mac (opérateur OKE) ;
@@ -53,8 +52,8 @@ diagnostiquer : arrête, lance un agent. Une lecture de PR, de note « Reprise �
 
 ### Écritures OKE en parallèle (décision de Paul, 2026-11-19)
 
-Tous les agents locaux partagent le même bastion et le même kubeconfig : la règle « un seul écrivain » est une règle de
-cohérence, pas une limite technique. OKE est jetable et la vitesse prime, donc :
+Le bastion et le kubeconfig sont partagés : « un seul écrivain par zone » est une règle de cohérence, pas une limite
+technique. OKE est jetable, la vitesse prime :
 
 | Cas | Règle |
 |---|---|
@@ -65,8 +64,6 @@ cohérence, pas une limite technique. OKE est jetable et la vitesse prime, donc 
 | Durable | Toujours par Git puis Argo CD (`AGENTS.md`) ; une écriture directe n'est jamais un changement durable. |
 
 ### Brief type d'un agent « opérateur OKE »
-
-Session locale sur le Mac. Plusieurs opérateurs en parallèle sont admis : lectures sans limite, un seul écrivain par ZONE (voir § Écritures OKE en parallèle).
 
 ```
 Tu es l'opérateur OKE du labo OpenChoreo (session locale). Réponses en français, STE80, conclusion d'abord.
@@ -87,9 +84,20 @@ Rapport final <= 15 lignes : verdicts, chemins des preuves, écarts, blocages, p
 
 | Activité | Fréquence | Contenu |
 |---|---|---|
-| Synchronisation | Relevé toutes les 15 à 30 min (pas de boucle serrée) | Tableau de suivi (§ 6) : sessions, PR, `ci-ok` sur la tête, blocages ; fusion des PR prêtes ; relance ou réaffectation |
+| Synchronisation | Boucle locale ~10 min (`git fetch`, PR) ; sessions cloud : 15 à 30 min. Pas de boucle `gh api` | Tableau de suivi (§ 6) : sessions, PR, `ci-ok` sur la tête, blocages ; fusion des PR prêtes ; relance ou réaffectation |
 | Remontée à Paul | À la demande, en série groupée | Blocages et actions externes, liens, recommandation (« oui » suffit) |
 | Réflexion | Toutes les 2 à 3 h | Mise à jour de `docs/research/FRICTIONS-ORCHESTRATION.md` ; au plus 3 améliorations proposées à Paul, puis déléguées |
+
+### Lancement
+
+Prompt à coller dans une session neuve (versionné ; il ne contient aucune autorisation : Paul en donne une, s'il le
+veut, dans le prompt qu'il colle lui-même) :
+
+```
+Tu es l'orchestrateur du labo OpenChoreo (session locale sur le Mac). Charge le skill orchestrate-backlog et lis
+docs/ORCHESTRATION.md § Rôle. Lis backlog/NEXT.md, puis applique le skill § 1 à 3 : état, tickets prêts et disjoints,
+dispatch parallèle. Tu délègues, tu ne codes pas. Réponses en français, conclusion d'abord.
+```
 
 ## 3. Cycle d'un ticket
 
@@ -189,9 +197,5 @@ Pousse sur ta branche, PR en brouillon avec « Preuve OKE demandée » si le clu
 | Anti-pattern | Remède |
 |---|---|
 | Annoncer « vert » sur un run dont les suites sont `skipped` | Lire le statut de chaque suite ; `skipped` = `NOT_TESTED`. |
-| Ajouter du contrat pour un seul cas | Mesurer l'écart dans le journal de fidélité ; adapter l'app ou accepter la limite. |
-| Deux écrivains sur un même fichier | `overlap.py` avant chaque lot ; fichiers partagés selon §4. |
-| Polling serré | Abonnement aux PR, `git fetch`, relevé toutes les 15 à 30 min. |
 | Confirmer un niveau de confiance sans en dire les conséquences | Avant de passer une session en « appareils de confiance », dire qu'elle ne reçoit plus de messages des sessions cloud. |
-| `ci-ok` lu sur un vieux SHA | Toujours la tête courante de la PR. |
 | `__pycache__` laissés avant `tools/dev/check` | `PYTHONDONTWRITEBYTECODE=1` et suppression ; sinon `leak-guard` échoue. |
