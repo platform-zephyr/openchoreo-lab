@@ -4,7 +4,7 @@ title: "VM Talos « lab » dédiée sur Proxmox (cluster séparé de kube-ops)"
 status: todo
 phase: P0
 adr: [0003]
-depends_on: [T-061, T-061b, T-360, T-488]
+depends_on: [T-061, T-061b, T-360]
 class: MANDAT
 velocity: false
 lane: hybride
@@ -39,3 +39,4 @@ Passé de S0 à S1 (consensus n°2 et arbitrages de Paul, 2026-11-18) : pas néc
 Retardé par ADR-0025 (2026-11-18) : dépend de la porte 1 (T-488) ; aucun geste sur le homelab avant une valeur prouvée pour les agents.
 
 Inchangé (arbitrages de Paul n°3, 2026-11-18) : reste derrière la porte 1 (T-488).
+- 2026-11-19 (T-521) : dépendance au banc A/B retirée, le banc est abandonné ; la décision se prendra sur le test d'usage de Paul (T-520).

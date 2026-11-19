@@ -1,7 +1,7 @@
 ---
 id: T-504
 title: "Revue de fidélité du bras K avant la passe 0 (lecture seule, kube-ops ef50472)"
-status: in-progress
+status: deferred
 phase: P1
 adr: [0025]
 depends_on: [T-212]
@@ -29,3 +29,4 @@ tests/bench-ab/arm-k/FIDELITY-REVIEW.md, backlog/T-504-fidelite-bras-k.md
 
 ## Notes
 Lecture seule des deux dépôts ; aucun accès cluster. Verdict initial : FAIL conditionnel (3 écarts bloquants : E1, E5, E6).
+- Abandonné le 2026-11-19 (décision de Paul, chat de l'orchestrateur) : le banc A/B (passe 0, campagne comptée, bras K, harnais, seuils, graders) est arrêté ; plus long et plus cher qu'un déploiement jetable réel sur OKE, et il ne mesure pas l'IDP. Paul fait lui-même un test d'usage sur un déploiement réel d'OpenChoreo (T-520). Historique conservé ; voir T-521.

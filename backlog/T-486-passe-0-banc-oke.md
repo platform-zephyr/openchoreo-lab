@@ -1,7 +1,7 @@
 ---
 id: T-486
 title: "Passe 0 non comptée du banc A/B sur OKE (graders et harnais débogués, gel des SHA)"
-status: todo
+status: deferred
 phase: P1
 adr: [0025]
 depends_on: [T-003, T-005, T-212, T-485, T-491]
@@ -33,3 +33,4 @@ tests/bench-ab/pass-0/, docs/research/POC-AB-PASS-0.md
 Exécutée par l'usine (agents cloud) ; la session locale du Mac n'intervient que pour une synchro manuelle de `lab-platform` (brief `docs/research/POC-BRIEF-SESSION-LOCALE.md`). Colima : repli seulement si OKE est injoignable ou hors budget (preuve k3d, dite comme telle).
 
 Recadré (arbitrages de Paul n°3, 2026-11-18) : l'ancienne « répétition sur le MacBook » est supprimée ; même identifiant, même couloir.
+- Abandonné le 2026-11-19 (décision de Paul, chat de l'orchestrateur) : le banc A/B (passe 0, campagne comptée, bras K, harnais, seuils, graders) est arrêté ; plus long et plus cher qu'un déploiement jetable réel sur OKE, et il ne mesure pas l'IDP. Paul fait lui-même un test d'usage sur un déploiement réel d'OpenChoreo (T-520). Historique conservé ; voir T-521.

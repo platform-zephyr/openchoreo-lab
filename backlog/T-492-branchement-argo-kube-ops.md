@@ -4,7 +4,7 @@ title: "Cible : l'Argo du cluster, amorcé par kube-ops, livre la plateforme par
 status: todo
 phase: P2
 adr: [0025, 0003]
-depends_on: [T-488, T-491]
+depends_on: [T-491]
 class: REVUE + MANDAT
 velocity: false
 lane: hybride
@@ -30,3 +30,4 @@ platform/install/argocd/, docs/architecture/, dépôt kube-ops (hors de ce dép�
 
 ## Notes
 Dépend de la décision de la porte 1 ; le cluster cible (VM lab ou autre) est tranché par la porte 2 (T-211).
+- 2026-11-19 (T-521) : dépendance au banc A/B retirée, le banc est abandonné ; la décision se prendra sur le test d'usage de Paul (T-520).
