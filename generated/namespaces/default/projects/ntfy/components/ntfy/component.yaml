@@ -17,3 +17,21 @@ spec:
     runAsUser: 65532
     strategy: RollingUpdate
     publicAuth: none
+  traits:
+  - kind: ClusterTrait
+    name: health-probes
+    instanceName: probes
+    parameters:
+      containerName: main
+      liveness:
+        enabled: true
+        handler: &id001
+          httpGet:
+            port: 8080
+            path: /v1/health
+        initialDelaySeconds: 10
+        periodSeconds: 10
+      readiness:
+        enabled: true
+        handler: *id001
+        periodSeconds: 5

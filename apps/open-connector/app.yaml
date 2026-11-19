@@ -15,7 +15,7 @@ spec:
   profile: stateful
   runtime:
     port: 3000
-    healthPath: /health
+    healthPath: /health   # [S] NON PROUVE en amont (T-010) : aucune source lisible ; premiere probe reelle = premier deploiement
     size: medium
     runAsUser: 10001
     env:

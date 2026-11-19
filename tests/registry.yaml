@@ -14,13 +14,13 @@
 # Contraintes de contenu : aucun secret, aucun cluster, aucun accès réseau supposé (job en lecture seule, sans secret).
 version: 1
 suites:
-  - name: status-reader
-    runner: python3
-    run: tests/status/test_app_status.py
-    timeout: 5
   - name: status-install-notifications
     runner: bash
     run: tests/status/install-notifications.sh
+    timeout: 5
+  - name: bench-ab-pass-0
+    runner: bash
+    run: tests/bench-ab/pass-0/dispatch-test.sh
     timeout: 5
 # Exemple :
 #  - name: mon-test

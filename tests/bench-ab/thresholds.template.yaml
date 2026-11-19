@@ -3,6 +3,11 @@
 # gabarit en `tests/bench-ab/thresholds.yaml` APRÈS la passe 0, dans le commit de gel des SHA. Un seuil ne change jamais
 # après ce commit (horodatage Git). Schéma : thresholds.schema.json ; validation : tools/bench-ab/verdict.py validate.
 # S4 est retiré (couvert par S3, arbitrage de Paul n°3).
+# 2026-11-19 (décision de Paul relayée par le coordinateur, E6) : M3 n'a pas d'équivalent non-prod côté bras K. Un échec
+# de K sur M3 est une MESURE défavorable à K, consignée telle quelle : pas de non-prod inventé, aucun développement sur
+# kube-ops. Aucune valeur de seuil n'est modifiée par cette note.
+# S2 : le comptage `files_written` / `lines_written` ne définit qu'un filtre de chemins (`generated/` exclu). Les sorties
+# d'`occ` ne sont PAS mentionnées : exclusion non définie à ce jour (NOT_TESTED), à décider par Paul avant le gel.
 schema: bench-ab-thresholds.v1
 runs_per_task_per_arm: 2
 tasks: [M1, M2, M3, M4]

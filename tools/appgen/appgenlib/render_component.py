@@ -20,6 +20,7 @@ from appgenlib.config import (
     ACCESS_MODE,
     CCT_BY_KIND,
     NS,
+    PROBES_TRAIT,
     PVC_TRAIT_BY_KIND,
     ROOT_EXCEPTION_CCT,
     SYNC_OPTIONS,
@@ -121,6 +122,27 @@ def _pvc_traits(comp: dict, vols: list[dict], platform: dict, caps: dict, data_c
         traits_release[tname] = {"kind": "ClusterTrait", "name": tname, "spec": trait["spec"]}
         trait_env[v["name"]] = {"size": v["size"], "storageClass": caps["storageClasses"][v["profile"]]}
     return traits_ref, traits_profile, traits_release, trait_env
+
+
+def _probes_trait(comp: dict, cct: dict, platform: dict) -> tuple[list, list, dict, dict]:
+    """T-010 (G2) : healthPath d'un endpoint HTTP -> trait health-probes (readiness + liveness httpGet).
+
+    Meme forme de retour que _pvc_traits. Rien si pas de healthPath, pas de port HTTP ou CCT qui n'autorise pas le trait."""
+    path = comp["rt"].get("healthPath")
+    allowed = {t["name"] for t in cct["spec"].get("allowedTraits", [])}
+    if not path or not comp["port"] or comp["protocol"] != "HTTP" or PROBES_TRAIT not in allowed:
+        return [], [], {}, {}
+    trait = platform.get(("ClusterTrait", PROBES_TRAIT))
+    if trait is None:
+        raise AppError(f"ClusterTrait '{PROBES_TRAIT}' introuvable dans platform/")
+    handler = {"httpGet": {"port": comp["port"], "path": path}}
+    tparams = {"containerName": "main",
+               "liveness": {"enabled": True, "handler": handler, "initialDelaySeconds": 10, "periodSeconds": 10},
+               "readiness": {"enabled": True, "handler": handler, "periodSeconds": 5}}
+    _require_params(trait, f"ClusterTrait '{PROBES_TRAIT}'", tparams)
+    ref = {"kind": "ClusterTrait", "name": PROBES_TRAIT, "instanceName": "probes", "parameters": tparams}
+    return [ref], [ref], {PROBES_TRAIT: {"kind": "ClusterTrait", "name": PROBES_TRAIT, "spec": trait["spec"]}}, \
+        {"probes": {"enabled": True}}
 
 
 def _endpoints(spec: dict, name: str, comp: dict, targeted: set) -> dict:
@@ -233,6 +255,9 @@ def render_component(doc: dict, comp: dict, platform: dict, caps: dict, targeted
     params = _component_params(spec, comp, exc)
     _require_params(cct, f"ClusterComponentType '{cct_ref}'", params)
     traits_ref, traits_profile, traits_release, trait_env = _pvc_traits(comp, vols, platform, caps, spec.get("data", {}).get("class"))
+    p_ref, p_profile, p_release, p_env = _probes_trait(comp, cct, platform)
+    traits_ref, traits_profile = [*traits_ref, *p_ref], [*traits_profile, *p_profile]
+    traits_release, trait_env = {**traits_release, **p_release}, {**trait_env, **p_env}
 
     rendered[f"{cdir}/component.yaml"] = {
         "apiVersion": "openchoreo.dev/v1alpha1", "kind": "Component",

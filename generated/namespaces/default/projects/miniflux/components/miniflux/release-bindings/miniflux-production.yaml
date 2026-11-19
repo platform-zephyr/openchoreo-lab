@@ -9,7 +9,10 @@ spec:
     projectName: miniflux
     componentName: miniflux
   environment: production
-  releaseName: miniflux-03808293e2
+  releaseName: miniflux-58d603c8a4
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1
+  traitEnvironmentConfigs:
+    probes:
+      enabled: true

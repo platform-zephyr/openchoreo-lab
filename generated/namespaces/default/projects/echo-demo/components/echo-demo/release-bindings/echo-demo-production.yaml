@@ -9,7 +9,10 @@ spec:
     projectName: echo-demo
     componentName: echo-demo
   environment: production
-  releaseName: echo-demo-d5ad4c3fc9
+  releaseName: echo-demo-4c89ae1a77
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1
+  traitEnvironmentConfigs:
+    probes:
+      enabled: true
