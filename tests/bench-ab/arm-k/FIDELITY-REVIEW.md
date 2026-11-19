@@ -1,7 +1,7 @@
 # Revue de fidélité du bras K (T-504)
 
 Date : 2026-11-19. Niveau de preuve : STATIC (lecture seule, aucun accès cluster). Revue indépendante exigée par `docs/research/POC-OPENCHOREO-STRATEGY.md` §2.5 point 5.
-Références : bras K = `bench-ab-arm-k` @ `742bbd6` ; kube-ops = `ef50472` (HEAD du clone local, comparé par `diff -ru`). Notation : `K:` = bras K, `KO:` = kube-ops, `O:` = ce dépôt.
+Références : bras K = `bench-ab-arm-k` @ `742bbd6` (initial) puis `6719201` (PR #1, portes E2, non fusionnée) ; kube-ops = `ef50472` (HEAD du clone local, comparé par `diff -ru`). Notation : `K:` = bras K, `KO:` = kube-ops, `O:` = ce dépôt.
 
 ## Conclusion
 **Verdict global : FAIL conditionnel.** Le contenu copié est fidèle (PASS), mais 3 écarts empêchent une mesure valide : M1 est impossible en l'état pour le bras K, M3 n'a pas d'équivalent non-prod, et les portes (`just check`, CI) manquent. À corriger ou à consigner AVANT la passe 0 (§4). Aucun écart ne favorise O par un défaut de copie ; les écarts qui handicapent K viennent presque tous du principe « aucun développement sur kube-ops » : ce sont des MESURES à consigner, pas des défauts.
@@ -48,3 +48,12 @@ Références : bras K = `bench-ab-arm-k` @ `742bbd6` ; kube-ops = `ef50472` (HEA
 6. Vérifier `kustomize build` des 2 apps Kustomize (CI K ou local) avant la passe 0.
 
 Aucun écart ne doit être « corrigé » en rendant K plus capable que kube-ops réel : tout écart restant dans ce sens est une mesure.
+
+## 5. Suivi E2 : copie des portes (2026-11-19)
+Copie à l'identique depuis kube-ops `ef50472` dans `bench-ab-arm-k`, PR #1 (branche `claude/e2-portes-kube-ops`, commit `6719201`) : `.justfile`, `package.json`, `scripts/`, `tests/`, `.github/workflows/` (16 workflows), 263 fichiers ajoutés ; comparaison octet à octet avec `git show ef50472:<chemin>` : aucune différence (PASS, preuve : cmp local). Aucune réécriture.
+
+Écarts consignés (non corrigés, par fidélité) :
+- Le bac réduit n'a que 3 apps : `just check` local donne 13 FAIL sur 14 sous-checks (1 OK : `service-contract`). Causes : `docs/documentation-integrity.json` absent ; `k8s/bootstrap/argocd-root/infrastructure-applicationset.yaml` absent ; `k8s/infrastructure/controllers/velero/*`, `k8s/infrastructure/security/gatekeeper/values.yaml`, `k8s/infrastructure/monitoring/prometheus-stack/*` absents ; `website/` absent (`docs-build`). Mesure défavorable à K, non un défaut de copie.
+- Les tests copiés contiennent des adresses RFC1918 et un hôte API privé tels quels dans kube-ops (ex. `scripts/runtime-smoke.sh`, `tests/harness/arc-gitops-contract-test.sh`) ; dépôt K privé ; conservés pour la fidélité, aucun OCID ni secret détecté (grep).
+- Les 16 workflows ne sont pas exécutés (NOT_TESTED) ; effet sur le dépôt K au premier push/PR non vérifié. `tests/e2e` (Playwright) non exécuté : NOT_TESTED.
+- Le SHA du bras K ci-dessus pointe la branche de la PR ; à remplacer par le SHA de `main` après fusion.
