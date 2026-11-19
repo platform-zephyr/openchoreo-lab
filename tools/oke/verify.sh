@@ -443,6 +443,13 @@ v11() {
   # lab-platform : synchro MANUELLE, volontairement non lancée tant que l'étape 10 (lab-pg, volume OCI) n'est pas autorisée.
   expect_ok B11-lab-platform-manual "Application lab-platform sans synchro automatique (adoption différée)" bash -c \
     "kubectl -n lab-argocd get application lab-platform -o json | jq -e '.spec.syncPolicy.automated == null'"
+  # Bras K du banc A/B (T-495) : frontière lab-k de CE dépôt (jamais celle du bac à sable), racine lab-k-root manuelle.
+  expect_ok B11-lab-k-projects "AppProjects lab-k et lab-k-root présents" \
+    kubectl -n lab-argocd get appprojects.argoproj.io/lab-k appprojects.argoproj.io/lab-k-root
+  expect_ok B11-lab-k-dest "AppProject lab-k : destinations exactement lab-k-* et svc-* du cluster local" bash -c \
+    "kubectl -n lab-argocd get appproject lab-k -o json | jq -e '[.spec.destinations[] | .server + \" \" + .namespace] | sort == [\"https://kubernetes.default.svc lab-k-*\", \"https://kubernetes.default.svc svc-*\"]'"
+  expect_ok B11-lab-k-root-manual "Application lab-k-root dans le projet lab-k-root, sans synchro automatique" bash -c \
+    "kubectl -n lab-argocd get application lab-k-root -o json | jq -e '.spec.project == \"lab-k-root\" and .spec.syncPolicy.automated == null'"
 }
 
 v12() { # Étape 12 intégrée à l'étape 7 : mêmes contrôles (utile après un upgrade ou un rollback_secure du DP).

@@ -11,6 +11,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import corpus
 
 G, PSA = corpus.GUARD, corpus.PSA
+K = sys.modules["argo_guard_k"]  # règles L1-L4, chargées par argo_guard.py (T-495)
 REL = "f.yaml"
 
 
@@ -110,6 +111,114 @@ class ProjectRules(unittest.TestCase):
         self.assertEqual(len(errs_of("rule_p2_lab_apps", bad)), 3)
         self.assertIn("POSÉE vide", errs_of("rule_p2_lab_apps", {k: v for k, v in ok.items()
                                                                 if k != "clusterResourceWhitelist"})[0])
+
+
+class LabKRules(unittest.TestCase):
+    """L1-L4 (T-495) : AppProject lab-k et lab-k-root, Application lab-k-root."""
+    IN = "https://kubernetes.default.svc"
+
+    def real(self):
+        return corpus.real_guard().projects()
+
+    def test_real_projects_pass(self):
+        p = self.real()
+        g = guard()
+        g.check_projects(p)
+        self.assertEqual(g.errs, [])
+
+    def test_l1_destinations_refused(self):
+        for ns in ("argocd", "kube-system", "lab-argocd", "lab-pg", "lab-secrets", "openchoreo-*", "lab-*", "*"):
+            k = self.real()["lab-k"]
+            k["destinations"] = k["destinations"] + [{"server": self.IN, "namespace": ns}]
+            errs = errs_of("rule_l1_lab_k", k)
+            with self.subTest(ns=ns):
+                self.assertTrue(any(e.startswith(f"{REL}: L1 lab-k : destinations exactes") for e in errs), errs)
+                self.assertTrue(any("L2 lab-k : destination" in e for e in errs), errs)
+
+    def test_l1_other_cluster_refused(self):
+        k = self.real()["lab-k"]
+        k["destinations"] = [{"server": "https://evil.example.org", "namespace": "lab-k-*"},
+                             {"server": self.IN, "namespace": "svc-*"}]
+        self.assertTrue(any("L2" in e for e in errs_of("rule_l1_lab_k", k)))
+
+    def test_l1_source_other_repo_refused(self):
+        k = self.real()["lab-k"]
+        for repos in (["https://github.com/platform-zephyr/openchoreo-lab"], k["sourceRepos"] + ["https://example.org/x"],
+                      []):
+            k2 = dict(k, sourceRepos=repos)
+            with self.subTest(repos=repos):
+                self.assertIn("L1 lab-k : sourceRepos limité", errs_of("rule_l1_lab_k", k2)[0])
+
+    def test_l1_unlisted_kind_refused(self):
+        for extra in ({"group": "external-secrets.io", "kind": "ExternalSecret"},
+                      {"group": "external-secrets.io", "kind": "SecretStore"},
+                      {"group": "generators.external-secrets.io", "kind": "Password"},
+                      {"group": "", "kind": "ConfigMap"}):
+            k = self.real()["lab-k"]
+            k["namespaceResourceWhitelist"] = k["namespaceResourceWhitelist"] + [extra]
+            with self.subTest(kind=extra["kind"]):
+                self.assertTrue(any("namespaceResourceWhitelist = EXACTEMENT" in e
+                                    for e in errs_of("rule_l1_lab_k", k)))
+        k = self.real()["lab-k"]
+        k["clusterResourceWhitelist"] = k["clusterResourceWhitelist"] + [
+            {"group": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": "lab-k-x"}]
+        self.assertTrue(any("clusterResourceWhitelist limitée" in e for e in errs_of("rule_l1_lab_k", k)))
+        k = self.real()["lab-k"]
+        k["namespaceResourceBlacklist"] = k["namespaceResourceBlacklist"][1:]
+        self.assertTrue(any("namespaceResourceBlacklist de kube-ops" in e for e in errs_of("rule_l1_lab_k", k)))
+        k = self.real()["lab-k"]
+        k["roles"] = [{"name": "x", "policies": ["p, proj:lab-k:x, applications, *, lab-k/*, allow"]}]
+        self.assertIn("L1 lab-k : clé spec.roles interdite", errs_of("rule_l1_lab_k", k)[0])
+
+    def test_svc_glob_only_for_lab_k(self):
+        p = self.real()
+        p["lab-o"]["destinations"] = p["lab-o"]["destinations"] + [{"server": self.IN, "namespace": "svc-*"}]
+        g = guard()
+        g.check_projects(p)
+        self.assertTrue(any("P2 lab-o : destination joker" in e for e in g.errs), g.errs)
+        p = self.real()
+        p["lab-k-root"]["destinations"] = [{"server": self.IN, "namespace": "svc-*"}]
+        g = guard()
+        g.check_projects(p)
+        self.assertTrue(any("P2 lab-k-root : destination joker" in e for e in g.errs), g.errs)
+
+    def test_l1_k_repo_reserved(self):
+        p = self.real()
+        p["lab-platform"]["sourceRepos"] = p["lab-platform"]["sourceRepos"] + [K.K_REPOS[0]]
+        self.assertIn("L1 lab-platform : dépôt du bac à sable", errs_of("rule_l1_k_repos", p)[0])
+
+    def test_l3_lab_k_root_project(self):
+        kr = self.real()["lab-k-root"]
+        self.assertEqual(errs_of("rule_l3_lab_k_root", kr), [])
+        for key, val in (("namespaceResourceWhitelist", [{"group": "argoproj.io", "kind": "ApplicationSet"},
+                                                         {"group": "argoproj.io", "kind": "Application"}]),
+                         ("destinations", [{"server": self.IN, "namespace": "argocd"}]),
+                         ("clusterResourceWhitelist", [{"group": "", "kind": "Namespace", "name": "lab-k-x"}])):
+            with self.subTest(key=key):
+                self.assertIn("L3 lab-k-root", errs_of("rule_l3_lab_k_root", dict(kr, **{key: val}))[0])
+
+    def test_l3_k_root_app(self):
+        dst = {"server": self.IN, "namespace": "lab-argocd"}
+        ok = {"project": "lab-k-root", "source": dict(K.K_ROOT_SOURCE), "destination": dst}
+        self.assertEqual(errs_of("rule_l3_k_root_app", "lab-k-root", "lab-k-root", ok), [])
+        self.assertEqual(errs_of("rule_l3_k_root_app", "x", "lab-platform", {}), [])
+        bad_sources = {
+            "projet-copie": dict(K.K_ROOT_SOURCE, directory={"recurse": False, "include": "*.yaml"}),
+            "autre-depot": dict(K.K_ROOT_SOURCE, repoURL="https://github.com/platform-zephyr/openchoreo-lab"),
+            "recurse": dict(K.K_ROOT_SOURCE, directory=dict(K.K_ROOT_SOURCE["directory"], recurse=True)),
+            "chemin": dict(K.K_ROOT_SOURCE, path="k8s"),
+        }
+        for sid, s in bad_sources.items():
+            with self.subTest(source=sid):
+                self.assertIn("L3", errs_of("rule_l3_k_root_app", "lab-k-root", "lab-k-root",
+                                            dict(ok, source=s))[0])
+        self.assertIn("L3", errs_of("rule_l3_k_root_app", "lab-k-root", "lab-k-root",
+                                    dict(ok, destination={"server": self.IN, "namespace": "kube-system"}))[0])
+        self.assertIn("L3", errs_of("rule_l3_k_root_app", "other", "lab-k-root", ok)[0])
+        self.assertIn("L3", errs_of("rule_l3_k_root_app", "lab-k-root", "lab-platform", ok)[0])
+
+    def test_l4_lab_k_not_for_repo_apps(self):
+        self.assertIn("projet 'lab-k' interdit", errs_of("rule_a2_project", "x", "lab-k")[0])
 
 
 class ApplicationRules(unittest.TestCase):

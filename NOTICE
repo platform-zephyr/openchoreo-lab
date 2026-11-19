@@ -27,6 +27,10 @@ This product includes software adapted from:
   image-digest}.yaml (k8s/components/baseline-vap/), platform/baseline/ccnp-imds.yaml
   (k8s/clusters/oracle-a1/baseline/imds-deny.yaml), platform/install/values/cilium.yaml
   (k8s/clusters/oracle-a1/bootstrap/cilium-values.yaml). (Full MIT text in LICENSES/MIT-kube-ops.txt.)
+  Adapted (T-495): AppProject `lab-k` in platform/install/argocd/project-lab.yaml, from the `apps-generated`
+  AppProject of kube-ops commit ef50472bc427bbb5fb342cebf2f4db408157f5b3 (as copied into the bench sandbox
+  platform-zephyr/bench-ab-arm-k at 742bbd6b8c4e894b8bc31800ee234de0d2b80dd6): same kind lists; repository,
+  name and destinations (lab-k-*, svc-*) changed.
 - [only if copied] VizzleTF/homelab (https://github.com/VizzleTF/homelab)
   MIT License, Copyright (c) 2024-2026 VizzleTF. ApplicationSet template adapted from
   argocd/appsets/apps-appset.yaml. (Full MIT text in LICENSES/MIT-VizzleTF.txt.)

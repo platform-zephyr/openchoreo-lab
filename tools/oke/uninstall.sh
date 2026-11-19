@@ -231,7 +231,9 @@ undo_12() {
 }
 undo_11() {
   # Pas de finalizer resources-finalizer : supprimer les Application conserve les objets (CLEANUP.md 1).
-  kd -n lab-argocd applications.argoproj.io lab-root lab-platform lab-authz
+  # lab-k-root (T-495) : supprimer l'Application CONSERVE les ApplicationSets du bras K (aucun finalizer) ;
+  # leur retrait et celui des Applications lab-k-* relèvent du nettoyage du banc (T-212), pas de cette étape.
+  kd -n lab-argocd applications.argoproj.io lab-root lab-platform lab-authz lab-k-root
   rm_lab_o_apps
   kd -f "$INSTALL_DIR/argocd/project-lab.yaml"
   helm_rm lab-argocd argocd

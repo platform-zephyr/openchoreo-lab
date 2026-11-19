@@ -254,7 +254,9 @@ step_10() { # Opérateur CNPG + lab-pg (1 PVC = 1 block volume OCI de 50 Go)
   run kubectl -n lab-pg wait --for=condition=Ready --timeout=600s cluster.postgresql.cnpg.io/lab-pg
 }
 
-step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProject lab, lab-authz, lab-root + Application racine
+step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProjects lab-* (dont lab-k, lab-k-root : T-495) + racine
+  # project-lab.yaml porte aussi lab-k et lab-k-root (bras K) ; l'Application lab-k-root arrive par lab-root et
+  # reste à synchroniser À LA MAIN (fenêtre deny) ; contrôles : verify.sh --step 11 (B11-lab-k-*).
   # Bootstrap PRIVILÉGIÉ (revue PR #8, P1) : le projet `default` est verrouillé AVANT toute Application,
   # sinon une Application `project: default` obtiendrait les droits */*/* du contrôleur.
   local tgz; tgz="$(fetch_chart argo-cd "$ARGOCD_CHART" "$ARGOCD_VERSION" "$ARGOCD_TGZ_SHA256" "$ARGOCD_REPO")"
