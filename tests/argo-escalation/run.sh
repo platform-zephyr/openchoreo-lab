@@ -52,6 +52,33 @@ fetch() { # fetch URL SHA256 DEST : téléchargement vérifié
   echo "$2  $3" | shasum -a 256 -c - >/dev/null || { echo "sha256 invalide : $3" >&2; exit 3; }
 }
 
+# --- CRD Cilium (T-505) ------------------------------------------------------------------------------
+# Kinds cilium.io posées au premier niveau dans les chemins que lab-platform synchronise (même liste que
+# `directory.include` de platform/install/argocd/apps/lab-platform.yaml), sous la racine $1.
+cilium_kinds_used() {
+  local r="$1" f
+  for f in "$r"/platform/{baseline,cloudflared,policies,component-types,traits,project-types,resource-types}/*.yaml \
+           "$r"/platform/data/lab-pg-{namespace,cluster}.yaml "$r"/platform/install/manifests/40-openchoreo-env.yaml; do
+    [[ -f "$f" ]] && yq -N 'select((.apiVersion // "") | test("^cilium[.]io/")) | .kind' "$f"
+  done | sort -u
+}
+# Échoue (code 1) si une kind utilisée n'a pas de CRD dans cilium-crds.yaml. Remplace une attente de 180 s
+# par un refus immédiat et lisible.
+cilium_crds_check() {
+  local r="${1:-$ROOT}" have missing
+  have="$(yq -N '.spec.names.kind' "$HERE/cilium-crds.yaml" | sort -u)"
+  missing="$(comm -23 <(cilium_kinds_used "$r") <(echo "$have"))"
+  [[ -z "$missing" ]] || { echo "CRD Cilium absente de tests/argo-escalation/cilium-crds.yaml : ${missing//$'\n'/ }" >&2; return 1; }
+}
+# Test négatif de la garde : une kind inconnue dans un arbre factice DOIT être refusée.
+cilium_crds_selftest() {
+  local t="$WORK/selftest"; rm -rf "$t"; mkdir -p "$t/platform/baseline"
+  printf 'apiVersion: cilium.io/v2\nkind: CiliumEnvoyConfig\nmetadata: {name: x}\n' >"$t/platform/baseline/x.yaml"
+  if cilium_crds_check "$t" 2>/dev/null; then rec CRD-NEG FAIL "kind inconnue acceptée"; return 1; fi
+  cilium_crds_check "$ROOT" || { rec CRD-POS FAIL "kind du dépôt sans CRD"; return 1; }
+  rec CRD-GARDE PASS "kind inconnue refusée (négatif) ; kinds du dépôt couvertes (positif)"
+}
+
 # --- installation ------------------------------------------------------------------------------------
 setup() {
   local dl="$WORK/dl"; mkdir -p "$dl"
@@ -68,6 +95,10 @@ setup() {
   helm template cnpg "$dl/cnpg.tgz" -n lab-cnpg |
     yq 'select(.kind == "CustomResourceDefinition" and .spec.group == "postgresql.cnpg.io")' |
     k apply --server-side -f - >/dev/null
+
+  cilium_crds_selftest
+  log "CRD Cilium minimales (le cluster n'a pas Cilium ; lab-platform synchronise des CNP/CCNP)"
+  k apply --server-side -f "$HERE/cilium-crds.yaml" >/dev/null
 
   log "Argo CD $ARGOCD_VERSION (values du dépôt)"
   k create namespace "$NS" --dry-run=client -o yaml | k apply -f - >/dev/null

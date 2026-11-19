@@ -1,6 +1,8 @@
 # Résultats : preuve négative Argo CD sur un vrai Argo (flux A2)
 
 > **T-491 (2026-11-18) : NOT_TESTED.** `run.sh` cible désormais l'ApplicationSet `lab-o` (Applications `lab-o-<app>`, projet `lab-o`, contrôleur ApplicationSet à 1 réplica dans ce test). Les résultats ci-dessous datent du 2026-11-17 avec l'ancienne Application `lab-apps` ; la suite n'a pas été relancée sur k3d depuis.
+>
+> **T-505 (2026-11-19) : PASS (CI, run 44501238351).** Ajout de CRD Cilium minimales (`cilium-crds.yaml`) : sans elles, `lab-platform` ne se synchronisait plus depuis T-494 (voir `docs/CI-K3D.md` §4). Confirmé par le dispatch daté du 2026-11-19.
 
 **Étiquette : k3d, PAS OKE.** Le cluster jetable `k3d-lab-sec-argo` (K8s v1.35.5+k3s1, 1 nœud) a été supprimé après les tests.
 
