@@ -7,7 +7,9 @@
 #   - secrets générés DANS le cluster (générateur ESO Password + PushSecret), aucun jeton externe ;
 #   - pas de token admin partagé : ESO s'authentifie avec le SA dédié `eso-lab-store` (TokenRequest
 #     éphémère), qui n'a de droits que sur les Secrets de lab-secrets ;
-#   - usage limité aux namespaces dp-* et lab-pg (conditions.namespaceRegexes, E-revue T6).
+#   - usage limité aux namespaces dp-*, lab-pg et lab-argocd (conditions.namespaceRegexes, E-revue T6) ;
+#     lab-argocd (T-489) : seul l'ExternalSecret de bootstrap argocd-notifications-secret (aucun projet Argo
+#     n'écrit d'ExternalSecret dans lab-argocd).
 # Écart à corriger hors périmètre : capabilities.yaml (secretStore) doit valoir `lab-store` (ou Doppler
 # quand Paul aura fourni le jeton). Limite connue : toute cellule peut demander n'importe quelle clé du
 # coffre ; la seule barrière est la règle CI « clé préfixée <NAME>_ » (APP-CONTRACT §1). Test à faire.
@@ -52,7 +54,7 @@ metadata:
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   conditions:
-    - namespaceRegexes: ["^dp-", "^lab-pg$"]
+    - namespaceRegexes: ["^dp-", "^lab-pg$", "^lab-argocd$"]
   provider:
     kubernetes:
       remoteNamespace: lab-secrets
