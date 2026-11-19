@@ -11,7 +11,7 @@ from __future__ import annotations
 from appgenlib.catalog import catalog_entity
 from appgenlib.config import ARGO_NAMESPACE, ARGO_PROJECT_HELM, GITOPS_REPO, GITOPS_REVISION, PRIVATE_NETS, ROOT
 from appgenlib.egress import egress_objects, egress_project_params
-from appgenlib.model import egress_spec, load_capabilities
+from appgenlib.model import egress_spec, load_capabilities, remote_ref
 
 PSA_LABELS = {
     "pod-security.kubernetes.io/enforce": "restricted",
@@ -52,15 +52,13 @@ def _public_internet_policy(ns: str) -> dict:
                                  "ports": [{"protocol": "TCP", "port": 80}, {"protocol": "TCP", "port": 443}]}]}}
 
 
-def _external_secret(name: str, ns: str, store: str, secrets: list[dict]) -> dict:
+def _external_secret(name: str, ns: str, caps: dict, secrets: list[dict]) -> dict:
     return {"apiVersion": "external-secrets.io/v1", "kind": "ExternalSecret",
             "metadata": {"name": f"{name}-secrets", "namespace": ns},
             "spec": {"refreshInterval": "1h",
-                     "secretStoreRef": {"kind": "ClusterSecretStore", "name": store},
+                     "secretStoreRef": {"kind": "ClusterSecretStore", "name": caps["secretStore"]},
                      "target": {"name": f"{name}-secrets", "creationPolicy": "Owner"},
-                     "data": [{"secretKey": s["env"], "remoteRef": {"key": s["key"],
-                               **({"property": s["property"]} if "property" in s else {})}}
-                              for s in secrets]}}
+                     "data": [{"secretKey": s["env"], "remoteRef": remote_ref(s, caps)} for s in secrets]}}
 
 
 def _application(name: str, env: str, ns: str, chart: dict, rdir: str) -> dict:
@@ -110,7 +108,7 @@ def render_helm(doc: dict, caps: dict | None = None) -> dict[str, object]:
         if rules:
             res += egress_objects(name, env, ns, egress_project_params(doc, caps, {}), rules, caps["cilium"], {})
         if spec.get("secrets"):
-            res.append(_external_secret(name, ns, caps["secretStore"], spec["secrets"]))
+            res.append(_external_secret(name, ns, caps, spec["secrets"]))
         for obj in res:
             files[f"{rdir}/{obj['kind'].lower()}-{obj['metadata']['name']}.yaml"] = obj
         files[f"helm/{name}/{env}/application.yaml"] = _application(name, env, ns, chart, rdir)

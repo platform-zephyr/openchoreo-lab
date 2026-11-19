@@ -73,7 +73,11 @@
           "type": "array", "minItems": 1, "uniqueItems": true,
           "items": { "enum": ["none", "cnpg", "velero"] }
         },
-        "secretStore": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "ClusterSecretStore ESO (parcours Helm)." }
+        "secretStore": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "ClusterSecretStore ESO (parcours Helm)." },
+        "secretStoreProvider": {
+          "enum": ["doppler", "kubernetes"], "default": "doppler",
+          "description": "Fournisseur ESO du ClusterSecretStore : fixe la forme de remoteRef (T-499). doppler : key = cle du store (MAJUSCULES), property facultative. kubernetes : key = nom du Secret du coffre (minuscules RFC 1123, derive de la cle), property = cle du contrat."
+        }
       }
     }
   }

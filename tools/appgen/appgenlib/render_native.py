@@ -24,7 +24,15 @@ from appgenlib.config import (
     SYNC_OPTIONS_KEY,
 )
 from appgenlib.egress import egress_objects, egress_project_params, egress_targets
-from appgenlib.model import AppError, _requests, components, egress_spec, load_capabilities, volumes
+from appgenlib.model import (
+    AppError,
+    _requests,
+    components,
+    egress_spec,
+    load_capabilities,
+    remote_ref,
+    volumes,
+)
 from appgenlib.platform_index import _require_params
 from appgenlib.render_component import render_component
 
@@ -86,15 +94,14 @@ def _project_files(doc: dict, platform: dict, pparams: dict, project_pins: dict 
         }
 
 
-def _secret_reference(name: str, secrets: list[dict]) -> dict:
+def _secret_reference(name: str, secrets: list[dict], caps: dict) -> dict:
     return {
         "apiVersion": "openchoreo.dev/v1alpha1", "kind": "SecretReference",
         "metadata": {"name": f"{name}-secrets", "namespace": NS},
         "spec": {
             "template": {"type": "Opaque"},
             "data": [
-                {"secretKey": s["env"],
-                 "remoteRef": {"key": s["key"], **({"property": s["property"]} if "property" in s else {})}}
+                {"secretKey": s["env"], "remoteRef": remote_ref(s, caps)}
                 for s in secrets
             ],
         },
@@ -170,7 +177,7 @@ def render_native(doc: dict, platform: dict[tuple[str, str], dict], cluster: str
 
     if spec.get("secrets"):
         files[f"namespaces/{NS}/projects/{name}/secret-references/{name}-secrets.yaml"] = \
-            _secret_reference(name, spec["secrets"])
+            _secret_reference(name, spec["secrets"], caps)
     if "database" in spec:
         _database_files(name, spec, caps, pins, files)
     _egress_previews(doc, caps, index, files)
