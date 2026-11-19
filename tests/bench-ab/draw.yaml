@@ -1,0 +1,10 @@
+# Tirage préenregistré de la panne de M4 (T-485, ADR-0025). Calculé par tools/bench-ab/draw.py (SHA-256 de graine:M4:rang).
+# Le bras n'entre pas dans le calcul : K et O reçoivent la même panne au même rang.
+# Rang 0 = passe 0 (T-486, non comptée) ; rangs 1 et 2 = les 2 runs comptés. Vérification : python3 tools/bench-ab/draw.py
+schema: bench-ab-draw.v1
+seed: T-485-M4-2026-11-18
+faults: [digest_faux, port_faux, probe_fausse]
+draws:
+  0: port_faux
+  1: port_faux
+  2: probe_fausse

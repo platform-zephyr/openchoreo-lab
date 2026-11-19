@@ -49,6 +49,19 @@ Deux contrôles indépendants, les deux obligatoires :
 Côté cluster (PR `platform/`, REVUE) : NetworkPolicy qui autorise **seulement** le namespace de `cloudflared` vers le
 port du MCP. Rien d'autre du control plane n'est routé par le tunnel.
 
+Livré par Git (T-006, `platform/cloudflared/`, Application `lab-platform`, synchro MANUELLE) : namespace `lab-tunnel`
+(PSA restricted, `egress-isolated`), Deployment `cloudflared` repris de kube-ops (image par digest), egress borné
+(DNS, edge Cloudflare 7844/443, `api-server:8080`), et `openchoreo-control-plane/lab-allow-tunnel-to-api` (seul ce pod
+joint 8080). Hors Git, geste opérateur : Secret `lab-tunnel/cloudflared-token` (clé `TUNNEL_TOKEN`) depuis Doppler,
+ré-application de `project-lab.yaml` (nouvelles destinations), puis synchro de `lab-platform`. Le chemin `/mcp` seul
+est routé par la configuration distante du tunnel (dépôt d'infrastructure) ; tout autre chemin reçoit 404.
+
+Limites connues (2026-11-19, STATIC) :
+- Sans client Authentik `openchoreo-agent-reader`, le MCP répond 401 à tout appel (échec fermé, prouvé sur k3d :
+  `tests/mcp/RESULTS.md` I3-I4 ; OKE `NOT_TESTED`). Le tunnel seul ne donne donc aucune lecture aux agents.
+- La zone applique une restriction géographique (pays autorisés seulement) : une sortie de session cloud ou de
+  runner GitHub hors de ces pays reçoit 403 avant Access. Exception éventuelle : décision de Paul.
+
 Côté session cloud : les secrets ne sont **jamais** dans le dépôt, ni dans un prompt, ni dans une variable
 d'environnement en clair. Ils sont enregistrés comme *network secrets* de l'environnement Claude Code. Le proxy les
 injecte sur l'hôte voulu et l'agent ne voit pas leur valeur :

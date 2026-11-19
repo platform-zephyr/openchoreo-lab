@@ -4,7 +4,11 @@
 # non exécutées. Plan, critères de sortie et rollback : docs/PHASE-B.md §2.
 #
 # Usage : tools/oke/install.sh [--step N | --from N --to M] [--with-portal] [--apply] [--confirm-storage]
-#   - N, M dans l'ordre 1 2 3 4 5 6 6b 7 8 9 10 11 12.
+#   - N, M dans l'ordre 0 1 2 3 4 5 6 6b 7 8 9 10 11 12.
+#   - Étape 0 (socle cluster, T-494) : Cilium en chaînage OCI VCN-native + VAP baseline-* + CCNP deny-imds et
+#     allow-egress-unisolated (copies de kube-ops #1620/#1629, platform/baseline/). Hors plage par défaut : la
+#     lancer SEULE sur un cluster vierge, AVANT tools/oke/preflight.sh : install.sh --step 0 --apply ;
+#     contrôle : verify.sh --step 0. Écrit dans kube-system (Cilium) : décision de Paul du 2026-11-18 (T-487).
 #   - DRY-RUN PAR DÉFAUT : affiche les commandes ; seules des LECTURES touchent le cluster (garde de
 #     contexte, gardes de préconditions) ; téléchargements locaux (charts, CRD) dans STATE_DIR.
 #   - --apply : exécute. Chaque étape est idempotente (helm upgrade --install, kubectl apply --server-side).
@@ -15,6 +19,8 @@
 #     Les charts OpenChoreo ne passent QUE par helm_secure (tools/oke/security-bundle.sh) ; rollback : idem.
 #   - --confirm-storage : requis pour l'étape 10 (lab-pg = 1 block volume OCI de 50 Go), après accord
 #     de Paul sur le budget de stockage (docs/PHASE-B.md §4).
+#   - Étape 11 : Argo CD Notifications (platform/install/argocd/notifications/, T-489) posé seulement si le Secret
+#     lab-secrets/openchoreo-status existe (présence par -o name) ; sinon « notifications non appliquées », sans échec.
 # Après chaque étape (3 à 12) : mesure au repos de la pile et ARRÊT (code 3) si > 1,5 Gi ou > 300m.
 # Puis lancer tools/oke/verify.sh --step N (critère de sortie) avant l'étape suivante.
 set -euo pipefail
@@ -24,7 +30,7 @@ set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/security-bundle.sh"
 
 FROM=1 TO=11 CONFIRM_STORAGE=0 WITH_PORTAL=0
-ORDER=(1 2 3 4 5 6 6b 7 8 9 10 11 12)
+ORDER=(0 1 2 3 4 5 6 6b 7 8 9 10 11 12)
 while (($#)); do
   case "$1" in
     --step) FROM="$2"; TO="$2"; shift 2;;
@@ -66,6 +72,41 @@ guard_ns_ownership() {
     [[ "$part" == openchoreo-lab ]] \
       || die "namespace $ns préexistant SANS label part-of=openchoreo-lab (part-of='$part') : hors essai, refus"
   done
+}
+
+# Pods créés avant Cilium : aucune politique ne s'y applique tant qu'ils ne sont pas recréés (guide amont
+# « Oracle Kubernetes Engine (OKE) VCN-Native Pod Networking », § Restart existing pods). Pods hors hostNetwork
+# sans CiliumEndpoint : supprimés s'ils ont un contrôleur (recréés aussitôt), signalés sinon. Cluster vierge :
+# seuls les pods système de kube-system sont concernés.
+restart_unmanaged_pods() {
+  if [[ "$APPLY" != 1 ]]; then echo "[dry-run] recréation des pods hors hostNetwork sans CiliumEndpoint"; return; fi
+  local pods ceps ns name owned
+  pods="$(kubectl get pods -A -o json)" || die "liste des pods illisible"
+  ceps="$(kubectl get ciliumendpoints.cilium.io -A -o json)" || die "liste des CiliumEndpoints illisible"
+  while read -r ns name owned; do
+    [[ -n "$ns" ]] || continue
+    if [[ "$owned" == true ]]; then run kubectl -n "$ns" delete pod "$name" --wait=false
+    else log "ATTENTION pod sans contrôleur et sans CiliumEndpoint (non recréé, hors politique) : $ns/$name"; fi
+  done < <(jq -r --slurpfile cep <(printf '%s' "$ceps") '
+      ([$cep[0].items[] | "\(.metadata.namespace)/\(.metadata.name)"]) as $c
+      | .items[] | select(.spec.hostNetwork != true and .status.phase == "Running")
+      | select(("\(.metadata.namespace)/\(.metadata.name)") as $k | ($c | index($k)) == null)
+      | "\(.metadata.namespace) \(.metadata.name) \((.metadata.ownerReferences // []) | length > 0)"' <<<"$pods")
+  run kubectl -n kube-system wait --for=condition=Available deployment --all --timeout=300s
+}
+
+step_0() { # Socle cluster (T-494) : Cilium (kube-system), puis VAP et CCNP baseline (platform/baseline/)
+  local tgz; tgz="$(fetch_chart cilium "$CILIUM_CHART" "$CILIUM_VERSION" "$CILIUM_TGZ_SHA256" "$CILIUM_REPO")"
+  run helm upgrade --install cilium "$tgz" -n kube-system -f "$V/cilium.yaml" --wait --timeout 10m
+  run kubectl -n kube-system rollout status daemonset/cilium --timeout=300s
+  run kubectl -n kube-system rollout status deployment/cilium-operator --timeout=300s
+  # Les CRD Cilium sont créées par cilium-operator à son démarrage (le chart n'en contient pas).
+  run kubectl wait --for=create --timeout=180s crd/ciliumclusterwidenetworkpolicies.cilium.io
+  run kubectl wait --for=condition=Established --timeout=120s crd/ciliumclusterwidenetworkpolicies.cilium.io
+  # VAP + bindings + CCNP, copies NON modifiées de kube-ops (tools/oke/baseline-source.sh). Argo (lab-platform)
+  # les adopte à l'étape 11 ; jusque-là, ce fichier fait foi.
+  run "${KA[@]}" -f "$ROOT/platform/baseline/"
+  restart_unmanaged_pods
 }
 
 step_1() { # Socle : namespaces, quotas, réseau
@@ -215,7 +256,9 @@ step_10() { # Opérateur CNPG + lab-pg (1 PVC = 1 block volume OCI de 50 Go)
   run kubectl -n lab-pg wait --for=condition=Ready --timeout=600s cluster.postgresql.cnpg.io/lab-pg
 }
 
-step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProject lab, lab-authz, lab-root + Application racine
+step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProjects lab-* (dont lab-k, lab-k-root : T-495) + racine + notifications
+  # project-lab.yaml porte aussi lab-k et lab-k-root (bras K) ; l'Application lab-k-root arrive par lab-root et
+  # reste à synchroniser À LA MAIN (fenêtre deny) ; contrôles : verify.sh --step 11 (B11-lab-k-*).
   # Bootstrap PRIVILÉGIÉ (revue PR #8, P1) : le projet `default` est verrouillé AVANT toute Application,
   # sinon une Application `project: default` obtiendrait les droits */*/* du contrôleur.
   local tgz; tgz="$(fetch_chart argo-cd "$ARGOCD_CHART" "$ARGOCD_VERSION" "$ARGOCD_TGZ_SHA256" "$ARGOCD_REPO")"
@@ -226,6 +269,9 @@ step_11() { # Argo CD minimal + projet default VERROUILLÉ + AppProject lab, lab
   run "${KA[@]}" --force-conflicts -f "$INSTALL_DIR/argocd/project-default-locked.yaml"
   run "${KA[@]}" -f "$INSTALL_DIR/argocd/project-lab.yaml"
   run "${KA[@]}" -f "$INSTALL_DIR/argocd/root-application.yaml"
+  # Notifications (check runs `argocd/<app>` de l'App openchoreo-status, T-489) : APRÈS Argo CD, seulement si le
+  # Secret source existe dans lab-secrets (présence par -o name, jamais de valeur) ; sinon message et poursuite.
+  apply_status_notifications
 }
 
 step_12() { # SANS EFFET : le RBAC du cluster-agent est rendu avec le chart à l'étape 7 (security bundle)
@@ -242,6 +288,6 @@ for ((i = IFROM; i <= ITO; i++)); do
   "step_$n"
   # Journalisé AVANT le gate (revue m6) : un arrêt 3/4/5 du gate n'efface pas la trace d'une étape appliquée.
   [[ "$APPLY" != 1 ]] || printf '%s étape %s appliquée\n' "$(date -u +%FT%TZ)" "$n" >> "$STATE_DIR/steps.log"
-  if (( i >= 2 )); then budget_gate "étape $n"; fi
+  case "$n" in 0|1|2) ;; *) budget_gate "étape $n";; esac
 done
 log "terminé (étapes $FROM..$TO). Suite : tools/oke/verify.sh --step $TO"

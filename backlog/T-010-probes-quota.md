@@ -20,7 +20,7 @@ github_issue: null
 Ready signifie « app saine » ; le quota suit `size × replicas` et le stockage.
 
 ## Périmètre de fichiers
-tools/appgen/, platform/component-types/, platform/project-types/, tests/
+tools/appgen/, platform/component-types/, platform/project-types/, tests/appgen/, tests/cell-cpt/
 
 ## Critères de fin
 - [x] readiness/liveness rendues (STATIC : trait health-probes dans Component, release figée et binding ; CEL non évaluée)

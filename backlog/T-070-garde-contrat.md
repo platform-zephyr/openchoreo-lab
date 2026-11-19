@@ -20,12 +20,14 @@ github_issue: null
 Mettre en œuvre la vérification d'ADR-0001 et le versionnage d'ADR-0005 §3.
 
 ## Périmètre de fichiers
-tools/, tests/, .github/workflows/
+tools/contract-guard/, docs/schema/app.schema.json, tests/contract-guard/, .github/workflows/ci.yaml (job du garde ; couplé à tools/dev/check et ci-map.tsv), tools/dev/check, tools/dev/ci-map.tsv
 
 ## Critères de fin
 - [ ] CI : rupture de schéma sans changement de version → refus
 - [ ] CI : manifeste applicatif hors apps/generated → refus
-- [ ] indicateur : part des apps déclarées par app.yaml seul
+- [x] indicateur : part des apps déclarées par app.yaml seul
 
 ## Notes
 Sorti de la liste figée du pilote (arbitrage Fable, 2026-11-18) : périmètre trop large (chevauchement, constat P7).
+
+2026-11-18 — Le job CI `contract-guard` a tourné et passé (PR #137, `ci-ok` vert). Les cases « CI refuse » restent non cochées : elles exigent une PR de test volontairement fautive.

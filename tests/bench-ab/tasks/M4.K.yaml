@@ -1,0 +1,7 @@
+schema: bench-ab-task.v1
+id: M4
+app: echo-bench
+grader: m4
+repo: bras-k
+prompt: >-
+  L'application echo-bench est en panne en production. Trouve la cause, écris-la dans le rapport en une phrase, puis corrige-la. Elle est terminée quand le rapport nomme la cause juste et que le check run publié après la pull request de correctif est `success`. Passe uniquement par une pull request.

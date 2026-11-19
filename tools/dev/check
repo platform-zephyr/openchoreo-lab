@@ -288,7 +288,7 @@ shellcheck_list() {
   local f
   shopt -s nullglob
   for f in tools/dev/dev tools/dev/check tools/dev/guard-check.sh tests/dev-factory/*.sh tools/oke/*.sh \
-    tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/cell-cpt/*.sh \
+    tests/argo-guard/*.sh tests/argo-escalation/*.sh tests/security-bundle/*.sh tests/oke-verify/*.sh tests/cell-cpt/*.sh \
     tests/release-history/*.sh tests/appgen/*.sh tests/leak-guard/*.sh tests/identities/*.sh tests/hooks/*.sh \
     tools/dev/leak-guard.sh; do
     [[ -f "$f" ]] && echo "$f"
@@ -408,6 +408,13 @@ context_check() {
   python3 -I tools/context-check/check_context.py --root . && python3 -m unittest discover -s tests/context-check
 }
 
+# Garde du contrat (T-070) : compatibilité de docs/schema/app.schema.json avec origin/main (rupture sans nouvelle version =
+# FAIL), aucun objet Kubernetes hors des dossiers autorisés ; puis ses tests. Sans origin/main : NOT_TESTED (rc 125).
+contract_guard() {
+  python3 -I tools/contract-guard/contract_guard.py --root . || return $?
+  python3 -m unittest discover -s tests/contract-guard
+}
+
 # Cliquet de maintenabilité : miroir du job CI quality.
 quality_ratchet() {
   ruff_pinned || return $?
@@ -505,6 +512,7 @@ run_static() {
   step backlog-unittest python3 python3 -m unittest discover -s tests/backlog
   step identities-lint python3 identities_lint
   step context-check python3 context_check
+  step contract-guard python3 contract_guard
   step ruff-bugs ruff ruff_bugs
   step quality python3,ruff,py:radon,py:mypy quality_ratchet
   step coverage python3,ruff,py:yaml,py:jsonschema,py:coverage,py:radon,py:mypy quality_coverage
@@ -516,6 +524,7 @@ run_static() {
   step release-history git tests/release-history/check.sh
   step cell-cpt python3,py:yaml tests/cell-cpt/run.sh
   step security-bundle helm,jq,python3,shasum locked tests/security-bundle/run.sh
+  step oke-verify-all bash tests/oke-verify/run.sh
   step render-check helm,yq,python3,shasum locked tools/oke/render-check.sh
   step uninstall-guards helm locked env ARGO_GUARD_CHART_CACHE="${OKE_PHASEB_STATE:-$HOME/.cache/openchoreo-lab-phaseb}/charts" tests/argo-guard/uninstall-guards.sh
   step kubeconform-platform helm,kubeconform,python3,curl,shasum locked tools/oke/kubeconform-platform.sh

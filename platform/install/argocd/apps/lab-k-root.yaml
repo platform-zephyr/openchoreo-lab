@@ -1,0 +1,39 @@
+# Racine du bras K du banc A/B (T-495, ADR-0025) : livre dans lab-argocd UNIQUEMENT les deux ApplicationSets de
+# livraison du bac à sable bench-ab-arm-k (k8s/bootstrap/argocd-root/) :
+#   - apps-generated-applicationset.yaml (une Application lab-k-<app> par k8s/apps-generated/<app>/app.yaml) ;
+#   - applications-applicationset.yaml   (chemin Kustomize k8s/applications/catalog).
+# L'AppProject copié (apps-generated-project.yaml) est EXCLU par `include` : la frontière est l'AppProject lab-k
+# de platform/install/argocd/project-lab.yaml, jamais celle du bac à sable.
+# Synchro MANUELLE (fenêtre deny du projet lab-k-root + CI A4) : avant chaque synchro, l'opérateur relit le diff
+# (template.spec.project == lab-k, dépôt bench-ab-arm-k seul). FailOnSharedResource : un ApplicationSet du bac à
+# sable renommé comme un des nôtres (lab-o) est refusé au lieu d'être écrasé.
+# Source HTTPS SANS identifiant (même URL que les ApplicationSets du bac à sable ; aucun Secret de dépôt requis).
+# Option « dépôt privé » (non implémentée) : Secret de dépôt Argo de type GitHub App en lecture seule, même URL
+# (backlog/T-495-appproject-lab-k.md). Le contrôleur ApplicationSet reste à 0 réplica
+# (platform/install/values/argocd.yaml) : son activation est une autre PR (T-487).
+# Pas de finalizer resources-finalizer : supprimer l'Application CONSERVE les ApplicationSets.
+# Contrôle CI : tools/oke/argo_guard.py (L3 : nom, projet, dépôt, chemin, include et destination exacts).
+# Risque résiduel noté : une app du bac à sable nommée `root` produirait une Application lab-k-root (collision de
+# nom avec celle-ci) ; à relire dans le diff avant chaque synchro manuelle.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lab-k-root
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  project: lab-k-root
+  source:
+    repoURL: https://github.com/platform-zephyr/bench-ab-arm-k.git
+    targetRevision: main
+    path: k8s/bootstrap/argocd-root
+    directory:
+      recurse: false
+      include: "{apps-generated-applicationset.yaml,applications-applicationset.yaml}"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lab-argocd
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
+      - FailOnSharedResource=true

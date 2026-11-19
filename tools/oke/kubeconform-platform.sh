@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # kubeconform-platform.sh : validation HORS CLUSTER (kubeconform -strict) de platform/install/manifests/*.yaml,
-# platform/install/argocd/**/*.yaml et platform/authz/*.yaml (CRD OpenChoreo du chart CP, docs/AGENT-ACCESS.md).
+# platform/install/argocd/**/*.yaml (dont notifications/, T-489), platform/authz/*.yaml (CRD OpenChoreo du chart CP, docs/AGENT-ACCESS.md),
+# platform/baseline/*.yaml et du rendu du chart Cilium de l'étape 0 (T-494) ; puis tools/oke/baseline-source.sh
+# (copies de kube-ops non modifiées, sans réseau).
 # Aucun accès à OKE ni à k3d.
 # Schémas des CRD tierces : extraits des CRD RENDUES des charts épinglés (versions.env, sha256 vérifié par
-# fetch_chart ; Gateway API par fetch_gw_crds), plus CiliumNetworkPolicy (tools/appgen/fetch-ext-schemas.sh,
+# fetch_chart ; Gateway API par fetch_gw_crds), plus CiliumNetworkPolicy et CiliumClusterwideNetworkPolicy (tools/appgen/fetch-ext-schemas.sh,
 # sha256 épinglé). Schémas Kubernetes : emplacement par défaut de kubeconform. Aucun schéma manquant toléré.
 # Usage : tools/oke/kubeconform-platform.sh   (helm, kubeconform, python3 + PyYAML, curl, shasum)
 set -euo pipefail
@@ -27,6 +29,9 @@ rm -rf "$W"; mkdir -p "$W/crds" "$W/schemas"
     -n lab-argocd --include-crds -f "$V/argocd.yaml"; echo '---'
   cat "$(fetch_gw_crds)"
 } > "$W/all.yaml"
+# Étape 0 : rendu du chart Cilium épinglé avec les values copiées de kube-ops (validé tel quel ci-dessous).
+helm template cilium "$(fetch_chart cilium "$CILIUM_CHART" "$CILIUM_VERSION" "$CILIUM_TGZ_SHA256" "$CILIUM_REPO")" \
+  -n kube-system -f "$V/cilium.yaml" > "$W/cilium.yaml"
 
 python3 -I - "$W/all.yaml" "$W/crds" <<'PY'
 import pathlib, sys, yaml
@@ -43,4 +48,6 @@ mkdir -p "$W/schemas/cilium.io" && cp "$W/ext/cilium.io/"*.json "$W/schemas/cili
 kubeconform -strict -summary -schema-location default \
   -schema-location "$W/schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" \
   "$INSTALL_DIR"/manifests/*.yaml "$INSTALL_DIR"/argocd/*.yaml "$INSTALL_DIR"/argocd/apps/*.yaml \
-  "$ROOT"/platform/authz/*.yaml
+  "$INSTALL_DIR"/argocd/notifications/*.yaml \
+  "$ROOT"/platform/authz/*.yaml "$ROOT"/platform/baseline/*.yaml "$W/cilium.yaml"
+"$ROOT/tools/oke/baseline-source.sh"

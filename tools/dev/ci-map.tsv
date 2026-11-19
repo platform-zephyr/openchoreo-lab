@@ -20,7 +20,7 @@ leak-guard	leak-guard	L2	check
 actionlint	actionlint	L2	check
 charts	CI-ONLY	L3	garde de présence de Chart.yaml (find) : aucun chart local, rien à contrôler en local
 platform	yamllint-platform,shellcheck,argo-guard-rules,argo-guard-negative,cell-cpt	L2	check
-platform-render	security-bundle,render-check,uninstall-guards,kubeconform-platform	L3	check
+platform-render	oke-verify-all,security-bundle,render-check,uninstall-guards,kubeconform-platform	L3	check
 release-history	release-history	L3	check
 dev-factory	dev-factory-static,devcontainer-json,ci-parity,factory	L2	check
 backlog	backlog-unittest,backlog,backlog-status	L2	check
@@ -30,6 +30,7 @@ quality-coverage	coverage	L2	check
 agent-trailers	CI-ONLY	L3	contexte de PR (github.head_ref, origin/main..HEAD) : tools/factory/run-ticket.sh check-trailers
 hooks	settings,hooks	L2	check
 context-check	context-check	L2	check
+contract-guard	contract-guard	L2	check
 LOCAL-ONLY	guard-check	-	garde-fou du conteneur de dev (DEV_FACTORY=1) : sans objet sur un runner
 LOCAL-ONLY	toolchain-lock	-	pas encore câblée en CI : lock-concordance.sh lit la variable CI, valant true sur GitHub (défaut à corriger hors de T-460)
 LOCAL-ONLY	check-selftest	-	pas encore câblée en CI : check-test.sh non prouvé sur runner (suivi hors de T-460)

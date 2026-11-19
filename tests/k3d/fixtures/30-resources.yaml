@@ -6,7 +6,7 @@ metadata: {name: t-alpha-db, namespace: default}
 spec:
   owner: {projectName: t-cell-a}
   type: {kind: ClusterResourceType, name: cnpg-lab-db}
-  parameters: {database: alpha}
+  parameters: {database: alpha, dataClass: rebuildable}
 ---
 apiVersion: openchoreo.dev/v1alpha1
 kind: Resource
@@ -14,4 +14,4 @@ metadata: {name: t-beta-db, namespace: default}
 spec:
   owner: {projectName: t-cell-a}
   type: {kind: ClusterResourceType, name: cnpg-lab-db}
-  parameters: {database: beta}
+  parameters: {database: beta, dataClass: rebuildable}

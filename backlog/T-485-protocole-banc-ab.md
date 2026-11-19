@@ -23,11 +23,11 @@ Figer, avant toute mesure, ce qui compare le chemin kube-ops (bras K) et le chem
 tests/bench-ab/, tools/bench-ab/
 
 ## Critères de fin
-- [ ] 4 consignes M1-M4 et 3 pièges dans `tests/bench-ab/tasks/`, texte identique pour les deux bras (test : seul le champ `repo` diffère)
-- [ ] tirage de la panne de M4 enregistré à l'avance, identique pour les deux bras au même rang (test)
-- [ ] un grader par tâche, testé hors cluster avec des fixtures de check run `success`, `failure`, `neutral` et absent ; absent ou `neutral` rend NOT_TESTED, jamais PASS
+- [x] 4 consignes M1-M4 et 3 pièges dans `tests/bench-ab/tasks/`, texte identique pour les deux bras (test : seul le champ `repo` diffère)
+- [x] tirage de la panne de M4 enregistré à l'avance, identique pour les deux bras au même rang (test)
+- [x] un grader par tâche, testé hors cluster avec des fixtures de check run `success`, `failure`, `neutral` et absent ; absent ou `neutral` rend NOT_TESTED, jamais PASS
 - [ ] seuils et règle de verdict dans `tests/bench-ab/thresholds.yaml` (2 runs par tâche et par bras ; verdict à 2 sur 3 parmi S2, S3, S5)
-- [ ] agrégateur : lit `mission-result.v1` (via `tools/factory/stats.py`) et les graders, rend S1-S7 par bras en JSON et signale l'arrêt anticipé dès qu'un seuil devient inatteignable ; test sur 3 jeux synthétiques (valeur prouvée, arrêt par S6, arrêt anticipé)
+- [x] agrégateur : lit `mission-result.v1` (via `tools/factory/stats.py`) et les graders, rend S1-S7 par bras en JSON et signale l'arrêt anticipé dès qu'un seuil devient inatteignable ; test sur 3 jeux synthétiques (valeur prouvée, arrêt par S6, arrêt anticipé)
 - [ ] images arm64 vérifiées pour `it-tools`, `vikunja`, `ntfy` (sortie de `docker manifest inspect` datée dans la PR) ; `tools/dev/check --static --changed` et `python3 tools/quality/check.py` PASS
 
 ## Notes

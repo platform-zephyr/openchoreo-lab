@@ -1,0 +1,35 @@
+{
+  "check_runs": [
+    {
+      "app": {
+        "name": "openchoreo-status",
+        "slug": "openchoreo-status"
+      },
+      "completed_at": "2026-11-19T10:05:00Z",
+      "conclusion": "success",
+      "details_url": "https://github.com/platform-zephyr/openchoreo-lab/tree/0123456789abcdef0123456789abcdef01234567/generated/namespaces/default/projects/whoami",
+      "head_sha": "0123456789abcdef0123456789abcdef01234567",
+      "html_url": "https://github.com/platform-zephyr/openchoreo-lab/runs/106",
+      "id": 106,
+      "name": "argocd/lab-o-whoami",
+      "started_at": "2026-11-19T09:59:00Z",
+      "status": "completed"
+    },
+    {
+      "app": {
+        "name": "openchoreo-status",
+        "slug": "openchoreo-status"
+      },
+      "completed_at": "2026-11-19T10:00:00Z",
+      "conclusion": "neutral",
+      "details_url": "https://github.com/platform-zephyr/openchoreo-lab/tree/0123456789abcdef0123456789abcdef01234567/generated/namespaces/default/projects/whoami",
+      "head_sha": "0123456789abcdef0123456789abcdef01234567",
+      "html_url": "https://github.com/platform-zephyr/openchoreo-lab/runs/105",
+      "id": 105,
+      "name": "argocd/lab-o-whoami",
+      "started_at": "2026-11-19T09:59:00Z",
+      "status": "completed"
+    }
+  ],
+  "total_count": 2
+}

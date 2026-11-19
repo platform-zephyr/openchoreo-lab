@@ -10,6 +10,12 @@
 #                    Application, ni RBAC, ni Secret, ni NetworkPolicy ;
 #   - lab-authz    : platform/authz/ ; fenêtre `deny` permanente (manualSync: true) : AUCUNE synchro
 #                    automatique, même si l'Application déclare syncPolicy.automated ;
+#   - lab-k        : bras K du banc A/B (T-495, ADR-0025) : dépôt bac à sable bench-ab-arm-k SEUL (HTTPS) ;
+#                    namespaces lab-k-* et svc-* ; kinds = EXACTEMENT ceux de l'AppProject apps-generated de
+#                    kube-ops ; aucune Application de CE dépôt ne l'emploie (Applications créées par les
+#                    ApplicationSets du bac à sable) ;
+#   - lab-k-root   : Application lab-k-root seulement ; kind ApplicationSet dans lab-argocd ; fenêtre `deny`
+#                    permanente (manualSync: true) : livraison des ApplicationSets du bac à sable par geste opérateur ;
 #   - default      : verrouillé (project-default-locked.yaml).
 # Un AppProject ne restreint PAS un chemin source : le lien « chemin -> projet » est tenu par les
 # Application de apps/ (chemin privilégié, synchronisé par lab-root) et contrôlé en CI par
@@ -35,6 +41,11 @@ spec:
       namespace: default
     - server: https://kubernetes.default.svc
       namespace: lab-pg
+    # T-006 : connecteur Cloudflare Tunnel (platform/cloudflared/) et sa seule ouverture vers l'API.
+    - server: https://kubernetes.default.svc
+      namespace: lab-tunnel
+    - server: https://kubernetes.default.svc
+      namespace: openchoreo-control-plane
   clusterResourceWhitelist:
     # Types OpenChoreo du labo (platform/{component-types,traits,project-types,resource-types}, manifests/40).
     - {group: openchoreo.dev, kind: ClusterComponentType, name: service-restricted}
@@ -42,21 +53,38 @@ spec:
     - {group: openchoreo.dev, kind: ClusterResourceType, name: cnpg-lab-db}
     - {group: openchoreo.dev, kind: ClusterTrait, name: persistent-volume-claim}
     - {group: openchoreo.dev, kind: ClusterTrait, name: health-probes}
-    # VAP du labo seulement (platform/policies) ; jamais baseline-* (kube-ops).
+    # VAP du labo (platform/policies).
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cluster-agent-scope}
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cell-pod-hardening}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: lab-cell-default-deny}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cell-default-deny}
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cluster-agent-scope}
     - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: lab-cell-pod-hardening}
-    # Un seul Namespace : lab-pg (platform/data/lab-pg-namespace.yaml).
+    # Socle cluster OKE (T-494, platform/baseline/ : copies de kube-ops #1620/#1629, posées par install.sh
+    # --step 0) : un seul Argo sur OKE (lab-argocd), qui les adopte. Noms exacts, aucun glob.
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: baseline-pod-hardening}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: baseline-automount-token}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicy, name: baseline-image-digest}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: baseline-pod-hardening}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: baseline-automount-token}
+    - {group: admissionregistration.k8s.io, kind: ValidatingAdmissionPolicyBinding, name: baseline-image-digest}
+    - {group: cilium.io, kind: CiliumClusterwideNetworkPolicy, name: deny-imds}
+    - {group: cilium.io, kind: CiliumClusterwideNetworkPolicy, name: allow-egress-unisolated}
+    # Namespaces : lab-pg (platform/data/lab-pg-namespace.yaml), lab-tunnel (platform/cloudflared/, T-006).
     - {group: "", kind: Namespace, name: lab-pg}
+    - {group: "", kind: Namespace, name: lab-tunnel}
   namespaceResourceWhitelist:
     # Objets plateforme namespacés seulement (manifests/40, platform/data). Les kinds APPLICATIFS
     # (Project, Component, Workload...) relèvent de lab-o.
     - {group: openchoreo.dev, kind: Environment}
     - {group: openchoreo.dev, kind: DeploymentPipeline}
-    # NetworkPolicy : seulement celles de lab-pg, par nom (contrôle CI argo_guard S2, revue A1).
+    # NetworkPolicy : seulement celles de lab-pg et de T-006, par nom (contrôle CI argo_guard S2, revue A1).
     - {group: networking.k8s.io, kind: NetworkPolicy}
     - {group: postgresql.cnpg.io, kind: Cluster}
+    # T-006 : Deployment cloudflared et sa CiliumNetworkPolicy d'egress (lab-tunnel seulement, contrôle
+    # CI argo_guard S4).
+    - {group: apps, kind: Deployment}
+    - {group: cilium.io, kind: CiliumNetworkPolicy}
   namespaceResourceBlacklist:
     # Droits MCP/API : seulement par le projet lab-authz (chemin dédié, revue B2).
     - {group: openchoreo.dev, kind: AuthzRole}
@@ -168,5 +196,90 @@ spec:
   namespaceResourceWhitelist:
     - {group: argoproj.io, kind: Application}
     - {group: argoproj.io, kind: ApplicationSet}
+  orphanedResources:
+    warn: true
+---
+# AppProject `lab-k` (T-495) : frontière du bras K du banc A/B (ADR-0025, docs/research/POC-OPENCHOREO-STRATEGY.md
+# §2.2). NOTRE frontière : l'AppProject `lab-k` livré par le bac à sable (k8s/bootstrap/argocd-root/
+# apps-generated-project.yaml, que des agents modifient) n'est JAMAIS appliqué (lab-k-root l'exclut).
+# Modèle : AppProject `apps-generated` de kube-ops (MIT, NOTICE), copié dans le bac à sable au commit
+# 742bbd6b8c4e894b8bc31800ee234de0d2b80dd6. Écarts voulus, décidés par Paul le 2026-11-18 :
+#   - destinations `lab-k-*` ET `svc-*` : le chart platform-app de kube-ops code en dur `svc-<nom>` (Namespace
+#     et objets) et ne doit pas être modifié ; la copie du bac à sable ne garde que `lab-k-*` ;
+#   - Namespace admis sous les deux mêmes globs (`svc-*` est le glob d'origine de kube-ops) ;
+#   - kinds : EXACTEMENT ceux de la copie, rien de plus (ni ExternalSecret, ni SecretStore, ni Password :
+#     un bras K moins capable que le bras O fait partie de la mesure).
+# Aucune destination openchoreo-*, argocd, kube-system, lab-argocd, lab-pg, lab-secrets : aucun de ces noms
+# ne correspond à `lab-k-*` ni à `svc-*` (contrôle CI : tools/oke/argo_guard.py, règles L1-L4).
+# Dépôt lu en HTTPS SANS identifiant (aucun Secret de dépôt requis, dépôt public). Option « dépôt privé »
+# (non implémentée) : Secret de dépôt Argo de type GitHub App en lecture seule, même URL
+# (backlog/T-495-appproject-lab-k.md). Les deux formes d'URL désignent ce SEUL dépôt.
+# Pas de fenêtre deny : les Applications du bras K sont automatiques (modèle kube-ops, objet de la mesure).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lab-k
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  description: Bras K du banc A/B (bac à sable bench-ab-arm-k) - namespaces lab-k-* et svc-*, kinds du chart platform-app seulement
+  sourceRepos:
+    - https://github.com/platform-zephyr/bench-ab-arm-k.git
+    - https://github.com/platform-zephyr/bench-ab-arm-k
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "lab-k-*"
+    - server: https://kubernetes.default.svc
+      namespace: "svc-*"
+  clusterResourceWhitelist:
+    - {group: "", kind: Namespace, name: "lab-k-*"}
+    - {group: "", kind: Namespace, name: "svc-*"}
+  namespaceResourceWhitelist:
+    - {group: apps, kind: Deployment}
+    - {group: "", kind: Service}
+    - {group: "", kind: ServiceAccount}
+    - {group: policy, kind: PodDisruptionBudget}
+    - {group: monitoring.coreos.com, kind: ServiceMonitor}
+    - {group: gateway.networking.k8s.io, kind: HTTPRoute}
+    - {group: cilium.io, kind: CiliumNetworkPolicy}
+  namespaceResourceBlacklist:
+    - {group: rbac.authorization.k8s.io, kind: Role}
+    - {group: rbac.authorization.k8s.io, kind: RoleBinding}
+    - {group: "", kind: Secret}
+    - {group: "", kind: ResourceQuota}
+    - {group: "", kind: LimitRange}
+  orphanedResources:
+    warn: true
+---
+# AppProject `lab-k-root` (T-495) : RÉSERVÉ à l'Application lab-k-root (apps/lab-k-root.yaml), qui livre les
+# deux ApplicationSets de livraison du bac à sable dans lab-argocd. Un seul kind : ApplicationSet. Aucun kind
+# cluster-scoped, ni Application, ni AppProject (l'AppProject copié du bac à sable n'est jamais appliqué).
+# Fenêtre `deny` PERMANENTE avec manualSync: true : un changement des ApplicationSets dans le bac à sable (que
+# des agents modifient) ne s'applique JAMAIS seul ; l'opérateur relit le diff (projet `lab-k` littéral,
+# dépôt bench-ab-arm-k) puis synchronise à la main.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lab-k-root
+  namespace: lab-argocd
+  labels: {app.kubernetes.io/part-of: openchoreo-lab}
+spec:
+  description: Racine du bras K - ApplicationSets du bac à sable bench-ab-arm-k dans lab-argocd, synchro MANUELLE forcée
+  sourceRepos:
+    - https://github.com/platform-zephyr/bench-ab-arm-k.git
+    - https://github.com/platform-zephyr/bench-ab-arm-k
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: lab-argocd
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - {group: argoproj.io, kind: ApplicationSet}
+  syncWindows:
+    - kind: deny
+      schedule: "* * * * *"
+      duration: 24h
+      timeZone: UTC
+      applications: ["*"]
+      manualSync: true
   orphanedResources:
     warn: true

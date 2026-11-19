@@ -7,6 +7,10 @@ This product includes software adapted from:
   Apache License 2.0. Files adapted: samples/getting-started/component-types/service.yaml,
   samples/getting-started/component-traits/pvc-trait.yaml (unmodified),
   samples/getting-started/cluster-project-types/default.yaml.
+- Argo CD (https://github.com/argoproj/argo-cd), v3.5.1 commit 109ca7ca71139e514114499d294a492e7910a965
+  Apache License 2.0. platform/install/argocd/notifications/argocd-notifications-cm.yaml adapted from
+  docs/operator-manual/notifications/services/github.md (service `github`, `checkRun` template) and
+  docs/operator-manual/notifications/{triggers,subscriptions}.md (T-489).
 - openchoreo/sample-gitops (https://github.com/openchoreo/sample-gitops), commit 9c057d8
   Apache License 2.0. Repository layout; platform/infra/environments/*.yaml and
   platform/infra/deployment-pipelines/standard.yaml adapted.
@@ -20,6 +24,19 @@ This product includes software adapted from:
   .agents/skills/mattpocock-tdd, mattpocock-diagnosing-bugs, mattpocock-code-review, mattpocock-research,
   mattpocock-grilling, mattpocock-writing-for-agents. No upstream script is copied.
   (Full MIT text in LICENSES/MIT-mattpocock-skills.txt.)
+- SmadjaPaul/kube-ops (https://github.com/SmadjaPaul/kube-ops), PR #1620 commit
+  1ecb02f8da18ca986aa5178633b1e97c9ac4ed93 and PR #1629 commit 98a263fb2241dfac92b348ad1ad7f9d35a94cc30
+  MIT License, Copyright (c) 2025 theepicsaxguy. Copied unmodified below a 5-line source header (T-494,
+  checked by tools/oke/baseline-source.sh): platform/baseline/vap-baseline-{pod-hardening,automount-token,
+  image-digest}.yaml (k8s/components/baseline-vap/), platform/baseline/ccnp-imds.yaml
+  (k8s/clusters/oracle-a1/baseline/imds-deny.yaml), platform/install/values/cilium.yaml
+  (k8s/clusters/oracle-a1/bootstrap/cilium-values.yaml). (Full MIT text in LICENSES/MIT-kube-ops.txt.)
+  Adapted (T-495): AppProject `lab-k` in platform/install/argocd/project-lab.yaml, from the `apps-generated`
+  AppProject of kube-ops commit ef50472bc427bbb5fb342cebf2f4db408157f5b3 (as copied into the bench sandbox
+  platform-zephyr/bench-ab-arm-k at 742bbd6b8c4e894b8bc31800ee234de0d2b80dd6): same kind lists; repository,
+  name and destinations (lab-k-*, svc-*) changed.
+  Commit ef50472bc427bbb5fb342cebf2f4db408157f5b3 : platform/cloudflared/deployment.yaml adapted from
+  k8s/clusters/oracle-a1/cloudflared/deployment.yaml (namespace lab-tunnel, image pinned by digest; T-006).
 - [only if copied] VizzleTF/homelab (https://github.com/VizzleTF/homelab)
   MIT License, Copyright (c) 2024-2026 VizzleTF. ApplicationSet template adapted from
   argocd/appsets/apps-appset.yaml. (Full MIT text in LICENSES/MIT-VizzleTF.txt.)

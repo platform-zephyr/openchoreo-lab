@@ -197,6 +197,29 @@ rm_crds() {
   (( ${#keep[@]} == 0 )) || run kubectl delete "${keep[@]}"
 }
 
+# rm_lab_o_apps : retire l'ApplicationSet `lab-o` (T-491) puis les Applications `lab-o-<app>` qu'il a générées.
+# Appelée APRÈS la suppression de lab-root (sinon selfHeal recréerait l'ApplicationSet). Ordre : l'ApplicationSet
+# d'abord (sinon le contrôleur recréerait les Applications). preserveResourcesOnDeletion=true et aucun
+# resources-finalizer dans le modèle : supprimer l'ApplicationSet ou une Application CONSERVE les objets
+# applicatifs (platform/install/argocd/apps/lab-apps.yaml). Garde : une Application lab-o-* qui porterait un
+# resources-finalizer supprimerait ses objets en cascade => abandon. Périmètre : namespace lab-argocd, noms
+# `lab-o-*` ET label part-of=openchoreo-lab uniquement (jamais une Application que le labo n'a pas créée).
+rm_lab_o_apps() {
+  local crd apps casc names
+  kd -n lab-argocd applicationsets.argoproj.io lab-o
+  crd="$(kubectl get crd applications.argoproj.io --ignore-not-found -o name)" || die "lecture des CRD argoproj en erreur"
+  [[ -n "$crd" ]] || return 0
+  apps="$(kubectl -n lab-argocd get applications.argoproj.io -o json)" || die "lecture des Application Argo en erreur"
+  casc="$(jq -r '.items[] | select((.metadata.name | startswith("lab-o-")) and .metadata.labels["app.kubernetes.io/part-of"] == "openchoreo-lab"
+      and ((.metadata.finalizers // []) | any(startswith("resources-finalizer"))))
+      | .metadata.name' <<<"$apps")" || die "liste des Application lab-o-* illisible"
+  [[ -z "$casc" ]] || die "Application(s) $(tr '\n' ' ' <<<"$casc")avec resources-finalizer : leur suppression effacerait les objets applicatifs (conservation attendue) : abandon"
+  names="$(jq -r '.items[] | select((.metadata.name | startswith("lab-o-")) and .metadata.labels["app.kubernetes.io/part-of"] == "openchoreo-lab")
+      | .metadata.name' <<<"$apps")" || die "liste des Application lab-o-* illisible"
+  [[ -n "$names" ]] || return 0
+  # shellcheck disable=SC2046
+  kd -n lab-argocd applications.argoproj.io $(printf '%s\n' "$names")
+}
 undo_12() {
   local cr
   cr="$(kubectl get clusterrole lab-cluster-agent-reduced --ignore-not-found -o name)" || die "lecture du ClusterRole réduit en erreur"
@@ -208,7 +231,10 @@ undo_12() {
 }
 undo_11() {
   # Pas de finalizer resources-finalizer : supprimer les Application conserve les objets (CLEANUP.md 1).
-  kd -n lab-argocd applications.argoproj.io lab-root lab-platform lab-authz
+  # lab-k-root (T-495) : supprimer l'Application CONSERVE les ApplicationSets du bras K (aucun finalizer) ;
+  # leur retrait et celui des Applications lab-k-* relèvent du nettoyage du banc (T-212), pas de cette étape.
+  kd -n lab-argocd applications.argoproj.io lab-root lab-platform lab-authz lab-k-root
+  rm_lab_o_apps
   kd -f "$INSTALL_DIR/argocd/project-lab.yaml"
   helm_rm lab-argocd argocd
   local ns

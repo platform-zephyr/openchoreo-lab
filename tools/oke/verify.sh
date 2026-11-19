@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # verify.sh : critères de sortie de la Phase B, étape par étape (docs/PHASE-B.md §2). Étapes 1-5 et
 # --security exécutées sur OKE le 2026-11-17 (journal $STATE_DIR/verify.log) ; 6 et suivantes NON exécutées.
-# Usage : tools/oke/verify.sh --step N (N = 1..12 ou 6b)   |   tools/oke/verify.sh --security   |   --all
+# Usage : tools/oke/verify.sh --step N (N = 0..12 ou 6b)   |   tools/oke/verify.sh --security   |   --all [--with-portal]
+# --all : sans --with-portal, l'étape 6b (portail, opt-in comme install.sh) n'est PAS exécutée : une ligne NOT_TESTED
+# (ni PASS, ni FAIL, ni BLOCKED : le jalon n'est pas rendu « non validable » par un portail non installé, T-487).
+# Étape 0 (socle cluster, T-494) : Cilium en chaînage OCI, VAP/VAPB baseline-*, CCNP deny-imds et
+# allow-egress-unisolated, identiques à Git (kubectl diff --server-side : dry-run, rien n'est persisté).
 # Lecture seule, sauf : `kubectl apply --dry-run=server` (rien n'est persisté) et, pour --security,
 # un pod de sonde éphémère `lab-netprobe` dans openchoreo-control-plane (supprimé à la fin).
 # Sortie : une ligne PASS / FAIL / BLOCKED par test, horodatée ; journal dans $STATE_DIR/verify.log.
@@ -14,7 +18,17 @@ set -euo pipefail
 # shellcheck source=security-bundle.sh
 . "$(dirname "${BASH_SOURCE[0]}")/security-bundle.sh"
 
-MODE="${1:-}" ; N="${2:-}"
+MODE="${1:-}" ; N="" ; WITH_PORTAL=0
+case "$MODE" in
+  --step) N="${2:-}"; shift 2 || true;;
+  *) shift || true;;
+esac
+for a in "$@"; do
+  case "$a" in
+    --with-portal) [[ "$MODE" == --all ]] || die "--with-portal n'a de sens qu'avec --all"; WITH_PORTAL=1;;
+    *) die "argument inconnu : $a";;
+  esac
+done
 guard_context
 mkdir -p "$STATE_DIR"
 FAILS=0 BLOCKS=0
@@ -73,6 +87,61 @@ spec:
       resources: {requests: {cpu: 5m, memory: 16Mi}, limits: {cpu: 50m, memory: 32Mi}}
       securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
 EOF
+}
+
+# --- Étape 0 : socle cluster (platform/baseline/, platform/install/values/cilium.yaml) -------------------
+cilium_ready() {
+  local ds; ds="$(kubectl -n kube-system get ds cilium -o json)" || return 1
+  jq -e '.status.desiredNumberScheduled > 0 and .status.numberReady == .status.desiredNumberScheduled' <<<"$ds" >/dev/null
+}
+cilium_version() { # l'image de l'agent porte la version épinglée (versions.env), par digest
+  local img; img="$(kubectl -n kube-system get ds cilium -o jsonpath='{.spec.template.spec.containers[0].image}')" || return 1
+  [[ "$img" == *":v$CILIUM_VERSION@sha256:"* ]]
+}
+cilium_chaining() { # chaînage OCI VCN-native (guide amont) : generic-veth, cible oci, répertoire CNI non exclusif
+  local d; d="$(kubectl -n kube-system get configmap cilium-config -o json)" || return 1
+  jq -e '.data["cni-chaining-mode"] == "generic-veth" and .data["cni-chaining-target"] == "oci"
+         and .data["cni-exclusive"] == "false" and .data["routing-mode"] == "native"' <<<"$d" >/dev/null
+}
+baseline_as_git() { # 0 seulement si l'état vivant = Git (diff vide) ; 1 = écart ; > 1 = erreur => échec
+  kubectl diff --server-side --force-conflicts --field-manager=openchoreo-lab -f "$ROOT/platform/baseline/"
+}
+c1_excluded() {
+  local sel; sel="$(kubectl get ciliumclusterwidenetworkpolicy allow-egress-unisolated -o json)" || return 1
+  jq -e '[.spec.endpointSelector.matchExpressions[]
+          | select(.key == "io.cilium.k8s.namespace.labels.platform.smadja.dev/egress-isolated"
+                   and .operator == "NotIn" and .values == ["true"])] | length == 1' <<<"$sel" >/dev/null
+}
+pods_without_cep() { # affiche ns/pod des pods Running hors hostNetwork sans CiliumEndpoint ; échec si lecture KO
+  local pods ceps
+  pods="$(kubectl get pods -A -o json)" || return 2
+  ceps="$(kubectl get ciliumendpoints.cilium.io -A -o json)" || return 2
+  jq -r --slurpfile cep <(printf '%s' "$ceps") '
+    ([$cep[0].items[] | "\(.metadata.namespace)/\(.metadata.name)"]) as $c
+    | .items[] | select(.spec.hostNetwork != true and .status.phase == "Running")
+    | "\(.metadata.namespace)/\(.metadata.name)" | select(. as $k | ($c | index($k)) == null)' <<<"$pods"
+}
+v0() {
+  expect_ok B0-cilium "DaemonSet kube-system/cilium prêt" cilium_ready
+  expect_ok B0-cilium-version "image Cilium v$CILIUM_VERSION par digest (versions.env)" cilium_version
+  expect_ok B0-cilium-chaining "Cilium en chaînage OCI VCN-native (generic-veth, cible oci, non exclusif, routage natif)" cilium_chaining
+  local v p missing
+  for v in baseline-pod-hardening baseline-automount-token baseline-image-digest; do
+    expect_ok "B0-vap-$v" "VAP $v présente" kubectl get validatingadmissionpolicy "$v"
+    expect_ok "B0-vapb-$v" "VAPB $v présente" kubectl get validatingadmissionpolicybinding "$v"
+  done
+  for p in deny-imds allow-egress-unisolated; do
+    expect_ok "B0-ccnp-$p" "CCNP $p présente" kubectl get ciliumclusterwidenetworkpolicy "$p"
+  done
+  expect_ok B0-c1 "allow-egress-unisolated exclut platform.smadja.dev/egress-isolated=true (kube-ops #1629)" c1_excluded
+  expect_ok B0-git "VAP, VAPB et CCNP vivantes identiques à platform/baseline/ (kubectl diff --server-side vide)" baseline_as_git
+  # Refus réel (dry-run serveur) dans `default`, sans label PSA : seule baseline-pod-hardening peut refuser.
+  expect_deny B0-vap-deny "pod privileged+hostNetwork refusé par la VAP baseline-pod-hardening (namespace default, dry-run)" \
+    'baseline-pod-hardening' bad_pod default
+  if missing="$(pods_without_cep)"; then
+    if [[ -z "$missing" ]]; then res PASS B0-cep "tout pod Running hors hostNetwork a un CiliumEndpoint (politiques appliquées)"
+    else res FAIL B0-cep "pods sans CiliumEndpoint, hors politique (install.sh --step 0 les recrée) : $(tr '\n' ' ' <<<"$missing")"; fi
+  else res FAIL B0-cep "pods ou CiliumEndpoints illisibles"; fi
 }
 
 v1() {
@@ -367,11 +436,20 @@ v11() {
     "kubectl -n lab-argocd get applications.argoproj.io -o json | jq -e '[.items[] | select(.spec.project == \"default\")] | length == 0'"
   expect_ok B11-authz-manual "Application lab-authz sans synchro automatique" bash -c \
     "kubectl -n lab-argocd get application lab-authz -o json | jq -e '.spec.syncPolicy.automated == null'"
-  expect_ok B11-lab-root-sync "Application lab-root Synced et Healthy" bash -c \
-    "kubectl -n lab-argocd get application lab-root -o json | jq -e '.status.sync.status==\"Synced\" and .status.health.status==\"Healthy\"'"
+  # Healthy, ou Progressing UNIQUEMENT parce que l'ApplicationSet lab-o n'a pas de statut tant que son contrôleur est à
+  # 0 réplica (T-487 : aucune app sur OKE avant accord de Paul). Degraded/Missing restent des échecs.
+  expect_ok B11-lab-root-sync "Application lab-root Synced et Healthy (ou Progressing avec le contrôleur ApplicationSet à 0 réplica)" bash -c \
+    "kubectl -n lab-argocd get application lab-root -o json | jq -e '.status.sync.status==\"Synced\" and (.status.health.status==\"Healthy\" or (.status.health.status==\"Progressing\" and ([.status.resources[]|select((.health.status // \"Healthy\") != \"Healthy\" and .kind != \"ApplicationSet\")]|length==0) and ([.status.resources[]|select(.kind==\"ApplicationSet\")]|length>=1)))' >/dev/null && [[ \$(kubectl -n lab-argocd get deploy argocd-applicationset-controller -o jsonpath='{.spec.replicas}') == 0 || \$(kubectl -n lab-argocd get application lab-root -o jsonpath='{.status.health.status}') == Healthy ]]"
   # lab-platform : synchro MANUELLE, volontairement non lancée tant que l'étape 10 (lab-pg, volume OCI) n'est pas autorisée.
   expect_ok B11-lab-platform-manual "Application lab-platform sans synchro automatique (adoption différée)" bash -c \
     "kubectl -n lab-argocd get application lab-platform -o json | jq -e '.spec.syncPolicy.automated == null'"
+  # Bras K du banc A/B (T-495) : frontière lab-k de CE dépôt (jamais celle du bac à sable), racine lab-k-root manuelle.
+  expect_ok B11-lab-k-projects "AppProjects lab-k et lab-k-root présents" \
+    kubectl -n lab-argocd get appprojects.argoproj.io/lab-k appprojects.argoproj.io/lab-k-root
+  expect_ok B11-lab-k-dest "AppProject lab-k : destinations exactement lab-k-* et svc-* du cluster local" bash -c \
+    "kubectl -n lab-argocd get appproject lab-k -o json | jq -e '[.spec.destinations[] | .server + \" \" + .namespace] | sort == [\"https://kubernetes.default.svc lab-k-*\", \"https://kubernetes.default.svc svc-*\"]'"
+  expect_ok B11-lab-k-root-manual "Application lab-k-root dans le projet lab-k-root, sans synchro automatique" bash -c \
+    "kubectl -n lab-argocd get application lab-k-root -o json | jq -e '.spec.project == \"lab-k-root\" and .spec.syncPolicy.automated == null'"
 }
 
 v12() { # Étape 12 intégrée à l'étape 7 : mêmes contrôles (utile après un upgrade ou un rollback_secure du DP).
@@ -501,8 +579,16 @@ security() {
 case "$MODE" in
   --step) declare -F "v$N" >/dev/null || die "étape inconnue : $N"; "v$N";;
   --security) security;;
-  --all) for n in 1 2 3 4 5 6 6b 7 8 9 10 11; do "v$n"; done; security;;
-  *) die "usage : $0 --step N | --security | --all";;
+  --all)
+    for n in 0 1 2 3 4 5 6 6b 7 8 9 10 11; do
+      if [[ "$n" == 6b && "$WITH_PORTAL" != 1 ]]; then
+        res NOT_TESTED B6b-portal "étape 6b (portail Backstage) non exécutée : portail non demandé (--with-portal ou --step 6b)"
+        continue
+      fi
+      "v$n"
+    done
+    security;;
+  *) die "usage : $0 --step N | --security | --all [--with-portal]";;
 esac
 log "FAIL=$FAILS BLOCKED=$BLOCKS (journal : $STATE_DIR/verify.log)"
 (( BLOCKS == 0 )) || log "JALON NON VALIDABLE : au moins un contrôle est BLOCKED (voir le journal)."
