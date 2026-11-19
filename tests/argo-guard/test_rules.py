@@ -191,6 +191,9 @@ class LabKRules(unittest.TestCase):
         k["namespaceResourceBlacklist"] = k["namespaceResourceBlacklist"][1:]
         self.assertTrue(any("namespaceResourceBlacklist de kube-ops" in e for e in errs_of("rule_l1_lab_k", k)))
         k = self.real()["lab-k"]
+        k["namespaceResourceBlacklist"] = [r for r in k["namespaceResourceBlacklist"] if r["kind"] != "Cluster"]
+        self.assertTrue(any("Cluster" in e for e in errs_of("rule_l1_lab_k", k)))
+        k = self.real()["lab-k"]
         k["roles"] = [{"name": "x", "policies": ["p, proj:lab-k:x, applications, *, lab-k/*, allow"]}]
         self.assertIn("L1 lab-k : clé spec.roles interdite", errs_of("rule_l1_lab_k", k)[0])
 

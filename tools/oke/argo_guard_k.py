@@ -30,7 +30,8 @@ K_CLUSTER_WL = [{"group": "", "kind": "Namespace", "name": n} for n in ("lab-k-*
 K_NAMESPACED_WL = [{"group": "*", "kind": "*"}]
 K_BLACKLIST = [{"group": "rbac.authorization.k8s.io", "kind": "Role"},
                {"group": "rbac.authorization.k8s.io", "kind": "RoleBinding"}, {"group": "", "kind": "Secret"},
-               {"group": "", "kind": "ResourceQuota"}, {"group": "", "kind": "LimitRange"}]
+               {"group": "", "kind": "ResourceQuota"}, {"group": "", "kind": "LimitRange"},
+               {"group": "postgresql.cnpg.io", "kind": "Cluster"}]
 K_KEYS = {"description", "sourceRepos", "destinations", "clusterResourceWhitelist", "namespaceResourceWhitelist",
           "namespaceResourceBlacklist", "orphanedResources"}
 # Namespaces que lab-k ne doit jamais atteindre (L2) : un exemple de nom par motif interdit.
