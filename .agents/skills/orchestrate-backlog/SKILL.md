@@ -5,6 +5,12 @@ description: Reprendre seul l'orchestration du backlog du labo après une compac
 
 # orchestrate-backlog
 
+**Tu délègues systématiquement ; voir `docs/ORCHESTRATION.md` § « Rôle de l'orchestrateur ».** Règle STOP : chercher,
+lire un script, lancer une vérification, poser un secret, coder ou diagnostiquer = lancer un agent. Toute écriture OKE
+va à UN agent « opérateur OKE » local. Cadence : relevé toutes les 15 à 30 min ; réflexion toutes les 2 à 3 h sur
+`docs/research/FRICTIONS-ORCHESTRATION.md` (regrouper les frictions à 2 occurrences ou plus, proposer 3 améliorations
+au plus à Paul, les déléguer).
+
 Charger `platform-guardrails`. Tu orchestres ; tu ne codes pas les tickets toi-même. Dépôt PUBLIC : aucune valeur sensible nulle part.
 Réponses en français, conclusion d'abord.
 
