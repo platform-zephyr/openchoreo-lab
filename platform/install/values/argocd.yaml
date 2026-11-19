@@ -49,7 +49,7 @@ notifications:
     limits: {cpu: 200m, memory: 128Mi}
 # Le chart 10.3.3 n'a PAS de clé applicationSet.enabled (ignorée : kube-ops #1620 la pose aussi, sans
 # effet). Contrôleur ACTIVÉ (T-487, accord de Paul 2026-11-18) : l'ApplicationSet lab-o génère une Application par
-# app OKE (generated/namespaces/default/projects/*, hors liste d'exclusion). Remettre replicas: 0 le rend inerte.
+# app listée dans clusters/oke/lab-o-apps.yaml (T-502, sans liste d'exclusion). Remettre replicas: 0 le rend inerte.
 applicationSet:
   replicas: 1
 controller:

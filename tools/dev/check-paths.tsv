@@ -29,7 +29,7 @@ appgen-validate	apps/*,generated/*,golden-paths/*,tools/appgen/*
 appgen-check	apps/*,generated/*,golden-paths/*,tools/appgen/*
 appgen-unittest	tools/appgen/*,tests/appgen/*,apps/*
 argo-guard-rules	platform/*,apps/*,generated/*,tools/oke/*,clusters/*
-argo-guard-negative	platform/*,tools/oke/*,tests/argo-guard/*
+argo-guard-negative	platform/*,tools/oke/*,tests/argo-guard/*,clusters/*
 release-history	tests/release-history/*,apps/*,generated/*,tools/appgen/*
 cell-cpt	platform/*,tests/cell-cpt/*,tools/appgen/*
 security-bundle	platform/*,security/*,tests/security-bundle/*
