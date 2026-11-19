@@ -27,7 +27,7 @@ spec:
     path: platform
     directory:
       recurse: true
-      include: "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,baseline/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml}"
+      include: "{component-types/*.yaml,traits/*.yaml,project-types/*.yaml,resource-types/*.yaml,policies/*.yaml,baseline/*.yaml,data/lab-pg-namespace.yaml,data/lab-pg-cluster.yaml,install/manifests/40-openchoreo-env.yaml,cloudflared/*.yaml}"
   destination:
     server: https://kubernetes.default.svc
     # Destination explicite (le projet lab-platform n'a pas lab-argocd) ; chaque objet porte son namespace.

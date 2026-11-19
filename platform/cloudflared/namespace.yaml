@@ -1,0 +1,16 @@
+# T-006 : namespace du connecteur Cloudflare Tunnel du labo (OKE). Propriétaire : Argo `lab-platform`
+# (synchro MANUELLE, fenêtre deny). Le tunnel, ses hôtes publics et la protection Access sont déclarés
+# dans le dépôt d'infrastructure de Paul (racine Cloudflare), jamais ici. Aucun hôte ni identifiant ici.
+# Le Secret `cloudflared-token` (clé TUNNEL_TOKEN) est posé hors Git par l'opérateur depuis Doppler ;
+# sans lui, le pod reste en CreateContainerConfigError : rien n'est exposé.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-tunnel
+  labels:
+    app.kubernetes.io/part-of: openchoreo-lab
+    platform.smadja.dev/egress-isolated: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

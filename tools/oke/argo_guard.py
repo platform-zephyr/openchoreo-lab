@@ -7,37 +7,33 @@ les fichiers de tests/ ne sont jamais une source Argo, ce que la règle A3 impos
 Séparation PAR SOURCE (flux A2, docs/ARGO-ESCALATION.md) : lab-root (Application), lab-platform
 (platform/**), lab-o (generated/namespaces/default), lab-authz (platform/authz), default verrouillé.
 Refuse :
-  A1. une Application hors platform/install/argocd/apps/ (seule exception : l'Application racine
-      platform/install/argocd/root-application.yaml, nom lab-root, projet lab-root, chemin apps/) ;
+  A1. une Application hors platform/install/argocd/apps/ (sauf la racine root-application.yaml : lab-root, chemin apps/) ;
   A2. une Application dont spec.project ∉ {lab-platform, lab-o, lab-authz, lab-root, lab-k-root} (donc jamais
       `default` ni `lab-k`) ; dans apps/, jamais lab-root ; lab-authz réservé à l'Application lab-authz (chemin
       platform/authz), lab-o à l'ApplicationSet lab-o (aucune Application écrite à la main) ;
-  A3. une Application `lab-platform` dont le chemin n'est pas sous platform/, ou vise
-      platform/install/argocd/ ou platform/authz/ ; toute source multiple, Helm, plugin ou kustomize ;
+  A3. une Application `lab-platform` hors platform/, ou visant platform/install/argocd/ ou platform/authz/ ; toute
+      source multiple, Helm, plugin ou kustomize ;
   O1-O5 (ApplicationSet lab-o, T-491) : un seul, sous apps/ ; missingkey=error, preserveResourcesOnDeletion ;
       UN générateur git `directories` (projects/*, dépôt du labo, main) ; modèle : projet et destination
       LITTÉRAUX, ni templatePatch ; toute app non OKE stateless est exclue ; A3 : `sources[]` refusé ;
       A2 : aucune Application écrite à la main dans le projet lab-o ;
   A4. une synchro `automated` sur un projet lab-authz ou lab-platform (synchro MANUELLE, flux A2) ;
-  P1. un AppProject hors des fichiers de bootstrap (project-lab.yaml : lab-platform, lab-o, lab-authz,
-      lab-root, lab-k, lab-k-root ; project-default-locked.yaml : default) ; le projet `default` non verrouillé (listes
-      vides, blacklist */*) ;
+  P1. un AppProject hors des fichiers de bootstrap (project-lab.yaml : lab-platform, lab-o, lab-authz, lab-root,
+      lab-k, lab-k-root ; project-default-locked.yaml : default) ; `default` non verrouillé (listes vides, */*) ;
   P2. une whitelist `*` (group, kind ou name), un dépôt source ou une destination `*`, une entrée
       cluster-scoped sans `name` ; lab-root autre que « Application et ApplicationSet dans lab-argocd » ; Application ou
       AppProject dans les whitelists hors lab-root ; lab-o avec un kind cluster-scoped, une destination
       autre que `default` ou un kind namespacé hors des kinds OpenChoreo applicatifs ;
-  P3. lab-authz ou lab-platform sans sa fenêtre `deny` permanente (schedule `* * * * *`, 24h,
-      applications `*`, manualSync: true), ou avec une fenêtre `allow` ;
-  G1. sous generated/namespaces/ un kind hors des kinds applicatifs de lab-o ; sous generated/catalog/
-      un kind hors backstage.io ; ailleurs sous generated/, tout fichier YAML ;
-  Z1. un kind authz OpenChoreo (AuthzRole, AuthzRoleBinding, ClusterAuthzRole*) hors platform/authz/, et
-      dans platform/authz/ tout autre kind ou un nom hors `lab-*` ;
-  S1. dans les fichiers qu'une Application lab-platform ou lab-o synchronise : un objet cluster-scoped
-      absent (kind ET nom) de clusterResourceWhitelist de SON projet, ou un kind namespacé hors whitelist /
-      en blacklist ;
-  S2. une NetworkPolicy synchronisée hors de la liste nommée de lab-pg, ou avec une règle « tout ouvrir »
-      (règle sans from/to, namespaceSelector vide, 0.0.0.0/0) (revue A1) ;
-  S3. le Namespace lab-pg sans ses labels PSA restricted / part-of / egress-isolated (revue A2) ;
+  P3. lab-authz ou lab-platform sans fenêtre `deny` permanente (`* * * * *`, 24h, `*`, manualSync), ou avec `allow` ;
+  G1. sous generated/namespaces/ un kind hors des kinds applicatifs de lab-o ; sous generated/catalog/ un kind
+      hors backstage.io ; ailleurs sous generated/, tout fichier YAML ;
+  Z1. un kind authz OpenChoreo (AuthzRole, AuthzRoleBinding, ClusterAuthzRole*) hors platform/authz/, et dans
+      platform/authz/ tout autre kind ou un nom hors `lab-*` ;
+  S1. dans les fichiers qu'une Application lab-platform ou lab-o synchronise : un objet cluster-scoped absent
+      (kind ET nom) de clusterResourceWhitelist de SON projet, ou un kind namespacé hors whitelist / en blacklist ;
+  S2. une NetworkPolicy synchronisée hors des listes nommées (lab-pg, TUNNEL), ou avec une règle « tout ouvrir »
+      (règle sans from/to, namespaceSelector vide, 0.0.0.0/0) (revue A1) ; S4. Deployment ou CNP hors TUNNEL ;
+  S3. le Namespace lab-pg ou lab-tunnel sans ses labels PSA restricted / part-of / egress-isolated (revue A2) ;
   K1. un kustomization.yaml (rendu kustomize : bases distantes, ../) ; L1-L4 (bras K, T-495) : argo_guard_k.py.
 Sortie : une ligne par écart ; code 1 si au moins un écart, 2 si un YAML est illisible (échec fermé).
 Ne remplace pas la revue (CODEOWNERS, docs/CI-PLATFORM-CHECKS.md).
@@ -80,6 +76,8 @@ CLUSTER_KINDS = {"Namespace", "ValidatingAdmissionPolicy", "ValidatingAdmissionP
 # NetworkPolicy admises (revue A1) : celles de platform/data/lab-pg-namespace.yaml, par nom.
 ALLOWED_NP = {("lab-pg", n) for n in ("default-deny", "allow-intra-dns-operator", "allow-pg-clients",
                                       "allow-apiserver")}
+TUNNEL = {("NetworkPolicy", "lab-tunnel", n) for n in ("lab-default-deny", "lab-tunnel-egress-dns-api")} | {("Deployment", "lab-tunnel",
+          "cloudflared"), ("CiliumNetworkPolicy", "lab-tunnel", "lab-tunnel-egress-edge"), ("NetworkPolicy", "openchoreo-control-plane", "lab-allow-tunnel-to-api")}  # T-006
 LAB_PG_LABELS = {"app.kubernetes.io/part-of": "openchoreo-lab",
                  "platform.smadja.dev/egress-isolated": "true",
                  "pod-security.kubernetes.io/enforce": "restricted"}
@@ -506,8 +504,10 @@ class Guard(LabKRules):
         self.rule_s1_whitelist(rel, proj_name, lab, g, k, n)
         if k == "NetworkPolicy":
             self.check_np(rel, ns, n, d.get("spec") or {})
-        if k == "Namespace" and n == "lab-pg":
-            self.rule_s3_lab_pg_labels(rel, md.get("labels") or {})
+        if k == "Namespace" and n in ("lab-pg", "lab-tunnel"):
+            self.rule_s3_lab_pg_labels(rel, md.get("labels") or {}, n)
+        if k in ("Deployment", "CiliumNetworkPolicy") and (k, ns, n) not in TUNNEL:
+            self.err(rel, f"S4 {k} {ns}/{n} hors liste nommée TUNNEL")
 
     def rule_s1_whitelist(self, rel, proj_name, lab, g, k, n):
         """S1 : objet cluster-scoped (kind ET nom) ou namespacé admis par les whitelists/blacklists du projet."""
@@ -520,17 +520,17 @@ class Guard(LabKRules):
         if not nw or not match(nw, g, k) or match(nb, g, k):
             self.err(rel, f"S1 {k}/{n} namespacé non autorisé par l'AppProject {proj_name}")
 
-    def rule_s3_lab_pg_labels(self, rel, labels):
-        """S3 : Namespace lab-pg avec ses labels PSA restricted / part-of / egress-isolated."""
+    def rule_s3_lab_pg_labels(self, rel, labels, name="lab-pg"):
+        """S3 : Namespace lab-pg / lab-tunnel avec ses labels PSA restricted / part-of / egress-isolated."""
         for lk, lv in LAB_PG_LABELS.items():
             if labels.get(lk) != lv:
-                self.err(rel, f"S3 Namespace lab-pg : label {lk}={lv} exigé (trouvé {labels.get(lk)!r})")
+                self.err(rel, f"S3 Namespace {name} : label {lk}={lv} exigé (trouvé {labels.get(lk)!r})")
         for lk in ("pod-security.kubernetes.io/warn", "pod-security.kubernetes.io/audit"):
             if labels.get(lk) not in (None, "restricted"):
-                self.err(rel, f"S3 Namespace lab-pg : {lk} doit rester restricted")
+                self.err(rel, f"S3 Namespace {name} : {lk} doit rester restricted")
 
     def check_np(self, rel, ns, name, spec):
-        if (ns, name) not in ALLOWED_NP:
+        if (ns, name) not in ALLOWED_NP and ("NetworkPolicy", ns, name) not in TUNNEL:
             self.err(rel, f"S2 NetworkPolicy {ns}/{name} hors liste nommée {sorted(ALLOWED_NP)}")
         for direction, peer_key in (("ingress", "from"), ("egress", "to")):
             for rule in spec.get(direction) or []:

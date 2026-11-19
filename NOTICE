@@ -35,6 +35,8 @@ This product includes software adapted from:
   AppProject of kube-ops commit ef50472bc427bbb5fb342cebf2f4db408157f5b3 (as copied into the bench sandbox
   platform-zephyr/bench-ab-arm-k at 742bbd6b8c4e894b8bc31800ee234de0d2b80dd6): same kind lists; repository,
   name and destinations (lab-k-*, svc-*) changed.
+  Commit ef50472bc427bbb5fb342cebf2f4db408157f5b3 : platform/cloudflared/deployment.yaml adapted from
+  k8s/clusters/oracle-a1/cloudflared/deployment.yaml (namespace lab-tunnel, image pinned by digest; T-006).
 - [only if copied] VizzleTF/homelab (https://github.com/VizzleTF/homelab)
   MIT License, Copyright (c) 2024-2026 VizzleTF. ApplicationSet template adapted from
   argocd/appsets/apps-appset.yaml. (Full MIT text in LICENSES/MIT-VizzleTF.txt.)
