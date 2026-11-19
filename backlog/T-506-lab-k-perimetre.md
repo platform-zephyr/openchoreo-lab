@@ -24,14 +24,14 @@ EXPLICITES (jamais `svc-*`), les kinds `*/*` du projet `applications` de kube-op
 blacklist reste. `lab-k-root` ne change pas. Argo écrit, pas un agent : AGENTS.md ne change pas.
 
 ## Périmètre de fichiers
-platform/install/argocd/project-lab.yaml, tools/oke/argo_guard_k.py, tools/oke/argo_guard.py, tests/argo-guard/, backlog/T-506-lab-k-perimetre.md, backlog/T-502-lab-o-liste-par-cluster.md
+platform/install/argocd/project-lab.yaml, tools/oke/verify.sh, tools/oke/argo_guard_k.py, tools/oke/argo_guard.py, tests/argo-guard/, backlog/T-506-lab-k-perimetre.md, backlog/T-502-lab-o-liste-par-cluster.md
 
 ## Critères de fin
 - [x] `lab-k` : destinations lab-k-*, svc-echo-bench, svc-miniflux, svc-ntfy, lab-pg ; Namespace lab-k-* et les
   trois svc-<app> ; kinds `*/*` ; blacklist inchangée — STATIC, 2026-11-19
 - [x] argo_guard L1/L2 et P2 alignés (joker de kinds admis pour lab-k seul) ; cas négatifs : `svc-*` en
   destination ou Namespace refusé, `*/*` dans lab-o refusé, blacklist vidée refusée — STATIC, 2026-11-19
-- [ ] `tools/oke/verify.sh` B11-lab-k-dest aligné (hors périmètre : il attend encore `lab-k-*` et `svc-*`)
+- [x] `tools/oke/verify.sh` B11-lab-k-dest aligné sur les cinq destinations — STATIC (jq contre le manifeste), 2026-11-19
 - [ ] Preuve OKE : l'AppProject lab-k lu dans lab-argocd est conforme après synchro (lecture seule)
 
 ## Notes
