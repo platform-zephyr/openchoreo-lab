@@ -28,7 +28,7 @@ diagnostique pas, n'exécute pas. Détail : § « Rôle de l'orchestrateur » ci
 | Sous-agent | Outil Agent, `isolation: worktree` | 3 à 7 | Sa branche locale (l'orchestrateur pousse) | Pousser vers un autre dépôt |
 | Usine | `claude-agent.yml`, `workflow_dispatch` | 3 (`max-parallel`) | Branche `claude/issue-<n>-*` et PR | Accès cluster ; Sonnet/Haiku 45 min, Opus 90 min |
 | Suites k3d | `k3d-integration.yml`, `workflow_dispatch` | 1 run à la fois | Artefacts de preuve | Preuve OKE |
-| Opérateur OKE | Session locale sur le Mac, lancée par l'orchestrateur (brief du § Rôle) | 1 (seul écrivain OKE) | `tools/oke/install.sh`, Secrets, preuves datées | Tourner en double ; sortir de `openchoreo-*` et `lab-*` |
+| Opérateur OKE | Session locale sur le Mac, lancée par l'orchestrateur (brief du § Rôle) | Lectures : illimité. Écritures : 1 par zone (§ Écritures OKE en parallèle) | Secrets, synchros manuelles, preuves datées dans sa zone ; `tools/oke/install.sh` seulement s'il est le seul « plateforme » | Deux écrivains sur la même zone ; sortir de `openchoreo-*` et `lab-*` |
 
 Choix du moyen : couloir cloud pour un ticket long ou sur un autre dépôt cloné ; sous-agent pour un ticket court sur
 ce dépôt ; usine pour un lot d'issues sans interaction ; session locale pour ce qui exige le Mac (opérateur OKE) ;
@@ -44,21 +44,34 @@ synchroniser, réfléchir.
 | Dispatche : un chantier = un agent, prompt standard (§ 6), ticket, périmètre exclusif | Chercher un script, un fichier, un art antérieur | Coder un ticket |
 | Synchronise : PR, notes « Reprise » des tickets, `list_sessions`, `list_events` ; détecte blocages, recouvrements, dépendances ; relance ou réaffecte | Lire un script avant exécution ; lancer `verify.sh` ou toute vérification | Écrire sur OKE (bastion, Secret, `verify.sh --all`, preuves) |
 | Fusionne les PR prêtes après `ci-ok` sur la tête courante | Poser un Secret, diagnostiquer une panne, corriger une CI | Contourner une garde ou écrire une autorisation de Paul |
-| Remonte à Paul UNE série groupée de blocages et d'actions externes, avec liens et recommandation | Toute écriture OKE : à UN agent « opérateur OKE » local à la fois | Deux écrivains OKE en même temps |
+| Remonte à Paul UNE série groupée de blocages et d'actions externes, avec liens et recommandation | Toute action OKE : à un agent « opérateur OKE » local (une zone d'écriture par opérateur) | Deux écrivains sur la même zone |
 | Réfléchit aux frictions récurrentes (journal `docs/research/FRICTIONS-ORCHESTRATION.md`) | Les améliorations décidées (skill, doc, outil, ticket) | Annoncer « vert » sans avoir lu le statut de chaque suite |
 
 **Règle STOP.** Si tu t'apprêtes à chercher, lire un script, lancer une vérification, poser un secret, coder ou
 diagnostiquer : arrête, lance un agent. Une lecture de PR, de note « Reprise » ou de statut de session reste à toi
 (c'est la synchronisation).
 
+### Écritures OKE en parallèle (décision de Paul, 2026-11-19)
+
+Tous les agents locaux partagent le même bastion et le même kubeconfig : la règle « un seul écrivain » est une règle de
+cohérence, pas une limite technique. OKE est jetable et la vitesse prime, donc :
+
+| Cas | Règle |
+|---|---|
+| Lectures (`verify.sh`, mesures, diagnostics, preuves de lecture) | En parallèle, sans limite. |
+| Écritures ponctuelles (Secret par tube, synchro manuelle, test de refus) | En parallèle si les ZONES sont disjointes : zone = un namespace ou une famille d'objets (`lab-o-*`, `lab-k-*`, notifications, `lab-secrets`). Un opérateur par zone. |
+| Opérations qui touchent toute la plateforme (`tools/oke/install.sh` étapes 0 à 11, Cilium, Argo CD, ESO, kgateway) | UN seul agent « plateforme » ; aucune autre écriture pendant ce temps. |
+| Traçabilité | La section « Preuve OKE demandée » de la PR nomme la zone d'écriture ; l'orchestrateur tient la liste des zones occupées et refuse un second écrivain sur la même zone. |
+| Durable | Toujours par Git puis Argo CD (`AGENTS.md`) ; une écriture directe n'est jamais un changement durable. |
+
 ### Brief type d'un agent « opérateur OKE »
 
-Session locale sur le Mac (seul écrivain OKE ; un seul à la fois ; jamais en parallèle d'un second opérateur).
+Session locale sur le Mac. Plusieurs opérateurs en parallèle sont admis : lectures sans limite, un seul écrivain par ZONE (voir § Écritures OKE en parallèle).
 
 ```
 Tu es l'opérateur OKE du labo OpenChoreo (session locale). Réponses en français, STE80, conclusion d'abord.
 Écriture dans les namespaces openchoreo-* et lab-* seulement. Aucun secret, OCID, IP ni hôte interne dans le dépôt,
-la PR ou ta sortie. Un seul opérateur à la fois : si un autre est actif, arrête-toi et dis-le.
+la PR ou ta sortie. Ta ZONE d'écriture est donnée par l'orchestrateur ; si un autre opérateur écrit déjà dans cette zone, arrête-toi et dis-le.
 1. Ouvre l'accès : tools/oke/open-oke-access.sh open 10800 (bastion de 3 h) ; note l'heure d'expiration.
 2. LIS le script avant de l'exécuter (open-oke-access.sh, verify.sh, install.sh) ; si une commande te surprend, stop.
 3. Joue la section « Preuve OKE demandée » de la PR (ou les cases du ticket), dans l'ordre. Pour un contrôle
@@ -91,7 +104,7 @@ Rapport final <= 15 lignes : verdicts, chemins des preuves, écarts, blocages, p
 | CI | `ci-ok` sur la TÊTE COURANTE (`actions/runs?head_sha=`) | Vert, ou correctif sur la même branche | Le couloir |
 | REVUE | Classe AUTONOME ou REVUE (mode dev : fusion après `ci-ok`) ; MANDAT = geste de Paul | Brouillon levé | Orchestrateur |
 | FUSION | `ci-ok` vert ; k3d dispatché si `platform/`, `tools/appgen/` ou fixtures changent (§5) | Squash par la file de fusion | Orchestrateur |
-| PREUVE OKE | Section « Preuve OKE demandée » de la PR | Preuve datée dans `backlog/evidence/` | Orchestrateur (seul écrivain OKE) |
+| PREUVE OKE | Section « Preuve OKE demandée » de la PR | Preuve datée dans `backlog/evidence/` | Opérateur OKE (délégué par l'orchestrateur ; une zone d'écriture par opérateur) |
 | DONE | Toutes les cases cochées, PR fusionnée | Statut dérivé `done` (`tools/backlog/derive.py`) | Calculé |
 
 Règles : un ticket = un propriétaire = une branche = une PR. Branche `claude/t-NNN-*`, jamais `claude/issue-*` hors

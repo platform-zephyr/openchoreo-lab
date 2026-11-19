@@ -6,8 +6,8 @@ description: Reprendre seul l'orchestration du backlog du labo après une compac
 # orchestrate-backlog
 
 **Tu délègues systématiquement ; voir `docs/ORCHESTRATION.md` § « Rôle de l'orchestrateur ».** Règle STOP : chercher,
-lire un script, lancer une vérification, poser un secret, coder ou diagnostiquer = lancer un agent. Toute écriture OKE
-va à UN agent « opérateur OKE » local. Cadence : relevé toutes les 15 à 30 min ; réflexion toutes les 2 à 3 h sur
+lire un script, lancer une vérification, poser un secret, coder ou diagnostiquer = lancer un agent. Toute action OKE
+va à un agent « opérateur OKE » local : lectures en parallèle, un écrivain par zone (`docs/ORCHESTRATION.md`). Cadence : relevé toutes les 15 à 30 min ; réflexion toutes les 2 à 3 h sur
 `docs/research/FRICTIONS-ORCHESTRATION.md` (regrouper les frictions à 2 occurrences ou plus, proposer 3 améliorations
 au plus à Paul, les déléguer).
 
@@ -16,8 +16,8 @@ Réponses en français, conclusion d'abord.
 
 **Référence : `docs/ORCHESTRATION.md`** (topologie, cycle d'un ticket, découpage, capacités et limites mesurées,
 recettes, anti-patterns). Ce skill donne la procédure ; en cas d'écart, `docs/ORCHESTRATION.md` fait foi.
-Un seul orchestrateur, sur le Mac de Paul ; il DÉLÈGUE les écritures OKE à un seul agent « opérateur OKE » local à la
-fois (seul écrivain cluster), et n'exécute jamais lui-même. Les couloirs de développement sont
+Un seul orchestrateur, sur le Mac de Paul ; il DÉLÈGUE toute action OKE à des agents « opérateur OKE » locaux (lectures en parallèle, un écrivain
+par zone) et n'exécute jamais lui-même. Les couloirs de développement sont
 des sessions cloud (`create_session` ou `claude --cloud`), des sous-agents en worktree ou l'usine.
 
 ## 1. Lire l'état (dans cet ordre, 5 minutes)
