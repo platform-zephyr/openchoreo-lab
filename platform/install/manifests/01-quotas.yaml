@@ -143,7 +143,9 @@ spec:
     services.loadbalancers: "0"
     services.nodeports: "0"
 ---
-# lab-argocd : controller 25m/256Mi, repo-server 25m/128Mi, server 10m/64Mi, redis 10m/32Mi = 70m/480Mi ; Job redis-secret-init.
+# lab-argocd : controller 25m/256Mi, repo-server 25m/128Mi, server 10m/64Mi, redis 10m/32Mi, applicationset-controller
+# et notifications-controller (T-487, T-489) ; Job pre-upgrade redis-secret-init : 6 pods installés + 1 pod de Job + marge.
+# Mesuré sur OKE (2026-11-19) : quota pods 6/6 => le Job du hook Helm restait InProgress (pod non créé) à l'upgrade.
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -152,10 +154,10 @@ metadata:
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
   hard:
-    requests.cpu: "100m"
-    requests.memory: "640Mi"
-    limits.memory: "2304Mi"
-    pods: "6"
+    requests.cpu: "150m"
+    requests.memory: "768Mi"
+    limits.memory: "3072Mi"
+    pods: "8"
     persistentvolumeclaims: "0"
     services.loadbalancers: "0"
     services.nodeports: "0"
