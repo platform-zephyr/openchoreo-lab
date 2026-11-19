@@ -127,8 +127,8 @@ def _pvc_traits(comp: dict, vols: list[dict], platform: dict, caps: dict, data_c
 def _probes_trait(comp: dict, cct: dict, platform: dict) -> tuple[list, list, dict, dict]:
     """T-010 (G2) : healthPath d'un endpoint HTTP -> trait health-probes (readiness + liveness httpGet).
 
-    Meme forme de retour que _pvc_traits. Rien si pas de healthPath, si `healthProbe: false`, pas de port HTTP ou CCT qui n'autorise pas le trait."""
-    path = comp["rt"].get("healthPath") if comp["rt"].get("healthProbe", True) else None
+    Meme forme de retour que _pvc_traits. Rien si pas de healthPath, pas de port HTTP ou CCT qui n'autorise pas le trait."""
+    path = comp["rt"].get("healthPath")
     allowed = {t["name"] for t in cct["spec"].get("allowedTraits", [])}
     if not path or not comp["port"] or comp["protocol"] != "HTTP" or PROBES_TRAIT not in allowed:
         return [], [], {}, {}

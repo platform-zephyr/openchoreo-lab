@@ -20,7 +20,7 @@ github_issue: null
 Ready signifie « app saine » ; le quota suit `size × replicas` et le stockage.
 
 ## Périmètre de fichiers
-tools/appgen/, platform/component-types/, platform/project-types/, tests/appgen/, tests/cell-cpt/, docs/schema/app.schema.json, docs/APP-CONTRACT.md, apps/open-connector/app.yaml, apps/rustical-pilot/app.yaml
+tools/appgen/, platform/component-types/, platform/project-types/, tests/appgen/, tests/cell-cpt/, apps/open-connector/app.yaml, apps/rustical-pilot/app.yaml
 
 ## Critères de fin
 - [x] readiness/liveness rendues (STATIC : trait health-probes dans Component, release figée et binding ; CEL non évaluée)
@@ -28,5 +28,5 @@ tools/appgen/, platform/component-types/, platform/project-types/, tests/appgen/
 - [ ] CI k3d verte
 
 ## Notes
-- Preuve des `healthPath` (2026-11-19, code amont à la version épinglée) : PASS (L1, lecture de code) pour whoami, echo-demo, idp-e2e (`/health`), miniflux (`/healthcheck`), ntfy (`/v1/health`), searxng (`/healthz`), aiostreams (`/api/v1/status`), mealie (`/api/app/about`, route sans authentification), rustical-pilot (`/ping`, corrigé depuis `/`). NOT_TESTED : open-connector (`/health` illisible en amont) : `healthProbe: false`, aucune probe rendue.
+- Preuve des `healthPath` (2026-11-19, code amont à la version épinglée) : PASS (L1, lecture de code) pour whoami, echo-demo, idp-e2e (`/health`), miniflux (`/healthcheck`), ntfy (`/v1/health`), searxng (`/healthz`), aiostreams (`/api/v1/status`), mealie (`/api/app/about`, route sans authentification), rustical-pilot (`/ping`, corrigé depuis `/`). NOT_TESTED : open-connector (`/health` illisible en amont, `[S]` conservé ; app non déployée sur OKE, exclue de `lab-apps` : la première probe réelle sera le premier déploiement).
 - Reste à prouver sur k3d ou OKE : pods Ready avec probes (NOT_TESTED ici). Voir « Preuve OKE demandée » de la PR.

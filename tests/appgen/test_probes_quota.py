@@ -52,15 +52,6 @@ class Probes(unittest.TestCase):
         rb = files[f"{comp_dir('whoami')}/release-bindings/whoami-production.yaml"]
         self.assertEqual(rb["spec"]["traitEnvironmentConfigs"][trait["instanceName"]], {"enabled": True})
 
-    def test_health_probe_false_renders_no_trait(self):
-        doc = whoami()
-        doc["spec"]["runtime"]["healthProbe"] = False
-        files = render(doc)
-        comp = files[f"{comp_dir('whoami')}/component.yaml"]
-        self.assertNotIn("health-probes", [t["name"] for t in comp["spec"].get("traits", [])])
-        rb = files[f"{comp_dir('whoami')}/release-bindings/whoami-production.yaml"]
-        self.assertNotIn("probes", rb["spec"].get("traitEnvironmentConfigs", {}))
-
     def test_trait_frozen_in_release(self):
         files = render(whoami())
         rel = next(v for k, v in files.items() if "/whoami/releases/" in k and k.endswith(".yaml"))
