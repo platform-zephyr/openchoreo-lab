@@ -375,5 +375,76 @@ spec: {endpointSelector: {matchLabels: {none: none}}, egressDeny: []}
 EOF2
 check gen-ccnp-deny-imds refus "S1 CiliumClusterwideNetworkPolicy/deny-imds cluster-scoped absent .*\(lab-o\)" "$d"
 
+# --- Bras K du banc A/B (T-495) : AppProject lab-k, projet et Application lab-k-root ---
+PROJ=$A/project-lab.yaml
+kmut() { # DOSSIER FICHIER ANCRE AJOUT : insère AJOUT après la 1re ANCRE suivant « name: lab-k » (ou lab-k-root)
+  python3 -I - "$1/$2" "$3" "$4" "$5" <<'PY'
+import sys
+p, start, anchor, add = sys.argv[1:5]
+s = open(p).read()
+i = s.index(start); j = s.index(anchor, i) + len(anchor)
+open(p, "w").write(s[:j] + add + s[j:])
+PY
+}
+
+# 35. lab-k élargi à kube-system, puis à argocd, puis à lab-argocd.
+for ns in kube-system argocd lab-argocd; do
+  d="$(fresh lab-k-dest-$ns)"
+  kmut "$d" "$PROJ" "  name: lab-k
+" "  destinations:
+" "    - {server: https://kubernetes.default.svc, namespace: $ns}
+"
+  check lab-k-destination-$ns refus "L2 lab-k : destination .*'$ns'" "$d"
+done
+
+# 36. lab-k : source d'un autre dépôt (le dépôt du labo).
+d="$(fresh lab-k-repo)"
+kmut "$d" "$PROJ" "  name: lab-k
+" "  sourceRepos:
+" "    - https://github.com/platform-zephyr/openchoreo-lab
+"
+check lab-k-autre-depot refus "L1 lab-k : sourceRepos limité au seul dépôt du bac à sable" "$d"
+
+# 37. lab-k : kind non listé chez kube-ops (ExternalSecret), puis ClusterRole.
+d="$(fresh lab-k-es)"
+kmut "$d" "$PROJ" "  name: lab-k
+" "  namespaceResourceWhitelist:
+" "    - {group: external-secrets.io, kind: ExternalSecret}
+"
+check lab-k-externalsecret refus "L1 lab-k : namespaceResourceWhitelist = EXACTEMENT" "$d"
+d="$(fresh lab-k-cr)"
+kmut "$d" "$PROJ" "  name: lab-k
+" "  clusterResourceWhitelist:
+" "    - {group: rbac.authorization.k8s.io, kind: ClusterRole, name: lab-k-x}
+"
+check lab-k-clusterrole refus "L1 lab-k : clusterResourceWhitelist limitée" "$d"
+
+# 38. svc-* admis seulement pour lab-k : le même glob dans lab-o est refusé.
+d="$(fresh lab-o-svc)"
+kmut "$d" "$PROJ" "  name: lab-o
+" "  destinations:
+" "    - {server: https://kubernetes.default.svc, namespace: 'svc-*'}
+"
+check lab-o-destination-svc refus "P2 lab-o : destination joker" "$d"
+
+# 39. lab-k-root livre aussi l'AppProject copié du bac à sable (include *.yaml) ; ou passe en automated.
+d="$(fresh k-root-include)"
+python3 -I -c 'import sys,pathlib
+p=pathlib.Path(sys.argv[1]); s=p.read_text(); old="include: \"{apps-generated-applicationset.yaml,applications-applicationset.yaml}\""
+assert old in s; p.write_text(s.replace(old, "include: \"*.yaml\"", 1))' "$d/$A/apps/lab-k-root.yaml"
+check lab-k-root-projet-copie refus "L3 Application 'lab-k-root'" "$d"
+d="$(fresh k-root-auto)"
+python3 -I -c 'import sys,pathlib
+p=pathlib.Path(sys.argv[1]); s=p.read_text(); assert "  syncPolicy:\n" in s
+p.write_text(s.replace("  syncPolicy:\n", "  syncPolicy:\n    automated: {prune: false, selfHeal: true}\n", 1))' "$d/$A/apps/lab-k-root.yaml"
+check lab-k-root-automated refus "A4 Application 'lab-k-root' \(lab-k-root\) : synchro automated interdite" "$d"
+
+# 40. Application de ce dépôt dans le projet lab-k (réservé aux ApplicationSets du bac à sable) ; projet
+#     lab-k-root emprunté par une autre Application.
+d="$(fresh k-app-lab-k)"; app kevil lab-k platform/policies > "$d/$A/apps/kevil.yaml"
+check app-projet-lab-k refus "A2 Application 'kevil' : projet 'lab-k' interdit" "$d"
+d="$(fresh k-root-borrow)"; app kborrow lab-k-root platform/policies > "$d/$A/apps/kborrow.yaml"
+check lab-k-root-emprunte refus "L3 Application 'kborrow' : projet lab-k-root réservé" "$d"
+
 echo "argo-guard : $pass PASS, $fail FAIL"
 (( fail == 0 ))

@@ -30,7 +30,7 @@ class Characterization(unittest.TestCase):
     def test_corpus_exercises_negative_rules(self):
         """Le corpus reste discriminant : chaque code de règle apparaît au moins une fois dans le gel."""
         blob = json.dumps(GOLDEN, ensure_ascii=False)
-        for code in ("P1", "P2", "P3", "A1", "A2", "A3", "A4", "S1", "S2", "S3", "VAP:", "PSA baseline",
+        for code in ("P1", "P2", "P3", "A1", "A2", "A3", "A4", "S1", "S2", "S3", "L1", "L2", "L3", "VAP:", "PSA baseline",
                      "PSA restricted"):
             self.assertIn(code, blob)
 
