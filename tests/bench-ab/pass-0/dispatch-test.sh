@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Test statique de tests/bench-ab/pass-0/dispatch.sh (T-486) : cas nominal, tâche inconnue, bras inconnu, et garde-fous.
-# Aucun réseau, aucun cluster, aucun secret. Usage : tests/bench-ab/pass-0/dispatch-test.sh
+# Aucun réseau externe, aucun cluster, aucun secret. Usage : tests/bench-ab/pass-0/dispatch-test.sh
+# Point d'entrée unique de la suite `bench-ab-pass-0` (tests/registry.yaml) : lance aussi les tests des autres scripts
+# de pass-0 (T-501) : observe.py, admin-password.sh, check-frozen-sha.sh.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT="$HERE/dispatch.sh"
@@ -62,5 +64,11 @@ contains "--force : nouvelle issue" "$W/a/M1.O.r0.json" '"issue": 8'
 
 # Aucun secret ni valeur interne dans les fichiers de run.
 if grep -Eqi 'token|secret|password|ghp_|kubeconfig|https?://' "$W"/*/*.json; then ko "fichiers de run sans secret"; else ok "fichiers de run sans secret"; fi
+
+# Scripts voisins (T-501) : chacun a son test hors ligne.
+if python3 -I "$HERE/test_observe.py" >"$W/obs.out" 2>&1; then ok "observe.py (test_observe.py)"; else ko "observe.py"; sed 's/^/  /' "$W/obs.out"; fi
+for t in admin-password-test.sh check-frozen-sha-test.sh; do
+  if "$HERE/$t" >"$W/t.out" 2>&1; then ok "$t"; else ko "$t"; sed 's/^/  /' "$W/t.out"; fi
+done
 
 if [[ "$fails" -eq 0 ]]; then printf 'OK\n'; else printf '%s échec(s)\n' "$fails"; exit 1; fi
