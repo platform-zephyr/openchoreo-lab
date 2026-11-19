@@ -26,3 +26,6 @@ spec:
     block-rwo: oci-bv
   backupMechanisms: [none]
   secretStore: lab-store
+  # lab-store = fournisseur ESO kubernetes (platform/install/manifests/20-eso-lab-store.yaml) : remoteRef.key = Secret
+  # minuscule de lab-secrets (cle SEARXNG_SECRET -> Secret searxng-secret), property = cle (T-499).
+  secretStoreProvider: kubernetes

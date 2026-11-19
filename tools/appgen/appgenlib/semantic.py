@@ -27,6 +27,7 @@ from appgenlib.model import (
     components,
     compute_delivery,
     egress_spec,
+    remote_ref_errors,
     volumes,
 )
 from appgenlib.schema import _env_errors
@@ -47,8 +48,8 @@ def _identity_errors(name: str, dirname: str, spec: dict, cluster_gate_open: boo
     return errs
 
 
-def _secret_errors(name: str, spec: dict) -> list[str]:
-    """Secrets : references seulement, prefixe <NAME>_ impose, sans doublon ; env runtime sans secret."""
+def _secret_errors(name: str, spec: dict, caps: dict) -> list[str]:
+    """Secrets : references seulement, prefixe <NAME>_, sans doublon, resolubles par le store ; env sans secret."""
     errs = []
     prefix = name.upper().replace("-", "_") + "_"
     secrets = spec.get("secrets", [])
@@ -61,6 +62,7 @@ def _secret_errors(name: str, spec: dict) -> list[str]:
     for s in secrets:
         if not s["key"].startswith(prefix):
             errs.append(f"secret '{s['key']}' : prefixe '{prefix}' obligatoire")
+        errs += remote_ref_errors(s, caps)
     errs += _env_errors("runtime", spec.get("runtime", {}).get("env", {}), envs_secret)
     return errs
 
@@ -158,7 +160,7 @@ def semantic_check(doc: dict, dirname: str, cluster_gate_open: bool, ctx: Contex
     except AppError as exc:
         return [*errs, str(exc)], []
     errs += [f"environnement '{env}' inconnu" for env in spec["environments"] if env not in ALLOWED_ENVIRONMENTS]
-    errs += _secret_errors(doc["metadata"]["name"], spec)
+    errs += _secret_errors(doc["metadata"]["name"], spec, caps)
     errs += _oidc_errors(spec, caps)
     errs += _backup_errors(spec, caps)
     errs += _data_errors(spec)

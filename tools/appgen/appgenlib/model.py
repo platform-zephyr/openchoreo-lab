@@ -8,6 +8,7 @@ Sorties : dictionnaires et listes Python ; AppError (message lisible, sans valeu
 from __future__ import annotations
 
 import datetime
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -39,6 +40,40 @@ def _walk_strings(node: Any, path: str = "") -> Iterator[tuple[str, str]]:
             yield from _walk_strings(v, f"{path}[{i}]")
     elif isinstance(node, str):
         yield path, node
+
+
+# Nom d'objet Kubernetes (Secret) : sous-domaine DNS RFC 1123, 253 caracteres au plus.
+RFC1123_SUBDOMAIN = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$")
+
+
+def vault_secret_name(key: str) -> str:
+    """Cle du contrat (SEARXNG_SECRET) -> nom du Secret du coffre d'un store ESO kubernetes (searxng-secret)."""
+    return key.lower().replace("_", "-")
+
+
+def remote_ref_errors(secret: dict, caps: dict) -> list[str]:
+    """Refus a la generation d'une reference que le fournisseur du store ne peut pas resoudre (T-499)."""
+    if caps.get("secretStoreProvider", "doppler") != "kubernetes":
+        return []
+    errs = []
+    name = vault_secret_name(secret["key"])
+    if len(name) > 253 or not RFC1123_SUBDOMAIN.match(name):
+        errs.append(f"secret '{secret['key']}' : nom de Secret '{name}' non conforme RFC 1123 (store ESO kubernetes : "
+                    "minuscules, chiffres, '-', debut et fin alphanumeriques)")
+    if "property" in secret:
+        errs.append(f"secret '{secret['key']}' : property interdite avec un store ESO kubernetes (la property est la cle)")
+    return errs
+
+
+def remote_ref(secret: dict, caps: dict) -> dict:
+    """remoteRef ESO selon le fournisseur du store (capacite secretStoreProvider, defaut doppler).
+
+    doppler : key = cle du contrat, property facultative. kubernetes (provider ESO natif) : key = Secret du coffre,
+    property = cle du contrat dans ce Secret.
+    """
+    if caps.get("secretStoreProvider", "doppler") == "kubernetes":
+        return {"key": vault_secret_name(secret["key"]), "property": secret["key"]}
+    return {"key": secret["key"], **({"property": secret["property"]} if "property" in secret else {})}
 
 
 def app_dirs(root: Path, examples: bool = False) -> list[Path]:
