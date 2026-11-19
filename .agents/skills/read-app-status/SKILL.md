@@ -1,11 +1,11 @@
 ---
 name: read-app-status
-description: Lire, sans accès cluster ni identifiant, l'état de déploiement d'une app du labo sur OKE (success, failure, pending, absent) pour une révision Git, par le check run GitHub `argocd/<application>` que publie Argo CD Notifications. Pour un agent cloud ou de l'usine qui doit savoir si sa PR fusionnée est déployée et saine. Ne diagnostique pas : un failure passe au coordinateur (diagnose-app).
+description: Lire, sans accès cluster, l'état de déploiement d'une app du labo sur OKE (success, failure, pending, absent) pour une révision Git, par le check run GitHub `argocd/<application>` que publie Argo CD Notifications. Pour un agent cloud ou de l'usine qui doit savoir si sa PR fusionnée est déployée et saine. Ne diagnostique pas : un failure passe au coordinateur (diagnose-app).
 ---
 
 # read-app-status
 
-Lecture seule : API GitHub publique, aucune commande `kubectl`, aucun identifiant à fournir. Producteur du statut :
+Lecture seule : API GitHub, aucune commande `kubectl`. `gh` exige une session authentifiée (`gh auth status`) ; sans elle, l'appel échoue. Producteur du statut :
 Argo CD Notifications sur OKE, sous l'App GitHub `openchoreo-status` (T-489,
 `platform/install/argocd/notifications/argocd-notifications-cm.yaml`). Un seul appel `gh api` (T-507, remplace
 `tools/status/app_status.py`).
@@ -38,7 +38,7 @@ gh api "repos/platform-zephyr/openchoreo-lab/commits/$SHA/check-runs?check_name=
 
 ## Limites
 
-- **Pas de boucle serrée : ≥ 1 min entre deux lectures.** Limite GitHub : 60 requêtes/heure par IP sans jeton. Une
+- **Pas de boucle serrée : ≥ 1 min entre deux lectures.** Quota GitHub à ménager. Une
   réponse 403 ou 429 se traite par une pause, jamais par une relance immédiate.
 - **`main` mouvant** : juste après une fusion, le nouveau HEAD peut n'avoir aucun check (`absent`) alors que la
   révision précédente est `success`. Utiliser le SHA du commit attendu.
