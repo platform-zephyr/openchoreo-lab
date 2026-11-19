@@ -13,11 +13,9 @@ Refuse :
       platform/authz), lab-o à l'ApplicationSet lab-o (aucune Application écrite à la main) ;
   A3. une Application `lab-platform` hors platform/, ou visant platform/install/argocd/ ou platform/authz/ ; toute
       source multiple, Helm, plugin ou kustomize ;
-  O1-O5 (ApplicationSet lab-o, T-491, T-502) : un seul, sous apps/ ; missingkey=error, preserveResourcesOnDeletion ;
-      UN générateur git `files` sur la SEULE liste clusters/oke/lab-o-apps.yaml (dépôt du labo, main) ; modèle :
-      projet et destination LITTÉRAUX, chemin projects/{{.app}}, ni templatePatch ; O5 : chaque entrée de la liste
-      est `{app: <nom DNS>}`, unique, générée sous projects/<nom> et OKE stateless ; A3 : `sources[]` refusé ;
-      A2 : aucune Application écrite à la main dans le projet lab-o ;
+  O1-O5 (lab-o, T-491, T-502) : un ApplicationSet sous apps/, missingkey=error, preserve ; UN générateur git `files`
+      sur clusters/oke/lab-o-apps.yaml ; projet et destination LITTÉRAUX, chemin projects/{{.app}} ; O5 : entrée
+      `{app: <nom DNS>}` unique, générée, OKE stateless ; A3 : `sources[]` refusé ; A2 : rien à la main dans lab-o ;
   A4. une synchro `automated` sur un projet lab-authz ou lab-platform (synchro MANUELLE, flux A2) ;
   P1. un AppProject hors des fichiers de bootstrap (project-lab.yaml : lab-platform, lab-o, lab-authz, lab-root,
       lab-k, lab-k-root ; project-default-locked.yaml : default) ; `default` non verrouillé (listes vides, */*) ;
@@ -57,8 +55,7 @@ PROJECT_FILES = {f"{ARGO}/project-lab.yaml": set(LAB_PROJECTS), f"{ARGO}/project
 ALLOWED_PROJECTS, CHILD_PROJECTS = set(LAB_PROJECTS) - {"lab-k"}, set(LAB_PROJECTS) - {"lab-k", "lab-root"}  # L4
 SYNC_PROJECTS = ("lab-platform", "lab-o")  # projets dont les objets synchronisés sont contrôlés (S1)
 APPS_PATH = "generated/namespaces/default"
-APP_PATH_TPL = APPS_PATH + "/projects/{{.app}}"  # chemin source du modèle lab-o (O4)
-LAB_O_LIST = "clusters/oke/lab-o-apps.yaml"  # apps OKE de lab-o (T-502) : liste `- app: <nom>`, générateur git files
+APP_PATH_TPL, LAB_O_LIST = APPS_PATH + "/projects/{{.app}}", "clusters/oke/lab-o-apps.yaml"  # lab-o (O4, T-502)
 APP_NAME = re.compile(r"[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?")  # nom d'app : label DNS (ni `/`, ni `.`, ni gabarit)
 REPO_URLS = {"https://github.com/platform-zephyr/openchoreo-lab", "https://github.com/platform-zephyr/openchoreo-lab.git"}
 # Kinds OpenChoreo applicatifs (sortie de tools/appgen) : seuls admis par lab-o et sous generated/namespaces.
@@ -105,8 +102,7 @@ Loader.add_multi_constructor("!", _any_tag)
 
 class Guard(LabKRules):
     def __init__(self, root):
-        self.root = root
-        self.errs = []
+        self.root, self.errs = root, []
         self.appsets = []  # ApplicationSet lab-o lus (fichiers synchronisés, S1)
         self.files = {}  # chemin relatif -> liste d'objets
         self.lab_o_list = None  # contenu YAML de LAB_O_LIST (None : fichier absent)
@@ -115,39 +111,26 @@ class Guard(LabKRules):
         self.errs.append(f"{rel}: {msg}")
 
     def load(self):
-        bad = 0
-        for top in SCAN:
-            base = self.root / top
-            if not base.is_dir():
+        """Lit SCAN (objets) et LAB_O_LIST (une liste, hors SCAN) ; rend le nombre de YAML illisibles (échec fermé)."""
+        bad, lst = 0, self.root / LAB_O_LIST
+        for f in [lst] * lst.is_file() + [f for t in SCAN for f in sorted((self.root / t).rglob("*"))]:
+            if not f.is_file() or f.suffix not in (".yaml", ".yml"):
                 continue
-            for f in sorted(base.rglob("*")):
-                if not f.is_file() or f.suffix not in (".yaml", ".yml"):
-                    continue
-                rel = str(f.relative_to(self.root))
-                if f.name in ("kustomization.yaml", "kustomization.yml"):
-                    self.err(rel, "K1 kustomization interdit (rendu kustomize par Argo)")
-                try:
-                    with open(f, encoding="utf-8") as fh:
-                        objs = [d for d in yaml.load_all(fh, Loader=Loader) if isinstance(d, dict)]
-                except yaml.YAMLError as e:
-                    print(f"ILLISIBLE {rel}: {e}".splitlines()[0])
-                    bad += 1
-                    continue
-                self.files[rel] = [d for d in objs if d.get("kind")]
-        return bad + self.load_lab_o_list()
-
-    def load_lab_o_list(self):
-        """Lit LAB_O_LIST (hors SCAN : une liste, pas des objets) ; 1 si illisible (échec fermé)."""
-        f = self.root / LAB_O_LIST
-        if not f.is_file():
-            return 0
-        try:
-            with open(f, encoding="utf-8") as fh:
-                self.lab_o_list = yaml.load(fh, Loader=Loader)
-        except yaml.YAMLError as e:
-            print(f"ILLISIBLE {LAB_O_LIST}: {e}".splitlines()[0])
-            return 1
-        return 0
+            rel = str(f.relative_to(self.root))
+            if f.name in ("kustomization.yaml", "kustomization.yml"):
+                self.err(rel, "K1 kustomization interdit (rendu kustomize par Argo)")
+            try:
+                with open(f, encoding="utf-8") as fh:
+                    docs = list(yaml.load_all(fh, Loader=Loader))
+            except yaml.YAMLError as e:
+                print(f"ILLISIBLE {rel}: {e}".splitlines()[0])
+                bad += 1
+                continue
+            if rel == LAB_O_LIST:
+                self.lab_o_list = docs[0] if docs else None
+            else:
+                self.files[rel] = [d for d in docs if isinstance(d, dict) and d.get("kind")]
+        return bad
 
     def objects(self, kind=None):
         for rel, objs in self.files.items():
@@ -380,22 +363,18 @@ class Guard(LabKRules):
     def rule_o5_list(self):
         """O5 : la liste existe ; chaque entrée est `{app: <nom DNS>}`, unique, générée et OKE stateless."""
         if not isinstance(self.lab_o_list, list):
-            self.err(LAB_O_LIST, "O5 lab-o : liste absente ou invalide (attendu : une liste `- app: <nom>`)")
-            return
-        valid = self.lab_o_apps()
-        for e in self.lab_o_list:
-            if not (isinstance(e, dict) and set(e) == {"app"} and e["app"] in valid):
-                self.err(LAB_O_LIST, f"O5 lab-o : entrée invalide {e} (attendu : {{app: <nom DNS>}})")
-        pre, oke, seen = APPS_PATH + "/projects/", self.oke_apps(), set()
-        for a in valid:
-            if a in seen:
-                self.err(LAB_O_LIST, f"O5 lab-o : app '{a}' listée deux fois")
-            seen.add(a)
-            if a not in oke:
-                self.err(LAB_O_LIST, f"O5 lab-o : app '{a}' listée mais non OKE stateless "
-                                     "(apps/<app>/app.yaml : cluster oke, profile stateless, sans storage ni database)")
-            if not any(r.startswith(f"{pre}{a}/") for r in self.files):
-                self.err(LAB_O_LIST, f"O5 lab-o : app '{a}' listée sans dossier {pre}{a}/ (sortie de tools/appgen)")
+            return self.err(LAB_O_LIST, "O5 lab-o : liste absente ou invalide (attendu : une liste `- app: <nom>`)")
+        valid, pre, oke = self.lab_o_apps(), APPS_PATH + "/projects/", self.oke_apps()
+        bad = [f"entrée invalide {e} (attendu : {{app: <nom DNS>}})" for e in self.lab_o_list
+               if not (isinstance(e, dict) and set(e) == {"app"} and e["app"] in valid)]
+        for i, a in enumerate(valid):
+            bad += [f"app '{a}' listée deux fois"] * (a in valid[:i])
+            bad += [f"app '{a}' listée mais non OKE stateless (apps/<app>/app.yaml : cluster oke, profile stateless, "
+                    "sans storage ni database)"] * (a not in oke)
+            bad += [f"app '{a}' listée sans dossier {pre}{a}/ (sortie de tools/appgen)"] * \
+                (not any(r.startswith(f"{pre}{a}/") for r in self.files))
+        for m in bad:
+            self.err(LAB_O_LIST, f"O5 lab-o : {m}")
 
     def want(self, rel, ok, code, msg):  # exigence littérale : écart `<code> lab-o : <msg>` si `ok` est faux
         if not ok:
@@ -419,8 +398,7 @@ class Guard(LabKRules):
         gens = spec.get("generators")
         if not isinstance(gens, list) or len(gens) != 1 or not isinstance(gens[0], dict) \
                 or set(gens[0]) != {"git"} or not isinstance(gens[0]["git"], dict):
-            self.err(rel, "O3 lab-o : un seul générateur, de type git, est admis")
-            return
+            return self.err(rel, "O3 lab-o : un seul générateur, de type git, est admis")
         g = gens[0]["git"]
         self.only(rel, "O3", g, ("repoURL", "revision", "files", "requeueAfterSeconds"), "generators[0].git")
         self.want(rel, g.get("repoURL") in REPO_URLS, "O3", f"git.repoURL '{g.get('repoURL')}' hors dépôt du labo")
@@ -453,8 +431,7 @@ class Guard(LabKRules):
 
     def appset_files(self, _appset):
         """Fichiers synchronisés par les Applications de l'ApplicationSet lab-o : projects/<app>/**/*.yaml des apps listées."""
-        pre = APPS_PATH + "/projects/"
-        apps = set(self.lab_o_apps())
+        pre, apps = APPS_PATH + "/projects/", set(self.lab_o_apps())
         return {r for r in self.files if r.startswith(pre) and r.endswith(".yaml") and r[len(pre):].split("/")[0] in apps}
 
     def synced(self, apps):
