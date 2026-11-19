@@ -60,7 +60,7 @@ def request(url: str, method: str = "GET", headers: dict | None = None, body: by
     """(code, texte) ; (None, '') si la connexion échoue. Les erreurs HTTP 4xx/5xx rendent leur code."""
     req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:  # noqa: S310 : http(s) vérifié par l'appelant
+        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:
             return resp.status, resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as err:
         return err.code, err.read().decode("utf-8", "replace")

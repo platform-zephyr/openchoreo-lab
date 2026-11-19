@@ -11,6 +11,7 @@ import unittest
 from contextlib import redirect_stdout
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from typing import ClassVar
 
 HERE = Path(__file__).resolve().parent
 FIX = HERE.parent / "fixtures" / "observe"
@@ -26,7 +27,7 @@ def fixture(name):
 
 
 class Handler(BaseHTTPRequestHandler):
-    categories = []
+    categories: ClassVar[list] = []
     expected_auth = None
 
     def log_message(self, *a):
