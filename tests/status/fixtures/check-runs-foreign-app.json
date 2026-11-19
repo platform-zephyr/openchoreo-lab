@@ -1,0 +1,20 @@
+{
+  "check_runs": [
+    {
+      "app": {
+        "name": "github-actions",
+        "slug": "github-actions"
+      },
+      "completed_at": "2026-11-19T10:00:00Z",
+      "conclusion": "success",
+      "details_url": "https://github.com/platform-zephyr/openchoreo-lab/tree/0123456789abcdef0123456789abcdef01234567/generated/namespaces/default/projects/whoami",
+      "head_sha": "0123456789abcdef0123456789abcdef01234567",
+      "html_url": "https://github.com/platform-zephyr/openchoreo-lab/runs/107",
+      "id": 107,
+      "name": "argocd/lab-o-whoami",
+      "started_at": "2026-11-19T09:59:00Z",
+      "status": "completed"
+    }
+  ],
+  "total_count": 1
+}
