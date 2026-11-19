@@ -40,3 +40,10 @@ Accéléré (arbitrages de Paul n°3, 2026-11-18) : la preuve runtime du bras K 
 Arbitrages de Paul du 2026-11-18 (mandat de la session) : apps du banc = `echo-bench` (M1, M4), `miniflux` (M2, provisoire, base sur `lab-pg`), `ntfy` (M3) ; elles remplacent `it-tools` et `vikunja` dans le 2e critère. Cible `lab-k-*`, AppProject `lab-k`, un seul Argo (`lab-argocd`).
 
 État du 2026-11-18 (`tests/bench-ab/arm-k/DIFF.md`) : contenu du bac à sable prêt (kube-ops `ef50472`), commit initial NON poussé (BLOCKED : git refusé par l'isolation de la session, API d'écriture refusée par le proxy). `helm template` PASS pour echo-bench seulement ; miniflux et ntfy passent par le chemin Kustomize. Conflits à arbitrer par Paul : chart inchangé vs `lab-k-*` (namespace `svc-<name>` codé en dur) ; kinds et écritures dans `lab-pg` pour miniflux ; pas de non-prod pour M3. `tests/bench-ab/test_bench_ab.py` attend encore `it-tools`/`vikunja` (T-485).
+
+### Reprise (2026-11-19, T-510)
+- Fait : dépôt `bench-ab-arm-k` créé, contenu poussé (`742bbd6`), `DIFF.md` écrit (cases 1, 4, 6) ; AppProject `lab-k` posé sur OKE (T-495) ; `lab-k-root` non synchronisé.
+- Reste : cases 2, 3, 5 (bac à sable réduit aux apps du banc, `helm template` en CI, Applications sous `lab-k`) ; la preuve runtime du bras K passe dans T-486.
+- Prochaine action : couloir T-504 (fidélité du bras K) puis passe 0 (T-486) ; lecture du dépôt sans identifiant : décision de Paul (T-495).
+- Qui : agent Sonnet (couloir T-504), Paul pour la visibilité du dépôt.
+- Pièges : M3 sans non-prod côté bras K = mesure défavorable à K (PR #175) ; ne rien ajouter à `tools/appgen/` (GEL).

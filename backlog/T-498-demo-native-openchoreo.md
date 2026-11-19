@@ -35,3 +35,10 @@ docs/research/OPENCHOREO-DEMO-NATIVE.md, backlog/T-498-demo-native-openchoreo.md
 - Console de démo en lecture seule : 403 et défi Cloudflare anti-robot le 2026-11-19 ; non contourné, aucune connexion.
 - Suites possibles selon les réponses : portage de la démo en `app.yaml` (homelab), T-074 (retrait de ThunderID),
   exposition de `ReleaseBinding.spec.workloadOverrides` dans le contrat.
+
+### Reprise (2026-11-19, T-510)
+- Fait : note `docs/research/OPENCHOREO-DEMO-NATIVE.md` livrée (PR #164) ; case 1 cochée.
+- Reste : case 2, réponses de Paul aux 5 questions du §5 (cible homelab, types amont ou portage `app.yaml`, ThunderID, délégation à `occ`, console de démo).
+- Prochaine action : poser les 5 questions à Paul en une fois, reporter ses réponses dans `## Notes`.
+- Qui : Paul ; le coordinateur reporte.
+- Pièges : ces réponses conditionnent la décision « façade ou objets natifs » et le GEL de `tools/appgen/` (voir NEXT.md).

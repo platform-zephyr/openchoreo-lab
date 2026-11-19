@@ -1,12 +1,17 @@
 ---
 name: orchestrate-backlog
-description: Reprendre seul l'orchestration du backlog du labo après une compaction ou dans une session neuve — lire l'état, choisir les tickets par score, les dispatcher (sous-agents locaux ou usine claude-agent.yml), intégrer les branches, fusionner par REST, suivre les PR. À charger pour « reprends le backlog », « lance la prochaine vague », « orchestre », « intègre les agents ».
+description: Reprendre seul l'orchestration du backlog du labo après une compaction ou dans une session neuve — lire l'état, choisir les tickets par score, les dispatcher (sessions cloud, sous-agents locaux ou usine claude-agent.yml), intégrer, fusionner par REST, suivre les PR jusqu'à la preuve OKE. Référence : docs/ORCHESTRATION.md. À charger pour « reprends le backlog », « lance la prochaine vague », « orchestre », « intègre les agents ».
 ---
 
 # orchestrate-backlog
 
 Charger `platform-guardrails`. Tu orchestres ; tu ne codes pas les tickets toi-même. Dépôt PUBLIC : aucune valeur sensible nulle part.
 Réponses en français, conclusion d'abord.
+
+**Référence : `docs/ORCHESTRATION.md`** (topologie, cycle d'un ticket, découpage, capacités et limites mesurées,
+recettes, anti-patterns). Ce skill donne la procédure ; en cas d'écart, `docs/ORCHESTRATION.md` fait foi.
+Un seul orchestrateur, sur le Mac de Paul ; il est aussi le seul écrivain sur OKE. Les couloirs de développement sont
+des sessions cloud (`create_session` ou `claude --cloud`), des sous-agents en worktree ou l'usine.
 
 ## 1. Lire l'état (dans cet ordre, 5 minutes)
 1. `git fetch origin && git merge origin/<ta branche>` puis `git merge origin/main` ; `git status` propre.
@@ -24,7 +29,11 @@ Statut dérivé (`backlog/README.md` § « Statut dérivé ») : cases + PR fusi
 - Modèles (ADR-0023) : R1 noyau/sensible (authz, VAP, secrets, cluster-agent, FINAL) = Opus `high` ; R2 texte hors noyau = Haiku `medium` + revue Sonnet ; R3 défaut = Sonnet `high`. Suivre le champ `model:` du ticket ; Sonnet suffit pour orchestrer.
 
 ## 3. Dispatcher
-**Petit lot disjoint (≤ 5 à 7 sous-agents)** : un sous-agent par ticket, `isolation: worktree`, en arrière-plan, modèle du ticket. Brief type : `docs/state/HANDOFF-COORDINATEUR.md` § « Brief type » (périmètre, `prior-art`, tests négatifs, ne pas pousser, trailers de commit, rapport). Ajouter la liste des fichiers interdits au brief.
+Numéros de tickets attribués avant le lancement ; branche `claude/t-NNN-<sujet>` (jamais `claude/issue-*` hors usine).
+**Couloirs cloud (défaut pour paralléliser)** : un `create_session` par ticket (tag `t-NNN`, modèle du ticket, prompt
+standard de `docs/ORCHESTRATION.md` §6). Suivi en mode tirer : `list_sessions`, `list_events`, `subscribe_pr_activity`
+(une session « appareils de confiance » ne reçoit pas les `send_message` des sessions cloud).
+**Petit lot disjoint sur ce dépôt (≤ 5 à 7 sous-agents)** : un sous-agent par ticket, `isolation: worktree`, en arrière-plan, modèle du ticket. Brief type : `docs/state/HANDOFF-COORDINATEUR.md` § « Brief type » (périmètre, `prior-art`, tests négatifs, ne pas pousser, trailers de commit, rapport). Ajouter la liste des fichiers interdits au brief.
 **Sujet long ou parallélisme élevé : usine** (`.github/workflows/claude-agent.yml`, matrice `max-parallel: 3`, doc : `docs/CLOUD-AGENTS.md`).
 1. Créer l'issue (label `agent:dev`) avec le contenu du ticket et un renvoi vers `backlog/T-NNN-*.md`.
 2. Renseigner `github_issue: <n>` dans l'en-tête du ticket (même PR).
@@ -32,15 +41,17 @@ Statut dérivé (`backlog/README.md` § « Statut dérivé ») : cases + PR fusi
 4. Relever par issue : branche, PR, coût, tours (artefact `mission-result-<n>`). Le planificateur refuse un lot en recouvrement.
 
 ## 4. Intégrer et fusionner
-1. Brouillon d'abord : `git merge --no-ff worktree-agent-<id>` dans la branche coordinateur. Conflits connus : liste `needs` de `ci-ok` (garder l'union), `backlog/README.md`, fichier du ticket (version la plus avancée).
+1. Une PR par ticket (branche du couloir). Lot de sous-agents seulement : `git merge --no-ff worktree-agent-<id>` dans la branche coordinateur. Conflits connus : liste `needs` de `ci-ok` (garder l'union), `backlog/README.md`, fichier du ticket (version la plus avancée).
 2. Avant de pousser : `python3 tools/backlog/check.py` (0 erreur), `python3 -m unittest discover -s tests/backlog`, `python3 tools/quality/check.py` (cliquet), `python3 tools/backlog/roadmap.py`, puis `tools/dev/check --static --changed`. Jamais `seed.py`.
 3. Pousser (jamais de force-push), PR en brouillon (gabarit `.github/pull_request_template.md`, section « Implémentations publiques consultées », verdict et niveau du check local).
-4. Quand `ci-ok` est vert : `update_pull_request` (`draft: false`) puis `merge_pull_request` (`squash`). La file de fusion fait la CI finale.
+4. Quand `ci-ok` est vert sur la tête courante : `update_pull_request` (`draft: false`) puis `merge_pull_request` (`squash`). La file de fusion ne lance pas les suites k3d tant que `K3D_REQUIRED` n'est pas posée : dispatcher `k3d-integration` avant de fusionner un changement de `platform/`, `tools/appgen/` ou des fixtures.
+5. Effet sur le cluster : section « Preuve OKE demandée » dans la PR ; l'orchestrateur l'exécute après la fusion et archive la preuve datée.
 5. Après la fusion : `git fetch origin main && git merge origin/main` ; la branche coordinateur repart de `main`.
 
 ## 5. Suivre
-- REST seulement : GraphQL est bloqué (`gh pr checks`, `gh pr view --json` échouent). `ci-ok` d'un commit : `gh api "repos/<owner>/<repo>/commits/<sha>/check-runs?per_page=50" --jq '[.check_runs[]|select(.name=="ci-ok")|.conclusion // "pending"]|first // "none"'`. Attendre avec l'outil Monitor et une boucle `until`, jamais `sleep` seul.
-- Abonner la session aux PR ouvertes (`subscribe_pr_activity`) ; se désabonner à la fusion.
+- Pas de boucle `gh api` (quota atteint une fois) : `git fetch`, abonnement aux PR, relevé toutes les 15 à 30 min.
+- REST seulement : GraphQL est bloqué (`gh pr checks`, `gh pr view --json` échouent). `ci-ok` d'un commit : `gh api "repos/<owner>/<repo>/commits/<sha>/check-runs?per_page=50" --jq '[.check_runs[]|select(.name=="ci-ok")|.conclusion // "pending"]|first // "none"'`. Attendre avec l'outil Monitor et une boucle `until` espacée (≥ 60 s), jamais `sleep` seul.
+- Abonner la session aux PR ouvertes (`subscribe_pr_activity`) ; se désabonner à la fusion ; `archive_session` du couloir terminé.
 - Après chaque jalon : lignes « Reste » des tickets, `NEXT.md`, `docs/state/HANDOFF-COORDINATEUR.md` si une procédure change.
 
 ## 6. Skills externes utiles (T-481)

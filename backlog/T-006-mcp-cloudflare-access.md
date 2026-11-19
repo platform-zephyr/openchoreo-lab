@@ -37,3 +37,10 @@ Recadré (contribution de Paul du 2026-11-18, arbitrage n°3) : la surface MCP +
 Historique : différé après la porte (ADR-0020), dégelé par le consensus n°2 (arbitrage 2), limité à l'option (b) par l'arbitrage Fable (constat G2). Access exige normalement deux en-têtes de service token : l'injection en un seul en-tête est à prouver, sinon prévoir un relais.
 
 Exposition publique nouvelle : MANDAT (journal de homelab-infra, D-2026-11-16-07). Cluster jetable et sans donnée : une fuite de jeton expose une lecture d'état sans secret. Extension au homelab seulement après la revue de sécurité de FINAL0.
+
+### Reprise (2026-11-19, T-510)
+- Fait : `cloudflared` livré en Git dans `lab-tunnel` avec egress borné et une seule ouverture vers `openchoreo-api:8080` (PR #162, STATIC). Canal retenu pour les agents cloud : check runs GitHub (T-489, T-497, T-507).
+- Reste : toutes les cases ; bloqué par la géorestriction Cloudflare (la sandbox cloud sort par les États-Unis : 403) et par l'absence du client Authentik `reader`.
+- Prochaine action : créer le client `reader` (MANDAT Paul) puis rejouer `tests/mcp/` ; sinon laisser le ticket en l'état, hors chemin critique.
+- Qui : Paul (Access, client `reader`), puis session OKE locale.
+- Pièges : ne pas contourner la géorestriction ; Access exige 2 en-têtes de service token (injection à prouver).
