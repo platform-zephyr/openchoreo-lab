@@ -99,6 +99,9 @@ setup() {
   cilium_crds_selftest
   log "CRD Cilium minimales (le cluster n'a pas Cilium ; lab-platform synchronise des CNP/CCNP)"
   k apply --server-side -f "$HERE/cilium-crds.yaml" >/dev/null
+  # T-522 : lab-platform synchronise des ressources namespacées openchoreo-control-plane (quotas, NetworkPolicy) ;
+  # ce namespace est créé par l'installation OpenChoreo, absente de ce cluster jetable.
+  k create namespace openchoreo-control-plane --dry-run=client -o yaml | k apply -f - >/dev/null
 
   log "Argo CD $ARGOCD_VERSION (values du dépôt)"
   k create namespace "$NS" --dry-run=client -o yaml | k apply -f - >/dev/null
@@ -110,9 +113,9 @@ setup() {
   k -n lab-gitsrv rollout status deploy/lab-gitsrv --timeout=180s >/dev/null
   pf_start
 
-  log "dépôt de test : copie de platform/, generated/, apps/ (URL GitHub -> $IN_REPO)"
+  log "dépôt de test : copie de platform/, generated/, apps/, clusters/ (URL GitHub -> $IN_REPO)"
   rm -rf "$W"; mkdir -p "$W"
-  cp -R "$ROOT/platform" "$ROOT/generated" "$ROOT/apps" "$W/"
+  cp -R "$ROOT/platform" "$ROOT/generated" "$ROOT/apps" "$ROOT/clusters" "$W/"  # T-522 : l'ApplicationSet lab-o lit clusters/oke/lab-o-apps.yaml (T-502)
   subst_urls "$W"
   git -C "$W" init -q -b main
   git -C "$W" -c user.name=lab -c user.email=lab@example.invalid add -A
@@ -528,6 +531,8 @@ tests() {
   done
   k -n "$NS" get applications.argoproj.io -o json >"$EVID/FINAL-applications.json"
   column -t -s $'\t' "$EVID/results.tsv" >&2
+  # T-522 : un cas FAIL rend un code d'échec (colonnes : date, id, statut, détail). Aucun FAIL n'est converti.
+  awk -F'\t' '$3=="FAIL"{f=1} END{exit f}' "$EVID/results.tsv"
 }
 
 cleanup() {
