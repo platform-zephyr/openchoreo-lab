@@ -9,8 +9,8 @@ Workflow : `.github/workflows/k3d-integration.yml`. Non bloquant en dev : l'agr�
 - Aucun secret. Permissions `contents: read`. Preuves (`tests/<suite>/evidence`) et journal publiés en artefacts publics, rétention 14 jours. Les diagnostics n'affichent que des `describe` et des journaux, jamais de valeur de Secret.
 - `tools/k3d/ci-bootstrap.sh` installe OpenChoreo 1.3.3 minimal (étapes 1 à 9 de `tools/oke/install.sh`, mêmes charts, values et sha256 de `platform/install/versions.env`). Sans les gardes OKE, sans Cilium (NetworkPolicy de l'étape 2), sans Argo CD (étape 11), sans Backstage (`--set backstage.enabled=false`, comme l'étape 6).
 - Limite « chart sans security bundle » : la CI installe le chart OpenChoreo standard, SANS le security bundle exigé par `tools/oke/install.sh` (`docs/SECURITY-BUNDLE.md`). Un PASS en CI ne prouve pas l'installation durcie utilisée sur OKE. La limite est rappelée dans le résumé de chaque job `bootstrap=oc`.
-- Déclencheur : **`workflow_dispatch` seulement** (décision de Paul, 2026-11-18). Aucune suite ne tourne sur PR, sur push ni la nuit : elles ne freinent pas les itérations des agents. Quand et comment les réactiver : `docs/research/K3D-REACTIVATION.md` (T-452, à arbitrer par Paul). Le texte de `docs/research/CI-SPEED.md` §4 (PR filtrée, push sur `main`, nuit) décrit l'état antérieur.
-- Déclencheur `merge_group` (T-435) : il publie `k3d-ok` dans la file de fusion. La porte lance les suites seulement si la variable de dépôt `K3D_REQUIRED` vaut `true` et si le groupe touche `platform/`, `tools/{oke,k3d,appgen}/`, `tests/{k3d,vap,argo-escalation,gitops-k3d}/` ou ce workflow. Sinon elle dit « non lancé » et `k3d-ok` est vert sans suite (ex. PR `apps/`). Tant que `K3D_REQUIRED` n'est pas posée (dev), aucune suite ne tourne dans la file.
+- Déclencheurs : **`workflow_dispatch`** et **label `k3d` posé sur une PR** (D-6), plus `merge_group` (ci-dessous). Aucune suite ne tourne sur push ni la nuit (décision de Paul, 2026-11-18) : elles ne freinent pas les itérations des agents. Quand et comment les réactiver : `docs/research/K3D-REACTIVATION.md` (T-452, à arbitrer par Paul). Le texte de `docs/research/CI-SPEED.md` §4 (PR filtrée, push sur `main`, nuit) décrit l'état antérieur.
+- Déclencheur `merge_group` (T-435) : il publie `k3d-ok` dans la file de fusion. La porte lance les suites seulement si la variable de dépôt `K3D_REQUIRED` vaut `true` et si le groupe touche `platform/`, `tools/{oke,k3d,appgen}/`, `tests/{k3d,vap,argo-escalation,gitops-k3d}/` ou ce workflow. Sinon elle dit « non lancé » et `k3d-ok` est vert sans suite (ex. PR `apps/`). Tant que `K3D_REQUIRED` n'est pas posée (dev), aucune suite ne tourne dans la file : `k3d-ok` vert = NOT_TESTED, écrit dans le résumé du run et en annotation (T-513). **Une fusion n'est pas une preuve k3d** (constat et décision : §6).
 - Audit API server (suite `vap`) : une sonde vérifie que `/var/log/lab-audit.log` reçoit des événements. Sinon les tests `AUD-*` sont NOT_TESTED (jamais PASS) et le résumé le dit.
 
 ## 2. Contournements temporaires
@@ -45,7 +45,7 @@ Non lancé : `phase2-whoami` (absent d'`origin/main`, dépend du k3d partagé et
 
 ## 5. Lancer à la main
 
-Seul déclencheur actif. Depuis n'importe quelle branche (le workflow est sur `main`) :
+Depuis n'importe quelle branche (le workflow est sur `main`) :
 
 ```
 gh workflow run k3d-integration.yml --ref <branche>
@@ -53,16 +53,55 @@ gh run watch <id>
 gh run view <id> --json jobs --jq '.jobs[]|"\(.name) \(.conclusion)"'
 ```
 
-Le label `k3d` sur une PR ne lance plus rien tant que le déclencheur `pull_request` est retiré.
+Ou poser le label `k3d` sur la PR (événement `labeled` : toutes les suites ; tout nouveau label sur la PR relance et annule le run en cours).
 
 Les preuves : `gh run download <id> -n k3d-<suite>`.
 
-## 6. Rendre requis (plan)
+## 6. Rendre requis : décision `K3D_REQUIRED` (T-513, 2026-11-19)
 
-FINAL0 (T-435, T-400) : Paul pose la variable de dépôt `K3D_REQUIRED=true`, puis applique `main-final.json` avec `{"context": "k3d-ok"}` ajouté à `required_status_checks` à côté de `ci-ok` (inchangé). `main-final.json` est créé par T-400 ; T-435 ne le crée pas (le test `tests/github-config` exige son absence en dev). Essai daté de la file : NOT_TESTED jusqu'à cette application.
+**Proposition : poser `K3D_REQUIRED=true` à FINAL0 (T-435, T-400), pas maintenant, pas « jamais ».** Validée par Paul
+s'il fusionne la PR T-513. Jusque-là, une fusion n'est pas une preuve k3d : la preuve d'une PR qui touche les chemins
+des suites est un dispatch daté sur sa branche (§5) ou le label `k3d`.
 
-Calendrier et forme proposés (nuit seule avant T-364, suite réduite requise à FINAL0) : `docs/research/K3D-REACTIVATION.md` §3.
+### 6.1 Constat (mesuré, API GitHub Actions en lecture, 2026-11-19)
+
+- Variable de dépôt `K3D_REQUIRED` : absente (`gh variable list` vide). Ruleset `main-protection` : file de fusion active ; `k3d-ok` non requis.
+- Les 9 runs `merge_group` de `k3d-integration` (44428540374 à 44504718229, PR #158 à #182) : `gate` success, suites `skipped`, `k3d-ok` success, 16 à 22 s. Quatre de ces PR (#158, #165, #166, #182) touchaient pourtant les chemins des suites.
+- Le `k3d-ok` vert sans suite écrit désormais `NOT_TESTED` dans le résumé et en annotation (workflow, T-513).
+
+### 6.2 Coût
+
+| Mesure | Valeur |
+|---|---|
+| Run complet sur `main` (44410837626, 2026-11-18) | mural 24 min ; jobs : `argo-escalation` 23 min 43, `gitops-k3d` 18 min 58, `k3d` 4 min 19, `vap` 1 min 20 ; total ≈ 48 min de runner, 4 runners en parallèle |
+| Dispatch T-505 (44501238351, 2026-11-19) | mural 24 min ; ≈ 48 min de runner |
+| Minutes facturées | 0 : runners `ubuntu-24.04-arm` standards gratuits en dépôt public. Le coût réel est la concurrence (4 des ~20 jobs simultanés du plan Free) et l'attente |
+| PR fusionnées qui touchent les chemins des suites | 27 sur 100 (2026-11-18 14:32 au 2026-11-19 10:36 UTC, ~20 h) ; 9 sur 22 depuis l'arrivée de la file (2026-11-19 00:20) |
+| Estimation si posée maintenant | ≈ 30 groupes par jour × 48 min ≈ 1 500 min de runner par jour [E] ; avec `k3d-ok` requis, chaque groupe concerné attend ~24 min dans la file |
+
+### 6.3 Options
+
+| Option | Effet | Verdict |
+|---|---|---|
+| Maintenant, sans `k3d-ok` requis | 1 500 min/jour et 4 runners pris 24 min par groupe ; la file n'attend pas le résultat : la fusion ne prouve toujours rien | Écartée : coût sans preuve, contraire à D-2 |
+| Maintenant, avec `k3d-ok` requis | Preuve à chaque fusion ; ~24 min d'attente par groupe concerné ; un FAIL bloque la file | Écartée en dev (D-2) : c'est FINAL0 |
+| **À FINAL0, avec le ruleset** | Une fusion = preuve k3d pour les chemins des suites | **Retenue** |
+| Jamais | `k3d-ok` jamais une preuve ; contraire à T-400 et ADR-0002 §4 | Écartée |
+
+Complexité justifiée : une variable de dépôt (`vars`, primitive native de GitHub) est le plus petit interrupteur
+possible sans jeton. Autres voies écartées : supprimer la variable (les suites tournent tout de suite) ; retirer
+`merge_group` jusqu'à FINAL0 (deux changements à FINAL0 au lieu d'un geste, et une file bloquée si l'ordre est faux) ;
+lire le ruleset par l'API dans la porte (appel réseau et code de plus pour le même résultat).
+
+### 6.4 Gestes de Paul à FINAL0 (dans cet ordre)
+
+1. Poser la variable : `gh variable set K3D_REQUIRED --body true` (ou Settings > Secrets and variables > Actions > Variables). Geste humain : aucun agent ne la pose.
+2. Puis appliquer `main-final.json` (créé par T-400) avec `{"context": "k3d-ok"}` dans `required_status_checks`, à côté de `ci-ok` (inchangé). Ordre inverse = `k3d-ok` requis mais vert sans suite pendant l'intervalle.
+3. Vérifier le premier run `merge_group` qui touche les chemins des suites : suites lancées (pas `skipped`). Essai daté de la file : NOT_TESTED jusque-là.
+
+Prérequis (calendrier et forme : `docs/research/K3D-REACTIVATION.md` §3, nuit seule avant T-364, suite réduite requise
+à FINAL0) :
 
 1. Corriger les FAIL et KNOWN_FAIL déclarés : B-09 (écart kube-ops), T12 (clé ESO), gitops (ancre du test, PR séparée sous `tests/`) ; issue #49 : contournement retiré par T-003.
 2. Trois exécutions vertes consécutives de chaque suite retenue, sur `main`.
-3. Ajouter `k3d-ok` à `needs` de `ci-ok` dans `.github/workflows/ci.yaml`, puis mettre à jour la protection de branche (`tools/apply-branch-protection.sh`).
+3. `k3d-ok` reste un check séparé : `ci.yaml` n'est pas modifié (variante « `needs` de `ci-ok` » écartée, voir l'en-tête).
