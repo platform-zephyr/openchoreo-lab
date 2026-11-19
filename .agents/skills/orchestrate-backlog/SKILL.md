@@ -16,7 +16,8 @@ Réponses en français, conclusion d'abord.
 
 **Référence : `docs/ORCHESTRATION.md`** (topologie, cycle d'un ticket, découpage, capacités et limites mesurées,
 recettes, anti-patterns). Ce skill donne la procédure ; en cas d'écart, `docs/ORCHESTRATION.md` fait foi.
-Un seul orchestrateur, sur le Mac de Paul ; il est aussi le seul écrivain sur OKE. Les couloirs de développement sont
+Un seul orchestrateur, sur le Mac de Paul ; il DÉLÈGUE les écritures OKE à un seul agent « opérateur OKE » local à la
+fois (seul écrivain cluster), et n'exécute jamais lui-même. Les couloirs de développement sont
 des sessions cloud (`create_session` ou `claude --cloud`), des sous-agents en worktree ou l'usine.
 
 ## 1. Lire l'état (dans cet ordre, 5 minutes)
