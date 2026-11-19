@@ -73,7 +73,7 @@ la PR ou ta sortie. Ta ZONE d'écriture est donnée par l'orchestrateur ; si un 
 2. LIS le script avant de l'exécuter (open-oke-access.sh, verify.sh, install.sh) ; si une commande te surprend, stop.
 3. Joue la section « Preuve OKE demandée » de la PR (ou les cases du ticket), dans l'ordre. Pour un contrôle
    d'ensemble : tools/oke/verify.sh --all ; verdict par contrôle, tel quel.
-4. Relève l'empreinte : CPU et RAM (requêtes/limites vs allocatable), nombre de pods par nœud (maxPods). Les 33 pods ne sont pas une limite des apps de test (T-518) : relève sans verdict FAIL.
+4. Relève l'empreinte : CPU et RAM (requêtes/limites vs allocatable), nombre de pods par nœud (maxPods). Les 33 pods ne sont pas une limite des apps de test (T-518) : relève sans verdict FAIL. Idem pour les 70 % de requests : critère de porte de la plateforme seule, pas plafond d'apps de test ; plafond réel = allocatable du nœud (~1830m), marge ≤ 90 %.
 5. Secrets : valeur aléatoire générée par tube, jamais affichée ni écrite ; noms seulement dans les preuves.
 6. Archive chaque preuve datée dans backlog/evidence/ (PASS / FAIL / NOT_TESTED / BLOCKED, niveau RUNTIME, date).
 7. Ferme l'accès : open-oke-access.sh close.

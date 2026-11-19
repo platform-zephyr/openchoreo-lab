@@ -53,6 +53,8 @@ PREUVES À RENDRE (chacune datée en UTC, avec la commande de lecture qui la pro
    plateforme seule puis avec un bras actif. FAIL si > 70 % ou > 33 pods pour la plateforme seule (C2).
    Phase de test (décision de Paul, 2026-11-19, T-518) : les 33 pods ne limitent pas les apps de test ; seul plafond :
    le `maxPods` du kubelet. Relever le nombre de pods sans le juger FAIL.
+   Même règle pour le CPU (T-518b) : le seuil de 70 % est un critère de porte pour la plateforme seule ; pour les apps de
+   test, plafond réel = allocatable du nœud (~1830m), marge de sécurité ≤ 90 %.
 4. lab-pg Ready ; volume de bloc ≤ 50 Go.
 5. E5 : check run d'une app témoin (whoami) publié sur le commit synchronisé, lu par l'API GitHub publique ; puis un
    FAIL volontaire typé (digest faux par PR de test) publié en failure.
