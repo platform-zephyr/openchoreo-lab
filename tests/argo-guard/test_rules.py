@@ -306,17 +306,43 @@ class ApplicationRules(unittest.TestCase):
         g.check_appset(f"{G.ARGO}/apps/b.yaml", ok)  # un second ApplicationSet
         self.assertTrue(any("O1" in e for e in g.errs))
 
-    def test_o5_coverage_refuses_unexcluded_k3d_app(self):
+    def test_o5_unlisted_k3d_app_is_ignored(self):
+        """T-502 : une app k3d générée mais absente de la liste n'est ni refusée ni synchronisée."""
         rel = f"{G.ARGO}/apps/lab-apps.yaml"
         tree = {f"{G.APPS_PATH}/projects/{a}/x.yaml": [] for a in ("w", "autre")}
-        errs = corpus.run_appset(G, rel, corpus.appset_obj(), tree)
-        self.assertEqual(len(errs), 1)
-        self.assertIn("O5 lab-o : app 'autre' non OKE stateless et non exclue", errs[0])
+        self.assertEqual(corpus.run_appset(G, rel, corpus.appset_obj(), tree), [])
 
-    def test_appset_files_skip_excluded(self):
+    def test_o5_list_refusals(self):
+        """T-502 : chaque variante non conforme de la liste OKE est refusée par O5 (cas négatifs)."""
+        tree = {f"{G.APPS_PATH}/projects/{a}/x.yaml": [] for a in ("w", "k3dapp")}
+        for lid, lst in corpus.lab_o_list_cases().items():
+            with self.subTest(lid):
+                errs = corpus.run_appset(G, f"{G.ARGO}/apps/lab-apps.yaml", corpus.appset_obj(), tree, lst)
+                if lid in ("ok", "vide"):
+                    self.assertEqual(errs, [])
+                else:
+                    self.assertTrue(errs and all(f"{G.LAB_O_LIST}: O5 lab-o : " in e for e in errs), errs)
+
+    def test_o5_real_list_matches_oke_apps(self):
+        """La liste versionnée est exactement l'ensemble des apps déployées sur OKE (whoami, ntfy, echo-demo, searxng)."""
+        g = guard()
+        self.assertEqual(g.load(), 0)
+        self.assertEqual(sorted(g.lab_o_apps()), ["echo-demo", "ntfy", "searxng", "whoami"])
+        self.assertNotIn("miniflux", g.lab_o_apps())
+        self.assertNotIn("echo-bench", g.lab_o_apps())
+
+    def test_o5_missing_list_fails_closed(self):
+        g = guard()
+        g.files, g.lab_o_list = {}, None
+        g.check_appset(f"{G.ARGO}/apps/lab-apps.yaml", corpus.appset_obj())
+        self.assertEqual(g.errs, [f"{G.LAB_O_LIST}: O5 lab-o : liste absente ou invalide (attendu : une liste `- app: <nom>`)"])
+
+    def test_appset_files_only_listed(self):
         g = guard()
         pre = G.APPS_PATH + "/projects/"
-        g.files = {f"{pre}w/a.yaml": [], f"{pre}w/sub/b.yaml": [], f"{pre}k3dapp/c.yaml": [], f"{pre}w/d.json": []}
+        g.files = {f"{pre}w/a.yaml": [], f"{pre}w/sub/b.yaml": [], f"{pre}k3dapp/c.yaml": [], f"{pre}w/d.json": [],
+                   f"{pre}wx/e.yaml": []}
+        g.lab_o_list = [{"app": "w"}, {"app": "../k3dapp"}]
         self.assertEqual(g.appset_files(corpus.appset_obj()), {f"{pre}w/a.yaml", f"{pre}w/sub/b.yaml"})
 
 

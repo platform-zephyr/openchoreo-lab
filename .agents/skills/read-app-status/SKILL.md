@@ -15,9 +15,9 @@ Argo CD Notifications sur OKE, sous l'App GitHub `openchoreo-status` (T-489,
 ```bash
 APP=whoami                      # nom du dossier generated/namespaces/default/projects/<APP>
 SHA=<SHA du commit de fusion>   # préférer un SHA à `main` (voir Limites)
-# Garde : refuser une app inconnue ou exclue de l'ApplicationSet lab-o (non déployée sur OKE).
+# Garde : refuser une app inconnue ou absente de la liste OKE de lab-o (clusters/oke/lab-o-apps.yaml, T-502).
 [ -d "generated/namespaces/default/projects/$APP" ] &&
-  ! grep -q "projects/$APP, exclude: true" platform/install/argocd/apps/lab-apps.yaml ||
+  grep -qx -- "- app: $APP" clusters/oke/lab-o-apps.yaml ||
   { echo "unknown_app: $APP non déployée sur OKE" >&2; exit 2; }
 gh api "repos/platform-zephyr/openchoreo-lab/commits/$SHA/check-runs?check_name=argocd/lab-o-$APP&filter=all" \
   --jq '[.check_runs[] | select(.app.slug == "openchoreo-status")] | sort_by(.id) | last

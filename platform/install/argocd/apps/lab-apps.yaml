@@ -1,11 +1,13 @@
-# Applications du labo OKE, Git -> Argo (T-491) : UNE Application `lab-o-<app>` par dossier
-# generated/namespaces/default/projects/<app> (sortie de tools/appgen ; PR APPLICATIVES), créée par cet
-# ApplicationSet. Projet `lab-o` LITTÉRAL (jamais tiré du dépôt applicatif), destination littérale `default` :
+# Applications du labo OKE, Git -> Argo (T-491, T-502) : UNE Application `lab-o-<app>` par entrée de
+# clusters/oke/lab-o-apps.yaml (liste versionnée du cluster OKE), créée par cet ApplicationSet sur
+# generated/namespaces/default/projects/<app> (sortie de tools/appgen ; PR APPLICATIVES). Générateur Git `files`
+# natif d'Argo CD : un fichier qui contient un tableau rend un jeu de paramètres par élément (`.app`).
+# Projet `lab-o` LITTÉRAL (jamais tiré du dépôt applicatif), destination littérale `default` :
 # kinds OpenChoreo NAMESPACÉS applicatifs, aucun kind cluster-scoped (flux A2, docs/ARGO-ESCALATION.md).
-# Ajouter une app OKE = apps/<app>/app.yaml + sa sortie generated/ dans une PR ; rien à éditer sous platform/.
-# Une app k3d ou à volume/base n'est PAS déployée sur OKE : son dossier figure dans `exclude` ci-dessous ;
-# tools/oke/argo_guard.py (O1-O5) refuse tout autre générateur, tout projet ou toute destination paramétrés,
-# et toute app non OKE stateless absente de la liste d'exclusion.
+# Ajouter une app OKE = apps/<app>/app.yaml + sa sortie generated/ + une ligne dans la liste ; rien sous platform/.
+# Une app k3d ou à volume/base n'est pas dans la liste : elle ne touche ni la liste ni ce fichier.
+# tools/oke/argo_guard.py (O1-O5) refuse tout autre générateur ou fichier, tout projet ou toute destination
+# paramétrés, et toute entrée de la liste qui n'est pas une app OKE stateless générée.
 # goTemplate + missingkey=error : un paramètre absent fait échouer le rendu au lieu de produire une valeur vide.
 # preserveResourcesOnDeletion : supprimer l'ApplicationSet ou une Application CONSERVE les objets applicatifs.
 # Synchro AUTOMATIQUE sans prune (finalizers Component/Resource : APP-CONTRACT §5).
@@ -25,24 +27,18 @@ spec:
     - git:
         repoURL: https://github.com/platform-zephyr/openchoreo-lab
         revision: main
-        directories:
-          - path: generated/namespaces/default/projects/*
-          - {path: generated/namespaces/default/projects/aiostreams, exclude: true}
-          - {path: generated/namespaces/default/projects/idp-e2e, exclude: true}
-          - {path: generated/namespaces/default/projects/mealie, exclude: true}
-          - {path: generated/namespaces/default/projects/miniflux, exclude: true}
-          - {path: generated/namespaces/default/projects/open-connector, exclude: true}
-          - {path: generated/namespaces/default/projects/rustical-pilot, exclude: true}
+        files:
+          - path: clusters/oke/lab-o-apps.yaml
   template:
     metadata:
-      name: "lab-o-{{.path.basename}}"
+      name: "lab-o-{{.app}}"
       labels: {app.kubernetes.io/part-of: openchoreo-lab}
     spec:
       project: lab-o
       source:
         repoURL: https://github.com/platform-zephyr/openchoreo-lab
         targetRevision: main
-        path: "{{.path.path}}"
+        path: "generated/namespaces/default/projects/{{.app}}"
         directory:
           recurse: true
           include: "*.yaml"
