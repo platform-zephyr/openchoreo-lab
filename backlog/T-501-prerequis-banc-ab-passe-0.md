@@ -33,3 +33,10 @@ tests/bench-ab/pass-0/observe.py, tests/bench-ab/pass-0/test_observe.py, tests/b
 ## Notes
 - Hors périmètre (autres lots) : `docs/research/POC-AB-PASS-0.md` (étape 1 « SHA de O = origin/main » à corriger, ajouter la commande `check-frozen-sha.sh`), `tests/bench-ab/thresholds.yaml` (après la passe 0), `tests/bench-ab/arm-k/`.
 - Chaîne attendue en session cluster : `admin-password.sh exec --context CTX -- observe.py api-row --base-url URL --title T --run-file runs/M2.O.r0.json`.
+
+### Reprise (2026-11-19)
+- Fait (STATIC, fusionné #172 et #175) : `observe.py`, `admin-password.sh`, `check-frozen-sha.sh`, `arm64-images.md`, suite `bench-ab-pass-0`, règle M3/K (README + gabarit des seuils).
+- Reste : preuve OKE (case ouverte) ; décisions de Paul ci-dessus (SHA de O, `ADMIN_PASSWORD`) et S2/`occ` (non défini).
+- Commandes : `tests/bench-ab/pass-0/dispatch-test.sh` (toute la suite, hors ligne) ; `check-frozen-sha.sh <SHA40>` ; en session cluster : `admin-password.sh seed --context CTX`, puis `exec` + `observe.py` (voir Notes).
+- Pièges : `origin/main` contient `apps/miniflux` (le SHA de O ne peut pas être `origin/main`) ; le garde Bash refuse toute commande contenant « kubectl » (écrire les scripts avec l'outil Write) ; ruff et radon exigés par la CI `quality`.
+- Prochaine action : session cluster de l'opérateur, puis cocher la case RUNTIME OKE avec les sorties datées.
