@@ -3,13 +3,12 @@
 # Non bloquant : le check requis reste `ci-ok` (ci.yaml). Agrégat propre : `k3d-ok`.
 # Aucun secret : ni `secrets.*` ni jeton. Actions épinglées par SHA ; binaires épinglés par sha256.
 # Plan pour le rendre requis : docs/CI-K3D.md §6.
-# Avant le merge (pull_request) : seulement si le label `k3d` est posé ou si la PR touche ce que les suites testent
-# (platform/, tools/oke/, tools/k3d/, tools/appgen/, tests/{k3d,vap,argo-escalation,gitops-k3d}/, ce workflow).
-# Après le merge (push sur main, chaque commit, sans annulation) et chaque nuit : toutes les suites, toujours. Un échec
-# post-merge rend le commit rouge sur main (docs/research/CI-SPEED.md §4). Sur PR, un push annule le run obsolète.
+# Déclencheurs (dev) : dispatch manuel (toutes les suites) ; label `k3d` posé sur une PR (toutes les suites) ;
+# merge_group. Ni push sur main ni nuit (décision de Paul, 2026-11-18). Sur PR, un nouvel événement annule l'ancien run.
 # merge_group (T-435) : sans lui, un `k3d-ok` requis ne serait jamais publié dans la file et la bloquerait. Tant que la
 # variable de dépôt K3D_REQUIRED n'est pas `true` (mode dev, décision de Paul D-2), la porte dit « non lancé » et
-# `k3d-ok` est vert sans suite. À FINAL0, Paul pose K3D_REQUIRED=true avec le ruleset (docs/CI-K3D.md §6).
+# `k3d-ok` est vert sans suite : NOT_TESTED, écrit dans le résumé du run (T-513). Une fusion n'est donc pas une preuve
+# k3d. À FINAL0, Paul pose K3D_REQUIRED=true AVANT d'ajouter `k3d-ok` au ruleset (docs/CI-K3D.md §6).
 # Limite : le chart OpenChoreo est installé SANS security bundle (docs/SECURITY-BUNDLE.md) ; un PASS ne prouve pas
 # l'installation durcie d'OKE.
 # Art antérieur : k3d-io/k3d .github/workflows/test-install-osmatrix.yaml (fb87e3a) ; AbsaOSS/k3d-action ;
@@ -327,8 +326,16 @@ jobs:
         env:
           GATE: ${{ needs.gate.result }}
           SUITE: ${{ needs.suite.result }}
+          EVENT: ${{ github.event_name }}
+          K3D_REQUIRED: ${{ vars.K3D_REQUIRED }}
         run: |
           echo "gate=$GATE suite=$SUITE"
           if [ "$GATE" != "success" ]; then echo "gate en echec" >&2; exit 1; fi
-          if [ "$SUITE" = "skipped" ]; then echo "suites non lancees (aucun declencheur)"; exit 0; fi
+          if [ "$SUITE" = "skipped" ]; then
+            # T-513 : un vert sans suite ne doit pas se lire comme une preuve k3d.
+            msg="NOT_TESTED : suites k3d non lancees (evenement=$EVENT, K3D_REQUIRED=${K3D_REQUIRED:-non posee}). Ce vert n'est pas une preuve k3d."
+            echo "::notice title=k3d-ok sans suite::$msg"
+            echo "$msg" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           if [ "$SUITE" != "success" ]; then echo "au moins une suite k3d a echoue" >&2; exit 1; fi
