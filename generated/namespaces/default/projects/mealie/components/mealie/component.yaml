@@ -24,3 +24,20 @@ spec:
     parameters:
       mountPath: /app/data
       dataClass: useful
+  - kind: ClusterTrait
+    name: health-probes
+    instanceName: probes
+    parameters:
+      containerName: main
+      liveness:
+        enabled: true
+        handler: &id001
+          httpGet:
+            port: 9000
+            path: /api/app/about
+        initialDelaySeconds: 10
+        periodSeconds: 10
+      readiness:
+        enabled: true
+        handler: *id001
+        periodSeconds: 5

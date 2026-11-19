@@ -9,7 +9,7 @@ spec:
     projectName: aiostreams
     componentName: aiostreams
   environment: production
-  releaseName: aiostreams-990b082a89
+  releaseName: aiostreams-6bbfb08f5c
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1
@@ -17,3 +17,5 @@ spec:
     data:
       size: 1Gi
       storageClass: local-path
+    probes:
+      enabled: true

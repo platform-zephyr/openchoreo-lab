@@ -9,7 +9,10 @@ spec:
     projectName: whoami
     componentName: whoami
   environment: production
-  releaseName: whoami-647fc6bfc1
+  releaseName: whoami-dc1c69e08d
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1
+  traitEnvironmentConfigs:
+    probes:
+      enabled: true

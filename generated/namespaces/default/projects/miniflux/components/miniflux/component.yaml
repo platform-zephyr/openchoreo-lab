@@ -17,3 +17,21 @@ spec:
     runAsUser: 65534
     strategy: RollingUpdate
     publicAuth: app-oidc
+  traits:
+  - kind: ClusterTrait
+    name: health-probes
+    instanceName: probes
+    parameters:
+      containerName: main
+      liveness:
+        enabled: true
+        handler: &id001
+          httpGet:
+            port: 8080
+            path: /healthcheck
+        initialDelaySeconds: 10
+        periodSeconds: 10
+      readiness:
+        enabled: true
+        handler: *id001
+        periodSeconds: 5

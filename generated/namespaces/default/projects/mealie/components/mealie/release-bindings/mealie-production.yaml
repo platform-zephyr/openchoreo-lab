@@ -9,7 +9,7 @@ spec:
     projectName: mealie
     componentName: mealie
   environment: production
-  releaseName: mealie-e30e9be1f4
+  releaseName: mealie-911f7da1f2
   componentTypeEnvironmentConfigs:
     size: small
     replicas: 1
@@ -17,3 +17,5 @@ spec:
     data:
       size: 5Gi
       storageClass: local-path
+    probes:
+      enabled: true
