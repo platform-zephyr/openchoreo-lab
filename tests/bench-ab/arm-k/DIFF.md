@@ -15,7 +15,7 @@ Date : 2026-11-18. Niveau de preuve : STATIC. Dépôt PUBLIC : aucune IP, aucun 
 | kube-ops (dépôt public) | `SmadjaPaul/kube-ops`, SHA `ef50472bc427bbb5fb342cebf2f4db408157f5b3` (branche `main`) |
 | Lecture | 56 fichiers lus par `raw.githubusercontent.com` à ce SHA, identiques à un clone local du même SHA |
 | API GitHub publique pour kube-ops | NOT_TESTED : refusée par le proxy de la session (le SHA vient du clone local, puis la lecture par raw le confirme) |
-| Bac à sable | `platform-zephyr/bench-ab-arm-k` (privé, vide sur `main`) ; SHA du commit : `742bbd6b8c4e894b8bc31800ee234de0d2b80dd6` (poussé le 2026-11-18) |
+| Bac à sable | `platform-zephyr/bench-ab-arm-k` (privé, vide sur `main`) ; SHA du commit initial : `742bbd6b8c4e894b8bc31800ee234de0d2b80dd6` (poussé le 2026-11-18) ; SHA courant du bras K (branche `claude/e2-portes-kube-ops`, PR #1 vers `main`, portes copiées ; deviendra le SHA de `main` après fusion, à relire alors) : `671920109b8cbde03d5024bce8541cbd39645013` |
 | Empreinte du contenu préparé | sha256 de la liste `sha256sum` triée des 55 fichiers : `0183e729f6b395162f78f5b15965481734f61f73e1ae64aba5962053f9796078` |
 
 ## 2. Contenu du bac à sable
