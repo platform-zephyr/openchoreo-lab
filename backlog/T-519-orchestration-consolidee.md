@@ -27,6 +27,7 @@ docs/ORCHESTRATION.md, .agents/skills/orchestrate-backlog/SKILL.md, .agents/skil
 - [x] Contradiction corrigée : la preuve OKE est déléguée à un opérateur ; double numéro 5 renuméroté
 - [x] `read-app-status` : `gh` exige une session authentifiée (plus de « aucun identifiant »)
 - [x] `AGENTS.md` : périmètre cluster `openchoreo-*`, `lab-*`, `svc-<app>` du bras K, noms explicites (E1)
+- [x] Skill : section « Comportement attendu » ; ORCHESTRATION.md : section « Lancement » (prompt versionné, sans autorisation) ; AGENTS.md : renvoi vers le skill d'orchestration
 - [ ] `tools/dev/check --static --changed` et `python3 tools/backlog/check.py` : verdict reporté dans la PR
 
 ## Notes

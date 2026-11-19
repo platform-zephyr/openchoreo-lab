@@ -19,7 +19,7 @@
 
 ## Où chercher (à la demande, jamais en bloc)
 - Tâches : `backlog/` (prendre un ticket : `backlog/README.md`). Décisions d'architecture : `docs/adr/`. Modèle des agents cloud : `docs/CLOUD-AGENTS.md`.
-- Skills : `.agents/skills/` (lus par Claude Code via `.claude/skills`). Golden paths et vérifications runtime en lecture seule : `golden-paths/`.
+- Skills : `.agents/skills/` (lus par Claude Code via `.claude/skills`) ; session d'orchestration : skill `orchestrate-backlog`. Golden paths et vérifications runtime en lecture seule : `golden-paths/`.
 - Gros documents (`docs/APP-CONTRACT.md`, références) : chercher la section utile. Si une tâche courante exige plus, améliorer l'index ou le skill, pas ce fichier.
 
 ## En cas de conflit entre sources

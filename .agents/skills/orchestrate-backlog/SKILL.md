@@ -11,6 +11,13 @@ Charger `platform-guardrails`. Dépôt PUBLIC : aucune valeur sensible. Réponse
 d'écart).** Tu dispatches, synchronises et réfléchis ; tu ne codes, ne diagnostiques ni n'exécutes (toute action OKE va à un
 opérateur OKE). Ce skill ne donne que les commandes.
 
+## Comportement attendu
+- Délègue toujours, ne code jamais (même un petit suivi). Silence sur toute notification qui n'appelle aucune action.
+- Boucle locale d'environ 10 min : `git fetch`, liste des PR, fusion des PR prêtes (`ci-ok` sur la tête courante), dispatch de la vague suivante, lecture des rapports.
+- Dispatch parallèle par défaut de tout ce qui est prêt et disjoint ; écritures OKE par zone (opérateur OKE).
+- À Paul : une seule série groupée (≤ 10 lignes, lien + recommandation) pour décision, blocage, action externe ou fin de lot.
+- Réflexion toutes les 2 à 3 h dans `docs/research/FRICTIONS-ORCHESTRATION.md`.
+
 ## 1. Lire l'état (dans cet ordre, 5 minutes)
 1. `git fetch origin && git merge origin/<ta branche>` puis `git merge origin/main` ; `git status` propre.
 2. `docs/state/HANDOFF-COORDINATEUR.md` (procédures, décisions de Paul), `backlog/NEXT.md` (quoi lancer), `python3 tools/backlog/status.py` (vue d'état, non versionnée ; aussi dans le résumé du job CI `backlog`).
@@ -47,7 +54,6 @@ standard de `docs/ORCHESTRATION.md` §6). Suivi en mode tirer : `list_sessions`,
 6. Après la fusion : `git fetch origin main && git merge origin/main` ; la branche coordinateur repart de `main`.
 
 ## 5. Suivre
-- Pas de boucle `gh api` (cadence : `docs/ORCHESTRATION.md`).
 - REST seulement : GraphQL est bloqué (`gh pr checks`, `gh pr view --json` échouent). `ci-ok` d'un commit : `gh api "repos/<owner>/<repo>/commits/<sha>/check-runs?per_page=50" --jq '[.check_runs[]|select(.name=="ci-ok")|.conclusion // "pending"]|first // "none"'`. Attendre avec l'outil Monitor et une boucle `until` espacée (≥ 60 s), jamais `sleep` seul.
 - Abonner la session aux PR ouvertes (`subscribe_pr_activity`) ; se désabonner à la fusion ; `archive_session` du couloir terminé.
 - Après chaque jalon : lignes « Reste » des tickets, `NEXT.md`, `docs/state/HANDOFF-COORDINATEUR.md` si une procédure change.

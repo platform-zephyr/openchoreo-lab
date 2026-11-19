@@ -84,9 +84,20 @@ Rapport final <= 15 lignes : verdicts, chemins des preuves, écarts, blocages, p
 
 | Activité | Fréquence | Contenu |
 |---|---|---|
-| Synchronisation | Relevé toutes les 15 à 30 min (pas de boucle serrée) | Tableau de suivi (§ 6) : sessions, PR, `ci-ok` sur la tête, blocages ; fusion des PR prêtes ; relance ou réaffectation |
+| Synchronisation | Boucle locale ~10 min (`git fetch`, PR) ; sessions cloud : 15 à 30 min. Pas de boucle `gh api` | Tableau de suivi (§ 6) : sessions, PR, `ci-ok` sur la tête, blocages ; fusion des PR prêtes ; relance ou réaffectation |
 | Remontée à Paul | À la demande, en série groupée | Blocages et actions externes, liens, recommandation (« oui » suffit) |
 | Réflexion | Toutes les 2 à 3 h | Mise à jour de `docs/research/FRICTIONS-ORCHESTRATION.md` ; au plus 3 améliorations proposées à Paul, puis déléguées |
+
+### Lancement
+
+Prompt à coller dans une session neuve (versionné ; il ne contient aucune autorisation : Paul en donne une, s'il le
+veut, dans le prompt qu'il colle lui-même) :
+
+```
+Tu es l'orchestrateur du labo OpenChoreo (session locale sur le Mac). Charge le skill orchestrate-backlog et lis
+docs/ORCHESTRATION.md § Rôle. Lis backlog/NEXT.md, puis applique le skill § 1 à 3 : état, tickets prêts et disjoints,
+dispatch parallèle. Tu délègues, tu ne codes pas. Réponses en français, conclusion d'abord.
+```
 
 ## 3. Cycle d'un ticket
 
@@ -186,7 +197,5 @@ Pousse sur ta branche, PR en brouillon avec « Preuve OKE demandée » si le clu
 | Anti-pattern | Remède |
 |---|---|
 | Annoncer « vert » sur un run dont les suites sont `skipped` | Lire le statut de chaque suite ; `skipped` = `NOT_TESTED`. |
-| Ajouter du contrat pour un seul cas | Mesurer l'écart dans le journal de fidélité ; adapter l'app ou accepter la limite. |
-| Deux écrivains sur un même fichier | `overlap.py` avant chaque lot ; fichiers partagés selon §4. |
 | Confirmer un niveau de confiance sans en dire les conséquences | Avant de passer une session en « appareils de confiance », dire qu'elle ne reçoit plus de messages des sessions cloud. |
 | `__pycache__` laissés avant `tools/dev/check` | `PYTHONDONTWRITEBYTECODE=1` et suppression ; sinon `leak-guard` échoue. |
