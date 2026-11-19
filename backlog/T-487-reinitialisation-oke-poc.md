@@ -30,6 +30,7 @@ tools/oke/install.sh, tools/oke/verify.sh, platform/install/argocd/project-lab.y
 - [ ] un seul Argo CD dans le cluster ; test de refus d'une destination hors périmètre (preuve datée)
   - Non coché, moitié prouvée : refus d'une Application `project: lab-k` vers `kube-system` (`InvalidSpecError`, 2026-11-19T00:32:06Z, `T-487-bras-o-applicationset-2026-11-19.md`). Reste le comptage d'un seul Argo CD (aucune preuve datée).
 - [x] mesure datée : requests CPU et RAM, pods ; FAIL si > 70 % ou > 33 pods avec un bras actif
+  - Précision T-518 (2026-11-19, décision de Paul) : la limite de 33 pods ne vaut que pour la plateforme seule (C2) ; avec un bras de test actif, relever le nombre sans FAIL (plafond : `maxPods` du kubelet). Case déjà cochée, inchangée.
   - Coché le 2026-11-19 : bras O actif (4 apps), `measure.sh` à 00:30:51Z : CPU 52 %, RAM 31 %, 32 pods (marge d'un pod) ; plateforme seule 32 %, 23 %, 26 pods (`T-487-bras-o-applicationset-2026-11-19.md`, `T-487-empreinte-et-verify-all.md`). Pic transitoire de 490m à l'étape 11 relevé (garde de budget à relativiser).
 - [x] Cilium en chaining et la règle `deny-imds` réinstallés AVANT toute charge du POC (le cluster recréé par T-490 ne les a plus) ; `verify.sh` le contrôle (preuve datée)
   - Preuve : `T-487-2026-11-18T2237Z-etape0.md` (étape 0 à 22:35:23Z-22:36:08Z, `verify.sh --step 0` FAIL=0 à 22:36Z : B0-cilium-chaining, B0-ccnp-*, B0-vap-deny), avant l'étape 1 (22:40:46Z).

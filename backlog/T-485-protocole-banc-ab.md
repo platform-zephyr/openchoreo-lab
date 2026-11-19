@@ -1,7 +1,7 @@
 ---
 id: T-485
 title: "Protocole minimal du banc A/B préenregistré (4 tâches, 3 pièges, graders, seuils, arrêt anticipé)"
-status: todo
+status: deferred
 phase: P1
 adr: [0025, 0020]
 depends_on: [T-072]
@@ -34,3 +34,4 @@ tests/bench-ab/, tools/bench-ab/
 Les transcriptions restent locales (dépôt public) ; seuls les compteurs sont publiés. Art antérieur : skill `prior-art` niveau `complet` (`tools/`).
 
 Accéléré (arbitrages de Paul n°3, 2026-11-18) : 5 tâches × 3 runs et 10 pièges ramenés à 4 tâches × 2 runs et 6 pièges ; S4 retiré (couvert par S3).
+- Abandonné le 2026-11-19 (décision de Paul, chat de l'orchestrateur) : le banc A/B (passe 0, campagne comptée, bras K, harnais, seuils, graders) est arrêté ; plus long et plus cher qu'un déploiement jetable réel sur OKE, et il ne mesure pas l'IDP. Paul fait lui-même un test d'usage sur un déploiement réel d'OpenChoreo (T-520). Historique conservé ; voir T-521.

@@ -28,7 +28,7 @@ backlog/evidence/T-515-*.md
 - [ ] probes `healthPath` : pods Ready avec probes sur OKE ; `open-connector` non prouvé à ce jour (T-010)
 - [ ] `verify.sh --all` rejoué : verdict par contrôle, écarts connus B1-vap-digest et B6-sa-effective listés (T-487 case 2) ; total de bloc OCI et comptage d'un seul Argo CD (T-487 cases 3 et 6)
 - [ ] PAUL : test d'écriture négatif de l'App `openchoreo-status` (permissions Checks et Commit statuses en écriture, Metadata en lecture ; l'écriture de contenu est refusée), preuve datée (T-489 case 4)
-- [ ] `maxPods` du kubelet et marge CPU relevés (marge actuelle : 1 pod, T-487) ; décision si > 33 pods
+- [ ] `maxPods` du kubelet et marge CPU relevés (marge actuelle : 1 pod, T-487) ; plus de décision à prendre à 33 pods (T-518 : limite levée pour les apps de test, seul le `maxPods` plafonne ; voir `docs/research/OKE-MAXPODS.md`)
 
 ## Notes
 Ordre conseillé : searxng, probes, `verify.sh --all`, `lab-o`, `maxPods`, puis le test de l'App par Paul. Aucune valeur de secret dans les preuves (noms seulement). Écriture dans `openchoreo-*` et `lab-*` seulement. Cocher aussi les tickets d'origine après chaque preuve.

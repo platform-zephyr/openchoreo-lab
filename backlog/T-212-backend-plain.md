@@ -1,7 +1,7 @@
 ---
 id: T-212
 title: "Bras K du banc A/B : chemin kube-ops reproduit dans un dépôt bac à sable figé (remplace le backend plain)"
-status: todo
+status: deferred
 phase: P1
 adr: [0001, 0020, 0025]
 depends_on: [T-061, T-061b, T-214]
@@ -47,3 +47,4 @@ Arbitrages de Paul du 2026-11-18 (mandat de la session) : apps du banc = `echo-b
 - Prochaine action : couloir T-504 (fidélité du bras K) puis passe 0 (T-486) ; lecture du dépôt sans identifiant : décision de Paul (T-495).
 - Qui : agent Sonnet (couloir T-504), Paul pour la visibilité du dépôt.
 - Pièges : M3 sans non-prod côté bras K = mesure défavorable à K (PR #175) ; ne rien ajouter à `tools/appgen/` (GEL).
+- Abandonné le 2026-11-19 (décision de Paul, chat de l'orchestrateur) : le banc A/B (passe 0, campagne comptée, bras K, harnais, seuils, graders) est arrêté ; plus long et plus cher qu'un déploiement jetable réel sur OKE, et il ne mesure pas l'IDP. Paul fait lui-même un test d'usage sur un déploiement réel d'OpenChoreo (T-520). Historique conservé ; voir T-521.

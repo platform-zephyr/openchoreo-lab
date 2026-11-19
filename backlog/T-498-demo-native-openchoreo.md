@@ -20,7 +20,7 @@ github_issue: null
 Principe de Paul : adopter les primitives natives d'OpenChoreo, ne pas le déformer. Lire comment l'amont présente et
 déploie une application complète (catalogue d'exemples, `samples/gcp-microservices-demo`, fork du playground, doc de
 l'IdP intégré et du MCP). Comparer avec notre contrat `apps/<nom>/app.yaml` et `tools/appgen`. Estimer ce qui serait
-déployable tel quel sous la limite de 33 pods d'OKE (32 utilisés). Ne rien déployer.
+déployable tel quel sous le plafond de pods d'OKE (32 utilisés ; depuis T-518 la limite de 33 pods ne s'applique plus aux apps de test, seul le `maxPods` du kubelet plafonne). Ne rien déployer.
 
 ## Périmètre de fichiers
 docs/research/OPENCHOREO-DEMO-NATIVE.md, backlog/T-498-demo-native-openchoreo.md

@@ -4,7 +4,7 @@ title: "Bundle de sécurité multi-arch et installateur pour le cluster lab"
 status: todo
 phase: P0
 adr: [0003, 0020]
-depends_on: [T-001, T-061, T-061b, T-488]
+depends_on: [T-001, T-061, T-061b]
 class: REVUE + MANDAT
 velocity: true
 lane: socle-lab
@@ -34,3 +34,4 @@ Décision 4 (consensus n°2 et arbitrages de Paul, 2026-11-18). MANDAT : publica
 Retardé par ADR-0025 (2026-11-18) : dépend de la porte 1 (T-488) ; le bundle arm64 suffit au banc sur OKE et sur un MacBook Apple Silicon.
 
 Hors chemin critique jusqu'à la porte 2 (arbitrages de Paul n°3, 2026-11-18) : Mac Apple Silicon M1 et OKE sont arm64.
+- 2026-11-19 (T-521) : dépendance au banc A/B retirée, le banc est abandonné ; la décision se prendra sur le test d'usage de Paul (T-520).

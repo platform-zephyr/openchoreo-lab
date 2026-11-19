@@ -4,7 +4,7 @@ title: "Porte 2 « exploitation hybride » : mesurer C2, C3, C4, C7 et la règle
 status: todo
 phase: P1
 adr: [0020, 0025]
-depends_on: [T-031, T-044, T-050, T-061, T-061b, T-212, T-364, T-488]
+depends_on: [T-031, T-044, T-050, T-061, T-061b, T-364]
 class: MANDAT
 velocity: false
 lane: gouvernance
@@ -43,3 +43,4 @@ Constats G1-G4 de la revue Fable, acceptés (arbitrage Fable, 2026-11-18) ; T-14
 Recadré par ADR-0025 (2026-11-18) : la porte unique devient deux portes. La règle « jamais de mesure sur OKE » est levée pour la porte 1 ; C1, C5 et C6 viennent du banc A/B (T-488). Le comparateur plain devient le chemin kube-ops reproduit (T-212).
 
 Accéléré (arbitrages de Paul n°3, 2026-11-18) : C1, C5 et C6 viennent du banc minimal (T-488, 4 tâches, 2 runs).
+- 2026-11-19 (T-521) : dépendance au banc A/B retirée, le banc est abandonné ; la décision se prendra sur le test d'usage de Paul (T-520).
