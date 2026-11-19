@@ -135,3 +135,20 @@ Sans objet (revue n°1, base de départ). Faits notables depuis ECARTS (2026-11-
 (branche `t-060-kgateway-rbac`, option amont au lieu d'un post-traitement) ; E13 a gagné la capacité
 `secretStoreProvider` ; E10 a gagné Notifications, `lab-k` et 4 règles de garde. La branche `claude/t-060-kgateway-sa`
 (réfutée par ECARTS reco 1) existe encore sur `origin`.
+
+---
+
+## Décision de gouvernance — 2026-11-19 (T-508, proposition 2 de la revue n°1)
+
+Ce n'est pas une revue : section de décision, ajoutée sans réécrire la revue n°1.
+
+- **Source** : décision de Paul du 2026-11-19, relayée par le coordinateur ; formulation exacte dans la PR de T-508.
+  Cap de Paul : utiliser OpenChoreo au plus près de l'implémentation native ; pas de complexité inutile qui pèserait
+  sur l'implémentation finale. ADR-0025 (accepté), point 10.
+- **GEL** (forme renforcée de la proposition 2) : **aucune ligne nouvelle** dans `tools/appgen/` ni dans
+  `tools/oke/argo_guard*` (code et règles) jusqu'à la décision « façade `app.yaml` ou objets natifs », prise juste après
+  la porte 1. Une suppression est bienvenue. Une PR qui ajoute une ligne dans ces chemins est refusée en revue ; si le
+  besoin est réel, il passe par un champ amont (AppProject, VAP, objet OpenChoreo natif) ou attend la décision.
+- **Hors gel, inchangé** : le reste de la proposition 2 (`install.sh`, suppression de `step_12`) reste une proposition.
+- **Mesure de suivi** : la revue n°2 rejoue les mesures et vérifie que `tools/appgen/` (2 287 l.) et `argo_guard*`
+  (730 l., 23 règles nommées) n'ont pas grandi depuis `7125bf6`.

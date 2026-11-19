@@ -74,3 +74,14 @@ l'amendement précédent. Les seuils sont proposés par défaut ; Paul peut les 
 7. **Repli = report** : si la VM lab n'est pas Ready le 2026-11-25, la porte est reportée au 2026-12-11. Aucune mesure
    sur OKE (k3d ≠ OKE, D11). T-140 ne conditionne plus T-211.
 8. §2 devient : adopter seulement si C1 à C7 sont réunis.
+
+## Amendement (ADR-0025 accepté, 2026-11-19)
+Source : ADR-0025 (« Amendements » et « Acceptation »), décision de Paul du 2026-11-19 relayée par le coordinateur
+(PR de T-508). Il remplace le point 7 de l'amendement Fable et complète le point 8.
+1. **Mesure sur OKE permise** : la phrase « Aucune mesure sur OKE » du point 7 de l'amendement Fable est remplacée, pour
+   C1, C5 et C6, par la porte 1 d'ADR-0025 (banc A/B minimal sur OKE recréé vierge). k3d ≠ OKE reste vrai.
+2. **C5** compare OpenChoreo au **chemin kube-ops reproduit** (bras K d'ADR-0025), et non plus au backend « plain » seul.
+3. **Décision en deux temps** : porte 1 « valeur pour les agents » (C1, C5, C6, mesurés par le banc), puis porte 2
+   « exploitation hybride » (T-211). Répartition de C2, C3, C4 et C7 entre les deux portes, et date de décision de la
+   porte 2 : à préciser par Paul.
+4. **Adoption anticipée (Q26)** : la porte 1 peut conclure dès la passe 0 (ADR-0025, point 8). La porte 2 reste exigée.

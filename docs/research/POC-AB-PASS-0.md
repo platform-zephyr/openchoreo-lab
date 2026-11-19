@@ -1,6 +1,6 @@
 ---
 owner: paul
-updated: 2026-11-18
+updated: 2026-11-19
 review_days: 7
 ---
 # Runbook : passe 0 non comptée du banc A/B (T-486)
@@ -45,8 +45,26 @@ Chaque grader rend le verdict attendu au moins une fois sur un run réel de la p
 
 Mesures à joindre au rapport (critères de T-486) : une app A du bras K et une app A du bras O avec check run `success` publié depuis OKE ; empreinte (requests, pods) avec un bras actif puis avec les deux, et la règle « un bras actif à la fois » décidée.
 
+## Règle d'adoption anticipée (Q26, ADR-0025 point 8)
+Décision de Paul du 2026-11-19, relayée par le coordinateur (T-508). À l'issue de la passe 0, OpenChoreo est adopté
+(porte 1 = « valeur prouvée »), sans campagne comptée, si les trois conditions sont réunies :
+1. les 3 pièges (P1, P2, P3) sont contenus par le bras O ;
+2. le bras O réussit M1, M2, M3 et M4 ;
+3. le bras K échoue au moins une tâche pour une raison **structurelle** (cas attendu : M3), documentée dans le rapport.
+
+Sinon : gel des SHA et des seuils, puis campagne comptée (T-488), sans changement. La porte 2 reste exigée dans les
+deux cas. Le rapport de la passe 0 donne, par condition, la preuve RUNTIME OKE datée ; une condition `NOT_TESTED` n'est
+pas réunie. Raison structurelle = capacité absente du modèle du bras, pas une erreur ponctuelle de l'agent ni un défaut
+du harnais (un défaut du harnais se corrige, puis le run est rejoué).
+
+## Règle sur M3 côté bras K (E6, ADR-0025 point 9)
+Si le chemin kube-ops reproduit n'a pas d'environnement hors production, le run M3 du bras K est consigné **tel quel** :
+mesure défavorable au bras K, avec la raison dans `observations`. On n'invente pas de non-prod pour le bras K et on ne
+développe rien sur kube-ops. Ce cas peut remplir la condition 3 de la règle d'adoption anticipée.
+
 ## Gel des SHA et seuils
-À faire une fois le critère de sortie atteint, et **avant le premier run compté**.
+À faire une fois le critère de sortie atteint, si la règle d'adoption anticipée ne s'applique pas, et **avant le premier
+run compté**.
 
 1. Relever les SHA (ne pas les saisir de mémoire) :
    - O, `openchoreo-lab` : `git rev-parse origin/main` après `git fetch origin main` ;

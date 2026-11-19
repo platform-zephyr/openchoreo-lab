@@ -71,3 +71,10 @@ Source : `docs/review/CONSENSUS-2.md` (arbitrages 2 et 3). Remplace les §1, §4
 5. Architecture : le homelab est x86_64, OKE arm64. Une app éligible aux deux clusters exige une image multi-arch (T-402).
 6. Les agents cloud lisent la plateforme du homelab sans kubeconfig, en lecture seule : MCP/API derrière Cloudflare Tunnel +
    Access (déjà côté kube-ops) ou statut publié dans GitHub (T-006).
+
+## Amendement (ADR-0025 accepté, 2026-11-19)
+Source : ADR-0025, décision de Paul du 2026-11-19 relayée par le coordinateur (PR de T-508). Complète le point 2 de
+l'amendement précédent.
+1. « OKE devient optionnel » est complété par : **OKE est l'environnement jetable du POC pendant la porte 1**
+   (ADR-0025). Il est recréé vierge, sans donnée importante ; discontinuité et perte de données y sont acceptées.
+2. D11 reste la décision par défaut pour la cible (porte 2, T-211). Aucune migration d'app de kube-ops avant la porte 2.

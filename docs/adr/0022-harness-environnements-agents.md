@@ -40,5 +40,13 @@ Décisions liées : ADR-0002, ADR-0004, ADR-0011, ADR-0012, ADR-0021, ADR-0023 ;
   `.claude/settings.json` (T-330).
 - Garde CI : aucun `runs-on` homelab sur `pull_request` ou `pull_request_target` ; essai daté avec une PR de fork (T-343).
 
+## Amendement (ADR-0025 accepté, 2026-11-19)
+Source : ADR-0025, décision de Paul du 2026-11-19 relayée par le coordinateur (PR de T-508).
+1. **Colima est permis sur le Mac de Paul pour ce dépôt seulement**, comme repli et pour le k3d local. Il n'entre dans
+   aucun autre dépôt ni dans la CI.
+2. Un résultat obtenu sur k3d (local ou N1) reste `NOT_TESTED` pour OKE. La preuve de la porte 1 est RUNTIME sur OKE.
+3. Ajout d'OKE comme niveau d'environnement (à côté de N0-N2) et chemin d'exécution des sessions locales sur OKE :
+   à préciser par Paul.
+
 ## Références
 `docs/research/AGENT-HARNESS.md` §3-§5, `backlog/proposals/harness.yaml`, `docs/review/CONSENSUS-2.md`.

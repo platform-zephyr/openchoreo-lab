@@ -1,5 +1,6 @@
 # ADR-0025 — Validation d'OpenChoreo en deux portes : valeur pour les agents sur OKE, puis exploitation hybride
-Statut : PROPOSÉ (version accélérée du 2026-11-18) · Date : 2026-11-18 · Décideur : Paul
+Statut : ACCEPTÉ (décision de Paul du 2026-11-19, relayée par le coordinateur ; PR de T-508) · Proposé : 2026-11-18 ·
+Décideur : Paul
 Décisions liées : ADR-0003 (amendé), ADR-0011, ADR-0017, ADR-0020 (amendé), ADR-0021, ADR-0022 (amendé) ; `docs/research/POC-OPENCHOREO-STRATEGY.md`
 
 ## Contexte
@@ -21,6 +22,8 @@ Décisions liées : ADR-0003 (amendé), ADR-0011, ADR-0017, ADR-0020 (amendé), 
 2. **Seuils figés avant la mesure** (commit de `tests/bench-ab/thresholds.yaml`). Verdict : « valeur prouvée » si S1,
    S6 et S7 passent et au moins 2 de S2, S3, S5 ; sinon **arrêt** (on garde kube-ops), sans zone grise.
    **Arrêt anticipé** dès qu'un seuil devient inatteignable ; un piège non contenu par le bras O arrête tout.
+   « Médiane agrégée » (S2, S3) = médiane sur tous les runs d'un bras, toutes tâches confondues. S2 et S3 ne passent
+   que si **tous** leurs critères passent (S2 : fichiers et lignes ; S3 : tours et $).
 3. **Livraison** : un Argo CD par cluster en mode pull. Pendant la porte 1, c'est l'Argo du labo, seul sur OKE ; il
    livre la plateforme, `generated/` (un ApplicationSet par app, modèle kube-ops) et le bras K (copie de l'ApplicationSet
    `apps-generated`). L'instance Argo de kube-ops n'est pas utilisée et le dépôt kube-ops n'est pas modifié. Cible
@@ -38,7 +41,21 @@ Décisions liées : ADR-0003 (amendé), ADR-0011, ADR-0017, ADR-0020 (amendé), 
 7. **Porte 2 « exploitation hybride »** (T-211) : seulement si la porte 1 est positive (VM lab, amd64, jour 2, règle de
    routage). D11 reste la décision par défaut. Aucune migration d'app de kube-ops avant la porte 2.
 
-## Amendements proposés
+8. **Adoption anticipée dès la passe 0 (Q26)** : OpenChoreo est adopté à l'issue de la passe 0 (verdict de la porte 1
+   = « valeur prouvée »), sans campagne comptée, si les trois conditions sont réunies : (1) les 3 pièges sont contenus par le bras O ; (2) le bras O
+   réussit M1, M2, M3 et M4 ; (3) le bras K échoue au moins une tâche pour une raison **structurelle**, documentée
+   dans le rapport de la passe 0 (cas attendu : M3). Sinon, la campagne comptée (point 2) a lieu sans changement. La porte 2 reste exigée.
+   Une raison structurelle tient au modèle du bras (capacité absente), pas à une erreur ponctuelle de l'agent ni à
+   un défaut du harnais.
+9. **M3 sans non-prod côté K (E6)** : si le chemin kube-ops reproduit n'a pas d'environnement hors production, cette
+   absence est une **mesure défavorable au bras K**, consignée telle quelle. On n'invente pas de non-prod pour le
+   bras K et on ne développe rien sur kube-ops pour le combler.
+10. **Fidélité à l'implémentation native** : OpenChoreo est utilisé au plus près de son implémentation native ; aucune
+   complexité maison qui n'est pas justifiée. Jusqu'à la décision « façade `app.yaml` ou objets natifs », prise
+   juste après la porte 1, aucune ligne nouvelle n'entre dans `tools/appgen/` ni dans `tools/oke/argo_guard*`
+   (suppression permise). Suivi : `docs/research/FIDELITE-JOURNAL.md`.
+
+## Amendements (écrits dans les ADR concernés par T-508, 2026-11-19)
 - **ADR-0020** : le point 7 de l'amendement Fable (« aucune mesure sur OKE ») est remplacé par le point 1 pour C1, C5
   et C6 ; C5 compare OpenChoreo au chemin kube-ops reproduit ; la décision se prend en deux temps.
 - **ADR-0003** : « OKE devient optionnel » est complété par « OKE est l'environnement jetable du POC pendant la
@@ -47,6 +64,8 @@ Décisions liées : ADR-0003 (amendé), ADR-0011, ADR-0017, ADR-0020 (amendé), 
   reste NOT_TESTED pour OKE.
 
 ## Conséquences
+- Q26 peut raccourcir la porte 1 : T-488 (campagne comptée) n'a lieu que si la règle d'adoption anticipée ne
+  s'applique pas.
 - Tickets : T-485 (protocole minimal), T-486 (passe 0 sur OKE), T-487 (installation sur OKE vierge), T-488 (campagne
   comptée et décision), T-489 (App de statut), T-490 (arbitrages au journal de homelab-infra et OKE recréé), T-491
   (ApplicationSet du bras O), T-492 (branchement cible sur l'Argo de kube-ops), T-493 (essai d'exécution depuis le
@@ -67,3 +86,12 @@ Décisions liées : ADR-0003 (amendé), ADR-0011, ADR-0017, ADR-0020 (amendé), 
 - `tests/bench-ab/thresholds.yaml` commité avant le premier run compté (horodatage Git).
 - Rapport daté `docs/research/POC-AB-RESULTS.md` (S1-S7 par bras, preuves RUNTIME OKE) ; décision de Paul consignée ici
   par amendement.
+- Adoption anticipée (point 8) : le rapport de la passe 0 cite, par condition, la preuve RUNTIME OKE datée, et pour
+  la condition (3) la raison structurelle de l'échec du bras K.
+
+## Acceptation (2026-11-19)
+Source : décision de Paul du 2026-11-19, relayée par le coordinateur ; la formulation exacte de Paul est dans la PR de
+T-508 et le message du coordinateur, non recopiée ici. Paul accepte en séance de questions (Q7, Q8, Q9) : les deux
+portes, le banc A/B minimal, les seuils S1-S7 et la règle de verdict (points 1 et 2). Il ajoute Q26 (point 8), la
+règle sur M3 (point 9) et le gel des couches maison (point 10). Il confirme le cap : utiliser OpenChoreo au plus près
+de son implémentation native, sans complexité inutile pour l'implémentation finale.
