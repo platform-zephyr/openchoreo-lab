@@ -1,7 +1,7 @@
 ---
 id: T-501
 title: "Prérequis du harnais de la passe 0 du banc A/B (collecteur d'observations, mot de passe M2, images, SHA du bras O)"
-status: in-progress
+status: deferred
 phase: P1
 adr: [0025]
 depends_on: [T-485]
@@ -40,3 +40,4 @@ tests/bench-ab/pass-0/observe.py, tests/bench-ab/pass-0/test_observe.py, tests/b
 - Commandes : `tests/bench-ab/pass-0/dispatch-test.sh` (toute la suite, hors ligne) ; `check-frozen-sha.sh <SHA40>` ; en session cluster : `admin-password.sh seed --context CTX`, puis `exec` + `observe.py` (voir Notes).
 - Pièges : `origin/main` contient `apps/miniflux` (le SHA de O ne peut pas être `origin/main`) ; le garde Bash refuse toute commande contenant « kubectl » (écrire les scripts avec l'outil Write) ; ruff et radon exigés par la CI `quality`.
 - Prochaine action : session cluster de l'opérateur, puis cocher la case RUNTIME OKE avec les sorties datées.
+- Abandonné le 2026-11-19 (décision de Paul, chat de l'orchestrateur) : le banc A/B (passe 0, campagne comptée, bras K, harnais, seuils, graders) est arrêté ; plus long et plus cher qu'un déploiement jetable réel sur OKE, et il ne mesure pas l'IDP. Paul fait lui-même un test d'usage sur un déploiement réel d'OpenChoreo (T-520). Historique conservé ; voir T-521.

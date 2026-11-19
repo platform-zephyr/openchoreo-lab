@@ -1,7 +1,7 @@
 ---
 id: T-495
 title: "AppProject lab-k (frontière du bras K) et racine lab-k-root (synchro manuelle) pour le bac à sable bench-ab-arm-k"
-status: in-progress
+status: deferred
 phase: P1
 adr: [0025, 0002]
 depends_on: []
@@ -68,3 +68,4 @@ Si Paul choisit (b) : une App GitHub installée sur `bench-ab-arm-k` seul, permi
 - Prochaine action : synchroniser `lab-k-root` seulement au lancement de la passe 0 (T-486) : les ApplicationSets sont en `automated` et déploieraient `echo-bench`.
 - Qui : Paul (visibilité du dépôt), puis la session OKE locale.
 - Pièges : une app du bac à sable nommée `root` collisionne avec `lab-k-root`.
+- Abandonné le 2026-11-19 (décision de Paul, chat de l'orchestrateur) : le banc A/B (passe 0, campagne comptée, bras K, harnais, seuils, graders) est arrêté ; plus long et plus cher qu'un déploiement jetable réel sur OKE, et il ne mesure pas l'IDP. Paul fait lui-même un test d'usage sur un déploiement réel d'OpenChoreo (T-520). Historique conservé ; voir T-521.

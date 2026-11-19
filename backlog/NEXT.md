@@ -5,13 +5,16 @@ Point d'entrée : ce fichier, puis `docs/state/HANDOFF-COORDINATEUR.md`. Passati
 ## État en une ligne (2026-11-19)
 OpenChoreo est installé sur OKE (plateforme et bras O : whoami, ntfy, echo-demo, searxng ; 52 % CPU, 32 pods sur 33). Check runs GitHub lus sans identifiant (T-489, T-497, T-507). searxng est en échec (T-499 case 4). T-060 : résidu kgateway accepté jusqu'à FINAL0, PR #169 brouillon non appliquée. T-006 : `cloudflared` livré en Git (#162), bloqué par la géorestriction Cloudflare et l'absence du client `reader`.
 
+## Stratégie (décision de Paul, 2026-11-19, T-521)
+Le banc A/B est abandonné (plus long et plus cher qu'un déploiement jetable réel sur OKE ; il ne mesure pas l'IDP). Paul fait lui-même un **test d'usage sur un déploiement réel d'OpenChoreo** (T-520, en cours, ne pas y toucher). La PR #177 (ADR-0025) est obsolète : elle sera remplacée par une décision courte « banc A/B abandonné », rédigée **après** le rapport T-520 (aucun ADR touché d'ici là).
+
 ## Chemin critique, dans l'ordre
-1. Preuves OKE des couloirs : T-515 (searxng, probes, `verify.sh --all`, `lab-o`, `maxPods`) ; T-499 case 4 ; T-487 cases 2, 3, 6 ; T-495 case 5 ; T-498 case 2 (réponses de Paul).
-2. T-486 passe 0 du banc A/B (T-501 prérequis fusionnés ; T-212 et T-504 pour le bras K ; synchroniser `lab-k-root` à ce moment seulement).
-3. Décision de porte ADR-0020 (façade ou objets natifs), avec les mesures de la passe 0 et le GEL levé ou confirmé.
+1. Test d'usage de Paul sur le déploiement réel (T-520) et son rapport.
+2. Preuves OKE des couloirs utiles au déploiement réel : T-515 (searxng, probes, `verify.sh --all`, `lab-o`, `maxPods`) ; T-499 case 4 ; T-487 cases 2, 3, 6 ; T-498 case 2 (réponses de Paul).
+3. Décision courte « banc A/B abandonné » (remplace la PR #177), puis décision de porte ADR-0020 (façade ou objets natifs) fondée sur le rapport T-520, GEL levé ou confirmé.
 
 ## Couloirs en cours (propriétaires ; ne pas toucher leurs tickets)
-T-501 (banc A/B), T-502 (`lab-o`), T-504 (fidélité bras K), T-505 (`argo-escalation`), T-506 (`lab-k`), T-507, T-508 (gouvernance), T-509 (documentation d'orchestration).
+T-502 (`lab-o`), T-505 (`argo-escalation`), T-507, T-508 (gouvernance), T-509 (documentation d'orchestration). Gelés `deferred` (T-521) : T-486, T-501, T-504, T-212, T-485, T-488, T-495 ; T-506 (`lab-k`) à geler par son propriétaire.
 
 ## Tickets de suite ouverts par T-510
 - T-511 `lab-store` renommé `default` à la prochaine réinstallation OKE ; T-512 alignements textuels de T-502 ; T-513 `K3D_REQUIRED` (fusion ne prouve pas k3d) ; T-514 mesure `argo-escalation` et k3d après T-505 ; T-515 preuves OKE en attente d'un opérateur.
@@ -20,8 +23,8 @@ T-501 (banc A/B), T-502 (`lab-o`), T-504 (fidélité bras K), T-505 (`argo-escal
 Aucune ligne nouvelle dans `tools/appgen/` ni dans `tools/oke/argo_guard*` jusqu'à la décision « façade ou objets natifs ». Un correctif qui s'y rattache attend la décision (cas T-499, T-511).
 
 ## Gestes de Paul
-- Rendre `bench-ab-arm-k` public (T-495 case 3 ; sinon App GitHub en lecture seule).
 - Test d'écriture négatif de l'App `openchoreo-status` : permissions Checks et Commit statuses en écriture, Metadata en lecture (T-489 case 4, T-515).
+- Test d'usage sur le déploiement réel d'OpenChoreo (T-520) et son rapport.
 - Certificat de sauvegarde du state de homelab-infra.
 - MANDAT #626.
 - 2FA.

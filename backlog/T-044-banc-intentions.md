@@ -4,7 +4,7 @@ title: "Banc d'essai de 5 intentions A (MVP)"
 status: todo
 phase: P1
 adr: [0013]
-depends_on: [T-015, T-040, T-041, T-043, T-061, T-061b, T-212]
+depends_on: [T-015, T-040, T-041, T-043, T-061, T-061b]
 class: AUTONOME
 velocity: false
 lane: intention
@@ -32,3 +32,4 @@ tests/intents/
 Recadré par ADR-0025 (2026-11-18) : le homelab n'est plus le lieu de la mesure C1 ; le banc d'exploitation A/B est T-488.
 
 Hors chemin critique de la porte 1 (arbitrages de Paul n°3, 2026-11-18) : le banc minimal T-485 → T-488 couvre la mesure A/B ; ce banc d'intentions sert la porte 2.
+- 2026-11-19 (T-521) : dépendance au banc A/B retirée, le banc est abandonné ; la décision se prendra sur le test d'usage de Paul (T-520).
