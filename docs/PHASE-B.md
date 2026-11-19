@@ -42,7 +42,7 @@
 | 2 | Gateway API CRD v1.5.1 (sha256 vérifié) | 5 CRD `Established` | CRD supprimées seulement avec `--delete-crds` et si inutilisées ailleurs |
 | 3 | cert-manager v1.19.4 → `openchoreo-cert-manager` | 3 Deployments Available ; rien dans kube-system ; webhook joignable (dry-run d'un Issuer) | `helm uninstall` (refusé si la release ne déclare pas `keep` sur ses CRD) ; CRD gardées (`crds.keep`) |
 | 4 | ESO 2.0.1 → `openchoreo-external-secrets` + `ClusterSecretStore lab-store` ; CRD annotées `helm.sh/resource-policy: keep` | ESO Available ; `lab-store` Ready ; `B4-crd-keep` | suppression du store, `helm uninstall` **refusé** tant que la release ne porte pas `keep` sur ses 23 CRD |
-| 5 | kgateway-crds + kgateway v2.3.11 → `openchoreo-control-plane` | kgateway Available ; GatewayClass `kgateway` Accepted | `helm uninstall kgateway` ; `kgateway-crds` (CRD dans `templates/`, sans `keep` possible) **conservée** sauf `--delete-crds` et gardes |
+| 5 | kgateway-crds v2.4.8, RBAC versionné (`manifests/05-kgateway-rbac.yaml`), puis kgateway v2.4.8 en `rbac.create=false` → `openchoreo-control-plane` (T-060, §5.2.1) | kgateway Available ; GatewayClass `kgateway` Accepted ; `B5-rbac` (aucune écriture de Secret hors `create` dans son namespace) | `helm uninstall kgateway`, puis suppression de `05` ; `kgateway-crds` (CRD dans `templates/`, sans `keep` possible) **conservée** sauf `--delete-crds` et gardes |
 | 6 | Egress IdP (`03-idp-egress.yaml`), OpenChoreo CP 1.3.3 avec OIDC Authentik, **sans portail** (`--set backstage.enabled=false`), ni event-forwarder ni Gateway CP ; CA du cluster-gateway copiée. Refus si le portail est déjà actif | CP Available ; ConfigMap CA peuplé ; webhook OK (dry-run du CCT) ; `/health` 200 ; `/mcp` sans jeton **401** ; CNP IdP présentes ; aucune liaison `mcp-tryout`/`platform-engineer`/`sre` | `helm uninstall`, suppression de `03` ; CRD `openchoreo.dev` avec `--delete-crds` |
 | 6b | Portail Backstage (`docs/PORTAL.md` §4) : préconditions lues (quota CP 640 Mi / 2304 Mi, Secret `backstage-secrets` avec ses 4 clés, créé hors dépôt), puis `helm upgrade` du CP avec `backstage.enabled=true`. Seulement si nommée (`--step 6b` ou `--with-portal`) | `verify.sh --step 6b` : Deployment `backstage` Available, 1 pod, 0 redémarrage ni OOMKilled ; PSA (pas d'AppArmor Unconfined) ; ni HTTPRoute, Ingress, PVC ni Service non ClusterIP ; redirection vers Authentik (P2). P3-P5 : BLOCKED (navigateur). **Arrêt** sur tout FAIL ou code 3/4/5 du budget | `helm upgrade` avec `backstage.enabled=false`, suppression du Secret et de la CNP `lab-allow-backstage-authentik` |
 | 7 | Security bundle vérifié (`docs/SECURITY-BUNDLE.md`) et rendu durci contrôlé AVANT toute écriture, puis VAP du labo (`platform/policies`, VAP-1 avec CONNECT et `*/*`), TLS (`11`), GatewayParameters (`12`), OpenChoreo DP 1.3.3 par `helm_secure` : les droits du cluster-agent sont rendus avec le chart (jamais ceux d'origine, même transitoirement) | agent et Envoy Available ; Gateway `Programmed` ; aucun Service LB ou NodePort ; release durcie (B7-bundle) ; permissions effectives de l'agent (B7-agent-effective) ; RoleBinding hors `dp-*` refusé (B7-agent-rb) ; ClusterRoleBinding de l'agent refusée par VAP-1 ; **`kubectl exec --as=<agent>` dans `openchoreo-control-plane` refusé par VAP-1** (B7-exec) ; Namespace `dp-*` restricted admis, privileged refusé (B7-psa-ok / B7-psa-lock) | `helm uninstall`, puis suppression de 11, 12, quota RBAC et VAP (dans cet ordre) ; **refusé** tant qu'une Application Argo `lab-root`/`lab-platform` existe |
@@ -133,6 +133,23 @@ Le cluster nu n'a aucune implémentation Gateway API. La Gateway de Cilium est d
 - TLS par une CA d'essai namespacée.
 
 L'exposition (Cloudflare Tunnel → ClusterIP) attend l'accord de Paul.
+
+### 5.2.1 kgateway v2.4.8 : RBAC versionné (T-060)
+
+- **Pourquoi v2.4.8 et pas v2.5** : v2.5.0 supprime la CRD `HTTPListenerPolicy` (release notes v2.5.0, kgateway#14542), que
+  rendent les deux charts OpenChoreo 1.3.3 (`templates/gateway/httplistenerpolicy.yaml`) : l'installation du CP et du DP
+  échouerait. v2.4.8 garde cette CRD et offre déjà `rbac.create` (kgateway#14105).
+- **Ce qui change** : plus d'écriture de Secrets cluster-wide (create/patch/delete) ; seul `create` dans
+  `openchoreo-control-plane` (Secret `oauth2-hmac-secret` du bootstrap). **Ce qui reste** : lecture
+  (`get/list/watch`) des Secrets de tout le cluster, inhérente à l'informer sans namespace de kgateway (v2.4.8 et
+  v2.5.2). `B6-sa-effective` reste donc FAIL tant que kgateway tourne dans `openchoreo-control-plane`.
+- **Mise à niveau (cluster en v2.3.11)** : `tools/oke/install.sh --step 5 --apply` (CRD, `05`, puis chart : le ClusterRole
+  du chart disparaît après que `05` est en place), puis `--step 7 --apply` pour l'Envoy v2.4.8 (`12`), ou seulement
+  `kubectl apply --server-side --field-manager=openchoreo-lab -f platform/install/manifests/12-gateway-parameters.yaml`.
+  Contrôle : `verify.sh --step 5` et `--step 7` (`B5-rbac`, `B7-gw`, `B7-tls`).
+- **Retour arrière** : `git revert` du commit, puis `helm rollback kgateway <rév. v2.3.11> -n openchoreo-control-plane`
+  (rend le ClusterRole du chart) et `helm rollback kgateway-crds <rév.> -n openchoreo-control-plane` ; réappliquer `12` en
+  v2.3.11 ; `05` peut rester (sous-ensemble du chart) ou être supprimé (`kubectl delete -f`). Les révisions : `helm history`.
 
 ### 5.3 ESO obligatoire, store `lab-store` sans Doppler
 

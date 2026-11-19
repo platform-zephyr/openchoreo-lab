@@ -285,6 +285,7 @@ undo_6() {
 }
 undo_5() {
   helm_rm openchoreo-control-plane kgateway
+  kd -f "$M/05-kgateway-rbac.yaml"  # RBAC versionné (T-060), après le contrôleur qui l'utilise
   # Le chart kgateway-crds met ses CRD dans templates/ sans option `keep` : `helm uninstall` les
   # supprimerait. Il n'est désinstallé qu'avec --delete-crds ET si les gardes de rm_crds passent.
   local before="$STATE_DIR/crds-before.txt" rendered name

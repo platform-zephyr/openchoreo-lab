@@ -3,7 +3,7 @@
 # documentée : docs v1.3.x platform-engineer-guide/api-gateway/topology.md (« Internal Gateway »).
 #   - Service ClusterIP : AUCUN LoadBalancer OCI (quota services.loadbalancers=0 de toute façon) ;
 #     l'exposition future passera par Cloudflare Tunnel vers ce ClusterIP (APP-CONTRACT §1, accord Paul).
-#   - Image Envoy épinglée par digest (index multi-arch, arm64 vérifié le 2026-11-17).
+#   - Image Envoy épinglée par digest (index multi-arch ; v2.4.8, arm64 sha256:08317952… vérifié le 2026-11-19).
 #   - securityContext restricted explicite (seccomp absent des défauts kgateway [S]) ; ports ≥ 1024,
 #     donc aucune capability. readOnlyRootFilesystem laissé au défaut de kgateway (non vérifié).
 #   - Requests : usage DP k3d 33 Mi pour agent + Envoy ; Envoy posé à 48 Mi.
@@ -28,8 +28,8 @@ spec:
       image:
         registry: cr.kgateway.dev/kgateway-dev
         repository: envoy-wrapper
-        tag: v2.3.11
-        digest: sha256:8850b51548d755eae5ffc14ab9827af44d029cd561f3eeb2d8c7b58da27d0ceb
+        tag: v2.4.8
+        digest: sha256:a6503097d0578dfdba42d77ddaa526a47d30504a3df0c79e3d501ab1a001bca9
       resources:
         requests: {cpu: 10m, memory: 48Mi}
         limits: {cpu: 500m, memory: 256Mi}

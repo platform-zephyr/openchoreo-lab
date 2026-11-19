@@ -35,8 +35,13 @@ render cert-manager cert-manager openchoreo-cert-manager \
   "$(fetch_chart cert-manager "$CERT_MANAGER_CHART" "$CERT_MANAGER_VERSION" "$CERT_MANAGER_TGZ_SHA256")" "$V/cert-manager.yaml" restricted
 render external-secrets external-secrets openchoreo-external-secrets \
   "$(fetch_chart external-secrets "$ESO_CHART" "$ESO_VERSION" "$ESO_TGZ_SHA256")" "$V/external-secrets.yaml" restricted
-render kgateway kgateway openchoreo-control-plane \
-  "$(fetch_chart kgateway "$KGATEWAY_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_TGZ_SHA256")" "$V/kgateway.yaml" restricted
+KGW_TGZ="$(fetch_chart kgateway "$KGATEWAY_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_TGZ_SHA256")"
+render kgateway kgateway openchoreo-control-plane "$KGW_TGZ" "$V/kgateway.yaml" restricted
+# T-060 : RBAC versionné = ClusterRole du chart (rbac.create=true) moins l'écriture des Secrets ; aucun RBAC rendu.
+helm template kgateway "$KGW_TGZ" -n openchoreo-control-plane -f "$V/kgateway.yaml" --set rbac.create=true \
+  > "$OUT/kgateway-rbac-upstream.yaml"
+python3 -I "$ROOT/tools/oke/kgateway_rbac_check.py" "$INSTALL_DIR/manifests/05-kgateway-rbac.yaml" "$V/kgateway.yaml" \
+  "$OUT/kgateway.yaml" "$OUT/kgateway-rbac-upstream.yaml" || rc=1
 render openchoreo-control-plane openchoreo-control-plane openchoreo-control-plane \
   "$CP_TGZ" "$V/openchoreo-control-plane.yaml" restricted --set backstage.enabled=false
 render openchoreo-control-plane-portal openchoreo-control-plane openchoreo-control-plane \

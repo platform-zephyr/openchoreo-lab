@@ -137,6 +137,9 @@ step_5() { # kgateway (CRD puis contrôleur), namespace openchoreo-control-plane
   crds="$(fetch_chart kgateway-crds "$KGATEWAY_CRDS_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_CRDS_TGZ_SHA256")"
   ctl="$(fetch_chart kgateway "$KGATEWAY_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_TGZ_SHA256")"
   run helm upgrade --install kgateway-crds "$crds" -n openchoreo-control-plane --wait
+  # RBAC versionné AVANT le chart (rbac.create=false, T-060) : le contrôleur ne démarre jamais sans droits, et
+  # l'upgrade depuis rbac.create=true supprime le ClusterRole du chart (écriture des Secrets) sans trou de droits.
+  run "${KA[@]}" -f "$M/05-kgateway-rbac.yaml"
   run helm upgrade --install kgateway "$ctl" -n openchoreo-control-plane -f "$V/kgateway.yaml" --wait --timeout 5m
 }
 

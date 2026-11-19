@@ -1,0 +1,119 @@
+# RBAC de kgateway v2.4.8 versionné dans Git (T-060), appliqué par tools/oke/install.sh --step 5 AVANT le chart,
+# lequel tourne avec rbac.create=false (values/kgateway.yaml ; option ajoutée par kgateway#14105).
+#
+# Source : ClusterRole du chart v2.4.8 (install/helm/kgateway/templates/role.yaml, tag v2.4.8 = c7c897c),
+# règle par règle, avec UN seul écart : `secrets` passe de create/delete/get/list/patch/watch à get/list/watch.
+#   - Lecture cluster-wide CONSERVÉE (résidu inhérent) : l'informer des Secrets n'a pas de namespace
+#     (pkg/pluginsdk/collections/collections.go l.112-118 en v2.4.8, l.157-163 en v2.5.2) ; sans list/watch
+#     cluster-wide, la collection krt « Secrets » ne se synchronise jamais (certificats TLS des listeners).
+#     Seul réglage amont : ISTIO_WATCH_NAMESPACE, UN namespace pour TOUTES les ressources : inutilisable ici.
+#   - Écriture : le seul écrivain de Secret du contrôleur est le bootstrap OAuth2 (pkg/kgateway/bootstrap/
+#     controller.go l.106-128), qui CRÉE `oauth2-hmac-secret` dans le namespace du pod. Le deployer ne rend aucun
+#     Secret (pkg/kgateway/helm/envoy/templates : deployment, service, serviceaccount, configmap). D'où le Role
+#     `create` limité à openchoreo-control-plane, sans patch ni delete.
+# Noms DISTINCTS de ceux du chart (kgateway-openchoreo-control-plane) : le helm upgrade en rbac.create=false
+# supprime l'objet du chart, jamais celui-ci. À regénérer à chaque montée de kgateway (diff contre role.yaml).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: lab-kgateway
+  labels: {app.kubernetes.io/part-of: openchoreo-lab, app.kubernetes.io/name: kgateway}
+rules:
+- apiGroups: ['']
+  resources: [configmaps, services]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: ['']
+  resources: [endpoints, namespaces, nodes, pods]
+  verbs: [get, list, watch]
+- apiGroups: ['']
+  resources: [events]
+  verbs: [create, patch]
+- apiGroups: ['']
+  resources: [secrets]
+  verbs: [get, list, watch]
+- apiGroups: ['']
+  resources: [serviceaccounts]
+  verbs: [create, delete, get, list, patch, watch]
+- apiGroups: [apiextensions.k8s.io]
+  resources: [customresourcedefinitions]
+  verbs: [get, list, watch]
+- apiGroups: [apps]
+  resources: [deployments]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [authentication.k8s.io]
+  resources: [tokenreviews]
+  verbs: [create]
+- apiGroups: [autoscaling]
+  resources: [horizontalpodautoscalers]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [autoscaling.k8s.io]
+  resources: [verticalpodautoscalers]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [coordination.k8s.io]
+  resources: [leases]
+  verbs: [create, get, update]
+- apiGroups: [discovery.k8s.io]
+  resources: [endpointslices]
+  verbs: [get, list, watch]
+- apiGroups: [gateway.kgateway.dev]
+  resources: [backendconfigpolicies, backends, directresponses, gatewayextensions, gatewayparameters, httplistenerpolicies, listenerpolicies, trafficpolicies]
+  verbs: [get, list, watch]
+- apiGroups: [gateway.kgateway.dev]
+  resources: [backendconfigpolicies/status, backends/status, directresponses/status, gatewayextensions/status, gatewayparameters/status, httplistenerpolicies/status, listenerpolicies/status, trafficpolicies/status]
+  verbs: [get, patch, update]
+- apiGroups: [gateway.networking.k8s.io]
+  resources: [backendtlspolicies, gateways, grpcroutes, httproutes, listenersets, referencegrants, tcproutes, tlsroutes]
+  verbs: [get, list, watch]
+- apiGroups: [gateway.networking.k8s.io]
+  resources: [backendtlspolicies/status, gatewayclasses/status, gateways/status, grpcroutes/status, httproutes/status, listenersets/status, tcproutes/status, tlsroutes/status]
+  verbs: [patch, update]
+- apiGroups: [gateway.networking.k8s.io]
+  resources: [gatewayclasses]
+  verbs: [create, get, list, patch, update, watch]
+- apiGroups: [gateway.networking.x-k8s.io]
+  resources: [xlistenersets]
+  verbs: [get, list, watch]
+- apiGroups: [gateway.networking.x-k8s.io]
+  resources: [xlistenersets/status]
+  verbs: [patch, update]
+- apiGroups: [networking.istio.io]
+  resources: [destinationrules, serviceentries, workloadentries]
+  verbs: [get, list, watch]
+- apiGroups: [policy]
+  resources: [poddisruptionbudgets]
+  verbs: [create, delete, get, list, patch, update, watch]
+- apiGroups: [security.istio.io]
+  resources: [authorizationpolicies]
+  verbs: [get, list, watch]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lab-kgateway
+  labels: {app.kubernetes.io/part-of: openchoreo-lab, app.kubernetes.io/name: kgateway}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: lab-kgateway}
+subjects:
+- {kind: ServiceAccount, name: kgateway, namespace: openchoreo-control-plane}
+---
+# Bootstrap OAuth2 : création du Secret oauth2-hmac-secret dans le namespace du contrôleur (lecture : ClusterRole).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: lab-kgateway-bootstrap
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab, app.kubernetes.io/name: kgateway}
+rules:
+- apiGroups: ['']
+  resources: [secrets]
+  verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: lab-kgateway-bootstrap
+  namespace: openchoreo-control-plane
+  labels: {app.kubernetes.io/part-of: openchoreo-lab, app.kubernetes.io/name: kgateway}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: lab-kgateway-bootstrap}
+subjects:
+- {kind: ServiceAccount, name: kgateway, namespace: openchoreo-control-plane}

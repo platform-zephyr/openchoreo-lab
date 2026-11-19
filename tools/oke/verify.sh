@@ -202,9 +202,38 @@ v4() {
     crds_keep external-secrets.io
 }
 
+# RBAC versionné de kgateway (T-060, manifests/05-kgateway-rbac.yaml, chart en rbac.create=false). Permissions
+# EFFECTIVES du SA kgateway : aucune écriture de Secret hors `create` dans son namespace (bootstrap OAuth2), ClusterRole
+# du chart absent. La LECTURE cluster-wide est un résidu inhérent (informer sans namespace) : elle est attendue ici,
+# pour qu'une dérive se voie, et B6-sa-effective reste FAIL tant que kgateway vit dans openchoreo-control-plane.
+kgw_rbac_ok() {
+  local ns=openchoreo-control-plane as=system:serviceaccount:openchoreo-control-plane:kgateway rc=0 v t
+  ! kubectl get clusterrole "kgateway-$ns" >/dev/null 2>&1 || { echo "FAIL ClusterRole du chart présent"; rc=1; }
+  for v in create update patch delete deletecollection; do
+    for t in kube-system default openchoreo-data-plane lab-pg; do
+      [[ "$(kubectl auth can-i "$v" secrets -n "$t" --as="$as")" == no* ]] || { echo "FAIL kgateway peut $v secrets -n $t"; rc=1; }
+    done
+  done
+  for v in update patch delete deletecollection; do
+    [[ "$(kubectl auth can-i "$v" secrets -n "$ns" --as="$as")" == no* ]] || { echo "FAIL kgateway peut $v secrets -n $ns"; rc=1; }
+  done
+  [[ "$(kubectl auth can-i create secrets -n "$ns" --as="$as")" == yes ]] || { echo "FAIL create secrets -n $ns absent (bootstrap)"; rc=1; }
+  [[ "$(kubectl auth can-i list secrets -A --as="$as")" == yes ]] || { echo "FAIL lecture cluster-wide absente (informer)"; rc=1; }
+  [[ "$(kubectl auth can-i '*' '*' --as="$as")" == no* ]] || { echo "FAIL joker global"; rc=1; }
+  return "$rc"
+}
+
+gw_https_resolved() { # tout listener HTTPS de gateway-default a ResolvedRefs=True (certificat lu par l'informer)
+  local j; j="$(kubectl -n openchoreo-data-plane get gateway gateway-default -o json)" || return 1
+  jq -e '[.spec.listeners[] | select(.protocol == "HTTPS") | .name] as $h | ($h | length) > 0 and
+    ([.status.listeners[] | select(.name as $n | $h | index($n)) | .conditions[] | select(.type == "ResolvedRefs" and .status == "True")]
+     | length) == ($h | length)' <<<"$j" >/dev/null
+}
+
 v5() {
   expect_ok B5-deploy "kgateway Available" kubectl -n openchoreo-control-plane wait --for=condition=Available --timeout=30s deployment/kgateway
   expect_ok B5-class "GatewayClass kgateway Accepted" kubectl wait --for=condition=Accepted --timeout=30s gatewayclass/kgateway
+  expect_ok B5-rbac "kgateway (RBAC Git, T-060) : aucune écriture de Secret hors create -n openchoreo-control-plane ; lecture cluster-wide (résidu)" kgw_rbac_ok
 }
 
 # Permissions EFFECTIVES (SubjectAccessReview via `kubectl auth can-i --as`) de TOUS les ServiceAccounts du namespace
@@ -321,6 +350,7 @@ v6b() {
 v7() {
   expect_ok B7-deploy "DP : cluster-agent et Envoy gateway-default Available" deploys_ok openchoreo-data-plane
   expect_ok B7-gw "Gateway gateway-default Programmed" kubectl -n openchoreo-data-plane wait --for=condition=Programmed --timeout=30s gateway/gateway-default
+  expect_ok B7-tls "listener HTTPS de gateway-default : ResolvedRefs=True (Secret TLS lu par kgateway, T-060)" gw_https_resolved
   expect_ok B7-nolb "aucun Service LoadBalancer/NodePort dans les namespaces d'essai" no_lb
   expect_ok B7-vap "VAP lab-cluster-agent-scope et lab-cell-pod-hardening présentes" \
     kubectl get validatingadmissionpolicy lab-cluster-agent-scope lab-cell-pod-hardening

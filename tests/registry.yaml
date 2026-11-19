@@ -13,7 +13,11 @@
 #   timeout minutes, facultatif (défaut 10, maximum 30).
 # Contraintes de contenu : aucun secret, aucun cluster, aucun accès réseau supposé (job en lecture seule, sans secret).
 version: 1
-suites: []
+suites:
+  - name: kgateway-rbac
+    runner: bash
+    run: tests/kgateway-rbac/run.sh
+    timeout: 5
 # Exemple :
 #  - name: mon-test
 #    runner: bash

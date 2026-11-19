@@ -64,6 +64,7 @@ log "5. kgateway (CRD puis contrôleur)"
 crds="$(fetch_chart kgateway-crds "$KGATEWAY_CRDS_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_CRDS_TGZ_SHA256")"
 ctl="$(fetch_chart kgateway "$KGATEWAY_CHART" "$KGATEWAY_VERSION" "$KGATEWAY_TGZ_SHA256")"
 helm upgrade --install kgateway-crds "$crds" -n openchoreo-control-plane --wait
+"${KA[@]}" -f "$M/05-kgateway-rbac.yaml"  # RBAC versionné, rbac.create=false (T-060), comme install.sh --step 5
 helm upgrade --install kgateway "$ctl" -n openchoreo-control-plane -f "$V/kgateway.yaml" --wait --timeout 5m
 
 log "6. OpenChoreo control plane"

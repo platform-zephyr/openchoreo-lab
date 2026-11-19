@@ -343,6 +343,36 @@ expect_ok T12c "secret de la cellule : clés password + uri (valeurs non affich�
 expect_ok T12d "Job psql idempotent terminé (REVOKE vérifié dans le log)" 'REVOKE CONNECT FROM PUBLIC verified' \
   kubectl logs -n lab-pg "job/$ALPHA_RRN-pg-init"
 
+# --------------------------------------------------------------------------- kgateway RBAC (T-060)
+say "13. kgateway : RBAC versionné (rbac.create=false), routage TLS intact"
+KGW_SA="system:serviceaccount:openchoreo-control-plane:kgateway"
+kgw_no_write() { # aucune écriture de Secret hors create dans openchoreo-control-plane
+  local v n out=""
+  for v in create update patch delete deletecollection; do
+    for n in kube-system default openchoreo-data-plane lab-pg; do
+      out+="$v -n $n: $(kubectl auth can-i "$v" secrets -n "$n" --as="$KGW_SA" 2>&1 || true)"$'\n'
+    done
+  done
+  for v in update patch delete deletecollection; do
+    out+="$v -n openchoreo-control-plane: $(kubectl auth can-i "$v" secrets -n openchoreo-control-plane --as="$KGW_SA" 2>&1 || true)"$'\n'
+  done
+  printf '%s' "$out"
+  ! grep -q ': yes' <<<"$out" && echo "AUCUNE-ECRITURE"
+}
+expect_ok T13a "ClusterRole du chart kgateway absent (rbac.create=false)" 'ABSENT' \
+  bash -c 'kubectl get clusterrole kgateway-openchoreo-control-plane >/dev/null 2>&1 || echo ABSENT'
+expect_ok T13b "SA kgateway : aucune écriture de Secret (4 namespaces + update/patch/delete dans le sien)" 'AUCUNE-ECRITURE' kgw_no_write
+expect_ok T13c "SA kgateway : create secrets -n openchoreo-control-plane (bootstrap OAuth2) = yes" '^yes$' \
+  kubectl auth can-i create secrets -n openchoreo-control-plane --as="$KGW_SA"
+expect_ok T13d "listener HTTPS de gateway-default : ResolvedRefs=True (Secret TLS lu par l'informer)" '^true$' \
+  bash -c "kubectl -n openchoreo-data-plane get gateway gateway-default -o json | jq -e '[.spec.listeners[] | select(.protocol == \"HTTPS\") | .name] as \$h | (\$h | length) > 0 and ([.status.listeners[] | select(.name as \$n | \$h | index(\$n)) | .conditions[] | select(.type == \"ResolvedRefs\" and .status == \"True\")] | length) == (\$h | length)'"
+expect_ok T13e "HTTPListenerPolicy d'OpenChoreo 1.3.3 présente (CRD gardée par kgateway v2.4.8)" 'httplistenerpolicy' \
+  kubectl get httplistenerpolicies.gateway.kgateway.dev -A -o name
+expect_ok T13f "journal du contrôleur kgateway : aucun refus RBAC (forbidden)" '^0$' \
+  bash -c 'kubectl -n openchoreo-control-plane logs deployment/kgateway --tail=-1 | grep -ci forbidden || true'
+expect_ok T13g "Secret oauth2-hmac-secret créé par le bootstrap (Role create)" 'oauth2-hmac-secret' \
+  kubectl -n openchoreo-control-plane get secret oauth2-hmac-secret -o name
+
 # --------------------------------------------------------------------------- empreinte
 say "Empreinte (kubectl top, k3d, 1 nœud)"
 run_capture FOOTPRINT bash -c '

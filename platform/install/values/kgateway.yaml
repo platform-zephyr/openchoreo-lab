@@ -1,7 +1,7 @@
-# kgateway v2.3.11 (Gateway API, contrôleur unique pour tous les Gateway du cluster).
-# Charts : oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds et .../kgateway, --version v2.3.11
-#          (version de docs v1.3.x on-your-environment.mdx l.107-115 ; k3d-install.sh disait v2.3.1 :
-#          la doc publiée fait foi). Namespace : openchoreo-control-plane (comme la doc OpenChoreo).
+# kgateway v2.4.8 (Gateway API, contrôleur unique pour tous les Gateway du cluster).
+# Charts : oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds et .../kgateway, --version v2.4.8
+#          (T-060 : la doc OpenChoreo v1.3.x cite v2.3.11, sans `rbac.create` ; v2.5.x supprime la CRD
+#          HTTPListenerPolicy que rendent les charts OpenChoreo 1.3.3). Namespace : openchoreo-control-plane.
 # Obligatoire : les deux charts OpenChoreo rendent gatewayClassName kgateway et des HTTPListenerPolicy
 # gateway.kgateway.dev (D-gitops-empreinte §5.3). OKE nu n'a aucune implémentation Gateway API, et la
 # Gateway de Cilium est désactivée par la baseline (#1620 cilium-values : gatewayAPI.enabled=false).
@@ -13,9 +13,15 @@ controller:
   image:
     # Digest du contrôleur seul. Ne PAS mettre le digest dans image.tag : le chart le réutilise comme
     # tag par défaut de l'Envoy (KGW_DEFAULT_IMAGE_TAG). L'Envoy est épinglé dans GatewayParameters.
-    tag: "v2.3.11@sha256:bf7a605d1eaafd7f7ccb759a67a096c5f9c313660fa100abb9935949b8cef8c0"
+    # Index multi-arch v2.4.8 (arm64 sha256:19350975…), relevé le 2026-11-19 sur cr.kgateway.dev.
+    tag: "v2.4.8@sha256:282607d27cf005c8b5320dbbc20a4f2a2c3c1f6d66b4ecefbee70cb40b3a2731"
 image:
-  tag: v2.3.11
+  tag: v2.4.8
+# T-060 : le chart ne rend NI ClusterRole NI ClusterRoleBinding ; le RBAC versionné est
+# manifests/05-kgateway-rbac.yaml (lecture des Secrets cluster-wide, aucune écriture hors openchoreo-control-plane),
+# appliqué par install.sh --step 5 AVANT ce chart.
+rbac:
+  create: false
 resources:
   requests: {cpu: 10m, memory: 96Mi}
   limits: {cpu: 500m, memory: 256Mi}
