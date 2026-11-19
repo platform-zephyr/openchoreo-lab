@@ -127,7 +127,7 @@ Marqueurs : **[M]** mesuré (preuve datée), **[P]** publié (chart, documentati
 |---|---|---|---|
 | CPU (requests) | 1830m | **1281m** | `STATE.md` l.10 [M] |
 | Mémoire (requests) | 8650 Mi (≈ 8,4 GiB) | **6055 Mi** | `STATE.md` l.25 [M] |
-| Pods | 35 | (ne pas dépasser 33 : garder 2 pods pour Jobs et rollouts) | donnée de la mission [M] |
+| Pods | 35 | (ne pas dépasser 33 : garder 2 pods pour Jobs et rollouts) ; depuis T-518, limite de la plateforme seule (C2), levée pour les apps de test, plafond = `maxPods` | donnée de la mission [M] |
 | IP de pods VCN-native | ≈ 31 (2 VNIC) | — | ADR OKE l.79 ; `docs/PHASE-B.md` l.104 |
 | Disque éphémère | ≈ 28,4 Go | GC des images à 85 % | `docs/storage/OKE-AUDIT-2026-11-17.md` [M] |
 | Block Volume | 200 Go de quota ; 150 Go pris (boot 50 + 2 volumes de drill de 50, à Paul) ; **≈ 50 Go libres = 1 volume** | — | OKE-AUDIT [M] |
