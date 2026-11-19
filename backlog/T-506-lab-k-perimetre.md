@@ -45,3 +45,6 @@ platform/install/argocd/project-lab.yaml, tools/oke/verify.sh, tools/oke/argo_gu
     (`python3 -I tests/argo-guard/corpus.py | gzip -9n > tests/argo-guard/golden.json.gz`) après contrôle du diff.
   - Risque à arbitrer (Paul) : `*/*` + lab-pg = l'Argo du bras K peut écrire tout kind namespacé non blacklisté dans
     lab-pg (NetworkPolicy, Cluster CNPG de la plateforme). Un AppProject ne borne pas les kinds par destination.
+- Décision de Paul (2026-11-19, transmise par l'orchestrateur) : risque accepté ; `postgresql.cnpg.io/Cluster`
+  ajouté à la blacklist de lab-k ; `*/*` gardé ; NetworkPolicy NON blacklistée. Garde L1 (exiger le Cluster) et
+  son test négatif : NON faits ici (action refusée par le classifieur de permissions de la session) ; à faire.

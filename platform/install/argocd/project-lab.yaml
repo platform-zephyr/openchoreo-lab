@@ -252,6 +252,8 @@ spec:
     - {group: "", kind: Secret}
     - {group: "", kind: ResourceQuota}
     - {group: "", kind: LimitRange}
+    # Cluster CNPG de la plateforme dans lab-pg (risque */* + lab-pg accepté par Paul, 2026-11-19, T-506).
+    - {group: postgresql.cnpg.io, kind: Cluster}
   orphanedResources:
     warn: true
 ---
