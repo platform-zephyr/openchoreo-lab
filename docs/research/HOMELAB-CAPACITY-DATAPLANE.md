@@ -115,7 +115,7 @@ CPU : 16 threads SMT ≈ 8 cœurs physiques ; kube-ops 2,3 cœurs en moyenne, po
 | Sujet | 2/12 (1 nœud) | 4/24 en 2 nœuds 2/12 [E] |
 |---|---|---|
 | CPU / RAM requests à 70 % | 1281m / 6055 Mi | ≈ 2560m / 12 100 Mi |
-| Pods | 35 (≤ 33 retenus) | 2 × 35 ; IP VCN : 31 par nœud (2 VNIC) → 62 |
+| Pods | 35 (≤ 33 retenus pour la plateforme seule ; T-518 : levé pour les apps de test) | 2 × 35 ; IP VCN : 31 par nœud (2 VNIC) → 62 |
 | Second domaine de panne | non | oui (drain d'un nœud sans coupure) |
 | Bloc 200 Gio, boots compris (boot minimal 47 Go) | 150 pris, 50 libres | 2 boots → ≈ 100 pris + 2 volumes de drill : **≈ 0 libre** sans D5 |
 | Authentik, OpenBao, CP, Kyverno | ne tiennent pas ensemble | tiennent, mais le bloc reste bloquant |

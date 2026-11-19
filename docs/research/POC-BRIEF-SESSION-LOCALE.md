@@ -50,7 +50,9 @@ PREUVES À RENDRE (chacune datée en UTC, avec la commande de lecture qui la pro
 2. Un seul Argo CD dans le cluster ; lab-root Synced ; AppProjects lab-o et lab-k présents ; test de refus d'une
    destination hors périmètre (Argo refuse, preuve par l'événement).
 3. Empreinte (méthode de tools/oke/measure.sh) : requests CPU et RAM en % de l'allouable, nombre de pods, avec la
-   plateforme seule puis avec un bras actif. FAIL si > 70 % ou > 33 pods.
+   plateforme seule puis avec un bras actif. FAIL si > 70 % ou > 33 pods pour la plateforme seule (C2).
+   Phase de test (décision de Paul, 2026-11-19, T-518) : les 33 pods ne limitent pas les apps de test ; seul plafond :
+   le `maxPods` du kubelet. Relever le nombre de pods sans le juger FAIL.
 4. lab-pg Ready ; volume de bloc ≤ 50 Go.
 5. E5 : check run d'une app témoin (whoami) publié sur le commit synchronisé, lu par l'API GitHub publique ; puis un
    FAIL volontaire typé (digest faux par PR de test) publié en failure.
