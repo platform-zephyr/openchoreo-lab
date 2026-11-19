@@ -17,20 +17,79 @@ Pour tout orchestrateur Claude : neuf, après compactage ou sur le Mac de Paul. 
 
 ## 2. Topologie cible
 
-Un seul orchestrateur, sur le Mac de Paul (appareil de confiance, bastion OKE, Docker/Colima). Il dispatche, intègre,
-remonte les blocages et ferme la boucle jusqu'à la preuve OKE. Il ne code pas les tickets.
+Un seul orchestrateur, sur le Mac de Paul (appareil de confiance, bastion OKE, Docker/Colima). Il DÉLÈGUE
+systématiquement : il dispatche, synchronise, remonte les blocages et réfléchit aux frictions. Il ne code pas, ne
+diagnostique pas, n'exécute pas. Détail : § « Rôle de l'orchestrateur » ci-dessous.
 
 | Rôle | Moyen | Parallélisme | Écrit | Ne fait jamais |
 |---|---|---|---|---|
-| Orchestrateur | Session Claude Code locale sur le Mac | 1 | PR de coordination, fusion, OKE | Coder un ticket |
+| Orchestrateur | Session Claude Code locale sur le Mac | 1 | PR de coordination, fusion des PR prêtes | Coder, diagnostiquer, lancer une vérification, poser un Secret, écrire sur OKE |
 | Couloir de développement | Session cloud (`create_session`, ou `claude --cloud` depuis le Mac) | 4 à 8 | Sa branche `claude/t-NNN-*`, sa PR | Écrire sur OKE, toucher un fichier hors périmètre |
 | Sous-agent | Outil Agent, `isolation: worktree` | 3 à 7 | Sa branche locale (l'orchestrateur pousse) | Pousser vers un autre dépôt |
 | Usine | `claude-agent.yml`, `workflow_dispatch` | 3 (`max-parallel`) | Branche `claude/issue-<n>-*` et PR | Accès cluster ; Sonnet/Haiku 45 min, Opus 90 min |
 | Suites k3d | `k3d-integration.yml`, `workflow_dispatch` | 1 run à la fois | Artefacts de preuve | Preuve OKE |
-| Opérateur cluster | L'orchestrateur lui-même, bastion de 3 h | 1 (seul écrivain OKE) | `tools/oke/install.sh`, preuves datées | Déléguer l'écriture OKE |
+| Opérateur OKE | Session locale sur le Mac, lancée par l'orchestrateur (brief du § Rôle) | Lectures : illimité. Écritures : 1 par zone (§ Écritures OKE en parallèle) | Secrets, synchros manuelles, preuves datées dans sa zone ; `tools/oke/install.sh` seulement s'il est le seul « plateforme » | Deux écrivains sur la même zone ; sortir de `openchoreo-*` et `lab-*` |
 
 Choix du moyen : couloir cloud pour un ticket long ou sur un autre dépôt cloné ; sous-agent pour un ticket court sur
-ce dépôt ; usine pour un lot d'issues sans interaction ; jamais deux moyens sur le même ticket.
+ce dépôt ; usine pour un lot d'issues sans interaction ; session locale pour ce qui exige le Mac (opérateur OKE) ;
+jamais deux moyens sur le même ticket.
+
+## Rôle de l'orchestrateur
+
+Correction de Paul (2026-11-19) : l'orchestrateur ne fait pas le travail, il le confie. Trois fonctions : dispatcher,
+synchroniser, réfléchir.
+
+| Il fait | Il délègue (un agent par chantier) | Il ne fait jamais |
+|---|---|---|
+| Dispatche : un chantier = un agent, prompt standard (§ 6), ticket, périmètre exclusif | Chercher un script, un fichier, un art antérieur | Coder un ticket |
+| Synchronise : PR, notes « Reprise » des tickets, `list_sessions`, `list_events` ; détecte blocages, recouvrements, dépendances ; relance ou réaffecte | Lire un script avant exécution ; lancer `verify.sh` ou toute vérification | Écrire sur OKE (bastion, Secret, `verify.sh --all`, preuves) |
+| Fusionne les PR prêtes après `ci-ok` sur la tête courante | Poser un Secret, diagnostiquer une panne, corriger une CI | Contourner une garde ou écrire une autorisation de Paul |
+| Remonte à Paul UNE série groupée de blocages et d'actions externes, avec liens et recommandation | Toute action OKE : à un agent « opérateur OKE » local (une zone d'écriture par opérateur) | Deux écrivains sur la même zone |
+| Réfléchit aux frictions récurrentes (journal `docs/research/FRICTIONS-ORCHESTRATION.md`) | Les améliorations décidées (skill, doc, outil, ticket) | Annoncer « vert » sans avoir lu le statut de chaque suite |
+
+**Règle STOP.** Si tu t'apprêtes à chercher, lire un script, lancer une vérification, poser un secret, coder ou
+diagnostiquer : arrête, lance un agent. Une lecture de PR, de note « Reprise » ou de statut de session reste à toi
+(c'est la synchronisation).
+
+### Écritures OKE en parallèle (décision de Paul, 2026-11-19)
+
+Tous les agents locaux partagent le même bastion et le même kubeconfig : la règle « un seul écrivain » est une règle de
+cohérence, pas une limite technique. OKE est jetable et la vitesse prime, donc :
+
+| Cas | Règle |
+|---|---|
+| Lectures (`verify.sh`, mesures, diagnostics, preuves de lecture) | En parallèle, sans limite. |
+| Écritures ponctuelles (Secret par tube, synchro manuelle, test de refus) | En parallèle si les ZONES sont disjointes : zone = un namespace ou une famille d'objets (`lab-o-*`, `lab-k-*`, notifications, `lab-secrets`). Un opérateur par zone. |
+| Opérations qui touchent toute la plateforme (`tools/oke/install.sh` étapes 0 à 11, Cilium, Argo CD, ESO, kgateway) | UN seul agent « plateforme » ; aucune autre écriture pendant ce temps. |
+| Traçabilité | La section « Preuve OKE demandée » de la PR nomme la zone d'écriture ; l'orchestrateur tient la liste des zones occupées et refuse un second écrivain sur la même zone. |
+| Durable | Toujours par Git puis Argo CD (`AGENTS.md`) ; une écriture directe n'est jamais un changement durable. |
+
+### Brief type d'un agent « opérateur OKE »
+
+Session locale sur le Mac. Plusieurs opérateurs en parallèle sont admis : lectures sans limite, un seul écrivain par ZONE (voir § Écritures OKE en parallèle).
+
+```
+Tu es l'opérateur OKE du labo OpenChoreo (session locale). Réponses en français, STE80, conclusion d'abord.
+Écriture dans les namespaces openchoreo-* et lab-* seulement. Aucun secret, OCID, IP ni hôte interne dans le dépôt,
+la PR ou ta sortie. Ta ZONE d'écriture est donnée par l'orchestrateur ; si un autre opérateur écrit déjà dans cette zone, arrête-toi et dis-le.
+1. Ouvre l'accès : tools/oke/open-oke-access.sh open 10800 (bastion de 3 h) ; note l'heure d'expiration.
+2. LIS le script avant de l'exécuter (open-oke-access.sh, verify.sh, install.sh) ; si une commande te surprend, stop.
+3. Joue la section « Preuve OKE demandée » de la PR (ou les cases du ticket), dans l'ordre. Pour un contrôle
+   d'ensemble : tools/oke/verify.sh --all ; verdict par contrôle, tel quel.
+4. Relève l'empreinte : CPU et RAM (requêtes/limites vs allocatable), nombre de pods par nœud (maxPods).
+5. Secrets : valeur aléatoire générée par tube, jamais affichée ni écrite ; noms seulement dans les preuves.
+6. Archive chaque preuve datée dans backlog/evidence/ (PASS / FAIL / NOT_TESTED / BLOCKED, niveau RUNTIME, date).
+7. Ferme l'accès : open-oke-access.sh close.
+Rapport final <= 15 lignes : verdicts, chemins des preuves, écarts, blocages, prochaine action.
+```
+
+### Cadence
+
+| Activité | Fréquence | Contenu |
+|---|---|---|
+| Synchronisation | Relevé toutes les 15 à 30 min (pas de boucle serrée) | Tableau de suivi (§ 6) : sessions, PR, `ci-ok` sur la tête, blocages ; fusion des PR prêtes ; relance ou réaffectation |
+| Remontée à Paul | À la demande, en série groupée | Blocages et actions externes, liens, recommandation (« oui » suffit) |
+| Réflexion | Toutes les 2 à 3 h | Mise à jour de `docs/research/FRICTIONS-ORCHESTRATION.md` ; au plus 3 améliorations proposées à Paul, puis déléguées |
 
 ## 3. Cycle d'un ticket
 
@@ -45,7 +104,7 @@ ce dépôt ; usine pour un lot d'issues sans interaction ; jamais deux moyens su
 | CI | `ci-ok` sur la TÊTE COURANTE (`actions/runs?head_sha=`) | Vert, ou correctif sur la même branche | Le couloir |
 | REVUE | Classe AUTONOME ou REVUE (mode dev : fusion après `ci-ok`) ; MANDAT = geste de Paul | Brouillon levé | Orchestrateur |
 | FUSION | `ci-ok` vert ; k3d dispatché si `platform/`, `tools/appgen/` ou fixtures changent (§5) | Squash par la file de fusion | Orchestrateur |
-| PREUVE OKE | Section « Preuve OKE demandée » de la PR | Preuve datée dans `backlog/evidence/` | Orchestrateur (seul écrivain OKE) |
+| PREUVE OKE | Section « Preuve OKE demandée » de la PR | Preuve datée dans `backlog/evidence/` | Opérateur OKE (délégué par l'orchestrateur ; une zone d'écriture par opérateur) |
 | DONE | Toutes les cases cochées, PR fusionnée | Statut dérivé `done` (`tools/backlog/derive.py`) | Calculé |
 
 Règles : un ticket = un propriétaire = une branche = une PR. Branche `claude/t-NNN-*`, jamais `claude/issue-*` hors
