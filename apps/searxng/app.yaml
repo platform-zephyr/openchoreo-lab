@@ -18,6 +18,11 @@ spec:
     port: 8080
     healthPath: /healthz   # [S] endpoint a verifier au runtime
     size: medium
+    # T-517 : l'entrypoint de l'image ecrit /etc/searxng/settings.yml (rootfs RO) ; on lance granian directement
+    # sur le modele de l'image (lecture seule). SEARXNG_SECRET (secrets[]) prime sur secret_key. Voir NOTES.md.
+    command: [/usr/local/searxng/.venv/bin/granian]
+    args: ["searx.webapp:app"]
+    env: {SEARXNG_SETTINGS_PATH: /usr/local/searxng/settings.template.yml}
   secrets:
     - {env: SEARXNG_SECRET, key: SEARXNG_SECRET}
   exposure: {mode: private, auth: none}

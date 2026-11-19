@@ -11,11 +11,17 @@ spec:
   container:
     image: docker.io/searxng/searxng:2026.9.30-a9d990033@sha256:a07a5cd2da2c63d66e559f9e4d3a3db106cfc6c32fb0ac70abe91cc28bcd7350
     env:
+    - key: SEARXNG_SETTINGS_PATH
+      value: /usr/local/searxng/settings.template.yml
     - key: SEARXNG_SECRET
       valueFrom:
         secretKeyRef:
           name: searxng-secrets
           key: SEARXNG_SECRET
+    command:
+    - /usr/local/searxng/.venv/bin/granian
+    args:
+    - searx.webapp:app
   endpoints:
     http:
       type: HTTP
