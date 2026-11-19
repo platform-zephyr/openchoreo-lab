@@ -1,0 +1,12 @@
+# Apps déployées sur OKE par l'ApplicationSet lab-o (T-502) : UNE entrée `- app: <nom>` par app.
+# Lue par le générateur Git `files` d'Argo CD (un tableau = un jeu de paramètres par élément) ;
+# l'ApplicationSet crée `lab-o-<nom>` sur generated/namespaces/default/projects/<nom>.
+# Ajouter une app OKE = apps/<nom>/app.yaml + sa sortie generated/ + une ligne ici, dans la même PR.
+# Une app absente de cette liste n'est pas déployée sur OKE : une app k3d ne touche ni ce fichier ni Argo.
+# tools/oke/argo_guard.py (O5) refuse une entrée qui n'est pas une app OKE stateless générée (cluster: oke,
+# profile: stateless, ni storage ni database), un nom hors [a-z0-9-], un doublon ou une autre clé que `app`.
+# echo-bench et miniflux restent absents tant que la passe 0 n'a pas eu lieu.
+- app: echo-demo
+- app: ntfy
+- app: searxng
+- app: whoami

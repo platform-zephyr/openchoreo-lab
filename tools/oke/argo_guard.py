@@ -13,9 +13,10 @@ Refuse :
       platform/authz), lab-o à l'ApplicationSet lab-o (aucune Application écrite à la main) ;
   A3. une Application `lab-platform` hors platform/, ou visant platform/install/argocd/ ou platform/authz/ ; toute
       source multiple, Helm, plugin ou kustomize ;
-  O1-O5 (ApplicationSet lab-o, T-491) : un seul, sous apps/ ; missingkey=error, preserveResourcesOnDeletion ;
-      UN générateur git `directories` (projects/*, dépôt du labo, main) ; modèle : projet et destination
-      LITTÉRAUX, ni templatePatch ; toute app non OKE stateless est exclue ; A3 : `sources[]` refusé ;
+  O1-O5 (ApplicationSet lab-o, T-491, T-502) : un seul, sous apps/ ; missingkey=error, preserveResourcesOnDeletion ;
+      UN générateur git `files` sur la SEULE liste clusters/oke/lab-o-apps.yaml (dépôt du labo, main) ; modèle :
+      projet et destination LITTÉRAUX, chemin projects/{{.app}}, ni templatePatch ; O5 : chaque entrée de la liste
+      est `{app: <nom DNS>}`, unique, générée sous projects/<nom> et OKE stateless ; A3 : `sources[]` refusé ;
       A2 : aucune Application écrite à la main dans le projet lab-o ;
   A4. une synchro `automated` sur un projet lab-authz ou lab-platform (synchro MANUELLE, flux A2) ;
   P1. un AppProject hors des fichiers de bootstrap (project-lab.yaml : lab-platform, lab-o, lab-authz, lab-root,
@@ -40,6 +41,7 @@ Ne remplace pas la revue (CODEOWNERS, docs/CI-PLATFORM-CHECKS.md).
 """
 import fnmatch
 import pathlib
+import re
 import sys
 
 import yaml
@@ -55,6 +57,9 @@ PROJECT_FILES = {f"{ARGO}/project-lab.yaml": set(LAB_PROJECTS), f"{ARGO}/project
 ALLOWED_PROJECTS, CHILD_PROJECTS = set(LAB_PROJECTS) - {"lab-k"}, set(LAB_PROJECTS) - {"lab-k", "lab-root"}  # L4
 SYNC_PROJECTS = ("lab-platform", "lab-o")  # projets dont les objets synchronisés sont contrôlés (S1)
 APPS_PATH = "generated/namespaces/default"
+APP_PATH_TPL = APPS_PATH + "/projects/{{.app}}"  # chemin source du modèle lab-o (O4)
+LAB_O_LIST = "clusters/oke/lab-o-apps.yaml"  # apps OKE de lab-o (T-502) : liste `- app: <nom>`, générateur git files
+APP_NAME = re.compile(r"[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?")  # nom d'app : label DNS (ni `/`, ni `.`, ni gabarit)
 REPO_URLS = {"https://github.com/platform-zephyr/openchoreo-lab", "https://github.com/platform-zephyr/openchoreo-lab.git"}
 # Kinds OpenChoreo applicatifs (sortie de tools/appgen) : seuls admis par lab-o et sous generated/namespaces.
 APP_KINDS = {"Project", "Component", "ComponentRelease", "Workload", "ReleaseBinding", "ProjectReleaseBinding",
@@ -104,6 +109,7 @@ class Guard(LabKRules):
         self.errs = []
         self.appsets = []  # ApplicationSet lab-o lus (fichiers synchronisés, S1)
         self.files = {}  # chemin relatif -> liste d'objets
+        self.lab_o_list = None  # contenu YAML de LAB_O_LIST (None : fichier absent)
 
     def err(self, rel, msg):
         self.errs.append(f"{rel}: {msg}")
@@ -128,7 +134,20 @@ class Guard(LabKRules):
                     bad += 1
                     continue
                 self.files[rel] = [d for d in objs if d.get("kind")]
-        return bad
+        return bad + self.load_lab_o_list()
+
+    def load_lab_o_list(self):
+        """Lit LAB_O_LIST (hors SCAN : une liste, pas des objets) ; 1 si illisible (échec fermé)."""
+        f = self.root / LAB_O_LIST
+        if not f.is_file():
+            return 0
+        try:
+            with open(f, encoding="utf-8") as fh:
+                self.lab_o_list = yaml.load(fh, Loader=Loader)
+        except yaml.YAMLError as e:
+            print(f"ILLISIBLE {LAB_O_LIST}: {e}".splitlines()[0])
+            return 1
+        return 0
 
     def objects(self, kind=None):
         for rel, objs in self.files.items():
@@ -348,12 +367,35 @@ class Guard(LabKRules):
             self.err(rel, f"O1 ApplicationSet '{name}' : seul `lab-o`, un exemplaire, sous {ARGO}/apps/ est admis")
         self.appsets.append(d)
         self.rule_o2_options(rel, spec)
-        excluded = self.rule_o3_generator(rel, spec)
+        self.rule_o3_generator(rel, spec)
         self.rule_o4_template(rel, spec)
-        pre = APPS_PATH + "/projects/"  # O5 : toute app non OKE stateless est exclue (le générateur ne lit pas app.yaml)
-        for dirname in sorted({r[len(pre):].split("/")[0] for r in self.files if r.startswith(pre)} - self.oke_apps() - excluded):
-            self.err(rel, f"O5 lab-o : app '{dirname}' non OKE stateless et non exclue "
-                          "(apps/<app>/app.yaml : cluster oke, profile stateless, sans storage ni database)")
+        self.rule_o5_list()
+
+    def lab_o_apps(self):
+        """Noms valides de LAB_O_LIST (entrées `{app: <nom DNS>}`) ; les autres sont refusées par O5."""
+        items = self.lab_o_list if isinstance(self.lab_o_list, list) else []
+        return [e["app"] for e in items if isinstance(e, dict) and set(e) == {"app"}
+                and isinstance(e["app"], str) and APP_NAME.fullmatch(e["app"])]
+
+    def rule_o5_list(self):
+        """O5 : la liste existe ; chaque entrée est `{app: <nom DNS>}`, unique, générée et OKE stateless."""
+        if not isinstance(self.lab_o_list, list):
+            self.err(LAB_O_LIST, "O5 lab-o : liste absente ou invalide (attendu : une liste `- app: <nom>`)")
+            return
+        valid = self.lab_o_apps()
+        for e in self.lab_o_list:
+            if not (isinstance(e, dict) and set(e) == {"app"} and e["app"] in valid):
+                self.err(LAB_O_LIST, f"O5 lab-o : entrée invalide {e} (attendu : {{app: <nom DNS>}})")
+        pre, oke, seen = APPS_PATH + "/projects/", self.oke_apps(), set()
+        for a in valid:
+            if a in seen:
+                self.err(LAB_O_LIST, f"O5 lab-o : app '{a}' listée deux fois")
+            seen.add(a)
+            if a not in oke:
+                self.err(LAB_O_LIST, f"O5 lab-o : app '{a}' listée mais non OKE stateless "
+                                     "(apps/<app>/app.yaml : cluster oke, profile stateless, sans storage ni database)")
+            if not any(r.startswith(f"{pre}{a}/") for r in self.files):
+                self.err(LAB_O_LIST, f"O5 lab-o : app '{a}' listée sans dossier {pre}{a}/ (sortie de tools/appgen)")
 
     def want(self, rel, ok, code, msg):  # exigence littérale : écart `<code> lab-o : <msg>` si `ok` est faux
         if not ok:
@@ -373,42 +415,25 @@ class Guard(LabKRules):
         self.only(rel, "O2", spec, ("goTemplate", "goTemplateOptions", "syncPolicy", "generators", "template"), "spec")
 
     def rule_o3_generator(self, rel, spec):
-        """O3 : UN générateur `directories` sur projects/*, dépôt du labo, main ; rend l'ensemble des exclusions."""
+        """O3 : UN générateur git `files` sur la seule liste LAB_O_LIST, dépôt du labo, main."""
         gens = spec.get("generators")
         if not isinstance(gens, list) or len(gens) != 1 or not isinstance(gens[0], dict) \
                 or set(gens[0]) != {"git"} or not isinstance(gens[0]["git"], dict):
             self.err(rel, "O3 lab-o : un seul générateur, de type git, est admis")
-            return set()
+            return
         g = gens[0]["git"]
-        self.only(rel, "O3", g, ("repoURL", "revision", "directories", "requeueAfterSeconds"), "generators[0].git")
+        self.only(rel, "O3", g, ("repoURL", "revision", "files", "requeueAfterSeconds"), "generators[0].git")
         self.want(rel, g.get("repoURL") in REPO_URLS, "O3", f"git.repoURL '{g.get('repoURL')}' hors dépôt du labo")
         self.want(rel, g.get("revision") == "main", "O3", "git.revision doit être main")
-        return self.rule_o3_directories(rel, g.get("directories"))
-
-    def rule_o3_directories(self, rel, dirs):
-        """O3 : une inclusion projects/*, des exclusions projects/<app> exactes ; rend les apps exclues."""
-        prefix = APPS_PATH + "/projects/"
-        includes, excluded = [], set()
-        for e in dirs if isinstance(dirs, list) else []:
-            path = str(e.get("path", "")) if isinstance(e, dict) else ""
-            if not isinstance(e, dict) or set(e) - {"path", "exclude"}:
-                self.err(rel, f"O3 lab-o : entrée directories invalide {e}")
-            elif e.get("exclude") is not True:
-                includes.append(path)
-            elif path.startswith(prefix) and path[len(prefix):] and not {"/", "*"} & set(path[len(prefix):]):
-                excluded.add(path[len(prefix):])
-            else:
-                self.err(rel, f"O3 lab-o : exclusion '{path}' : seul {prefix}<app> est admis")
-        if includes != [prefix + "*"]:
-            self.err(rel, f"O3 lab-o : une seule entrée d'inclusion, {prefix}*, est admise (trouvé {includes})")
-        return excluded
+        self.want(rel, g.get("files") == [{"path": LAB_O_LIST}], "O3",
+                  f"git.files doit être exactement [{{path: {LAB_O_LIST}}}] (trouvé {g.get('files')})")
 
     def rule_o4_template(self, rel, spec):
         """O4 : modèle d'Application : nom préfixé, projet et destination LITTÉRAUX, source = dossier de l'app seulement."""
         tpl = spec.get("template") or {}
         ts = tpl.get("spec") or {}
-        self.want(rel, (tpl.get("metadata") or {}).get("name") == "lab-o-{{.path.basename}}",
-                  "O4", "template.metadata.name doit être lab-o-{{.path.basename}}")
+        self.want(rel, (tpl.get("metadata") or {}).get("name") == "lab-o-{{.app}}",
+                  "O4", "template.metadata.name doit être lab-o-{{.app}}")
         self.want(rel, ts.get("project") == "lab-o", "O4", "template.spec.project doit être le littéral lab-o (jamais un paramètre)")
         self.want(rel, ts.get("destination") == {"server": "https://kubernetes.default.svc", "namespace": "default"},
                   "O4", "template.spec.destination doit être le littéral {server: https://kubernetes.default.svc, namespace: default}")
@@ -418,21 +443,19 @@ class Guard(LabKRules):
         self.rule_o4_source(rel, ts.get("source") or {})
 
     def rule_o4_source(self, rel, src):
-        """O4 : source = dépôt du labo, main, chemin {{.path.path}}, répertoire YAML récursif seulement."""
+        """O4 : source = dépôt du labo, main, chemin projects/{{.app}}, répertoire YAML récursif seulement."""
         self.only(rel, "O4", src, ("repoURL", "targetRevision", "path", "directory"), "template.spec.source")
         self.want(rel, src.get("repoURL") in REPO_URLS and src.get("targetRevision") == "main",
                   "O4", "template.spec.source : dépôt du labo et targetRevision main littéraux exigés")
-        self.want(rel, src.get("path") == "{{.path.path}}", "O4", "template.spec.source.path doit être {{.path.path}}")
+        self.want(rel, src.get("path") == APP_PATH_TPL, "O4", f"template.spec.source.path doit être {APP_PATH_TPL}")
         self.want(rel, src.get("directory") == {"recurse": True, "include": "*.yaml"},
                   "O4", 'template.spec.source.directory doit être {recurse: true, include: "*.yaml"}')
 
-    def appset_files(self, appset):
-        """Fichiers synchronisés par les Applications de l'ApplicationSet lab-o : projects/<app>/**/*.yaml hors exclusions."""
+    def appset_files(self, _appset):
+        """Fichiers synchronisés par les Applications de l'ApplicationSet lab-o : projects/<app>/**/*.yaml des apps listées."""
         pre = APPS_PATH + "/projects/"
-        gens = (appset.get("spec") or {}).get("generators") or []
-        ex = {str(e.get("path", ""))[len(pre):] for g in gens for e in ((g or {}).get("git") or {}).get("directories") or []
-              if isinstance(e, dict) and e.get("exclude") is True}
-        return {r for r in self.files if r.startswith(pre) and r.endswith(".yaml") and r[len(pre):].split("/")[0] not in ex}
+        apps = set(self.lab_o_apps())
+        return {r for r in self.files if r.startswith(pre) and r.endswith(".yaml") and r[len(pre):].split("/")[0] in apps}
 
     def synced(self, apps):
         """Fichiers que chaque projet contrôlé (SYNC_PROJECTS) synchronise, par Application."""

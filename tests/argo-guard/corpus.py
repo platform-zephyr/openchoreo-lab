@@ -198,17 +198,16 @@ def apps_cases():
 
 
 def appset_obj(**over):
-    """ApplicationSet lab-o conforme (T-491) ; `over` remplace des clés de spec."""
-    prefix = GUARD.APPS_PATH + "/projects/"
+    """ApplicationSet lab-o conforme (T-491, T-502) ; `over` remplace des clés de spec."""
     spec = {
         "goTemplate": True, "goTemplateOptions": ["missingkey=error"],
         "syncPolicy": {"preserveResourcesOnDeletion": True},
         "generators": [{"git": {"repoURL": REPO, "revision": "main",
-                                "directories": [{"path": prefix + "*"}, {"path": prefix + "k3dapp", "exclude": True}]}}],
+                                "files": [{"path": GUARD.LAB_O_LIST}]}}],
         "template": {
-            "metadata": {"name": "lab-o-{{.path.basename}}"},
+            "metadata": {"name": "lab-o-{{.app}}"},
             "spec": {"project": "lab-o",
-                     "source": {"repoURL": REPO, "targetRevision": "main", "path": "{{.path.path}}",
+                     "source": {"repoURL": REPO, "targetRevision": "main", "path": GUARD.APP_PATH_TPL,
                                 "directory": {"recurse": True, "include": "*.yaml"}},
                      "destination": {"server": "https://kubernetes.default.svc", "namespace": "default"},
                      "syncPolicy": {"automated": {"prune": False, "selfHeal": True}}}},
@@ -241,29 +240,32 @@ def appset_specs():
         "template-patch": appset_obj(templatePatch="spec:\n  project: x"),
         "strategie": appset_obj(strategy={"type": "RollingSync"}),
         "deux-generateurs": appset_obj(generators=ok["spec"]["generators"] * 2),
-        "generateur-files": appset_obj(generators=[{"git": {"repoURL": REPO, "revision": "main",
-                                                            "files": [{"path": "apps/*/app.yaml"}]}}]),
+        "generateur-directories": appset_obj(generators=[{"git": {"repoURL": REPO, "revision": "main",
+                                                                  "directories": [{"path": prefix + "*"}]}}]),
         "generateur-list": appset_obj(generators=[{"list": {"elements": []}}]),
         "generateur-absent": appset_obj(generators=[]),
         "depot-autre": appset_obj(**gen(repoURL="https://example.org/evil")),
         "revision-dev": appset_obj(**gen(revision="dev")),
-        "inclusion-racine": appset_obj(**gen(directories=[{"path": "generated/namespaces/default"}])),
-        "inclusion-large": appset_obj(**gen(directories=[{"path": "generated/*"}])),
-        "inclusion-deux": appset_obj(**gen(directories=[{"path": prefix + "*"}, {"path": prefix + "x"}])),
-        "exclusion-glob": appset_obj(**gen(directories=[{"path": prefix + "*"}, {"path": prefix + "k*", "exclude": True}])),
-        "exclusion-hors-prefixe": appset_obj(**gen(directories=[{"path": prefix + "*"},
-                                                                 {"path": "platform", "exclude": True}])),
-        "entree-cle-inconnue": appset_obj(**gen(directories=[{"path": prefix + "*", "foo": 1}])),
+        "files-autre-liste": appset_obj(**gen(files=[{"path": "clusters/k3d/lab-o-apps.yaml"}])),
+        "files-glob": appset_obj(**gen(files=[{"path": "apps/*/app.yaml"}])),
+        "files-deux": appset_obj(**gen(files=[{"path": GUARD.LAB_O_LIST}, {"path": "clusters/k3d/x.yaml"}])),
+        "files-exclusion": appset_obj(**gen(files=[{"path": GUARD.LAB_O_LIST, "exclude": True}])),
+        "files-et-directories": appset_obj(**gen(directories=[{"path": prefix + "*"}])),
+        "files-absent": appset_obj(**gen(files=[])),
         "nom-autre": appset_obj(**{"template": dict(ok["spec"]["template"], metadata={"name": "{{.path.basename}}"})}),
-        "projet-parametre": appset_obj(**tpl(project="{{.path.basename}}")),
+        "projet-parametre": appset_obj(**tpl(project="{{.app}}")),
         "projet-autre": appset_obj(**tpl(project="lab-platform")),
         "projet-default": appset_obj(**tpl(project="default")),
         "destination-parametree": appset_obj(**tpl(destination={"server": "https://kubernetes.default.svc",
-                                                                "namespace": "{{.path.basename}}"})),
+                                                                "namespace": "{{.app}}"})),
         "destination-kube-system": appset_obj(**tpl(destination={"server": "https://kubernetes.default.svc",
                                                                  "namespace": "kube-system"})),
         "destination-serveur": appset_obj(**tpl(destination={"server": "https://evil.example.org",
                                                              "namespace": "default"})),
+        "source-chemin-path": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"],
+                                                           path="{{.path.path}}"))),
+        "nom-path": appset_obj(**{"template": dict(ok["spec"]["template"],
+                                                    metadata={"name": "lab-o-{{.path.basename}}"})}),
         "source-chemin-fixe": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"], path="platform"))),
         "source-helm": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"], helm={}))),
         "source-depot": appset_obj(**tpl(source=dict(ok["spec"]["template"]["spec"]["source"],
@@ -280,9 +282,13 @@ def appset_specs():
     }
 
 
-def run_appset(mod, rel, obj, files=None):
+DEFAULT_LIST = [{"app": "w"}]
+
+
+def run_appset(mod, rel, obj, files=None, lab_o_list=DEFAULT_LIST):
     g = mod.Guard(ROOT)
     g.files = files if files is not None else {}
+    g.lab_o_list = lab_o_list
     g.oke_apps = lambda: {"w"}
     g.check_appset(rel, obj)
     return g.errs
@@ -537,10 +543,32 @@ def run_psa(mod, o, level):
     return {"errs": errs, "warns": warns}
 
 
+def lab_o_list_cases():
+    """Variantes de clusters/oke/lab-o-apps.yaml (O5, T-502) : `ok` conforme, les autres ont un écart."""
+    return {
+        "ok": [{"app": "w"}],
+        "vide": [],
+        "absente": None,
+        "objet": {"app": "w"},
+        "texte": "w",
+        "app-k3d": [{"app": "w"}, {"app": "k3dapp"}],
+        "app-sans-generated": [{"app": "w"}, {"app": "fantome"}],
+        "doublon": [{"app": "w"}, {"app": "w"}],
+        "remontee": [{"app": "../../../../platform"}],
+        "chemin": [{"app": "w/sub"}],
+        "gabarit": [{"app": "{{.path.path}}"}],
+        "majuscules": [{"app": "W"}],
+        "nombre": [{"app": 7}],
+        "cle-en-plus": [{"app": "w", "path": "platform"}],
+        "cle-autre": [{"name": "w"}],
+        "entree-texte": ["w"],
+    }
+
+
 # --- production du gel -------------------------------------------------------------------------------------
 def build(mod_guard=GUARD, mod_psa=PSA):
-    out = {"check_projects": {}, "check_apps": {}, "check_appset": {}, "synced": {}, "check_synced": {},
-           "oke_apps": {}, "psa_check": {}}
+    out = {"check_projects": {}, "check_apps": {}, "check_appset": {}, "lab_o_list": {}, "synced": {},
+           "check_synced": {}, "oke_apps": {}, "psa_check": {}}
     for cid, p in projects_cases():
         out["check_projects"][cid] = run_projects(mod_guard, p)
     for cid, rel, o in apps_cases():
@@ -550,6 +578,11 @@ def build(mod_guard=GUARD, mod_psa=PSA):
     for sid, o in appset_specs().items():
         for rel in (f"{A}/apps/lab-apps.yaml", "platform/x.yaml"):
             out["check_appset"][f"{sid}/{rel}"] = run_appset(mod_guard, rel, o, tree)
+    for lid, lst in lab_o_list_cases().items():
+        g = mod_guard.Guard(ROOT)
+        g.files, g.lab_o_list, g.oke_apps = tree, lst, (lambda: {"w"})
+        g.rule_o5_list()
+        out["lab_o_list"][lid] = {"errs": g.errs, "files": sorted(g.appset_files(None))}
     for cid, files, o in synced_cases():
         out["synced"][cid] = run_synced(mod_guard, files, o)
     for pid, spec in project_specs().items():

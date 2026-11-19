@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Tests de tools/oke/argo_guard.py (revue PR #8, P1). Hors cluster, sans réseau.
-# Chaque cas copie platform/, generated/ et apps/ dans un répertoire TEMPORAIRE hors dépôt (mktemp), y pose
+# Chaque cas copie platform/, generated/, apps/ et clusters/ dans un répertoire TEMPORAIRE hors dépôt (mktemp), y pose
 # UN piège, lance argo_guard et exige un refus (rc != 0) portant le code de règle attendu. Cas positif :
 # copie intacte => rc=0. Usage : tests/argo-guard/run.sh   (python3 + PyYAML)
 set -euo pipefail
@@ -14,7 +14,7 @@ A=platform/install/argocd
 fresh() { # copie neuve de l'arbre contrôlé ; affiche son chemin
   local d="$WORK/$1"
   mkdir -p "$d"
-  cp -R "$REPO/platform" "$REPO/generated" "$REPO/apps" "$d/"
+  cp -R "$REPO/platform" "$REPO/generated" "$REPO/apps" "$REPO/clusters" "$d/"
   printf '%s\n' "$d"
 }
 
@@ -281,14 +281,14 @@ PY
 }
 
 # 26. Projet tiré du dépôt applicatif (paramètre) au lieu du littéral lab-o.
-d="$(fresh appset-projet)"; mutate "$d" "      project: lab-o" "      project: '{{.path.basename}}'"
+d="$(fresh appset-projet)"; mutate "$d" "      project: lab-o" "      project: '{{.app}}'"
 check appset-projet-parametre refus "O4 lab-o : template.spec.project doit être le littéral lab-o" "$d"
 d="$(fresh appset-projet-default)"; mutate "$d" "      project: lab-o" "      project: default"
 check appset-projet-default refus "O4 lab-o : template.spec.project doit être le littéral lab-o" "$d"
 
 # 27. Destination tirée du dépôt applicatif, ou autre namespace.
 d="$(fresh appset-dest)"; mutate "$d" "        namespace: default
-      syncPolicy" "        namespace: '{{.path.basename}}'
+      syncPolicy" "        namespace: '{{.app}}'
       syncPolicy"
 check appset-destination-parametree refus "O4 lab-o : template.spec.destination doit être le littéral" "$d"
 d="$(fresh appset-dest-ks)"; mutate "$d" "        namespace: default
@@ -296,13 +296,15 @@ d="$(fresh appset-dest-ks)"; mutate "$d" "        namespace: default
       syncPolicy"
 check appset-destination-kube-system refus "O4 lab-o : template.spec.destination doit être le littéral" "$d"
 
-# 28. templatePatch (réécriture du modèle par un paramètre), générateur `files`, dépôt étranger.
+# 28. templatePatch (réécriture du modèle par un paramètre), générateur `directories` ajouté, dépôt étranger.
 d="$(fresh appset-patch)"; mutate "$d" "  goTemplate: true" "  templatePatch: 'spec: {project: x}'
   goTemplate: true"
 check appset-templatepatch refus "O2 lab-o : spec.templatePatch interdit" "$d"
-d="$(fresh appset-files)"; mutate "$d" "        directories:" "        files: [{path: 'apps/*/app.yaml'}]
-        directories:"
-check appset-generateur-files refus "O3 lab-o : generators\[0\].git.files interdit" "$d"
+d="$(fresh appset-dirs)"; mutate "$d" "        files:" "        directories: [{path: 'generated/namespaces/default/projects/*'}]
+        files:"
+check appset-generateur-directories refus "O3 lab-o : generators\[0\].git.directories interdit" "$d"
+d="$(fresh appset-autre-liste)"; mutate "$d" "path: clusters/oke/lab-o-apps.yaml" "path: 'apps/*/app.yaml'"
+check appset-files-autre-fichier refus "O3 lab-o : git.files doit être exactement" "$d"
 d="$(fresh appset-depot)"; mutate "$d" "        repoURL: https://github.com/platform-zephyr/openchoreo-lab
         revision: main" "        repoURL: https://example.org/evil
         revision: main"
@@ -313,38 +315,67 @@ d="$(fresh appset-missingkey)"; mutate "$d" '  goTemplateOptions: ["missingkey=e
 check appset-sans-missingkey refus "O2 lab-o : goTemplate: true et goTemplateOptions" "$d"
 d="$(fresh appset-preserve)"; mutate "$d" "preserveResourcesOnDeletion: true" "preserveResourcesOnDeletion: false"
 check appset-sans-preserve refus "O2 lab-o : syncPolicy.preserveResourcesOnDeletion" "$d"
-d="$(fresh appset-chemin)"; mutate "$d" '        path: "{{.path.path}}"' "        path: platform"
+d="$(fresh appset-chemin)"; mutate "$d" '        path: "generated/namespaces/default/projects/{{.app}}"' "        path: platform"
 check appset-chemin-fixe refus "O4 lab-o : template.spec.source.path doit être" "$d"
 
-# 30. App k3d (volume interdit sur OKE) retirée de la liste d'exclusion : déployée par le générateur.
-d="$(fresh appset-k3d)"; mutate "$d" "          - {path: generated/namespaces/default/projects/miniflux, exclude: true}
-" ""
-check appset-app-k3d-non-exclue refus "O5 lab-o : app .miniflux. non OKE stateless et non exclue" "$d"
+# 30. Liste OKE (T-502, clusters/oke/lab-o-apps.yaml) : une app k3d (volume interdit sur OKE) ajoutée, un nom qui
+#     remonte l'arborescence, un nom-gabarit, une clé en plus, un doublon, une app sans sortie generated/, liste absente.
+LIST=clusters/oke/lab-o-apps.yaml
+addlist() { printf '%s\n' "$2" >> "$1/$LIST"; } # DOSSIER LIGNE : ajoute une entrée à la liste
+d="$(fresh liste-k3d)"; addlist "$d" "- app: miniflux"
+check liste-app-k3d refus "O5 lab-o : app .miniflux. listée mais non OKE stateless" "$d"
+d="$(fresh liste-remontee)"; addlist "$d" "- app: ../../../../platform/install/argocd"
+check liste-remontee refus "O5 lab-o : entrée invalide \{'app': '../../../../platform/install/argocd'\}" "$d"
+d="$(fresh liste-gabarit)"; addlist "$d" "- app: '{{.path.path}}'"
+check liste-gabarit refus "O5 lab-o : entrée invalide" "$d"
+d="$(fresh liste-cle)"; addlist "$d" "- {app: whoami, project: lab-platform}"
+check liste-cle-en-plus refus "O5 lab-o : entrée invalide" "$d"
+d="$(fresh liste-doublon)"; addlist "$d" "- app: whoami"
+check liste-doublon refus "O5 lab-o : app .whoami. listée deux fois" "$d"
+d="$(fresh liste-fantome)"; cp -R "$d/apps/whoami" "$d/apps/zz-fantome"; addlist "$d" "- app: zz-fantome"
+check liste-sans-generated refus "O5 lab-o : app .zz-fantome. listée sans dossier" "$d"
+d="$(fresh liste-absente)"; rm "$d/$LIST"
+check liste-absente refus "O5 lab-o : liste absente ou invalide" "$d"
+d="$(fresh liste-illisible)"; addlist "$d" "- app: [whoami"
+check liste-illisible refus "ILLISIBLE clusters/oke/lab-o-apps.yaml" "$d"
 
-# 31. Flip de politique sur l'app elle-même : ntfy repasse en k3d, puis en stateful (volume).
+# 31. Flip de politique sur une app listée : ntfy repasse en k3d, puis en stateful (volume).
 d="$(fresh ntfy-k3d)"; python3 -I -c 'import sys,pathlib
 p=pathlib.Path(sys.argv[1]); s=p.read_text(); assert "cluster: oke" in s; p.write_text(s.replace("cluster: oke","cluster: k3d",1))' "$d/apps/ntfy/app.yaml"
-check ntfy-passe-k3d refus "O5 lab-o : app .ntfy. non OKE stateless et non exclue" "$d"
+check ntfy-passe-k3d refus "O5 lab-o : app .ntfy. listée mais non OKE stateless" "$d"
 d="$(fresh ntfy-stateful)"; python3 -I -c 'import sys,pathlib
 p=pathlib.Path(sys.argv[1]); s=p.read_text(); assert "profile: stateless" in s; p.write_text(s.replace("profile: stateless","profile: stateful",1))' "$d/apps/ntfy/app.yaml"
-check ntfy-passe-stateful refus "O5 lab-o : app .ntfy. non OKE stateless et non exclue" "$d"
+check ntfy-passe-stateful refus "O5 lab-o : app .ntfy. listée mais non OKE stateless" "$d"
 
 # 32. Un second ApplicationSet, ou un ApplicationSet hors apps/ : refus.
 d="$(fresh appset-second)"; sed 's/name: lab-o$/name: lab-evil/' "$d/$APPSET" > "$d/$A/apps/evil-appset.yaml"
 check appset-second refus "O1 ApplicationSet .lab-evil. : seul .lab-o., un exemplaire" "$d"
 
-# 33. App témoin (critère 4 de T-491) : une app OKE ajoutée par apps/<app>/app.yaml et sa sortie generated/ SEULS,
-#     sans modifier platform/ ni l'ApplicationSet : le contrôle statique passe et la synchronise.
+# 33. App témoin (critère 4 de T-491, T-502) : une app OKE ajoutée par apps/<app>/app.yaml, sa sortie generated/ et
+#     UNE ligne de clusters/oke/lab-o-apps.yaml, sans modifier platform/ : le contrôle statique passe et la synchronise.
+#     Une app k3d ajoutée sans toucher la liste : 0 écart et rien de plus n'est synchronisé (frontière Argo intacte).
+lab_o_count() { python3 -I "$GUARD" "$1" | grep -oE '[0-9]+ par lab-o'; }
+n_before="$(lab_o_count "$(fresh app-temoin-ref)")"
 d="$(fresh app-temoin)"
 cp -R "$d/apps/whoami" "$d/apps/zz-temoin"
 cp -R "$d/generated/namespaces/default/projects/whoami" "$d/generated/namespaces/default/projects/zz-temoin"
+addlist "$d" "- app: zz-temoin"
 check app-temoin-sans-edition-platform 0 " 0 écart" "$d"
-n_before="$(python3 -I "$GUARD" "$(fresh app-temoin-ref)" | grep -oE '[0-9]+ par lab-o')"
-n_after="$(python3 -I "$GUARD" "$d" | grep -oE '[0-9]+ par lab-o')"
+n_after="$(lab_o_count "$d")"
 if [[ "$n_before" != "$n_after" ]]; then
   printf 'PASS %-28s fichiers synchronisés par lab-o : %s -> %s\n' app-temoin-synchronisee "$n_before" "$n_after"; pass=$((pass + 1))
 else
   printf 'FAIL %-28s l app témoin n est pas synchronisée (%s)\n' app-temoin-synchronisee "$n_after"; fail=$((fail + 1))
+fi
+d="$(fresh app-k3d-hors-liste)"
+cp -R "$d/apps/miniflux" "$d/apps/zz-k3d"
+cp -R "$d/generated/namespaces/default/projects/miniflux" "$d/generated/namespaces/default/projects/zz-k3d"
+check app-k3d-hors-liste 0 " 0 écart" "$d"
+n_k3d="$(lab_o_count "$d")"
+if [[ "$n_before" == "$n_k3d" ]]; then
+  printf 'PASS %-28s app k3d non synchronisée par lab-o : %s\n' app-k3d-non-synchronisee "$n_k3d"; pass=$((pass + 1))
+else
+  printf 'FAIL %-28s app k3d synchronisée par lab-o : %s -> %s\n' app-k3d-non-synchronisee "$n_before" "$n_k3d"; fail=$((fail + 1))
 fi
 
 # 34. Socle cluster (T-494) : platform/baseline/ est synchronisé par lab-platform, mais seuls les 8 objets nommés
