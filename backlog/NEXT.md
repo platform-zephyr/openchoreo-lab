@@ -1,4 +1,42 @@
-# Prochaines étapes (tenu à la main par le coordinateur — dernière mise à jour 2026-11-18)
+# Prochaines étapes (tenu à la main par le coordinateur — dernière mise à jour 2026-11-19, passation T-510)
+
+Point d'entrée : ce fichier, puis `docs/state/HANDOFF-COORDINATEUR.md`. Passation à un orchestrateur unique sur le Mac. L'état se calcule : `python3 tools/backlog/status.py`.
+
+## État en une ligne (2026-11-19)
+OpenChoreo est installé sur OKE (plateforme et bras O : whoami, ntfy, echo-demo, searxng ; 52 % CPU, 32 pods sur 33). Check runs GitHub lus sans identifiant (T-489, T-497, T-507). searxng est en échec (T-499 case 4). T-060 : résidu kgateway accepté jusqu'à FINAL0, PR #169 brouillon non appliquée. T-006 : `cloudflared` livré en Git (#162), bloqué par la géorestriction Cloudflare et l'absence du client `reader`.
+
+## Chemin critique, dans l'ordre
+1. Preuves OKE des couloirs : T-515 (searxng, probes, `verify.sh --all`, `lab-o`, `maxPods`) ; T-499 case 4 ; T-487 cases 2, 3, 6 ; T-495 case 5 ; T-498 case 2 (réponses de Paul).
+2. T-486 passe 0 du banc A/B (T-501 prérequis fusionnés ; T-212 et T-504 pour le bras K ; synchroniser `lab-k-root` à ce moment seulement).
+3. Décision de porte ADR-0020 (façade ou objets natifs), avec les mesures de la passe 0 et le GEL levé ou confirmé.
+
+## Couloirs en cours (propriétaires ; ne pas toucher leurs tickets)
+T-501 (banc A/B), T-502 (`lab-o`), T-504 (fidélité bras K), T-505 (`argo-escalation`), T-506 (`lab-k`), T-507, T-508 (gouvernance), T-509 (documentation d'orchestration).
+
+## Tickets de suite ouverts par T-510
+- T-511 `lab-store` renommé `default` à la prochaine réinstallation OKE ; T-512 alignements textuels de T-502 ; T-513 `K3D_REQUIRED` (fusion ne prouve pas k3d) ; T-514 mesure `argo-escalation` et k3d après T-505 ; T-515 preuves OKE en attente d'un opérateur.
+
+## GEL
+Aucune ligne nouvelle dans `tools/appgen/` ni dans `tools/oke/argo_guard*` jusqu'à la décision « façade ou objets natifs ». Un correctif qui s'y rattache attend la décision (cas T-499, T-511).
+
+## Gestes de Paul
+- Rendre `bench-ab-arm-k` public (T-495 case 3 ; sinon App GitHub en lecture seule).
+- Test d'écriture négatif de l'App `openchoreo-status` : permissions Checks et Commit statuses en écriture, Metadata en lecture (T-489 case 4, T-515).
+- Certificat de sauvegarde du state de homelab-infra.
+- MANDAT #626.
+- 2FA.
+- Signature du tag `core-baseline` (T-305, avant FINAL0).
+- Réponses aux 5 questions de `docs/research/OPENCHOREO-DEMO-NATIVE.md` §5 (T-498) ; client Authentik `reader` et application Access (T-006) ; `K3D_REQUIRED` (T-513).
+
+## Pièges
+- Un check run `success` prouve la synchro GitOps, pas la santé de l'app (searxng).
+- La sandbox cloud sort par les États-Unis : 403 Cloudflare, ne pas contourner ; le canal des agents cloud = check runs GitHub.
+- Fusion d'une PR ≠ preuve k3d tant que `K3D_REQUIRED` n'est pas posée (T-513).
+- Marge de 1 pod sur OKE : toute app nouvelle doit être mesurée avant.
+
+---
+
+## Historique : état du 2026-11-18 (usine, pilote T-322)
 
 Point d'entrée pour reprendre : lire ce fichier, puis `docs/state/HANDOFF-COORDINATEUR.md`. Ce fichier dit **quoi lancer maintenant** ;
 `ROADMAP.md` (généré) donne l'ordre complet ; `python3 tools/backlog/next.py` calcule les tickets prêts (dépendances `done` seulement).
