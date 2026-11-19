@@ -37,3 +37,10 @@ backlog/T-505-argo-escalation-crd-cilium.md, tests/argo-escalation/run.sh, tests
 
 ## Notes
 Proposition hors périmètre (workflow) : voir la PR.
+
+### Reprise (2026-11-19)
+- Fait : cause prouvée (main@0fc7412, run 44495170272, et #169 run 44435032144) ; CRD Cilium minimales + garde `cilium_crds_check` ; PR #173 ; dispatch de la branche, run 44501238351 (résultat par suite dans le corps de la PR).
+- Reste : si argo-escalation est vert sur la branche, cocher les 2 dernières cases, sortir #173 du brouillon, attendre `ci-ok` sur la tête courante, fusion squash. Sinon lire `_temp/diagnostic.txt` de l'artefact `k3d-argo-escalation`.
+- Commandes : `gh api repos/<o>/<r>/actions/runs/<id>/jobs` ; artefact : `gh api repos/<o>/<r>/actions/artifacts/<id>/zip`.
+- Pièges : les runs `merge_group` sautent les suites (vert sans preuve) ; un seul run k3d à la fois (un autre run relancé peut occuper le dépôt) ; la tentative 2 d'un run réutilise le même numéro.
+- K3D_REQUIRED (repris par T-513, non fait ici) : proposer qu'en `merge_group`, si le groupe touche platform/ ou tests/{k3d,argo-escalation,vap,gitops-k3d}/ et que `K3D_REQUIRED` n'est pas `true`, `k3d-ok` écrive « suites NON lancées » en avertissement visible au lieu d'un vert muet ; Paul pose `K3D_REQUIRED=true` à FINAL0 (docs/CI-K3D.md §6).
