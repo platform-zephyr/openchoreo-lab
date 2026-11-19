@@ -1,0 +1,35 @@
+# CRD Cilium MINIMALES du cluster de test (T-505). Ce cluster n'a pas Cilium ; or lab-platform synchronise
+# des CiliumNetworkPolicy et CiliumClusterwideNetworkPolicy (platform/baseline, platform/cloudflared).
+# Sans CRD, Argo CD refuse TOUTE la synchro (« failed to discover server resources for group version
+# cilium.io/v2 »). Schéma permissif : le test borne Argo CD, pas la grammaire Cilium. Même principe que les
+# CRD CNPG de run.sh (CRD seulement, aucun agent). Toute nouvelle kind cilium.io de lab-platform doit être
+# ajoutée ici : `cilium_crds_check` (run.sh) échoue avant l'installation sinon.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ciliumnetworkpolicies.cilium.io
+spec:
+  group: cilium.io
+  scope: Namespaced
+  names: {kind: CiliumNetworkPolicy, listKind: CiliumNetworkPolicyList, plural: ciliumnetworkpolicies, singular: ciliumnetworkpolicy, shortNames: [cnp]}
+  versions:
+    - name: v2
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema: {type: object, x-kubernetes-preserve-unknown-fields: true}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ciliumclusterwidenetworkpolicies.cilium.io
+spec:
+  group: cilium.io
+  scope: Cluster
+  names: {kind: CiliumClusterwideNetworkPolicy, listKind: CiliumClusterwideNetworkPolicyList, plural: ciliumclusterwidenetworkpolicies, singular: ciliumclusterwidenetworkpolicy, shortNames: [ccnp]}
+  versions:
+    - name: v2
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema: {type: object, x-kubernetes-preserve-unknown-fields: true}
