@@ -39,3 +39,10 @@ docs/adr/0025-validation-en-deux-portes.md, docs/adr/0020-porte-adoption-opencho
   jusqu'à la décision « façade `app.yaml` ou objets natifs », prise juste après la porte 1. Suppression bienvenue.
   Un besoin réel passe par un champ amont (AppProject, VAP, objet natif) ou attend la décision.
 - Aucun code touché : `prior-art` non chargé.
+- **Reprise (2026-11-19, passation vers l'orchestrateur du Mac)** :
+  - Fait : PR #177 prête et non fusionnée (ADR du noyau, REVUE). Elle contient les 4 critères cochés ci-dessus. Check statique : INCOMPLET, 0 FAIL.
+  - Reste : approbation de Paul, puis fusion par Paul ou par l'orchestrateur.
+  - À préciser par Paul (1) : répartition de C2, C3, C4 et C7 entre porte 1 et porte 2 (ADR-0020).
+  - À préciser par Paul (2) : date de la porte 2 (ADR-0020).
+  - À préciser par Paul (3) : place d'OKE parmi les niveaux d'environnement et chemin d'exécution local sur OKE (ADR-0022).
+  - Commandes : `git fetch origin claude/t-508-gouvernance-q26` ; `PYTHONDONTWRITEBYTECODE=1 tools/dev/check --static --changed`.
