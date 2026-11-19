@@ -11,8 +11,8 @@
 #   - lab-authz    : platform/authz/ ; fenêtre `deny` permanente (manualSync: true) : AUCUNE synchro
 #                    automatique, même si l'Application déclare syncPolicy.automated ;
 #   - lab-k        : bras K du banc A/B (T-495, ADR-0025) : dépôt bac à sable bench-ab-arm-k SEUL (HTTPS) ;
-#                    namespaces lab-k-* et svc-* ; kinds = EXACTEMENT ceux de l'AppProject apps-generated de
-#                    kube-ops ; aucune Application de CE dépôt ne l'emploie (Applications créées par les
+#                    namespaces lab-k-*, svc-echo-bench, svc-miniflux, svc-ntfy, lab-pg ; kinds */* (projet
+#                    applications de kube-ops, T-506) ; aucune Application de CE dépôt ne l'emploie (Applications créées par les
 #                    ApplicationSets du bac à sable) ;
 #   - lab-k-root   : Application lab-k-root seulement ; kind ApplicationSet dans lab-argocd ; fenêtre `deny`
 #                    permanente (manualSync: true) : livraison des ApplicationSets du bac à sable par geste opérateur ;
@@ -203,14 +203,13 @@ spec:
 # §2.2). NOTRE frontière : l'AppProject `lab-k` livré par le bac à sable (k8s/bootstrap/argocd-root/
 # apps-generated-project.yaml, que des agents modifient) n'est JAMAIS appliqué (lab-k-root l'exclut).
 # Modèle : AppProject `apps-generated` de kube-ops (MIT, NOTICE), copié dans le bac à sable au commit
-# 742bbd6b8c4e894b8bc31800ee234de0d2b80dd6. Écarts voulus, décidés par Paul le 2026-11-18 :
-#   - destinations `lab-k-*` ET `svc-*` : le chart platform-app de kube-ops code en dur `svc-<nom>` (Namespace
-#     et objets) et ne doit pas être modifié ; la copie du bac à sable ne garde que `lab-k-*` ;
-#   - Namespace admis sous les deux mêmes globs (`svc-*` est le glob d'origine de kube-ops) ;
-#   - kinds : EXACTEMENT ceux de la copie, rien de plus (ni ExternalSecret, ni SecretStore, ni Password :
-#     un bras K moins capable que le bras O fait partie de la mesure).
-# Aucune destination openchoreo-*, argocd, kube-system, lab-argocd, lab-pg, lab-secrets : aucun de ces noms
-# ne correspond à `lab-k-*` ni à `svc-*` (contrôle CI : tools/oke/argo_guard.py, règles L1-L4).
+# 742bbd6b8c4e894b8bc31800ee234de0d2b80dd6. Écarts voulus, décidés par Paul (« oui » du 2026-11-19, T-506) :
+#   - E1 : le chart platform-app de kube-ops code en dur `svc-<nom>` et ne doit pas être modifié : destinations
+#     et Namespace svc-echo-bench, svc-miniflux, svc-ntfy par NOMS EXPLICITES, jamais le joker `svc-*` ;
+#   - E5 : kinds `*/*` comme le projet `applications` de kube-ops (ExternalSecret, SecretStore, Password...),
+#     blacklist conservée ; destination lab-pg (base de miniflux, M2), Namespace lab-pg NON créé par lab-k.
+# Aucune destination openchoreo-*, argocd, kube-system, lab-argocd, lab-secrets (contrôle CI :
+# tools/oke/argo_guard.py, règles L1-L4).
 # Dépôt lu en HTTPS SANS identifiant (aucun Secret de dépôt requis, dépôt public). Option « dépôt privé »
 # (non implémentée) : Secret de dépôt Argo de type GitHub App en lecture seule, même URL
 # (backlog/T-495-appproject-lab-k.md). Les deux formes d'URL désignent ce SEUL dépôt.
@@ -222,26 +221,31 @@ metadata:
   namespace: lab-argocd
   labels: {app.kubernetes.io/part-of: openchoreo-lab}
 spec:
-  description: Bras K du banc A/B (bac à sable bench-ab-arm-k) - namespaces lab-k-* et svc-*, kinds du chart platform-app seulement
+  description: Bras K du banc A/B (bac à sable bench-ab-arm-k) - lab-k-*, svc-echo-bench, svc-miniflux, svc-ntfy, lab-pg ; kinds du projet applications de kube-ops
   sourceRepos:
     - https://github.com/platform-zephyr/bench-ab-arm-k.git
     - https://github.com/platform-zephyr/bench-ab-arm-k
   destinations:
     - server: https://kubernetes.default.svc
       namespace: "lab-k-*"
+    # svc-<app> : chart platform-app de kube-ops inchangé ; NOMS EXPLICITES, jamais `svc-*` (E1, Paul, 2026-11-19).
     - server: https://kubernetes.default.svc
-      namespace: "svc-*"
+      namespace: svc-echo-bench
+    - server: https://kubernetes.default.svc
+      namespace: svc-miniflux
+    - server: https://kubernetes.default.svc
+      namespace: svc-ntfy
+    # lab-pg : base de miniflux (M2) ; namespace créé par la plateforme, pas par lab-k (E5, Paul, 2026-11-19).
+    - server: https://kubernetes.default.svc
+      namespace: lab-pg
   clusterResourceWhitelist:
     - {group: "", kind: Namespace, name: "lab-k-*"}
-    - {group: "", kind: Namespace, name: "svc-*"}
+    - {group: "", kind: Namespace, name: svc-echo-bench}
+    - {group: "", kind: Namespace, name: svc-miniflux}
+    - {group: "", kind: Namespace, name: svc-ntfy}
+  # Kinds du projet `applications` de kube-ops (E5) ; la blacklist ci-dessous reste (tools/oke/argo_guard_k.py L1).
   namespaceResourceWhitelist:
-    - {group: apps, kind: Deployment}
-    - {group: "", kind: Service}
-    - {group: "", kind: ServiceAccount}
-    - {group: policy, kind: PodDisruptionBudget}
-    - {group: monitoring.coreos.com, kind: ServiceMonitor}
-    - {group: gateway.networking.k8s.io, kind: HTTPRoute}
-    - {group: cilium.io, kind: CiliumNetworkPolicy}
+    - {group: "*", kind: "*"}
   namespaceResourceBlacklist:
     - {group: rbac.authorization.k8s.io, kind: Role}
     - {group: rbac.authorization.k8s.io, kind: RoleBinding}

@@ -42,3 +42,11 @@ platform/install/argocd/apps/lab-apps.yaml, clusters/oke/lab-o-apps.yaml, tools/
   d'exclusion »), `docs/research/FIDELITE-JOURNAL.md` (verdict à réévaluer à la revue n°2).
 - Étape suivante possible (non faite) : `tools/appgen` écrit lui-même la liste à partir de `cluster: oke` ; la liste
   reste aujourd'hui le geste explicite qui tient echo-bench et miniflux hors d'OKE avant la passe 0.
+- Reprise 2026-11-19 (passation vers l'orchestrateur du Mac) :
+  - Fait : PR #174, `ci-ok` vert sur 290f136 ; fusion refusée (conflit : `main` a supprimé `tools/status/`, T-507) ;
+    `main` fusionnée dans la branche (2cf5806) : suppression acceptée, garde du skill `read-app-status` alignée sur
+    la liste OKE. Check local : 21 PASS, 0 FAIL.
+  - Reste : `ci-ok` sur la tête courante de #174, puis squash ; preuve OKE (commandes dans le corps de la PR).
+  - Commandes : `python3 -I tools/oke/argo_guard.py .` (attendu : 0 écart, lab-o = 4 apps) ; `tests/argo-guard/run.sh`.
+  - Pièges : une app OKE nouvelle = une ligne dans `clusters/oke/lab-o-apps.yaml` ; `check-paths.tsv` ne relance pas
+    `argo-guard-negative` sur `clusters/*` (suite reprise par T-512).

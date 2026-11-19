@@ -127,13 +127,37 @@ class LabKRules(unittest.TestCase):
         self.assertEqual(g.errs, [])
 
     def test_l1_destinations_refused(self):
-        for ns in ("argocd", "kube-system", "lab-argocd", "lab-pg", "lab-secrets", "openchoreo-*", "lab-*", "*"):
+        for ns in ("argocd", "kube-system", "lab-argocd", "lab-secrets", "openchoreo-*", "lab-*", "*", "svc-*"):
             k = self.real()["lab-k"]
             k["destinations"] = k["destinations"] + [{"server": self.IN, "namespace": ns}]
             errs = errs_of("rule_l1_lab_k", k)
             with self.subTest(ns=ns):
                 self.assertTrue(any(e.startswith(f"{REL}: L1 lab-k : destinations exactes") for e in errs), errs)
                 self.assertTrue(any("L2 lab-k : destination" in e for e in errs), errs)
+
+    def test_t506_explicit_svc_and_kinds(self):
+        """T-506 (E1, E5) : svc-<app> nommés seulement, lab-pg admis, `*/*` en kinds namespacés de lab-k seulement."""
+        k = self.real()["lab-k"]
+        self.assertEqual(errs_of("rule_l1_lab_k", k), [])
+        for ns in ("svc-*", "svc-other", "svc-echo-*"):
+            k2 = dict(k, destinations=k["destinations"] + [{"server": self.IN, "namespace": ns}])
+            with self.subTest(ns=ns):
+                self.assertTrue(errs_of("rule_l1_lab_k", k2), ns)
+        k3 = dict(k, clusterResourceWhitelist=k["clusterResourceWhitelist"] + [{"group": "", "kind": "Namespace",
+                                                                                "name": "svc-*"}])
+        self.assertIn("L1 lab-k : clusterResourceWhitelist", errs_of("rule_l1_lab_k", k3)[0])
+        k4 = dict(k, namespaceResourceBlacklist=[])
+        self.assertIn("L1 lab-k : namespaceResourceBlacklist", errs_of("rule_l1_lab_k", k4)[0])
+        self.assertTrue(K.k_wildcard_kinds_allowed("lab-k", "namespaceResourceWhitelist", {"group": "*", "kind": "*"}))
+        for proj, key in (("lab-o", "namespaceResourceWhitelist"), ("lab-k", "clusterResourceWhitelist"),
+                          ("lab-k-root", "namespaceResourceWhitelist")):
+            with self.subTest(proj=proj, key=key):
+                self.assertFalse(K.k_wildcard_kinds_allowed(proj, key, {"group": "*", "kind": "*"}))
+        p = self.real()
+        p["lab-o"]["namespaceResourceWhitelist"] = p["lab-o"]["namespaceResourceWhitelist"] + [{"group": "*", "kind": "*"}]
+        g = guard()
+        g.check_projects(p)
+        self.assertTrue(any("P2 lab-o : namespaceResourceWhitelist joker" in e for e in g.errs), g.errs)
 
     def test_l1_other_cluster_refused(self):
         k = self.real()["lab-k"]

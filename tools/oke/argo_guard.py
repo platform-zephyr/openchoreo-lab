@@ -45,7 +45,7 @@ import sys
 import yaml
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parent))  # python3 -I : dossier du script absent de sys.path
-from argo_guard_k import LabKRules, argo_kind_allowed, k_destination_allowed
+from argo_guard_k import LabKRules, argo_kind_allowed, k_destination_allowed, k_wildcard_kinds_allowed
 
 SCAN = ("platform", "generated", "apps")
 ARGO = "platform/install/argocd"
@@ -202,7 +202,7 @@ class Guard(LabKRules):
                 self.err(rel, f"P2 {name} : destination joker {dst}")
 
     def rule_p2_whitelist_entry(self, rel, name, key, r):
-        if r.get("group") == "*" or r.get("kind") == "*" or r.get("name") == "*":
+        if "*" in (r.get("group"), r.get("kind"), r.get("name")) and not k_wildcard_kinds_allowed(name, key, r):
             self.err(rel, f"P2 {name} : {key} joker {r}")
         if key == "clusterResourceWhitelist" and not r.get("name"):
             self.err(rel, f"P2 {name} : {key} sans nom {r}")

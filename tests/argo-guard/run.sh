@@ -458,6 +458,26 @@ kmut "$d" "$PROJ" "  name: lab-o
 "
 check lab-o-destination-svc refus "P2 lab-o : destination joker" "$d"
 
+# 38b. T-506 (E1, E5) : joker svc-* rendu à lab-k (destination puis Namespace) ; joker */* de kinds dans lab-o.
+d="$(fresh lab-k-svc-joker)"
+kmut "$d" "$PROJ" "  name: lab-k
+" "  destinations:
+" "    - {server: https://kubernetes.default.svc, namespace: 'svc-*'}
+"
+check lab-k-svc-joker refus "L1 lab-k : destinations exactes exigées" "$d"
+d="$(fresh lab-k-ns-joker)"
+kmut "$d" "$PROJ" "  name: lab-k
+" "  clusterResourceWhitelist:
+" "    - {group: '', kind: Namespace, name: 'svc-*'}
+"
+check lab-k-namespace-svc-joker refus "L1 lab-k : clusterResourceWhitelist limitée" "$d"
+d="$(fresh lab-o-kinds-joker)"
+kmut "$d" "$PROJ" "  name: lab-o
+" "  namespaceResourceWhitelist:
+" "    - {group: '*', kind: '*'}
+"
+check lab-o-kinds-joker refus "P2 lab-o : namespaceResourceWhitelist joker" "$d"
+
 # 39. lab-k-root livre aussi l'AppProject copié du bac à sable (include *.yaml) ; ou passe en automated.
 d="$(fresh k-root-include)"
 python3 -I -c 'import sys,pathlib
