@@ -267,7 +267,17 @@ class Consistency(unittest.TestCase):
 
     def test_applicationset_name_prefix(self):
         lab_apps = (ROOT / ast.LAB_APPS).read_text(encoding="utf-8")
-        self.assertIn('name: "lab-o-{{.path.basename}}"', lab_apps)
+        self.assertIn('name: "lab-o-{{.app}}"', lab_apps)
+        self.assertIn(f"path: {ast.LAB_O_LIST}", lab_apps)
+
+    def test_listed_apps_resolve(self):
+        """T-502 : chaque app de la liste OKE se résout en lab-o-<app> ; une app générée hors liste est refusée."""
+        listed = ast.LISTED_RE.findall((ROOT / ast.LAB_O_LIST).read_text(encoding="utf-8"))
+        self.assertEqual(sorted(listed), ["echo-demo", "ntfy", "searxng", "whoami"])
+        for app in listed:
+            self.assertEqual(ast.resolve_target(app, None)[0], f"lab-o-{app}")
+        with self.assertRaises(ast.StatusError):
+            ast.resolve_target("miniflux", None)
 
 
 if __name__ == "__main__":

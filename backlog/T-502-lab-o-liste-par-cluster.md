@@ -25,7 +25,7 @@ touche plus ni la liste ni `platform/`. O5 est réduite à la validation de la l
 frontière du bras K ne changent pas.
 
 ## Périmètre de fichiers
-platform/install/argocd/apps/lab-apps.yaml, clusters/oke/lab-o-apps.yaml, tools/oke/argo_guard.py, tests/argo-guard/, backlog/T-502-lab-o-liste-par-cluster.md
+platform/install/argocd/apps/lab-apps.yaml, clusters/oke/lab-o-apps.yaml, tools/oke/argo_guard.py, tests/argo-guard/, tools/status/app_status.py (consommateur de la liste, CI), tests/status/test_app_status.py, backlog/T-502-lab-o-liste-par-cluster.md
 
 ## Critères de fin
 - [x] `lab-apps.yaml` : un générateur `git.files` sur `clusters/oke/lab-o-apps.yaml`, aucun `exclude` — STATIC, 2026-11-19

@@ -70,6 +70,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LAB_APPS = Path("platform/install/argocd/apps/lab-apps.yaml")
 LAB_K_ROOT = Path("platform/install/argocd/apps/lab-k-root.yaml")
 PROJECTS = Path("generated/namespaces/default/projects")
+LAB_O_LIST = Path("clusters/oke/lab-o-apps.yaml")  # apps de l'ApplicationSet lab-o (T-502), `- app: <nom>`
 
 EXIT_OK, EXIT_USAGE, EXIT_RATE, EXIT_API = 0, 2, 3, 4
 APP_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
@@ -77,7 +78,7 @@ SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
 REF_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._-]*(?:/[A-Za-z0-9_][A-Za-z0-9._-]*)*$")
 REPO_RE = re.compile(r"^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$")
 REPO_URL_RE = re.compile(r"^\s*repoURL:\s*https://github\.com/([A-Za-z0-9-]+/[A-Za-z0-9._-]+?)(?:\.git)?\s*$", re.M)
-EXCLUDE_RE = re.compile(r"path:\s*generated/namespaces/default/projects/([a-z0-9-]+)\s*,\s*exclude:\s*true")
+LISTED_RE = re.compile(r"^-\s*app:\s*([a-z0-9-]+)\s*$", re.M)
 FAILURES = {"failure", "timed_out", "cancelled", "action_required", "startup_failure"}
 
 Response = tuple[int, dict[str, str], bytes]
@@ -119,12 +120,12 @@ def resolve_target(app: str, repo: str | None, root: Path = ROOT) -> tuple[str, 
         return app, repo or repo_from(root / LAB_K_ROOT)
     name = app.removeprefix("lab-o-")
     lab_apps = root / LAB_APPS
-    excluded = set(EXCLUDE_RE.findall(lab_apps.read_text(encoding="utf-8")))
+    listed = set(LISTED_RE.findall((root / LAB_O_LIST).read_text(encoding="utf-8")))
     if not name or not (root / PROJECTS / name).is_dir():
         raise StatusError("unknown_app", f"app inconnue : aucun dossier {PROJECTS}/{name}", EXIT_USAGE)
-    if name in excluded:
+    if name not in listed:
         raise StatusError(
-            "unknown_app", f"app {name} exclue de l'ApplicationSet lab-o : non déployée sur OKE", EXIT_USAGE
+            "unknown_app", f"app {name} absente de {LAB_O_LIST} (ApplicationSet lab-o) : non déployée sur OKE", EXIT_USAGE
         )
     return f"lab-o-{name}", repo or repo_from(lab_apps)
 
