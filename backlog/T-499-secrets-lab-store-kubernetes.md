@@ -37,3 +37,10 @@ docs/schema/capabilities.schema.json, clusters/oke/capabilities.yaml, tools/appg
 - Amont adopté : sémantique `remoteRef.key` / `property` du fournisseur ESO kubernetes (docs/provider/kubernetes.md d'external-secrets) ; aucun code tiers copié.
 - Hors périmètre, à trancher : `clusters/homelab/capabilities.yaml` déclare `secretStore: lab-store` sans `secretStoreProvider` (défaut `doppler`). Si le `lab-store` du homelab est celui de `platform/install/manifests/20-eso-lab-store.yaml` (fournisseur kubernetes), y ajouter `secretStoreProvider: kubernetes` par PR plateforme.
 - `cnpg-lab-db` (PushSecret/ExternalSecret `lab-pg-roles-<nom>` + `property: password`) suit déjà la forme kubernetes : non touché.
+
+### Reprise (2026-11-19, T-510)
+- Fait : cases 1 et 2 (STATIC) ; PR #167 fusionnée ; `searxng` sur OKE reste en `CreateContainerConfigError` (clé `SEARXNG_SECRET` absente de `lab-store`, cause prouvée).
+- Reste : case 3 (suite `k3d-integration` par dispatch : aucune preuve datée dans le dossier) ; case 4 (Secret `searxng-secret` posé, pod Ready : T-515).
+- Prochaine action : opérateur OKE crée `searxng-secret` par tube (valeur aléatoire, jamais affichée) puis relève l'ExternalSecret et le pod.
+- Qui : session OKE locale ; dispatch k3d par le coordinateur.
+- Pièges : `clusters/homelab/capabilities.yaml` n'a pas `secretStoreProvider` (voir notes) ; T-511 renomme le store en `default`.

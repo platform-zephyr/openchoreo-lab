@@ -39,9 +39,9 @@ Ce qui est livré :
 - [x] AppProjects `lab-k` et `lab-k-root` et Application `lab-k-root` versionnés ; `python3 -I tools/oke/argo_guard.py .` : 0 écart — STATIC, 2026-11-19
 - [x] cas négatifs refusés : `lab-k` vers `kube-system`, `argocd`, `lab-argocd` ; autre dépôt ; ExternalSecret ; ClusterRole ; `svc-*` dans `lab-o` ; AppProject copié inclus ; `lab-k-root` automated ; Application `project: lab-k` — `tests/argo-guard/run.sh` 58 PASS, 0 FAIL ; `python3 -m unittest discover -s tests/argo-guard` OK — STATIC, 2026-11-19
 - [ ] décision de Paul : dépôt `bench-ab-arm-k` public (a) ou App GitHub (b) ; si (b), PR qui implémente l'option « dépôt privé »
-- [ ] RUNTIME OKE (session locale) : `install.sh --step 11 --apply` puis `verify.sh --step 11` : B11-lab-k-projects, B11-lab-k-dest, B11-lab-k-root-manual PASS (preuve datée, `backlog/evidence/`)
+- [x] RUNTIME OKE (session locale) : `install.sh --step 11 --apply` puis `verify.sh --step 11` : B11-lab-k-projects, B11-lab-k-dest, B11-lab-k-root-manual PASS (preuve datée, `backlog/evidence/`) — 2026-11-19T00:27:59Z, `T-487-bras-o-applicationset-2026-11-19.md`
 - [ ] RUNTIME OKE (session locale) : synchro manuelle de `lab-k-root` : Synced ; seuls les ApplicationSets `apps-generated` et `applications` créés dans `lab-argocd` ; aucun AppProject modifié (`kubectl -n lab-argocd get appproject lab-k -o yaml` = celui de ce dépôt) (preuve datée)
-- [ ] RUNTIME OKE (session locale) : refus d'une destination hors périmètre prouvé par Argo (Application de test `project: lab-k` vers `kube-system` : `ComparisonError`/sync refusée), puis supprimée (preuve datée)
+- [x] RUNTIME OKE (session locale) : refus d'une destination hors périmètre prouvé par Argo (Application de test `project: lab-k` vers `kube-system` : `ComparisonError`/sync refusée), puis supprimée (preuve datée) — `InvalidSpecError` le 2026-11-19T00:32:06Z, Application supprimée (NotFound confirmé), `T-487-bras-o-applicationset-2026-11-19.md`
 
 ## Gestes de la session locale (OKE, après fusion)
 1. Accès au dépôt, sans identifiant : `git ls-remote https://github.com/platform-zephyr/bench-ab-arm-k.git HEAD` doit répondre SANS demander d'identifiant (option a). Sinon : STOP, BLOCKED (décision de Paul attendue).
@@ -61,3 +61,10 @@ Si Paul choisit (b) : une App GitHub installée sur `bench-ab-arm-k` seul, permi
 - Les manifests de miniflux (ExternalSecret, SecretStore, Password, objets dans `lab-pg`) seront refusés par `lab-k` : voulu (décision de Paul).
 - `uninstall.sh` étape 11 supprime aussi l'Application `lab-k-root` ; le retrait des ApplicationSets et Applications `lab-k-*` relève du nettoyage du banc (T-212).
 - Implémentations publiques consultées : https://github.com/argoproj/argo-cd/blob/109ca7ca71139e514114499d294a492e7910a965/docs/user-guide/projects.md (Apache-2.0, adopté : globs de destination et `name` glob de clusterResourceWhitelist) ; https://github.com/argoproj/argo-cd/blob/109ca7ca71139e514114499d294a492e7910a965/docs/operator-manual/declarative-setup.md (Apache-2.0, adopté pour l'option GitHub App) ; AppProject `apps-generated` de kube-ops `ef50472bc427bbb5fb342cebf2f4db408157f5b3` via le bac à sable `742bbd6b` (MIT, adapté, ligne `NOTICE`).
+
+### Reprise (2026-11-19, T-510)
+- Fait : `lab-k` et `lab-k-root` versionnés (PR #160) ; B11-lab-k-* PASS et refus de destination prouvés sur OKE le 2026-11-19 (cases 4 et 6 cochées).
+- Reste : case 3 (décision de Paul : dépôt `bench-ab-arm-k` public ; la lecture sans identifiant du 2026-11-19 est à reconfirmer) ; case 5 (synchro manuelle de `lab-k-root`, NOT_TESTED).
+- Prochaine action : synchroniser `lab-k-root` seulement au lancement de la passe 0 (T-486) : les ApplicationSets sont en `automated` et déploieraient `echo-bench`.
+- Qui : Paul (visibilité du dépôt), puis la session OKE locale.
+- Pièges : une app du bac à sable nommée `root` collisionne avec `lab-k-root`.
